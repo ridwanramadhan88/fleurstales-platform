@@ -328,7 +328,7 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
         phase: 'error',
         remoteConfigured: true,
         writable: false,
-        message: 'Authenticated Supabase catalog is empty. Apply the Phase 4 seed migration before enabling OS writes.',
+        message: 'The Supabase catalog is empty. Add a product or restore the catalog before making catalog changes.',
       })
       return false
     }

@@ -398,7 +398,7 @@ export const SelfieAttendanceCard: FC = () => {
           {error && <p role="alert" className="mt-3 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
           {success && <p className="mt-3 rounded-lg bg-success/10 px-3 py-2 text-xs text-success">{success}</p>}
           <InfoDisclosure title="About attendance verification" className="mt-3">
-            <p>GPS location is verified first and matched against the nearest active branch. A different branch is accepted and flagged for HR review. Every selfie is center-cropped to 1:1 and stored as a JPEG no larger than 100 KB in this demo browser state.</p>
+            <p>GPS location is verified first and matched against the nearest active branch. A different branch is accepted and flagged for HR review. Every selfie is center-cropped to 1:1, compressed to a JPEG no larger than 100 KB, and saved with the attendance record.</p>
           </InfoDisclosure>
         </div>
       )}

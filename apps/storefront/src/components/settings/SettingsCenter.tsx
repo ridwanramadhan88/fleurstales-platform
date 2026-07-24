@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FC } from "react";
 import {
-  Database,
   Lock,
   Pencil,
   Save,
@@ -17,7 +16,6 @@ import { PaymentMethodSettings } from "./PaymentMethodSettings";
 import { AttendanceSettingsPanel } from "./AttendanceSettingsPanel";
 import { SchedulingSettingsPanel } from "./SchedulingSettingsPanel";
 import { PayrollSettingsPanel } from "./PayrollSettingsPanel";
-import { PersistenceHealthPanel } from "./PersistenceHealthPanel";
 import { ActionFooter } from "../ui/action-footer";
 import { ConfirmActionDialog } from "../ui/confirm-action-dialog";
 import { SettingsTabTrack, settingsTabButtonClass } from "./SettingsPrimitives";
@@ -32,13 +30,7 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 
-/**
- * Nav grouping is presentation-only — it doesn't touch the section/edit
- * state machine in SettingsCenterController. The 'Data & Backup' entry is a
- * component-local pseudo-tab (see `dataBackupOpen` state below): it has no
- * saved settings value and no Edit/Save cycle, so it's kept out of
- * SettingsSectionId entirely rather than threaded through the controller.
- */
+/** Nav grouping is presentation-only and does not alter saved settings. */
 
 const SECTION_DESCRIPTIONS: Record<SettingsSectionId, string> = {
   "store-profile":
@@ -68,11 +60,8 @@ const NAV_GROUPS: { label: string; sections: SettingsSectionId[] }[] = [
   { label: "Operations", sections: ["scheduling", "payroll"] },
 ];
 
-const CATEGORY_ORDER = [...NAV_GROUPS.map((group) => group.label), "Advanced"];
-const VIEW_ORDER: Array<SettingsSectionId | "data-backup"> = [
-  ...NAV_GROUPS.flatMap((group) => group.sections),
-  "data-backup",
-];
+const CATEGORY_ORDER = NAV_GROUPS.map((group) => group.label);
+const VIEW_ORDER: SettingsSectionId[] = NAV_GROUPS.flatMap((group) => group.sections);
 
 const scrollActiveHorizontally = (
   container: HTMLElement | null,
@@ -125,7 +114,6 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
   onKeepEditing,
   onDiscardAndLeave,
   onSaveAndLeave,
-  onRequestLeave,
   saveConfirmationOpen,
   pendingChangeSummary,
   onConfirmSave,
@@ -175,7 +163,6 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
   onRemoveBankAccount,
   onPaymentInstructionsChange,
 }) => {
-  const [dataBackupOpen, setDataBackupOpen] = useState(false);
   const categoryForSection = (section: SettingsSectionId) =>
     NAV_GROUPS.find((group) => group.sections.includes(section))?.label ??
     "Business";
@@ -187,10 +174,8 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
 
   useEffect(() => {
-    setMobileCategory(
-      dataBackupOpen ? "Advanced" : categoryForSection(activeSection),
-    );
-  }, [activeSection, dataBackupOpen]);
+    setMobileCategory(categoryForSection(activeSection));
+  }, [activeSection]);
 
   useEffect(() => {
     scrollActiveHorizontally(categoryRef.current, '[data-active="true"]');
@@ -209,14 +194,6 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
       CATEGORY_ORDER.indexOf(mobileCategory),
       CATEGORY_ORDER.indexOf(label),
     );
-    if (label === "Advanced") {
-      onRequestLeave(() => {
-        setMobileCategory("Advanced");
-        setDataBackupOpen(true);
-      });
-      return;
-    }
-
     const group = NAV_GROUPS.find((item) => item.label === label);
     const firstAccessibleSection = group?.sections.find((section) =>
       navItems.some((item) => item.id === section && item.available),
@@ -224,17 +201,15 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
 
     if (!firstAccessibleSection) {
       setMobileCategory(label);
-      setDataBackupOpen(false);
       return;
     }
 
-    setDataBackupOpen(false);
     onSectionChange(firstAccessibleSection);
   };
 
   useEffect(() => {
     scrollActiveHorizontally(navRef.current, '[aria-current="page"]');
-  }, [activeSection, dataBackupOpen]);
+  }, [activeSection]);
 
   useEffect(() => {
     const scrollingElement = document.scrollingElement ?? document.documentElement;
@@ -245,7 +220,7 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
     if (typeof window.scrollTo === "function") {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
-  }, [activeSection, dataBackupOpen]);
+  }, [activeSection]);
 
   if (!isOwner) {
     return (
@@ -261,9 +236,7 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
   }
 
   const validationErrorCount = Object.keys(validationErrors).length;
-  const activeSectionLabel = dataBackupOpen
-    ? "Data & Backup"
-    : (navItems.find((item) => item.id === activeSection)?.label ?? "Settings");
+  const activeSectionLabel = navItems.find((item) => item.id === activeSection)?.label ?? "Settings";
 
   return (
     <section
@@ -289,7 +262,7 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
           trackRef={categoryRef}
           className="scroll-px-2"
         >
-          {[...NAV_GROUPS.map((group) => group.label), "Advanced"].map(
+          {NAV_GROUPS.map((group) => group.label).map(
             (label) => (
               <button
                 key={label}
@@ -320,7 +293,7 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
             navItems
               .filter((item) => group.sections.includes(item.id))
               .map((item) => {
-                const isActive = !dataBackupOpen && activeSection === item.id;
+                const isActive = activeSection === item.id;
                 return (
                   <button
                     key={item.id}
@@ -328,14 +301,10 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
                     disabled={!item.available}
                     aria-current={isActive ? "page" : undefined}
                     onClick={() => {
-                      const currentView = dataBackupOpen
-                        ? "data-backup"
-                        : activeSection;
                       setDirectionFromOrder(
-                        VIEW_ORDER.indexOf(currentView),
+                        VIEW_ORDER.indexOf(activeSection),
                         VIEW_ORDER.indexOf(item.id),
                       );
-                      setDataBackupOpen(false);
                       onSectionChange(item.id);
                     }}
                     className={`${settingsTabButtonClass({ active: isActive, level: "secondary", className: "scroll-mx-2" })} ${mobileCategory === group.label ? "inline-flex" : "hidden"}`}
@@ -353,53 +322,24 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
                 );
               }),
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setDirectionFromOrder(
-                VIEW_ORDER.indexOf(activeSection),
-                VIEW_ORDER.indexOf("data-backup"),
-              );
-              onRequestLeave(() => setDataBackupOpen(true));
-            }}
-            aria-current={dataBackupOpen ? "page" : undefined}
-            className={`${settingsTabButtonClass({ active: dataBackupOpen, level: "secondary", className: "scroll-mx-2 gap-2" })} ${mobileCategory === "Advanced" ? "inline-flex" : "hidden"}`}
-          >
-            <Database className="size-4" /> Data &amp; Backup
-          </button>
         </SettingsTabTrack>
       </div>
 
       <div
         className={`mt-2 min-w-0 flex-1 px-0 py-1 sm:px-1 ${
-          !dataBackupOpen && isEditing
+          isEditing
             ? "rounded-2xl ring-2 ring-primary/25 ring-offset-4 ring-offset-background"
             : ""
         }`}
       >
         <div
-          key={dataBackupOpen ? "data-backup" : activeSection}
+          key={activeSection}
           className={
             slideDirection === "left"
               ? "settings-content-slide-left"
               : "settings-content-slide-right"
           }
         >
-        {dataBackupOpen ? (
-          <>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-              <div>
-                <p className="font-display text-sm font-semibold text-foreground">
-                  Data &amp; Backup
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Export, restore, or reset locally stored operational data.
-                </p>
-              </div>
-            </div>
-            <PersistenceHealthPanel />
-          </>
-        ) : (
           <>
             <div className="mb-4 flex flex-col gap-2 border-b border-border/60 pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
@@ -619,7 +559,6 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
               </div>
             )}
           </>
-        )}
         </div>
       </div>
 
