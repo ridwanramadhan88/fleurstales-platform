@@ -5,41 +5,41 @@
 @tailwind utilities;
 
 :root {
-  /* Fleurstales OS — quiet iOS/macOS inspired system */
-  --background: 240 18% 94.2%;
+  /* Fleurstales OS — warm, quiet, botanical workspace */
+  --background: 42 25% 96.5%;
 
   /* Semantic surface hierarchy — one source of truth for light-mode depth. */
-  --surface-page: 240 18% 94.2%;
-  --surface-card: 0 0% 100%;
-  --surface-panel: 240 13% 90.8%;
-  --surface-track: 240 10% 87.5%;
-  --surface-selected: 220 9% 17%;
-  --surface-footer: 0 0% 100%;
-  --surface-popover: 0 0% 100%;
-  --surface-neutral-badge: 240 9% 85.5%;
-  --surface-warning: 38 78% 92.5%;
-  --surface-success: 142 38% 92.5%;
-  --surface-info: 211 62% 92.5%;
+  --surface-page: 42 25% 96.5%;
+  --surface-card: 42 33% 99.5%;
+  --surface-panel: 90 17% 93.5%;
+  --surface-track: 90 15% 89.5%;
+  --surface-selected: 157 27% 35%;
+  --surface-footer: 42 33% 99.5%;
+  --surface-popover: 42 33% 99.5%;
+  --surface-neutral-badge: 90 12% 87%;
+  --surface-warning: 39 86% 92%;
+  --surface-success: 150 34% 91.5%;
+  --surface-info: 204 62% 92%;
   --surface-error: 4 62% 93%;
-  --foreground: 240 12% 7%;
+  --foreground: 155 18% 12%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 10%;
+  --card: 42 33% 99.5%;
+  --card-foreground: 155 18% 12%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 10%;
+  --popover: 42 33% 99.5%;
+  --popover-foreground: 155 18% 12%;
 
-  --primary: 220 9% 17%;              /* charcoal brand / primary action */
+  --primary: 157 27% 35%;             /* botanical green primary */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 240 13% 90.5%;
-  --secondary-foreground: 240 10% 14%;
+  --secondary: 90 17% 92%;
+  --secondary-foreground: 155 18% 16%;
 
-  --muted: 240 12% 89.8%;
-  --muted-foreground: 240 6% 36%;
+  --muted: 90 14% 91%;
+  --muted-foreground: 155 8% 40%;
 
-  --accent: 240 12% 87.8%;
-  --accent-foreground: 240 10% 14%;
+  --accent: 151 24% 88.5%;
+  --accent-foreground: 157 27% 25%;
 
   --destructive: 4 90% 58%;               /* iOS systemRed */
   --destructive-foreground: 0 0% 100%;
@@ -51,57 +51,57 @@
   --info: 211 82% 48%;                   /* iOS systemBlue */
   --info-foreground: 0 0% 100%;
 
-  --border: 240 10% 84.5%;
-  --input: 240 10% 86%;
-  --ring: 220 8% 42%;                   /* neutral focus ring for light mode */
+  --border: 90 11% 82.5%;
+  --input: 90 12% 84%;
+  --ring: 157 27% 35%;
 
-  --chart-1: 220 9% 22%;
-  --chart-2: 336 78% 52%;
-  --chart-3: 35 100% 50%;
-  --chart-4: 142 70% 42%;
-  --chart-5: 262 60% 58%;
+  --chart-1: 157 27% 35%;
+  --chart-2: 337 58% 62%;
+  --chart-3: 36 86% 54%;
+  --chart-4: 148 49% 45%;
+  --chart-5: 264 42% 62%;
 
   --radius: 0.875rem;
 
-  --sidebar-background: 240 16% 92.8%;
-  --sidebar-foreground: 240 9% 24%;
-  --sidebar-primary: 220 9% 17%;
+  --sidebar-background: 90 18% 93.5%;
+  --sidebar-foreground: 155 12% 28%;
+  --sidebar-primary: 157 27% 35%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 240 11% 86.5%;
-  --sidebar-accent-foreground: 240 10% 12%;
-  --sidebar-border: 240 10% 82.5%;
-  --sidebar-ring: 220 8% 42%;
+  --sidebar-accent: 151 25% 87.5%;
+  --sidebar-accent-foreground: 157 27% 25%;
+  --sidebar-border: 90 12% 82%;
+  --sidebar-ring: 157 27% 35%;
 
-  --shadow-color: 240 22% 18%;
+  --shadow-color: 157 18% 20%;
 }
 
 .dark {
-  --background: 240 12% 7%;
-  --surface-page: 240 12% 7%;
-  --surface-card: 240 10% 10%;
-  --surface-panel: 240 8% 15%;
-  --surface-track: 240 8% 19%;
-  --surface-selected: 211 100% 45%;
-  --surface-footer: 240 10% 10%;
-  --surface-popover: 240 10% 10%;
-  --surface-neutral-badge: 240 7% 23%;
+  --background: 155 16% 8%;
+  --surface-page: 155 16% 8%;
+  --surface-card: 155 14% 11%;
+  --surface-panel: 155 12% 15%;
+  --surface-track: 155 11% 19%;
+  --surface-selected: 151 42% 42%;
+  --surface-footer: 155 14% 11%;
+  --surface-popover: 155 14% 11%;
+  --surface-neutral-badge: 155 9% 23%;
   --surface-warning: 35 28% 15%;
   --surface-success: 145 22% 14%;
-  --surface-info: 211 25% 15%;
+  --surface-info: 204 25% 15%;
   --surface-error: 4 25% 15%;
-  --foreground: 0 0% 97%;
-  --card: 240 10% 10%;
+  --foreground: 45 28% 97%;
+  --card: 155 14% 11%;
   --card-foreground: 0 0% 97%;
-  --popover: 240 10% 10%;
-  --popover-foreground: 0 0% 97%;
-  --primary: 211 100% 45%;
+  --popover: 155 14% 11%;
+  --popover-foreground: 45 28% 97%;
+  --primary: 151 42% 52%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 8% 15%;
-  --secondary-foreground: 0 0% 97%;
-  --muted: 240 8% 15%;
-  --muted-foreground: 240 5% 65%;
-  --accent: 240 8% 16%;
-  --accent-foreground: 0 0% 97%;
+  --secondary: 155 12% 15%;
+  --secondary-foreground: 45 28% 97%;
+  --muted: 155 12% 15%;
+  --muted-foreground: 90 8% 68%;
+  --accent: 155 12% 17%;
+  --accent-foreground: 45 28% 97%;
   --destructive: 4 90% 63%;
   --destructive-foreground: 0 0% 100%;
   --success: 145 52% 46%;
@@ -110,17 +110,17 @@
   --warning-foreground: 35 35% 9%;
   --info: 205 78% 62%;
   --info-foreground: 198 35% 8%;
-  --border: 240 8% 18%;
-  --input: 240 8% 18%;
-  --ring: 211 100% 55%;
-  --sidebar-background: 240 12% 9%;
-  --sidebar-foreground: 240 5% 80%;
-  --sidebar-primary: 211 100% 45%;
+  --border: 155 10% 22%;
+  --input: 155 10% 22%;
+  --ring: 151 42% 52%;
+  --sidebar-background: 155 15% 10%;
+  --sidebar-foreground: 90 8% 82%;
+  --sidebar-primary: 151 42% 52%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 240 8% 15%;
-  --sidebar-accent-foreground: 0 0% 97%;
-  --sidebar-border: 240 8% 16%;
-  --sidebar-ring: 211 100% 55%;
+  --sidebar-accent: 155 12% 17%;
+  --sidebar-accent-foreground: 45 28% 97%;
+  --sidebar-border: 155 10% 20%;
+  --sidebar-ring: 151 42% 52%;
 }
 
 html {
@@ -141,10 +141,24 @@ html {
 body {
   color: hsl(var(--foreground));
   background-color: hsl(var(--surface-page));
+  background-image: radial-gradient(circle at 8% 0%, hsl(var(--accent) / 0.42), transparent 34rem);
   overscroll-behavior: none;
   font-synthesis-weight: none;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
   letter-spacing: -0.011em;
+}
+
+.dark body {
+  background-image: radial-gradient(circle at 8% 0%, hsl(var(--accent) / 0.3), transparent 34rem);
+}
+
+/* Keep legacy charcoal action classes aligned with the botanical primary. */
+.bg-foreground {
+  background-color: hsl(var(--primary));
+}
+
+.hover\:bg-foreground\/90:hover {
+  background-color: hsl(var(--primary) / 0.9);
 }
 
 h1, h2, h3, .font-display {
@@ -228,6 +242,22 @@ html > body * {
 /* iOS-style grouped list separators without using ::before hacks everywhere */
 .grouped-list > * + * {
   border-top: 1px solid hsl(var(--border));
+}
+
+/* Quiet controls: a little more air and less visual chrome across the OS. */
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.18);
 }
 
 @keyframes sheet-up {
