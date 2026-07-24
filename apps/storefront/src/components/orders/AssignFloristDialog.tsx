@@ -181,7 +181,7 @@ export const AssignFloristDialog: FC<{
                   {scheduled.length} recommended · {options.length} active
                 </p>
               </div>
-              {options.length > scheduled.length && (
+              {(options.length > scheduled.length || scheduled.length === 0) && (
                 <button
                   type="button"
                   onClick={() => setShowAll((value) => !value)}
@@ -202,11 +202,12 @@ export const AssignFloristDialog: FC<{
               <div className="rounded-xl border border-dashed border-border p-5 text-center">
                 <UserRoundCheck className="mx-auto size-8 text-muted-foreground" />
                 <p className="mt-2 text-sm font-semibold">
-                  No scheduled florist available
+                  {showAll ? "No active florist available" : "No scheduled florist available"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Use Show all florists to make a confirmed schedule override, or ask
-                  HR/Owner to update the schedule.
+                  {showAll
+                    ? "Add an active florist profile in HR before assigning this order."
+                    : "Use Show all florists to check for an operational override, or ask HR/Owner to update the schedule."}
                 </p>
               </div>
             ) : (
