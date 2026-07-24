@@ -14,6 +14,7 @@ import {
   TrendingUp,
   MapPin,
   MessageCircle,
+  Mail,
 } from 'lucide-react'
 import type { CustomerProfile } from '../../store/customerStoreTypes'
 import type { CustomerMetrics } from '../../domain/customerDomain'
@@ -21,6 +22,7 @@ import { getCustomerValueScore } from '../../domain/customerDomain'
 import type { OrderTableRow, OrderStatus } from '../../types/orders'
 import { StatusChip, type ChipTone } from '../ui/chip'
 import { AppSheet } from '../ui/app-sheet'
+import { normalizeWhatsappNumber } from '../../lib/formatters'
 
 /**
  * @description Props for the CustomerProfileDrawer component.
@@ -75,6 +77,9 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
   const segment = SEGMENT_META[metrics.segment]
 
   const initial = customer.name.trim().charAt(0).toUpperCase() || '?'
+  const whatsappHref = customer.whatsappNumber
+    ? `https://wa.me/${normalizeWhatsappNumber(customer.whatsappNumber)}`
+    : undefined
 
   return (
     <AppSheet
@@ -104,11 +109,30 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
                   {segment.label}
                 </StatusChip>
               </div>
-              <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MessageCircle className="size-4" />
-                {customer.whatsappNumber}
-                {customer.email ? ` · ${customer.email}` : ''}
-              </p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                {whatsappHref && (
+                  <a
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Message ${customer.name} on WhatsApp`}
+                    className="inline-flex items-center gap-1.5 transition hover:text-foreground"
+                  >
+                    <MessageCircle className="size-4" />
+                    <span>{customer.whatsappNumber}</span>
+                  </a>
+                )}
+                {customer.email && (
+                  <a
+                    href={`mailto:${customer.email}`}
+                    aria-label={`Email ${customer.name}`}
+                    className="inline-flex items-center gap-1.5 transition hover:text-foreground"
+                  >
+                    <Mail className="size-4" />
+                    <span>{customer.email}</span>
+                  </a>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Value score {valueScore}/100
               </p>
