@@ -16,6 +16,8 @@ import { create } from 'zustand'
 import { useUserStore } from './userStore'
 import { canManageVouchers } from '../domain/voucherAuthorizationDomain'
 
+const TEST_RUNTIME = (globalThis as typeof globalThis & { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === 'test'
+
 /** Who a voucher can be applied by. */
 export type VoucherEligibility = 'all' | 'vip' | 'selected'
 
@@ -53,7 +55,7 @@ interface VoucherState {
   setVoucherActive: (id: string, isActive: boolean) => void
 }
 
-const INITIAL_VOUCHERS: Voucher[] = [
+const INITIAL_VOUCHERS: Voucher[] = TEST_RUNTIME ? [
   {
     id: 'voucher-vip10',
     code: 'VIP10',
@@ -62,7 +64,7 @@ const INITIAL_VOUCHERS: Voucher[] = [
     isActive: true,
     createdAt: new Date().toISOString(),
   },
-]
+] : []
 
 const normalizeCode = (code: string) => code.trim().toUpperCase()
 

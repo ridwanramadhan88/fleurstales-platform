@@ -82,75 +82,22 @@ interface CustomerState {
   setSegmentRules: (patch: Partial<CustomerSegmentRules>) => void
 }
 
-/**
- * @description Initial demo customers used to showcase CRM features.
- * Names are aligned with existing mocked order rows where possible.
- */
-const INITIAL_CUSTOMERS: CustomerProfile[] = [
-  {
-    id: 'cust-sari',
-    name: 'Ibu Sari Wulandari',
-    whatsappNumber: '0812 1111 2222',
-    normalizedWhatsappNumber: '6281211112222',
-    createdSource: 'admin',
-    email: 'sari@example.com',
-    birthday: '1985-04-12',
-    preferredBranch: 'Kedamaian',
-    tags: ['VIP'],
-    notes: 'Loves white roses and simple bouquets.',
-    promoCode: 'VIP10',
-  },
-  {
-    id: 'cust-andra',
-    name: 'Bpk. Andra Yusuf',
-    whatsappNumber: '0813 3333 4444',
-    normalizedWhatsappNumber: '6281333334444',
-    createdSource: 'admin',
-    email: 'andra@example.com',
-    birthday: '1978-09-20',
-    preferredBranch: 'Pahoman',
-    tags: ['Corporate'],
-    notes: 'Often orders for office events.',
-  },
-  {
-    id: 'cust-nadia',
-    name: 'Nadia Kusuma',
-    whatsappNumber: '0817 5555 6666',
-    normalizedWhatsappNumber: '6281755556666',
-    createdSource: 'admin',
-    email: 'nadia@example.com',
-    birthday: '1992-02-05',
-    preferredBranch: 'Kedamaian',
-    tags: ['VIP'],
-    notes: 'Prefers premium arrangements and evening delivery.',
-  },
-  {
-    id: 'cust-melati',
-    name: 'Ibu Melati',
-    whatsappNumber: '0819 7777 8888',
-    normalizedWhatsappNumber: '6281977778888',
-    createdSource: 'admin',
-    preferredBranch: 'Pahoman',
-    tags: ['Discount sensitive'],
-    notes: 'Responds well to promo codes.',
-    promoCode: 'SAVE15',
-  },
-  {
-    id: 'cust-citra',
-    name: 'Citra Ayu',
-    whatsappNumber: '0812 9999 0000',
-    normalizedWhatsappNumber: '6281299990000',
-    createdSource: 'admin',
-    preferredBranch: 'Pahoman',
-  },
-]
+/** Production starts empty and hydrates CRM from Supabase after staff sign-in. */
+const INITIAL_CUSTOMERS: CustomerProfile[] = []
 
 /**
  * @description Customer CRM store with add and edit operations.
  * Emits customer lifecycle events after each mutation via the event service.
  */
 const CUSTOMERS_PERSIST_NAME = 'customers'
-const CUSTOMERS_PERSIST_VERSION = 3
+const CUSTOMERS_PERSIST_VERSION = 4
+const LEGACY_DEMO_CUSTOMER_IDS = new Set([
+  'cust-sari',
+  'cust-andra',
+  'cust-nadia',
+  'cust-melati',
+  'cust-citra',
+])
 
 export const useCustomerStore = create<CustomerState>()(
   persist(
@@ -307,6 +254,7 @@ export const useCustomerStore = create<CustomerState>()(
       migrate: (persisted) => {
         const state = persisted as Partial<CustomerState>
         const customers = normalizePersistedCustomers(state.customers ?? INITIAL_CUSTOMERS)
+          .filter((customer) => !LEGACY_DEMO_CUSTOMER_IDS.has(customer.id))
         return { ...state, customers } as CustomerState
       },
       merge: (persisted, current) => {

@@ -11,6 +11,9 @@
 
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+
+const TEST_RUNTIME = (globalThis as typeof globalThis & { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === 'test'
+
 import { apiStorage, subscribeToExternalUpdates } from './persistApiStorage'
 import type {
   CustomerCreateInput,
@@ -86,7 +89,7 @@ interface CustomerState {
  * @description Initial demo customers used to showcase CRM features.
  * Names are aligned with existing mocked order rows where possible.
  */
-const INITIAL_CUSTOMERS: CustomerProfile[] = [
+const INITIAL_CUSTOMERS: CustomerProfile[] = TEST_RUNTIME ? [
   {
     id: 'cust-sari',
     name: 'Ibu Sari Wulandari',
@@ -143,14 +146,21 @@ const INITIAL_CUSTOMERS: CustomerProfile[] = [
     createdSource: 'admin',
     preferredBranch: 'Pahoman',
   },
-]
+] : []
 
 /**
  * @description Customer CRM store with add and edit operations.
  * Emits customer lifecycle events after each mutation via the event service.
  */
 const CUSTOMERS_PERSIST_NAME = 'customers'
-const CUSTOMERS_PERSIST_VERSION = 3
+const CUSTOMERS_PERSIST_VERSION = 4
+const LEGACY_DEMO_CUSTOMER_IDS = new Set([
+  'cust-sari',
+  'cust-andra',
+  'cust-nadia',
+  'cust-melati',
+  'cust-citra',
+])
 
 export const useCustomerStore = create<CustomerState>()(
   persist(
@@ -307,6 +317,7 @@ export const useCustomerStore = create<CustomerState>()(
       migrate: (persisted) => {
         const state = persisted as Partial<CustomerState>
         const customers = normalizePersistedCustomers(state.customers ?? INITIAL_CUSTOMERS)
+          .filter((customer) => !LEGACY_DEMO_CUSTOMER_IDS.has(customer.id))
         return { ...state, customers } as CustomerState
       },
       merge: (persisted, current) => {

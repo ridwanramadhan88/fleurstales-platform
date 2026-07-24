@@ -12,8 +12,8 @@ import type { BranchFilter } from './types/orders'
 import { useTheme } from './hooks/useTheme'
 import { isSharedBackendConfigured, signOutSharedBackend } from './api/remoteSession'
 import { refreshBusinessOsCatalogFromRemote, stopBusinessOsCatalogBridge } from './data/shared/catalogBridge'
-import { refreshBusinessOsOrdersFromRemote } from './data/shared/orderBridge'
-import { refreshBusinessOsCustomersFromRemote } from './data/shared/customerBridge'
+import { refreshBusinessOsOrdersFromRemote, stopBusinessOsOrderBridge } from './data/shared/orderBridge'
+import { refreshBusinessOsCustomersFromRemote, stopBusinessOsCustomerBridge } from './data/shared/customerBridge'
 import { refreshBusinessOsStoreFromRemote, stopBusinessOsStoreBridge } from './data/shared/storeBridge'
 import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
 import { clearSharedSession, getSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
@@ -54,6 +54,8 @@ export default function App() {
   const handleSignOut = () => {
     stopBusinessOsCatalogBridge()
     stopBusinessOsStoreBridge()
+    stopBusinessOsOrderBridge()
+    stopBusinessOsCustomerBridge()
     clearSharedSession()
     void signOutSupabase()
     void signOutSharedBackend()

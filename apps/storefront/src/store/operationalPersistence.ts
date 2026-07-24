@@ -25,7 +25,7 @@ import {
 import { usePersistenceHealthStore, type PersistenceHealthPatch } from './persistenceHealthStore'
 
 export const OPERATIONAL_SNAPSHOT_KEY = OPERATIONAL_STATE_RESOURCE
-export const OPERATIONAL_SCHEMA_VERSION = 24
+export const OPERATIONAL_SCHEMA_VERSION = 25
 const PERSIST_DEBOUNCE_MS = 120
 
 type DataSlice = Record<string, unknown>
@@ -382,7 +382,28 @@ const migrate23to24 = (snapshot: DataSlice): DataSlice => {
   return snapshot
 }
 
-const MIGRATIONS: Record<number,(snapshot:DataSlice)=>DataSlice>={1:migrate1to2,2:migrate2to3,3:migrate3to4,4:migrate4to5,5:migrate5to6,6:migrate6to7,7:migrate7to8,8:migrate8to9,9:migrate9to10,10:migrate10to11,11:migrate11to12,12:migrate12to13,13:migrate13to14,14:migrate14to15,15:migrate15to16,16:migrate16to17,17:migrate17to18,18:migrate18to19,19:migrate19to20,20:migrate20to21,21:migrate21to22,22:migrate22to23,23:migrate23to24}
+/** Removes legacy showcase records while retaining Catalog, Store settings and remote orders. */
+const migrate24to25 = (snapshot: DataSlice): DataSlice => {
+  const state=snapshot.state as DataSlice
+  const demoEmployeeIds=new Set(['emp-budi','emp-dewi','emp-bintang','emp-akbar','emp-teta','emp-shofi','emp-zahra','emp-vero','emp-zizi','emp-dela','emp-dila','emp-gaby'])
+  const demoCustomerIds=new Set(['cust-sari','cust-andra','cust-nadia','cust-melati','cust-citra'])
+  const hr=isRecord(state.hr)?state.hr:undefined
+  if(hr){
+    if(Array.isArray(hr.employees)) hr.employees=hr.employees.filter((entry)=>!isRecord(entry)||!demoEmployeeIds.has(String(entry.id ?? '')))
+    if(Array.isArray(hr.scheduleOverrides)) hr.scheduleOverrides=hr.scheduleOverrides.filter((entry)=>!isRecord(entry)||!demoEmployeeIds.has(String(entry.employeeId ?? '')))
+    if(Array.isArray(hr.weeklySchedulePublications)) hr.weeklySchedulePublications=hr.weeklySchedulePublications.filter((entry)=>!isRecord(entry)||!String(entry.id ?? '').startsWith('schedule-publication-All-2026-07-'))
+  }
+  const payroll=isRecord(state.payroll)?state.payroll:undefined
+  if(payroll&&Array.isArray(payroll.compensations)) payroll.compensations=payroll.compensations.filter((entry)=>!isRecord(entry)||!(String(entry.createdBy ?? '')==='Demo setup'||String(entry.id ?? '').startsWith('comp-emp-')))
+  const vouchers=isRecord(state.vouchers)?state.vouchers:undefined
+  if(vouchers&&Array.isArray(vouchers.vouchers)) vouchers.vouchers=vouchers.vouchers.filter((entry)=>!isRecord(entry)||String(entry.id ?? '')!=='voucher-vip10')
+  const customers=isRecord(state.customers)?state.customers:undefined
+  if(customers&&Array.isArray(customers.customers)) customers.customers=customers.customers.filter((entry)=>!isRecord(entry)||!demoCustomerIds.has(String(entry.id ?? '')))
+  snapshot.version=25
+  return snapshot
+}
+
+const MIGRATIONS: Record<number,(snapshot:DataSlice)=>DataSlice>={1:migrate1to2,2:migrate2to3,3:migrate3to4,4:migrate4to5,5:migrate5to6,6:migrate6to7,7:migrate7to8,8:migrate8to9,9:migrate9to10,10:migrate10to11,11:migrate11to12,12:migrate12to13,13:migrate13to14,14:migrate14to15,15:migrate15to16,16:migrate16to17,17:migrate17to18,18:migrate18to19,19:migrate19to20,20:migrate20to21,21:migrate21to22,22:migrate22to23,23:migrate23to24,24:migrate24to25}
 
 export const migrateOperationalSnapshot = (value: unknown): OperationalSnapshot | null => {
   if(!isRecord(value)||!isRecord(value.state)||typeof value.version!=='number'||value.version<1||value.version>OPERATIONAL_SCHEMA_VERSION)return null

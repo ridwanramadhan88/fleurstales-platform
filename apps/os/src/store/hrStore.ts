@@ -13,6 +13,9 @@
  */
 
 import { create } from 'zustand'
+
+const TEST_RUNTIME = (globalThis as typeof globalThis & { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === 'test'
+
 import type { BranchId, OrderTableRow } from '../types/orders'
 import type { UserRole } from './userStore'
 import { getLocalDateString, nowInJakarta } from '../domain/orderTimingDomain'
@@ -199,7 +202,7 @@ export const todayIsoDate = (): string => getLocalDateString(nowInJakarta())
 /**
  * @description Operational staff accounts. Admins and Florists have no permanent branch.
  */
-const INITIAL_EMPLOYEES: Employee[] = [
+const INITIAL_EMPLOYEES: Employee[] = TEST_RUNTIME ? [
   { id:'emp-budi', name:'Budi', position:'Owner', branch:'', systemRole:'owner', status:'active', phone:'', hireDate:'2021-01-10', username:'owner', pin:'123456', baseSalaryIdr:7_000_000 },
   { id:'emp-dewi', name:'Dewi', position:'Finance', branch:'', systemRole:'finance', status:'active', phone:'', hireDate:'2023-06-01', username:'finance', pin:'123456', baseSalaryIdr:5_000_000 },
   { id:'emp-bintang', name:'Bintang', position:'HR', branch:'', systemRole:'hr', status:'active', phone:'', hireDate:'2024-01-15', username:'hr', pin:'123456', baseSalaryIdr:4_500_000 },
@@ -212,7 +215,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
   { id:'emp-dela', name:'Dela', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'dela', pin:'123456', baseSalaryIdr:4_000_000 },
   { id:'emp-dila', name:'Dila', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'dila', pin:'123456', baseSalaryIdr:4_000_000 },
   { id:'emp-gaby', name:'Gaby', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'gaby', pin:'123456', baseSalaryIdr:4_000_000 },
-]
+] : []
 
 const historicalShift = (employeeId:string,date:string,branchId:string,startTime:string,endTime:string,isWorking=true):ScheduleOverride => ({
   id:`schedule-${employeeId}-${date}`,
@@ -247,12 +250,9 @@ const INITIAL_SCHEDULE_OVERRIDES: ScheduleOverride[] = [
   PHM('emp-gaby','2026-07-13'),PHM('emp-gaby','2026-07-14'),OFF('emp-gaby','2026-07-15'),PHM('emp-gaby','2026-07-16'),PHM('emp-gaby','2026-07-17'),PHM('emp-gaby','2026-07-18'),PHM('emp-gaby','2026-07-19'),
   PHM('emp-teta','2026-07-13'),PHM('emp-teta','2026-07-14'),OFF('emp-teta','2026-07-15'),PHM('emp-teta','2026-07-16'),PHM('emp-teta','2026-07-17'),PHM('emp-teta','2026-07-18'),PHM('emp-teta','2026-07-19'),
   KDM_A('emp-shofi','2026-07-13'),KDM_A('emp-shofi','2026-07-14'),KDM_A('emp-shofi','2026-07-15'),KDM_A('emp-shofi','2026-07-16'),OFF('emp-shofi','2026-07-17'),KDM_A('emp-shofi','2026-07-18'),KDM_A('emp-shofi','2026-07-19'),
-]
+].filter(() => TEST_RUNTIME)
 
-const INITIAL_SCHEDULE_PUBLICATIONS: WeeklySchedulePublication[] = [
-  {id:'schedule-publication-All-2026-07-06',weekStart:'2026-07-06',branchId:'All',status:'published',publishedAt:'2026-07-05T12:00:00.000Z',publishedBy:'Bintang',updatedAt:'2026-07-05T12:00:00.000Z'},
-  {id:'schedule-publication-All-2026-07-13',weekStart:'2026-07-13',branchId:'All',status:'published',publishedAt:'2026-07-12T12:00:00.000Z',publishedBy:'Bintang',updatedAt:'2026-07-12T12:00:00.000Z'},
-]
+const INITIAL_SCHEDULE_PUBLICATIONS: WeeklySchedulePublication[] = []
 
 /**
  * @description Shared HR store for employees and attendance.
