@@ -53,16 +53,7 @@ interface VoucherState {
   setVoucherActive: (id: string, isActive: boolean) => void
 }
 
-const INITIAL_VOUCHERS: Voucher[] = [
-  {
-    id: 'voucher-vip10',
-    code: 'VIP10',
-    percentOff: 10,
-    eligibility: 'vip',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-]
+const INITIAL_VOUCHERS: Voucher[] = []
 
 const normalizeCode = (code: string) => code.trim().toUpperCase()
 

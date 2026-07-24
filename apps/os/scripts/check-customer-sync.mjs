@@ -31,7 +31,7 @@ for (const token of [
 }
 
 const store = fs.readFileSync(path.join(root, 'src/store/customerStore.ts'), 'utf8')
-for (const token of ['CUSTOMERS_PERSIST_VERSION = 3', 'assertCustomerWhatsappAvailable', 'normalizePersistedCustomers']) {
+for (const token of ['CUSTOMERS_PERSIST_VERSION = 4', 'assertCustomerWhatsappAvailable', 'normalizePersistedCustomers']) {
   if (!store.includes(token)) throw new Error(`Missing CRM-store behavior: ${token}`)
 }
 

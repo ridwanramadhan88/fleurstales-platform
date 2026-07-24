@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useSettingsStore } from './settingsStore'
 import { useStockStore } from './stockStore'
-import { migrateOperationalSnapshot } from './operationalPersistence'
+import { migrateOperationalSnapshot, OPERATIONAL_SCHEMA_VERSION } from './operationalPersistence'
 import type { StockItem } from './stockStoreTypes'
 
 const item: StockItem = {
@@ -50,7 +50,7 @@ describe('inventory feature gate', () => {
         catalog: { products: [{ id: 'p1', linkedStockItemIds: ['missing'], recipe: [{ stockItemId: 'missing', quantityPerUnit: 1 }] }] },
       },
     })
-    expect(migrated?.version).toBe(24)
+    expect(migrated?.version).toBe(OPERATIONAL_SCHEMA_VERSION)
     const products = (
       migrated?.state.catalog as { products?: Array<Record<string, unknown>> } | undefined
     )?.products ?? []

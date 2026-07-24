@@ -11,6 +11,8 @@ import type { UserRole } from './userStore'
 import { validatePayrollForFinance } from '../domain/payrollFinanceReviewDomain'
 import { evaluatePayrollScheduleAdjustment, payrollPeriodsOverlap, validatePayrollScheduleSnapshot } from '../domain/payrollScheduleAdjustmentDomain'
 
+const TEST_RUNTIME = (globalThis as typeof globalThis & { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === 'test'
+
 export type PayrollPeriodStatus = 'upcoming' | 'hr_preparation' | 'finance_review' | 'payment_due' | 'overdue'
 export interface PayrollPeriod extends PayrollScheduleSnapshot {
   id: string
@@ -209,16 +211,16 @@ const isActorOwnPayroll = (
   || draft.employeeName.trim().toLocaleLowerCase() === actor.name.trim().toLocaleLowerCase()
 )
 
-const demoCompensations: EmployeeCompensation[] = [
+const testCompensations: EmployeeCompensation[] = TEST_RUNTIME ? [
   ['emp-budi', 7_000_000], ['emp-dewi', 5_000_000], ['emp-bintang', 4_500_000],
   ['emp-akbar', 4_500_000], ['emp-teta', 4_500_000], ['emp-shofi', 4_500_000],
   ['emp-zahra', 4_000_000], ['emp-vero', 4_000_000], ['emp-zizi', 4_000_000],
   ['emp-dela', 4_000_000], ['emp-dila', 4_000_000], ['emp-gaby', 4_000_000],
-].map(([employeeId, salary]) => ({ id:`comp-${employeeId}-initial`, employeeId:String(employeeId), baseSalaryIdr:Number(salary), effectiveFrom:'2026-01-01', createdBy:'Demo setup', createdAt:'2026-01-01T00:00:00.000Z' }))
+].map(([employeeId, salary]) => ({ id:`comp-${employeeId}-initial`, employeeId:String(employeeId), baseSalaryIdr:Number(salary), effectiveFrom:'2026-01-01', createdBy:'Test setup', createdAt:'2026-01-01T00:00:00.000Z' })) : []
 
 export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
   periods: [],
-  compensations: demoCompensations,
+  compensations: testCompensations,
   employeePayrolls: [],
   payrollReviews: [],
   payrollProposals: [],
