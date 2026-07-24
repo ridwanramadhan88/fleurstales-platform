@@ -51,7 +51,7 @@ describe('misleading UI cleanup', () => {
 
     render(<OrderDetailsActionsSection viewModel={viewModel} />)
     expect(screen.getByRole('button', { name: /finished/i })).toBeEnabled()
-    expect(screen.getByText(/complete payment before marking this order as picked up/i)).toBeInTheDocument()
+    expect(screen.queryByText(/complete payment before marking this order as picked up/i)).not.toBeInTheDocument()
   })
 
   it('does not render low-stock UI while inventory is disabled', () => {

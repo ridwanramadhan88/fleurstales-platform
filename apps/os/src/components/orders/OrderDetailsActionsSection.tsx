@@ -38,11 +38,6 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
   } = viewModel
 
   const paymentBlocked = Boolean(nextStatus && shouldGateOrderAdvanceForPayment(order, nextStatus))
-  const paymentWarning = nextStatus === 'picked_up'
-    ? 'Complete payment before marking this order as picked up.'
-    : nextStatus === 'delivering'
-      ? 'Mark payment as received before starting delivery.'
-      : null
 
   return (
     <>
@@ -82,11 +77,6 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
               )}
               {!isEditing && nextStatus && canEdit && (
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-                  {paymentBlocked && paymentWarning && (
-                    <p className="max-w-[19rem] text-right text-xs font-medium leading-snug text-warning sm:order-1">
-                      {paymentWarning}
-                    </p>
-                  )}
                   <button
                     type="button"
                     onClick={onMoveToNextStatus}
