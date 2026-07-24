@@ -90,6 +90,19 @@ export class SupabaseHttpClient {
     return this.request<RowOf<T>[]>(`/rest/v1/${table}?${buildQuery(options)}`)
   }
 
+  async update<T extends PublicTableName>(
+    table: T,
+    filters: Record<string, string | number | boolean>,
+    values: Partial<RowOf<T>>,
+  ): Promise<RowOf<T>[]> {
+    const query = buildQuery({ filters })
+    return this.request<RowOf<T>[]>(`/rest/v1/${table}?${query}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify(values),
+    })
+  }
+
   async rpc<T>(functionName: string, args: Record<string, Json | undefined>): Promise<T> {
     return this.request<T>(`/rest/v1/rpc/${functionName}`, {
       method: 'POST',
