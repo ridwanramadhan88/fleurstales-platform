@@ -72,6 +72,14 @@ export interface StoreProfileRow {
   updated_at: string
 }
 
+export interface OperationalStateRow {
+  id: string
+  revision: number
+  snapshot: Json
+  updated_by: string | null
+  updated_at: string
+}
+
 export interface BranchRow {
   id: string
   name: string
@@ -471,6 +479,7 @@ export interface Database {
       order_items: TableDefinition<OrderItemRow>
       order_payment_events: TableDefinition<OrderPaymentEventRow>
       order_activities: TableDefinition<OrderActivityRow>
+      operational_state: TableDefinition<OperationalStateRow>
     }
     Views: Record<string, never>
     Functions: {

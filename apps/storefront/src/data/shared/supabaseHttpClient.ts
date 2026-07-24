@@ -103,6 +103,19 @@ export class SupabaseHttpClient {
     })
   }
 
+  async upsert<T extends PublicTableName>(
+    table: T,
+    values: Partial<RowOf<T>> | Partial<RowOf<T>>[],
+    onConflict?: string,
+  ): Promise<RowOf<T>[]> {
+    const query = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : ''
+    return this.request<RowOf<T>[]>(`/rest/v1/${table}${query}`, {
+      method: 'POST',
+      headers: { Prefer: 'return=representation,resolution=merge-duplicates' },
+      body: JSON.stringify(values),
+    })
+  }
+
   async rpc<T>(functionName: string, args: Record<string, Json | undefined>): Promise<T> {
     return this.request<T>(`/rest/v1/rpc/${functionName}`, {
       method: 'POST',
