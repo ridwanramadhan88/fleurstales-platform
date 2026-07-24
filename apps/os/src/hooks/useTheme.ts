@@ -5,8 +5,8 @@
  * The design system already defines a full `.dark` CSS variable set in
  * shadcn.css, but nothing in the app ever toggled it — so dark mode was
  * unreachable. This hook:
- * - Reads a saved preference from localStorage, falling back to the OS-level
- *   `prefers-color-scheme` on first load.
+ * - Reads a saved preference from localStorage, falling back to the light
+ *   theme on first load so the staff workspace opens consistently.
  * - Applies/removes the `dark` class on <html>, which is what every themed
  *   color variable in shadcn.css keys off (`.dark { ... }` / Tailwind's
  *   `darkMode: ['class']`).
@@ -21,7 +21,7 @@ const STORAGE_KEY = 'fleurstales:theme'
 
 /**
  * @description Resolves the theme to use on first render: a saved
- * preference if one exists, otherwise the OS-level color scheme.
+ * preference if one exists, otherwise the light theme.
  */
 const getInitialTheme = (): Theme => {
   if (typeof window === 'undefined') return 'light'
@@ -29,10 +29,7 @@ const getInitialTheme = (): Theme => {
   const saved = window.localStorage.getItem(STORAGE_KEY)
   if (saved === 'light' || saved === 'dark') return saved
 
-  const prefersDark = window.matchMedia?.(
-    '(prefers-color-scheme: dark)',
-  ).matches
-  return prefersDark ? 'dark' : 'light'
+  return 'light'
 }
 
 /**
