@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import HomePage from './pages/Home'
 import LoginPage from './pages/Login'
@@ -12,10 +12,10 @@ import type { BranchFilter } from './types/orders'
 import { useTheme } from './hooks/useTheme'
 import { isSharedBackendConfigured, signOutSharedBackend } from './api/remoteSession'
 import { refreshBusinessOsCatalogFromRemote, stopBusinessOsCatalogBridge } from './data/shared/catalogBridge'
-import { setSupabaseAccessToken } from './data/shared/supabaseSession'
 import { refreshBusinessOsStoreFromRemote, stopBusinessOsStoreBridge } from './data/shared/storeBridge'
 import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
-import { clearSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
+import { clearSharedSession, getSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
+import { signOutSupabase } from './api/supabaseAuth'
 
 export default function App() {
   const [view, setView] = useState<'login' | 'admin'>('login')
@@ -26,7 +26,7 @@ export default function App() {
   const settings = useSettingsStore()
   const { theme, toggleTheme } = useTheme()
 
-  const handleSignIn = async (employee: Employee) => {
+  const handleSignIn = useCallback(async (employee: Employee) => {
     const role = employee.systemRole
     const today = getLocalDateString(nowInJakarta())
     const effective = getEffectiveScheduleForDate({
@@ -38,18 +38,20 @@ export default function App() {
     })
     const assignedBranch = effective.shift.isWorking ? effective.shift.branchId : undefined
     signIn({ employeeId: employee.id, name: employee.name, username: employee.username ?? role, role, branchId: assignedBranch, scheduledBranchId: assignedBranch })
-    setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: assignedBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
+    if (getSharedSession().source !== 'supabase') {
+      setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: assignedBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
+    }
     setSelectedBranch(assignedBranch || 'All')
     setView('admin')
     if (role === 'owner') void refreshBusinessOsStoreFromRemote()
     void refreshBusinessOsCatalogFromRemote()
-  }
+  }, [employeeDefaultSchedules, scheduleOverrides, settings, signIn])
 
   const handleSignOut = () => {
     stopBusinessOsCatalogBridge()
     stopBusinessOsStoreBridge()
-    setSupabaseAccessToken(null)
     clearSharedSession()
+    void signOutSupabase()
     void signOutSharedBackend()
     setView('login')
   }
