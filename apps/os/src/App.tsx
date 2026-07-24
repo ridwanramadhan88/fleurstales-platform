@@ -18,6 +18,7 @@ import { refreshBusinessOsStoreFromRemote, stopBusinessOsStoreBridge } from './d
 import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
 import { clearSharedSession, getSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
 import { signOutSupabase } from './api/supabaseAuth'
+import { connectOperationalSupabase, stopOperationalSupabaseSync } from './data/operationalSupabaseSync'
 
 export default function App() {
   const [view, setView] = useState<'login' | 'admin'>('login')
@@ -44,6 +45,7 @@ export default function App() {
       setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: assignedBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
     }
     setSelectedBranch(assignedBranch || 'All')
+    await connectOperationalSupabase()
     setView('admin')
     if (role === 'owner') void refreshBusinessOsStoreFromRemote()
     void refreshBusinessOsCatalogFromRemote()
@@ -56,6 +58,7 @@ export default function App() {
     stopBusinessOsStoreBridge()
     stopBusinessOsOrderBridge()
     stopBusinessOsCustomerBridge()
+    stopOperationalSupabaseSync()
     clearSharedSession()
     void signOutSupabase()
     void signOutSharedBackend()
