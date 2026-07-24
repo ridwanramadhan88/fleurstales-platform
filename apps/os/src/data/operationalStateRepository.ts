@@ -17,6 +17,20 @@ export interface OperationalStateRepository {
 }
 
 export const OPERATIONAL_STATE_RESOURCE = 'operational-state'
+const LOCAL_OPERATIONAL_STATE_KEY = `fleurstales.${OPERATIONAL_STATE_RESOURCE}`
+
+/**
+ * Removes the retired aggregate browser backup without touching Supabase,
+ * authentication, order drafts, or other working browser state.
+ */
+export const removeLocalOperationalBackup = (): void => {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(LOCAL_OPERATIONAL_STATE_KEY)
+  } catch {
+    // Storage can be unavailable in privacy-restricted browser contexts.
+  }
+}
 
 export const prototypeOperationalStateRepository: OperationalStateRepository = {
   load: () => getItem(OPERATIONAL_STATE_RESOURCE),

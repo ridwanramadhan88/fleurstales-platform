@@ -11,11 +11,25 @@ vi.mock('../api/localApi', () => mocks)
 
 import {
   OPERATIONAL_STATE_RESOURCE,
+  removeLocalOperationalBackup,
   prototypeOperationalStateRepository,
 } from './operationalStateRepository'
 
 describe('prototypeOperationalStateRepository', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    window.localStorage.clear()
+  })
+
+  it('removes only the retired aggregate browser backup', () => {
+    window.localStorage.setItem('fleurstales.operational-state', '{"version":25}')
+    window.localStorage.setItem('fleurstales.supabase-session-meta', '{"userId":"owner"}')
+
+    removeLocalOperationalBackup()
+
+    expect(window.localStorage.getItem('fleurstales.operational-state')).toBeNull()
+    expect(window.localStorage.getItem('fleurstales.supabase-session-meta')).toBe('{"userId":"owner"}')
+  })
 
   it('uses one stable resource key for load, save, remove, and subscription', async () => {
     mocks.getItem.mockResolvedValue('{"version":16}')

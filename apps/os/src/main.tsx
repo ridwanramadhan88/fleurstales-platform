@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import './shadcn.css'
 import App from './App'
-import { initializeOperationalPersistence } from './store/operationalPersistence'
+import { removeLocalOperationalBackup } from './data/operationalStateRepository'
 import { UiLanguageBridge } from './i18n/UiLanguageBridge'
 import { initializeBusinessOsCatalogBridge } from './data/shared/catalogBridge'
 import { initializeBusinessOsStoreBridge } from './data/shared/storeBridge'
@@ -30,9 +30,9 @@ const renderStartupFailure = (error: unknown) => {
 }
 
 const start = async () => {
-  // Hydrate linked operational stores before mounting components so the first
-  // render never mixes persisted orders with reset branches/employees/catalog.
-  await initializeOperationalPersistence()
+  // Supabase is the durable operational source. Remove the retired aggregate
+  // browser backup before production data bridges hydrate the application.
+  removeLocalOperationalBackup()
   await initializeBusinessOsStoreBridge()
   await initializeBusinessOsCatalogBridge()
   root.render(<>
