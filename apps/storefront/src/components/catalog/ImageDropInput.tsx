@@ -135,7 +135,7 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
         <div className="space-y-1.5">
           <div className="relative aspect-square w-full max-w-[220px] overflow-hidden rounded-xl bg-muted ring-1 ring-border/70">
             <img src={value} alt={label} className="h-full w-full object-cover" />
-            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t from-black/70 to-transparent p-2.5 pt-8">
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-black/60 p-2.5">
               <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex h-11 items-center gap-2 rounded-full bg-card/95 px-[18px] text-sm font-medium text-foreground ring-1 ring-border/60 hover:bg-accent">
                 <Pencil className="size-3" /> Replace
               </button>

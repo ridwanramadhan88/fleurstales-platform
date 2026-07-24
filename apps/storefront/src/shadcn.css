@@ -1291,20 +1291,7 @@ input:-webkit-autofill:active {
   --storefront-cart-cutout-x: 83%;
   --storefront-cart-cutout-radius-x: 0.82rem;
   --storefront-cart-cutout-radius-y: 0.82rem;
-  -webkit-mask-image: radial-gradient(
-    ellipse var(--storefront-cart-cutout-radius-x) var(--storefront-cart-cutout-radius-y)
-      at var(--storefront-cart-cutout-x) 15%,
-    transparent 0 97%,
-    #000 100%
-  );
-  mask-image: radial-gradient(
-    ellipse var(--storefront-cart-cutout-radius-x) var(--storefront-cart-cutout-radius-y)
-      at var(--storefront-cart-cutout-x) 15%,
-    transparent 0 97%,
-    #000 100%
-  );
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
+  /* Flat surfaces only: the badge sits above the glyph without a cutout mask. */
 }
 
 .storefront-cart-glyph--cutout-wide {
@@ -1379,14 +1366,7 @@ input:-webkit-autofill:active {
 .storefront-long-dash {
   width: 100%;
   height: 1px;
-  background-image: repeating-linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.18) 0,
-    rgba(0, 0, 0, 0.18) 6px,
-    transparent 6px,
-    transparent 10px
-  );
-  background-repeat: repeat-x;
+  border-top: 1px dashed rgba(0, 0, 0, 0.18);
 }
 
 .storefront-long-dash--section {
@@ -1398,16 +1378,7 @@ input:-webkit-autofill:active {
 }
 
 .storefront-product-details {
-  background-image: repeating-linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.18) 0,
-    rgba(0, 0, 0, 0.18) 6px,
-    transparent 6px,
-    transparent 10px
-  );
-  background-position: top left;
-  background-size: auto 2px;
-  background-repeat: repeat-x;
+  border-top: 1px dashed rgba(0, 0, 0, 0.18);
 }
 
 .storefront-product-details summary::-webkit-details-marker {
@@ -1990,14 +1961,7 @@ input:-webkit-autofill:active {
 
 .storefront-long-dash,
 .storefront-product-details {
-  background-image: repeating-linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.17) 0,
-    rgba(0, 0, 0, 0.17) 6px,
-    transparent 6px,
-    transparent 10px
-  );
-  background-size: auto 1px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.17);
 }
 
 .storefront-checkout-sheet {
@@ -4845,13 +4809,7 @@ html.dark .storefront-font .text-black {
 
   .storefront-product-detail-page .storefront-product-details {
     border-top: 0;
-    background-image: repeating-linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0.18) 0,
-      rgba(0, 0, 0, 0.18) 6px,
-      transparent 6px,
-      transparent 10px
-    );
+    border-top: 1px dashed rgba(0, 0, 0, 0.18);
   }
 
   /* Navigation and search retain the mobile cream surfaces and artwork cards,

@@ -76,7 +76,7 @@ describe('mobile workflow UI scale regressions', () => {
     const home = read('src/pages/Home.tsx')
     const scheduling = read('src/components/hr/HrSchedulingSection.tsx')
 
-    expect(financeTabs).toContain('sm:[mask-image:none]')
+    expect(financeTabs).not.toContain('mask-image')
     expect(financeTabs).toContain('sm:p-0')
     expect(financeTabs).toContain('truncate whitespace-nowrap')
 

@@ -66,7 +66,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
 
   return (
     <>
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 via-card to-card px-4 py-3.5 shadow-ios-sm ring-1 ring-black/[0.02]">
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-card px-4 py-3.5 shadow-ios-sm ring-1 ring-black/[0.02]">
         {!isEditing ? (
           <>
             <span className="inline-flex items-center gap-2">

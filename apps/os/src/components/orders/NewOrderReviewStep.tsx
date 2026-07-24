@@ -102,7 +102,7 @@ export const NewOrderReviewStep: FC<NewOrderReviewStepProps> = ({
       </header>
 
       {/* Business-critical summary: total, payment status, fulfillment */}
-      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/12 via-card to-card px-4 py-4 text-foreground shadow-ios-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card px-4 py-4 text-foreground shadow-ios-sm">
         <div>
           <p className="text-xs font-medium text-muted-foreground">Estimated order value</p>
           <p className="mt-1 text-2xl font-semibold tracking-tight">

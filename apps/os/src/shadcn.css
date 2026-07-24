@@ -141,16 +141,13 @@ html {
 body {
   color: hsl(var(--foreground));
   background-color: hsl(var(--surface-page));
-  background-image: radial-gradient(circle at 8% 0%, hsl(var(--accent) / 0.42), transparent 34rem);
   overscroll-behavior: none;
   font-synthesis-weight: none;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
   letter-spacing: -0.011em;
 }
 
-.dark body {
-  background-image: radial-gradient(circle at 8% 0%, hsl(var(--accent) / 0.3), transparent 34rem);
-}
+.dark body { background-image: none; }
 
 /* Keep legacy charcoal action classes aligned with the botanical primary. */
 .bg-foreground {
