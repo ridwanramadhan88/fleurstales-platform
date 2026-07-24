@@ -38,6 +38,11 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
   } = viewModel
 
   const paymentBlocked = Boolean(nextStatus && shouldGateOrderAdvanceForPayment(order, nextStatus))
+  const paymentWarning = nextStatus === 'picked_up'
+    ? 'Complete payment before marking this order as picked up.'
+    : nextStatus === 'delivering'
+      ? 'Mark payment as received before starting delivery.'
+      : null
 
   return (
     <>
@@ -56,7 +61,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
                 </button>
               )}
             </div>
-            <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
+            <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
               {!isEditing && (
                 <button
                   type="button"
@@ -76,7 +81,12 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
                 </button>
               )}
               {!isEditing && nextStatus && canEdit && (
-                <div className="flex min-w-0 flex-col items-end gap-1">
+                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                  {paymentBlocked && paymentWarning && (
+                    <p className="max-w-[19rem] text-right text-xs font-medium leading-snug text-warning sm:order-1">
+                      {paymentWarning}
+                    </p>
+                  )}
                   <button
                     type="button"
                     onClick={onMoveToNextStatus}
@@ -88,11 +98,6 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
                     {getQuickActionLabel(nextStatus)}
                     <ArrowRight className="size-3.5 shrink-0" />
                   </button>
-                  {paymentBlocked && (
-                    <p className="max-w-56 text-right text-2xs font-medium leading-snug text-warning">
-                      Complete payment before marking this order as {nextStatus === 'picked_up' ? 'picked up' : 'delivering'}.
-                    </p>
-                  )}
                 </div>
               )}
             </div>

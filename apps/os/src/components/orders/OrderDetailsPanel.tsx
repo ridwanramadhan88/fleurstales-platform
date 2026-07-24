@@ -24,7 +24,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       side="bottom"
       hideCloseButton
       headerClassName="sr-only"
-      contentClassName="max-w-4xl gap-0 overflow-hidden rounded-t-3xl bg-card px-4 pb-3 pt-4 shadow-2xl ring-1 ring-border/35 sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 lg:h-[90vh] lg:max-h-[90vh]"
+      contentClassName="max-w-6xl gap-0 overflow-hidden rounded-t-3xl bg-card px-4 pb-3 pt-4 shadow-2xl ring-1 ring-border/35 sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 lg:h-[90vh] lg:max-h-[90vh]"
     >
       <OrderDetailsHeader viewModel={viewModel} />
       <OrderDetailsFinanceSection viewModel={viewModel} />
