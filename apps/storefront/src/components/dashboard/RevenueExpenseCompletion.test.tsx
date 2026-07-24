@@ -6,7 +6,13 @@ import { useUserStore } from '../../store/userStore'
 import { useRevenueDashboardController } from './RevenueDashboardController'
 
 const transaction = (overrides: Partial<FinanceTransaction>): FinanceTransaction => {
-  const now = new Date().toISOString()
+  const localNow = new Date()
+  const localDate = [
+    localNow.getFullYear(),
+    String(localNow.getMonth() + 1).padStart(2, '0'),
+    String(localNow.getDate()).padStart(2, '0'),
+  ].join('-')
+  const now = `${localDate}T12:00:00.000Z`
   return {
     id: `txn-${Math.random()}`,
     type: 'expense',
