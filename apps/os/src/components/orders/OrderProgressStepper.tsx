@@ -18,7 +18,7 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
 }) => (
   <div
     className={cn(
-      "no-scrollbar relative overflow-x-auto rounded-xl border border-border bg-card shadow-ios-sm [scroll-padding-inline:1.25rem]",
+      "no-scrollbar relative overflow-x-auto rounded-xl border border-border bg-card shadow-ios-sm [scroll-padding-inline:1.25rem] sm:overflow-visible",
       className,
     )}
     aria-label={ariaLabel}

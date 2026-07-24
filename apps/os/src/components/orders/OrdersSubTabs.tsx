@@ -105,9 +105,9 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
   return (
     <nav
       aria-label="Orders lifecycle view"
-      className="no-scrollbar -mx-4 w-auto overflow-x-auto px-4 pb-1 scroll-px-4"
+      className="no-scrollbar -mx-4 w-auto overflow-x-auto px-4 pb-1 scroll-px-4 md:mx-0 md:w-full md:overflow-visible md:px-0"
     >
-      <div className="inline-flex min-w-max items-center gap-1 rounded-full border border-border bg-surface-track p-1">
+      <div className="inline-flex min-w-max items-center gap-1 rounded-full border border-border bg-surface-track p-1 md:min-w-0">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab
 

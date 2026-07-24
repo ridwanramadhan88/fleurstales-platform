@@ -113,7 +113,7 @@ export const settingsTabTrackClass = ({
     "touch-pan-x snap-x snap-proximity",
     level === "primary"
       ? "gap-7 border-b border-border/70 bg-transparent px-0 py-0 sm:gap-9 md:overflow-visible md:overscroll-auto md:snap-none"
-      : "gap-1.5 rounded-[1.25rem] bg-muted/55 p-1.5 sm:gap-2",
+      : "gap-1.5 rounded-[1.25rem] bg-muted/55 p-1.5 sm:gap-2 md:flex-wrap md:overflow-visible md:overscroll-auto md:snap-none",
     className,
   );
 

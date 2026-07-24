@@ -137,7 +137,7 @@ export const ChipRow = React.forwardRef<HTMLDivElement, ChipRowProps>(
       <div
         ref={setRef}
         className={cn(
-          'no-scrollbar flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto pb-1 overscroll-x-contain',
+          'no-scrollbar flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto pb-1 overscroll-x-contain md:flex-wrap md:overflow-visible md:overscroll-auto',
           CHIP_ROW_EDGE[edge],
           className,
         )}

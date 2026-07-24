@@ -73,7 +73,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
 
       <section aria-label="Employee filters" className="flex flex-col gap-3 border-y border-border/60 py-3 md:flex-row md:items-center">
         <select aria-label="Filter employees by role" value={employeeRoleFilter} onChange={(event) => vm.onEmployeeRoleFilterChange(event.target.value as typeof employeeRoleFilter)} className={`${inputClass} md:w-56`}><option value="all">All roles</option>{assignableRoles.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}</select>
-        <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto">
+        <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">
           {(['all', 'active', 'inactive'] as EmployeeStatusFilter[]).map((option) => <FilterChip key={option} active={option === statusFilter} onClick={() => vm.onStatusFilterChange(option)} className="capitalize">{option}</FilterChip>)}
         </div>
         <span className="shrink-0 text-sm text-muted-foreground md:ml-auto">{employeeRows.length} results</span>

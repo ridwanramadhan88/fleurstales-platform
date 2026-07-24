@@ -138,7 +138,7 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
   onSelectBranch,
 }) => {
   return (
-    <aside className="sticky top-0 hidden h-screen w-[208px] shrink-0 self-start flex-col overflow-hidden border-r border-sidebar-border bg-sidebar-background px-3 py-4 text-sidebar-foreground md:flex lg:w-[224px] xl:w-[236px]">
+    <aside className="sticky top-0 hidden min-h-screen w-[208px] shrink-0 self-start flex-col overflow-visible border-r border-sidebar-border bg-sidebar-background px-3 py-4 text-sidebar-foreground md:flex lg:w-[224px] xl:w-[236px]">
       {/* Brand block */}
       <header className="mb-4 flex items-center gap-2 px-1">
         <StoreBrandMark logoUrl={storeLogoUrl} alt={`${storeName} logo`} className="size-8 rounded-lg" />
@@ -205,7 +205,7 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
 
       {/* Navigation */}
       <nav
-        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-0.5"
+        className="flex-1 space-y-3 overflow-visible pr-0.5"
         aria-label="Primary"
       >
         {userRole === 'hr' ? <>
