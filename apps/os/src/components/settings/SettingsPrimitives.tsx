@@ -129,7 +129,9 @@ export const settingsTabButtonClass = ({
   cn(
     "inline-flex shrink-0 snap-start items-center justify-center whitespace-nowrap font-medium",
     "transition-[background-color,border-color,color,box-shadow,transform] duration-150",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    level === "primary"
+      ? "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+      : "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     "disabled:pointer-events-none disabled:opacity-45",
     level === "primary"
       ? "relative h-11 rounded-none border-0 px-1 text-sm after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-center after:bg-current after:transition-transform"
