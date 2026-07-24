@@ -164,12 +164,11 @@ export const OrdersMobileCards: FC<OrdersMobileCardsProps> = ({
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation()
-                        if (!paymentBlocked) onQuickAdvance(order)
+                        onQuickAdvance(order)
                       }}
-                      disabled={paymentBlocked}
-                      title={paymentBlocked ? 'Complete payment before continuing.' : `Advance to ${getQuickActionLabel(cardNextStatus)}`}
-                      aria-label={paymentBlocked ? 'Complete payment before continuing' : `Advance order to ${getQuickActionLabel(cardNextStatus)}`}
-                      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition ${paymentBlocked ? 'cursor-not-allowed bg-muted text-muted-foreground ring-1 ring-border' : `cursor-pointer ${QUICK_ACTION_BUTTON_STYLE[cardNextStatus].className}`}`}
+                      title={paymentBlocked ? 'Payment confirmation required.' : `Advance to ${getQuickActionLabel(cardNextStatus)}`}
+                      aria-label={`Advance order to ${getQuickActionLabel(cardNextStatus)}`}
+                      className={`inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition hover:brightness-95 ${QUICK_ACTION_BUTTON_STYLE[cardNextStatus].className}`}
                     >
                       {getQuickActionLabel(cardNextStatus)}
                       <ArrowRight className="size-3.5 shrink-0" />

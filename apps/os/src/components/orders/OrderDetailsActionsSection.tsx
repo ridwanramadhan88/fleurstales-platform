@@ -90,10 +90,8 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
                   <button
                     type="button"
                     onClick={onMoveToNextStatus}
-                    disabled={paymentBlocked}
-                    aria-disabled={paymentBlocked}
-                    title={paymentBlocked ? 'Complete payment before continuing.' : `Advance to ${getQuickActionLabel(nextStatus)}`}
-                    className={`inline-flex h-11 items-center justify-center gap-2 rounded-full px-[18px] whitespace-nowrap text-sm font-medium shadow-ios-sm transition sm:min-h-10 sm:text-xs ${paymentBlocked ? 'cursor-not-allowed bg-muted text-muted-foreground shadow-none ring-1 ring-border' : `cursor-pointer ${QUICK_ACTION_BUTTON_STYLE[nextStatus].className}`}`}
+                    title={paymentBlocked ? 'Payment confirmation required.' : `Advance to ${getQuickActionLabel(nextStatus)}`}
+                    className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-[18px] whitespace-nowrap text-sm font-medium shadow-ios-sm transition hover:brightness-95 sm:min-h-10 sm:text-xs ${QUICK_ACTION_BUTTON_STYLE[nextStatus].className}`}
                   >
                     {getQuickActionLabel(nextStatus)}
                     <ArrowRight className="size-3.5 shrink-0" />

@@ -347,9 +347,9 @@ describe('critical application workflows', () => {
       throw new Error('Payment-gated order row not found')
     }
     const blockedAction = within(orderRow).getByRole('button', {
-      name: 'Complete payment before continuing',
+      name: 'Advance order to Finished',
     })
-    expect(blockedAction).toBeDisabled()
+    expect(blockedAction).toBeEnabled()
     expect(
       useOrdersStore
         .getState()
