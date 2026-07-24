@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   type FC,
+  type WheelEvent,
 } from 'react'
 import type { CatalogProduct } from '../../store/catalogStoreTypes'
 import { StorefrontProductCard } from './StorefrontProductCard'
@@ -32,8 +33,7 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
   const scrollIdleTimerRef = useRef<number | null>(null)
   const userInterruptedRef = useRef(false)
   const productSignature = products.map((product) => product.id).join('|')
-  const isPhoneLayout = window.matchMedia('(max-width: 639px)').matches
-  const shouldLoop = isPhoneLayout && products.length > 2
+  const shouldLoop = products.length > 1
 
   const renderedProducts = useMemo(
     () =>
@@ -133,6 +133,20 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
     clearIntroTimers()
   }, [clearIntroTimers])
 
+  const handleWheel = useCallback(
+    (event: WheelEvent<HTMLDivElement>) => {
+      stopIntroMotion()
+
+      const isVerticalIntent =
+        !event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX)
+      if (!isVerticalIntent) return
+
+      event.preventDefault()
+      window.scrollBy({ top: event.deltaY, left: 0, behavior: 'auto' })
+    },
+    [stopIntroMotion],
+  )
+
   useLayoutEffect(() => {
     const rail = railRef.current
     if (!rail) return
@@ -202,9 +216,9 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
           onScroll={handleScroll}
           onPointerDown={stopIntroMotion}
           onTouchStart={stopIntroMotion}
-          onWheel={stopIntroMotion}
+          onWheel={handleWheel}
           onKeyDown={stopIntroMotion}
-          className="featured-products-rail no-scrollbar flex snap-x snap-mandatory items-start gap-4 overflow-x-auto pb-2 sm:gap-5 lg:gap-7"
+          className="featured-products-rail no-scrollbar flex snap-x snap-mandatory items-start gap-4 overflow-x-auto overscroll-auto pb-2 sm:gap-5 lg:gap-7"
         >
           {renderedProducts.map(({ product, copyIndex, productIndex }) => (
             <div

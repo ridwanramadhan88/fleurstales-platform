@@ -4323,7 +4323,7 @@ html.dark .storefront-font .text-black {
   padding-left: var(--featured-edge-space);
   padding-right: 0;
   scroll-padding-left: var(--featured-edge-space);
-  overscroll-behavior-inline: contain;
+  overscroll-behavior: auto;
 }
 
 .featured-product-item:first-child {
