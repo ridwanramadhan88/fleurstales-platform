@@ -1,0 +1,4 @@
+database/*.db*
+uploads/*
+data/backups/*
+*.log

@@ -1,0 +1,51 @@
+{
+  "initialFingerprint": "fnv1a32:76d1b32d",
+  "publicCatalog": {
+    "occasionCount": 1,
+    "productCount": 1,
+    "variantCostExposed": false
+  },
+  "adminCatalog": {
+    "productCount": 1,
+    "firstVariantCostIdr": 180000
+  },
+  "store": {
+    "activeBranchCount": 1,
+    "publicPaymentAccountCount": 1,
+    "deliveryFeeIdr": 25000
+  },
+  "initialCustomerLookupId": "cust-fixture",
+  "initialOrderSnapshot": {
+    "orderNumber": "KDM-2026-0001",
+    "productName": "Fixture Rose Bouquet",
+    "unitPriceIdr": 350000
+  },
+  "checkout": {
+    "firstOrderNumber": "KDM-2026-0002",
+    "secondOrderNumber": "KDM-2026-0003",
+    "replayDeduplicated": true,
+    "replaySameOrder": true,
+    "preservedCrmName": true,
+    "crmEmailStillEmpty": true,
+    "crmBirthdayStillEmpty": true,
+    "orderSnapshotUsesSubmittedAlias": true,
+    "orderSnapshotUsesSubmittedEmail": true,
+    "suggestedEmail": "qa@example.com",
+    "suggestedBirthday": "1990-01-02"
+  },
+  "authoritativeMutation": {
+    "catalogRevision": 4,
+    "storeRevision": 3,
+    "orderNumber": "KDM-2026-0004",
+    "lineUnitPriceIdr": 375000,
+    "deliveryFeeIdr": 30000,
+    "totalIdr": 405000,
+    "promoCodeSnapshot": "PHASE11"
+  },
+  "finalCounts": {
+    "customers": 2,
+    "orders": 4,
+    "orderItems": 4
+  },
+  "finalFingerprint": "fnv1a32:3daa96ef"
+}

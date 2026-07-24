@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fleurstales OS</title>
+    <link href="main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      // Local prototype automatically uses the local SQLite backend.
+      // Hosted environments can replace apiUrl before main.js loads.
+      window.__FLEURSTALES_CONFIG__ = window.__FLEURSTALES_CONFIG__ || {};
+      if (!window.__FLEURSTALES_CONFIG__.apiUrl && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+        window.__FLEURSTALES_CONFIG__.apiUrl = 'http://localhost:8787';
+      }
+    </script>
+    <script src="main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 955.84 357.97" role="img" aria-label="Classic Rose collection artwork">
+  <rect width="955.84" height="357.97" rx="28" fill="#A84361"/>
+<g transform="translate(565 14)">
+    <path d="M126 287 83 173l35-27 38 108Z" fill="#F7DFC0"/>
+    <path d="m119 278 47-125 44 24-54 113Z" fill="#F7DFC0"/>
+    <path d="m149 279 75-104 36 35-81 84Z" fill="#F7DFC0"/>
+    <path d="m74 170 75 105 76-103-75-38Z" fill="#173F31"/>
+    <path d="m145 277-27 46 30-14 22 22 20-25 34 13-24-48Z" fill="#E85E83"/>
+    <path d="M136 151 92 72l22-11 43 83Z" fill="#174C38"/>
+    <path d="m168 150 30-93 23 7-27 96Z" fill="#174C38"/>
+    <path d="m105 148-61-47 18-22 63 55Z" fill="#174C38"/>
+    <path d="m214 165 63-62 19 20-67 59Z" fill="#174C38"/>
+    <path d="m87 103-50-11 18-39 48 31Z" fill="#2E7956"/>
+    <path d="m214 95 27-55 37 28-47 45Z" fill="#2E7956"/>
+    <path d="m255 140 59-23-4 45-56 6Z" fill="#174C38"/>
+    <g transform="translate(38 25)">
+      <path d="m95 3 31 13 16 29-4 33-25 23-35 3-29-18-12-31 10-34 24-19Z" fill="#F7C3D0"/>
+      <path d="m83 24 27 4 14 22-8 25-25 10-23-12-5-25Z" fill="#E85E83"/>
+      <path d="m89 40 18 10-4 18-20 3-10-15Z" fill="#A84361"/>
+    </g>
+    <g transform="translate(137 50) scale(.86)">
+      <path d="m95 3 31 13 16 29-4 33-25 23-35 3-29-18-12-31 10-34 24-19Z" fill="#F093AF"/>
+      <path d="m83 24 27 4 14 22-8 25-25 10-23-12-5-25Z" fill="#E45078"/>
+      <path d="m89 40 18 10-4 18-20 3-10-15Z" fill="#A84361"/>
+    </g>
+    <g transform="translate(70 118) scale(.68)">
+      <path d="m95 3 31 13 16 29-4 33-25 23-35 3-29-18-12-31 10-34 24-19Z" fill="#FF7D9F"/>
+      <path d="m83 24 27 4 14 22-8 25-25 10-23-12-5-25Z" fill="#D93E68"/>
+      <path d="m89 40 18 10-4 18-20 3-10-15Z" fill="#8D314C"/>
+    </g>
+    <g transform="translate(211 127)">
+      <circle cx="0" cy="0" r="14" fill="#F5BFCB"/><circle cx="33" cy="17" r="11" fill="#F7C347"/><circle cx="1" cy="38" r="9" fill="#FDF6EE"/>
+      <path d="M0 12 13 64M31 28 20 65M1 46 18 69" stroke="#174C38" stroke-width="6" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>

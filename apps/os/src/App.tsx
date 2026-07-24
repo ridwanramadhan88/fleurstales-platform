@@ -1,0 +1,78 @@
+import { useState } from 'react'
+import { MemoryRouter, Route, Routes } from 'react-router'
+import HomePage from './pages/Home'
+import LoginPage from './pages/Login'
+import { useUserStore } from './store/userStore'
+import { useHrStore } from './store/hrStore'
+import { useSettingsStore } from './store/settingsStore'
+import { getEffectiveScheduleForDate } from './domain/hrSchedulingDomain'
+import { getLocalDateString, nowInJakarta } from './domain/orderTimingDomain'
+import type { Employee } from './store/hrStoreTypes'
+import type { BranchFilter } from './types/orders'
+import { useTheme } from './hooks/useTheme'
+import { isSharedBackendConfigured, signOutSharedBackend } from './api/remoteSession'
+import { refreshBusinessOsCatalogFromRemote, stopBusinessOsCatalogBridge } from './data/shared/catalogBridge'
+import { setSupabaseAccessToken } from './data/shared/supabaseSession'
+import { refreshBusinessOsStoreFromRemote, stopBusinessOsStoreBridge } from './data/shared/storeBridge'
+import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
+import { clearSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
+
+export default function App() {
+  const [view, setView] = useState<'login' | 'admin'>('login')
+  const [selectedBranch, setSelectedBranch] = useState<BranchFilter>('All')
+  const signIn = useUserStore((state) => state.signIn)
+  const scheduleOverrides = useHrStore((state) => state.scheduleOverrides)
+  const employeeDefaultSchedules = useHrStore((state) => state.employeeDefaultSchedules)
+  const settings = useSettingsStore()
+  const { theme, toggleTheme } = useTheme()
+
+  const handleSignIn = async (employee: Employee) => {
+    const role = employee.systemRole
+    const today = getLocalDateString(nowInJakarta())
+    const effective = getEffectiveScheduleForDate({
+      employee,
+      date: today,
+      defaults: employeeDefaultSchedules,
+      overrides: scheduleOverrides,
+      settings: { scheduling: settings.getSchedulingSettingsForDate(today), branches: settings.branches },
+    })
+    const assignedBranch = effective.shift.isWorking ? effective.shift.branchId : undefined
+    signIn({ employeeId: employee.id, name: employee.name, username: employee.username ?? role, role, branchId: assignedBranch, scheduledBranchId: assignedBranch })
+    setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: assignedBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
+    setSelectedBranch(assignedBranch || 'All')
+    setView('admin')
+    if (role === 'owner') void refreshBusinessOsStoreFromRemote()
+    void refreshBusinessOsCatalogFromRemote()
+  }
+
+  const handleSignOut = () => {
+    stopBusinessOsCatalogBridge()
+    stopBusinessOsStoreBridge()
+    setSupabaseAccessToken(null)
+    clearSharedSession()
+    void signOutSharedBackend()
+    setView('login')
+  }
+
+  if (view === 'login') {
+    return <LoginPage onSignIn={handleSignIn} theme={theme} onToggleTheme={toggleTheme} />
+  }
+
+  return (
+    <MemoryRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <HomePage
+              onSignOut={handleSignOut}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              initialBranch={selectedBranch}
+            />
+          }
+        />
+      </Routes>
+    </MemoryRouter>
+  )
+}

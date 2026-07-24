@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 955.84 357.97" role="img" aria-label="Omakase collection artwork">
+  <rect width="955.84" height="357.97" rx="28" fill="#5546A8"/>
+<g transform="translate(568 10)">
+    <path d="m75 295 63-112 68 93-63 62Z" fill="#F8DFC2"/>
+    <path d="m137 294 78-116 68 52-94 103Z" fill="#F4B7C9"/>
+    <path d="m136 292-35 36 38-8 21 23 18-28 39 9-31-41Z" fill="#F07198"/>
+    <path d="m128 183-46-89 22-12 51 94Zm51 7 24-120 24 5-20 121Zm43 6 73-86 20 18-76 82Z" fill="#174C38"/>
+    <path d="m97 126-73-24 16-39 68 43Zm92-28-23-72 42-7 4 73Zm57 56 69-25 8 42-75 8Z" fill="#2A6B4B"/>
+    <path d="m61 189-56-38 29-30 49 49Z" fill="#174C38"/>
+    <g transform="translate(39 29)">
+      <path d="m65 5 28 20 7 35-18 30-34 10-31-16L3 52 15 20 42 2Z" fill="#F07A31"/>
+      <circle cx="53" cy="52" r="12" fill="#F7C347"/>
+    </g>
+    <g transform="translate(122 40)">
+      <path d="m61 4 23 9 18 22-1 29-20 22-30 5-25-16-10-27 9-28 22-16Z" fill="#E85E83"/>
+      <path d="m50 30 27 5-2 25-26 9-15-19Z" fill="#A84361"/>
+    </g>
+    <g transform="translate(197 74)">
+      <path d="m55 0 30 15 9 31-14 29-31 12-30-12L4 47 14 17 38 3Z" fill="#5077CF"/>
+      <circle cx="49" cy="45" r="11" fill="#FBF6EC"/>
+    </g>
+    <g transform="translate(85 123) scale(.72)">
+      <path d="m55 0 30 15 9 31-14 29-31 12-30-12L4 47 14 17 38 3Z" fill="#FBF6EC"/>
+      <circle cx="49" cy="45" r="11" fill="#E85E83"/>
+    </g>
+    <path d="m268 48 22-32 13 33-22 24Z" fill="#F7C347"/>
+    <path d="m302 87 36-3-18 31-31 3Z" fill="#E85E83"/>
+    <circle cx="302" cy="182" r="10" fill="#F7C347"/>
+    <circle cx="45" cy="75" r="8" fill="#FBF6EC"/>
+  </g>
+</svg>

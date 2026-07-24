@@ -1,0 +1,208 @@
+{
+  "format": "fleurstales.shared-data",
+  "version": 1,
+  "fingerprint": "fnv1a32:76d1b32d",
+  "data": {
+    "kind": "fleurstales.shared-data",
+    "version": 1,
+    "exportedAt": "2026-07-24T10:00:00.000Z",
+    "source": {
+      "app": "local_qa",
+      "appVersion": "phase10-fixture",
+      "note": "Minimal deterministic cross-build fixture"
+    },
+    "catalog": {
+      "adminState": {
+        "revision": 3,
+        "deletedProductCodes": []
+      },
+      "occasions": [
+        {
+          "id": "occ-birthday",
+          "name": "Birthday",
+          "prefix": "BDY",
+          "sortOrder": 0,
+          "isActive": true
+        }
+      ],
+      "products": [
+        {
+          "id": "prod-fixture-rose",
+          "productCode": "BDY-000001",
+          "primaryOccasionId": "occ-birthday",
+          "occasionIds": [
+            "occ-birthday"
+          ],
+          "material": "fresh",
+          "name": "Fixture Rose Bouquet",
+          "productType": "Bouquet",
+          "pricingType": "Fixed",
+          "orderType": "Catalog",
+          "isFeatured": true,
+          "isActive": true,
+          "isCustomizable": true,
+          "sortOrder": 0,
+          "variants": [
+            {
+              "id": "var-fixture-rose-m",
+              "productId": "prod-fixture-rose",
+              "sku": "BDY-FRE-ROSE-M-001",
+              "size": "Medium",
+              "priceIdr": 350000,
+              "costIdr": 180000,
+              "status": "active",
+              "sortOrder": 0
+            }
+          ],
+          "images": []
+        }
+      ]
+    },
+    "store": {
+      "adminState": {
+        "revision": 2,
+        "updatedAt": "2026-07-24T09:00:00.000Z"
+      },
+      "snapshot": {
+        "profile": {
+          "id": "primary",
+          "storeName": "Fleurstales",
+          "phone": "0721000000",
+          "whatsapp": "6281200000000",
+          "email": "hello@example.com",
+          "address": "Bandar Lampung",
+          "currency": "IDR",
+          "timezone": "Asia/Jakarta"
+        },
+        "branches": [
+          {
+            "id": "Kedamaian",
+            "name": "Kedamaian",
+            "code": "KDM",
+            "address": "Kedamaian",
+            "phone": "0721000000",
+            "isActive": true,
+            "isDefault": true,
+            "sortOrder": 0,
+            "deliveryFeeIdr": 25000,
+            "openingHours": {
+              "monday": {
+                "isOpen": true,
+                "opensAt": "09:00",
+                "closesAt": "18:00"
+              },
+              "tuesday": {
+                "isOpen": true,
+                "opensAt": "09:00",
+                "closesAt": "18:00"
+              },
+              "wednesday": {
+                "isOpen": true,
+                "opensAt": "09:00",
+                "closesAt": "18:00"
+              },
+              "thursday": {
+                "isOpen": true,
+                "opensAt": "09:00",
+                "closesAt": "18:00"
+              },
+              "friday": {
+                "isOpen": true,
+                "opensAt": "09:00",
+                "closesAt": "18:00"
+              },
+              "saturday": {
+                "isOpen": true,
+                "opensAt": "09:00",
+                "closesAt": "18:00"
+              },
+              "sunday": {
+                "isOpen": true,
+                "opensAt": "09:00",
+                "closesAt": "18:00"
+              }
+            }
+          }
+        ],
+        "paymentAccounts": [
+          {
+            "id": "pay-fixture",
+            "bankName": "BCA",
+            "accountNumber": "1234567890",
+            "accountHolder": "Fleurstales",
+            "type": "bank_transfer",
+            "isActive": true,
+            "isDefault": true,
+            "displayOrder": 0,
+            "isCustomerVisible": true,
+            "branchIds": []
+          }
+        ],
+        "paymentInstructions": "Transfer using the order number as reference."
+      }
+    },
+    "customers": {
+      "customers": [
+        {
+          "id": "cust-fixture",
+          "revision": 1,
+          "name": "Fixture Customer",
+          "whatsappNumber": "081234567890",
+          "normalizedWhatsappNumber": "6281234567890",
+          "email": "fixture@example.com",
+          "preferredBranchId": "Kedamaian",
+          "tags": [],
+          "createdSource": "storefront",
+          "createdAt": "2026-07-24T08:00:00.000Z",
+          "updatedAt": "2026-07-24T08:00:00.000Z"
+        }
+      ],
+      "addresses": []
+    },
+    "orders": {
+      "orders": [
+        {
+          "id": "order-fixture-1",
+          "orderNumber": "KDM-2026-0001",
+          "revision": 1,
+          "storefrontIdempotencyKey": "fixture-checkout-key-0001",
+          "customerId": "cust-fixture",
+          "customerNameSnapshot": "Fixture Customer",
+          "customerWhatsappSnapshot": "081234567890",
+          "customerEmailSnapshot": "fixture@example.com",
+          "source": "customer_app",
+          "fulfillment": "pickup",
+          "status": "pending_verification",
+          "branchId": "Kedamaian",
+          "totalIdr": 350000,
+          "itemsSubtotalIdr": 350000,
+          "discountIdr": 0,
+          "deliveryFeeIdr": 0,
+          "paymentStatus": "unpaid",
+          "paymentMethod": "transfer",
+          "paidAmountIdr": 0,
+          "scheduleDate": "2026-07-25",
+          "scheduleTime": "12:00",
+          "requestedPickupDate": "2026-07-25",
+          "requestedPickupTime": "12:00",
+          "createdAt": "2026-07-24T08:05:00.000Z",
+          "updatedAt": "2026-07-24T08:05:00.000Z",
+          "items": [
+            {
+              "id": "line-fixture-1",
+              "orderId": "order-fixture-1",
+              "productId": "prod-fixture-rose",
+              "variantId": "var-fixture-rose-m",
+              "productCodeSnapshot": "BDY-000001",
+              "productNameSnapshot": "Fixture Rose Bouquet",
+              "variantSkuSnapshot": "BDY-FRE-ROSE-M-001",
+              "variantSizeSnapshot": "Medium",
+              "quantity": 1,
+              "unitPriceIdr": 350000
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,152 @@
+const categoryIconsGroupMarkup = String.raw`<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 964.09 169.54">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke: #ffe865;
+        stroke-width: 7.86px;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9 {
+        fill: none;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-10, .cls-11 {
+        fill: #000000;
+        font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+        font-size: 33.32px;
+        font-variation-settings: 'wght' 800;
+        font-synthesis: none;
+        font-weight: 800;
+      }
+
+      .cls-10, .cls-12 {
+        letter-spacing: .04em;
+      }
+
+      .cls-2 {
+        stroke: #ff6614;
+        stroke-width: 36.96px;
+      }
+
+      .cls-3 {
+        stroke-width: 10.56px;
+      }
+
+      .cls-3, .cls-4 {
+        stroke: #f569a3;
+      }
+
+      .cls-4 {
+        stroke-width: 38px;
+      }
+
+      .cls-5 {
+        stroke: #ffe866;
+        stroke-width: 9.73px;
+      }
+
+      .cls-6 {
+        stroke: #057640;
+        stroke-width: 38.49px;
+      }
+
+      .cls-7 {
+        stroke: #39b54a;
+        stroke-width: 7px;
+      }
+
+      .cls-13 {
+        letter-spacing: -.05em;
+      }
+
+      .cls-8 {
+        stroke-width: 39.9px;
+      }
+
+      .cls-8, .cls-9 {
+        stroke: #fdc607;
+      }
+
+      .cls-14 {
+        letter-spacing: 0em;
+      }
+
+      .cls-9 {
+        stroke-width: 49.87px;
+      }
+
+      .cls-15 {
+        letter-spacing: .02em;
+      }
+
+      .cls-16 {
+        letter-spacing: .02em;
+      }
+
+      .cls-17 {
+        letter-spacing: .04em;
+      }
+
+      .cls-18 {
+        letter-spacing: .04em;
+      }
+
+      .cls-19 {
+        letter-spacing: .03em;
+      }
+    </style>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <g>
+        <g>
+          <path class="cls-4" d="M97.06,57.38c-5.63-6.48-13.55-17.33-18.29-32.38-3.02-9.59-3.89-18.15-3.99-24.72"/>
+          <path class="cls-4" d="M112.89,9.76c-.12,5.27-1.02,13.16-4.92,21.89-6.35,14.2-17,22.44-22.26,25.99"/>
+          <path class="cls-4" d="M90.15,63.13c8.76-1.89,22.75-3.79,39.47-1.23,10.66,1.63,20.51,4.49,20.51,4.49"/>
+          <path class="cls-4" d="M94.04,53.88c1.36,5.89,5.16,18.24,16.59,29.4,7.03,6.86,20.75,9.44,20.75,9.44"/>
+          <path class="cls-4" d="M90.09,58.03c-8.89-1.26-23-2.17-39.45,1.57-10.49,2.38-12.54,3.58-18.74,6.79"/>
+          <path class="cls-4" d="M55.76,91.15c6.59-3.52,8.76-3.83,15.2-11.16,10.48-11.92,13.26-24.5,14.14-30.48"/>
+        </g>
+        <g>
+          <path class="cls-1" d="M91.44,46.49c-.33-1.07-1.41-5.15.86-9.48,1.62-3.09,4.13-4.75,5.3-5.43"/>
+          <path class="cls-1" d="M79.38,58.92c-2.18-.11-5.95-.03-10.11,1.58-2.42.94-4.27,2.12-5.57,3.11"/>
+          <path class="cls-1" d="M97.52,60.41c.66.84,1.94,2.22,4.03,3.19,3.91,1.81,7.71.83,8.65.56"/>
+        </g>
+      </g>
+      <g>
+        <path class="cls-9" d="M887.82,74.87c-4.56-6.69-8.66-17.44-12.95-29.2-4.11-11.27-7.17-27.12-8.04-34.97"/>
+        <path class="cls-8" d="M819.36,42.43c2.68,6.31,9.05,18.89,22.62,29.14,6.9,5.21,23.67,13.66,44.46,8.28,22.59-5.84,33.67-24.88,36.85-33.47,4.38-11.84,4.9-22.39,4.74-28.95"/>
+        <path class="cls-3" d="M859.42,59.94c-1.84-.39-5.93-1.51-9.58-5.04-2.48-2.39-3.77-4.94-4.44-6.56"/>
+        <path class="cls-3" d="M894.94,60.69c1.2-1.44,3.72-4.86,4.39-9.9.46-3.41-.1-6.22-.58-7.9"/>
+        <path class="cls-3" d="M875.34,50.02c.5-2.13,1.07-5.94-.02-10.44-.62-2.53-1.59-4.55-2.44-5.99"/>
+      </g>
+      <g>
+        <path class="cls-2" d="M338.47,62.28c-4.4-1.11-17.38-4.97-27.5-17.47-8.45-10.44-10.43-21.37-11.01-26.07"/>
+        <path class="cls-2" d="M359.21,65.3c3.35-1.01,15.1-5,22.93-17.09,9.9-15.3,5.68-31.45,4.97-34"/>
+        <path class="cls-2" d="M352.4,69.55c2.14,1.37,18.19,11.27,37.43,4.92,16.18-5.34,23.46-18.48,24.95-21.33"/>
+        <path class="cls-2" d="M351.38,67.85c-2.11,1.41-17.98,11.6-37.34,5.6-16.27-5.04-23.79-18.06-25.33-20.87"/>
+        <path class="cls-2" d="M348.58,72.79c.32-7.41.8-26.76-.27-36.39-1.11-9.97-2.99-18.73-5.02-26.08"/>
+        <path class="cls-5" d="M332.8,63.08c-1.63-.58-5.22-2.12-8.12-5.8-1.96-2.49-2.83-4.98-3.24-6.54"/>
+        <path class="cls-5" d="M374,62.13c1.28-1.17,4-3.97,5.24-8.49.84-3.06.68-5.69.45-7.28"/>
+        <path class="cls-5" d="M350.24,54.53c.72-1.88,1.72-5.29,1.28-9.53-.25-2.39-.88-4.35-1.48-5.77"/>
+      </g>
+      <g>
+        <g>
+          <path class="cls-6" d="M667.59,27.08c-5.33,2.53-21.14,6.55-27.97,22.87-1.73,4.14-3.78,14.08-1.8,16.46,1.76,2.13,17.39-.19,26.5-8.65,9.2-8.55,14.17-19.62,16.31-25.6"/>
+          <path class="cls-7" d="M639.58,66.29c3.83-2.41,8.95-6.56,13.52-11.08,7.02-6.94,10.65-13.09,13.35-18.4"/>
+        </g>
+        <g>
+          <path class="cls-6" d="M580.79,16.06c6.73,4.91,27.62,14.67,32.79,39.12,1.31,6.21,1.53,20.53-1.84,23.33-3,2.49-24.09-4.85-34.5-19-10.51-14.29-14.49-30.96-15.89-39.83"/>
+          <path class="cls-7" d="M609.33,77.87c-4.68-4.35-10.69-11.47-15.84-18.95-7.91-11.49-11.34-20.98-13.68-29.06"/>
+        </g>
+      </g>
+      <text class="cls-11" transform="translate(0 158.58)"><tspan class="cls-19" x="0" y="0">B</tspan><tspan class="cls-17" x="20.99" y="0">OUQUE</tspan><tspan class="cls-15" x="139.49" y="0">T</tspan><tspan class="cls-12" x="159.66" y="0">S</tspan></text>
+      <text class="cls-10" transform="translate(260.01 158.58)"><tspan x="0" y="0">WEDDINGS</tspan></text>
+      <text class="cls-11" transform="translate(513.37 158.58)"><tspan class="cls-12" x="0" y="0">GRAD</tspan><tspan class="cls-16" x="96.37" y="0">U</tspan><tspan class="cls-13" x="118.27" y="0">A</tspan><tspan class="cls-12" x="139.2" y="0">TION</tspan></text>
+      <text class="cls-11" transform="translate(795.64 158.58)"><tspan class="cls-14" x="0" y="0">S</tspan><tspan class="cls-13" x="20.2" y="0">T</tspan><tspan class="cls-18" x="38.22" y="0">ANDING</tspan></text>
+    </g>
+  </g>
+</svg>`
+
+export default categoryIconsGroupMarkup

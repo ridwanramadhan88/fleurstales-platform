@@ -1,0 +1,14 @@
+[
+  {"employeeId":"emp-budi","username":"owner","pin":"123456","name":"Budi","role":"owner","active":true},
+  {"employeeId":"emp-dewi","username":"finance","pin":"123456","name":"Dewi","role":"finance","active":true},
+  {"employeeId":"emp-bintang","username":"hr","pin":"123456","name":"Bintang","role":"hr","active":true},
+  {"employeeId":"emp-akbar","username":"akbar","pin":"123456","name":"Akbar","role":"admin","active":true},
+  {"employeeId":"emp-teta","username":"teta","pin":"123456","name":"Teta","role":"admin","active":true},
+  {"employeeId":"emp-shofi","username":"shofi","pin":"123456","name":"Shofi","role":"admin","active":true},
+  {"employeeId":"emp-zahra","username":"zahra","pin":"123456","name":"Zahra","role":"florist","active":true},
+  {"employeeId":"emp-vero","username":"vero","pin":"123456","name":"Vero","role":"florist","active":true},
+  {"employeeId":"emp-zizi","username":"zizi","pin":"123456","name":"Zizi","role":"florist","active":true},
+  {"employeeId":"emp-dela","username":"dela","pin":"123456","name":"Dela","role":"florist","active":true},
+  {"employeeId":"emp-dila","username":"dila","pin":"123456","name":"Dila","role":"florist","active":true},
+  {"employeeId":"emp-gaby","username":"gaby","pin":"123456","name":"Gaby","role":"florist","active":true}
+]

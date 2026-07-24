@@ -1,0 +1,19 @@
+{
+  "name": "fleurstales-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@11.16.0",
+  "scripts": {
+    "build": "npm run build:storefront && npm run build:os",
+    "build:storefront": "npm run build --workspace=fleurstales-storefront",
+    "build:os": "npm run build --workspace=fleurstales-os",
+    "check": "npm run check:shared-parity && npm run check:storefront && npm run check:os",
+    "check:shared-parity": "node scripts/check-shared-parity.mjs",
+    "check:storefront": "npm run check --workspace=fleurstales-storefront",
+    "check:os": "npm run check --workspace=fleurstales-os"
+  }
+}

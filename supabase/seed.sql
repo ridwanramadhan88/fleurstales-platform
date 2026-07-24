@@ -1,0 +1,1 @@
+-- Catalog and initial operational data are created by ordered migrations.

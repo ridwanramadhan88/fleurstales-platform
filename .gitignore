@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!.env.example
+.vercel/
+supabase/.branches/
+supabase/.temp/
+backend/data/
+backend/uploads/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db

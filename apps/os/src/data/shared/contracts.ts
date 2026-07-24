@@ -1,0 +1,345 @@
+import type {
+  CatalogMaterial,
+  CatalogOrderType,
+  CatalogVariantStatus,
+  CustomerCreatedSource,
+  OrderFulfillment,
+  OrderSource,
+  OrderStatus,
+  PaymentAccountType,
+  PaymentMethod,
+  PaymentStatus,
+  PricingType,
+  StaffRole,
+} from './databaseTypes'
+
+export interface SharedOccasion {
+  id: string
+  name: string
+  prefix: string
+  sortOrder: number
+  isActive: boolean
+}
+
+export interface SharedProductVariant {
+  id: string
+  productId: string
+  sku: string
+  size: string
+  priceIdr: number
+  status: CatalogVariantStatus
+  sortOrder: number
+  /** Only present in authenticated Finance/Owner reads. Never part of the public catalog contract. */
+  costIdr?: number | null
+}
+
+export interface SharedProductImage {
+  id: string
+  productId: string
+  storagePath: string
+  publicUrl: string
+  altText?: string
+  sortOrder: number
+  isPrimary: boolean
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp'
+  byteSize?: number
+  width?: number
+  height?: number
+}
+
+export interface SharedProductImageMetadataInput {
+  id: string
+  storagePath: string
+  altText?: string
+  sortOrder: number
+  isPrimary: boolean
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp'
+  byteSize?: number
+  width?: number
+  height?: number
+}
+
+export interface SharedProductImagesReplaceResult {
+  revision: number
+  productId: string
+  imageCount: number
+}
+
+export interface SharedSizeGuideTemplate {
+  id: string
+  name: string
+  storagePath: string
+  publicUrl: string
+  mimeType: 'image/jpeg'
+  byteSize: number
+  width: 800
+  height: 800
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type SharedSizeGuideTarget =
+  | { id: string; templateId: string; scope: 'product_type'; productType: string }
+  | { id: string; templateId: string; scope: 'product'; productId: string }
+
+export interface SharedSizeGuideLibraryReplaceResult {
+  templateCount: number
+  targetCount: number
+}
+
+export interface SharedProduct {
+  id: string
+  productCode: string
+  primaryOccasionId?: string
+  occasionIds: string[]
+  material: CatalogMaterial
+  name: string
+  description?: string
+  productType?: string
+  collectionSeries?: string
+  pricingType?: PricingType
+  orderType?: CatalogOrderType
+  isFeatured: boolean
+  isActive: boolean
+  promoLabel?: string
+  originalPriceIdr?: number
+  isCustomizable: boolean
+  sortOrder: number
+  variants: SharedProductVariant[]
+  images: SharedProductImage[]
+}
+
+export interface SharedCatalogAdminState {
+  revision: number
+  deletedProductCodes: string[]
+}
+
+export interface SharedCatalogReplaceResult {
+  revision: number
+  productCount: number
+  occasionCount: number
+}
+
+export interface SharedStoreProfile {
+  id: 'primary'
+  storeName: string
+  legalName?: string
+  logoUrl?: string
+  phone: string
+  whatsapp: string
+  email: string
+  address: string
+  currency: 'IDR'
+  timezone: 'Asia/Jakarta'
+}
+
+export interface BranchDayHours {
+  isOpen: boolean
+  opensAt?: string
+  closesAt?: string
+}
+
+export type BranchOpeningHours = Record<string, BranchDayHours>
+
+export interface SharedBranch {
+  id: string
+  name: string
+  code: string
+  address: string
+  phone: string
+  isActive: boolean
+  isDefault: boolean
+  sortOrder: number
+  deliveryFeeIdr: number
+  openingHours: BranchOpeningHours
+  latitude?: number
+  longitude?: number
+}
+
+export interface SharedPaymentAccount {
+  id: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+  type: PaymentAccountType
+  isActive: boolean
+  isDefault: boolean
+  displayOrder: number
+  isCustomerVisible: boolean
+  branchIds: string[]
+}
+
+export interface SharedStoreSnapshot {
+  profile: SharedStoreProfile
+  branches: SharedBranch[]
+  paymentAccounts: SharedPaymentAccount[]
+  paymentInstructions: string
+}
+
+export interface SharedStoreAdminState {
+  revision: number
+  updatedAt?: string
+}
+
+export interface SharedStoreReplaceResult {
+  revision: number
+  branchCount: number
+  paymentAccountCount: number
+}
+
+export interface SharedCustomer {
+  id: string
+  revision: number
+  name: string
+  whatsappNumber: string
+  normalizedWhatsappNumber: string
+  email?: string
+  birthday?: string
+  preferredBranchId?: string
+  tags: string[]
+  notes?: string
+  promoCode?: string
+  createdSource: CustomerCreatedSource
+  lastOrderAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SharedCustomerIntakeInput {
+  name: string
+  whatsappNumber: string
+  email?: string
+  birthday?: string
+  preferredBranchId?: string
+}
+
+export interface SharedCustomerProfileSuggestions {
+  birthday?: string
+  email?: string
+  preferredBranchId?: string
+}
+
+export interface SharedCustomerIntakeResult {
+  customer: SharedCustomer
+  isNew: boolean
+  suggestions: SharedCustomerProfileSuggestions
+}
+
+export interface SharedCustomerAddress {
+  id: string
+  customerId: string
+  label?: string
+  recipientName?: string
+  whatsappNumber?: string
+  address: string
+  city?: string
+  postalCode?: string
+  deliveryNotes?: string
+  isDefault: boolean
+}
+
+export interface SharedOrderItem {
+  id: string
+  orderId: string
+  productId?: string
+  variantId?: string
+  productCodeSnapshot?: string
+  productNameSnapshot: string
+  variantSkuSnapshot?: string
+  variantSizeSnapshot?: string
+  quantity: number
+  unitPriceIdr: number
+}
+
+export interface SharedOrder {
+  id: string
+  orderNumber: string
+  revision: number
+  storefrontIdempotencyKey?: string
+  customerId?: string
+  customerNameSnapshot: string
+  customerWhatsappSnapshot?: string
+  customerEmailSnapshot?: string
+  customerProfileSuggestions?: SharedCustomerProfileSuggestions
+  source: OrderSource
+  fulfillment: OrderFulfillment
+  status: OrderStatus
+  branchId: string
+  totalIdr: number
+  itemsSubtotalIdr: number
+  discountIdr: number
+  deliveryFeeIdr: number
+  paymentStatus: PaymentStatus
+  paymentMethod?: PaymentMethod
+  paidAmountIdr: number
+  scheduleLabel?: string
+  scheduleDate?: string
+  scheduleTime?: string
+  requestedPickupDate?: string
+  requestedPickupTime?: string
+  actualPickedUpAt?: string
+  orderNote?: string
+  greetingMessage?: string
+  greetingCardName?: string
+  deliveryAddress?: string
+  deliveryInstructions?: string
+  promoCode?: string
+  completedAt?: string
+  financeVerified?: boolean
+  financeVerifiedBy?: string
+  financeVerifiedAt?: string
+  createdAt: string
+  updatedAt: string
+  items: SharedOrderItem[]
+}
+
+export interface StorefrontCheckoutCustomerInput {
+  name: string
+  whatsappNumber: string
+  email?: string
+  birthday?: string
+}
+
+export interface StorefrontCheckoutItemInput {
+  productId: string
+  variantId: string
+  quantity: number
+}
+
+export interface CreateStorefrontOrderInput {
+  idempotencyKey: string
+  customer: StorefrontCheckoutCustomerInput
+  branchId: string
+  fulfillment: OrderFulfillment
+  scheduleDate: string
+  scheduleTime: string
+  items: StorefrontCheckoutItemInput[]
+  deliveryAddress?: string
+  deliveryInstructions?: string
+  orderNote?: string
+  greetingMessage?: string
+  greetingCardName?: string
+  paymentMethod?: PaymentMethod
+  /** Stored as an order snapshot. Discount remains server/internal-domain derived. */
+  promoCode?: string
+}
+
+export interface CreateStorefrontOrderResult {
+  orderId: string
+  orderNumber: string
+  customerId: string
+  itemsSubtotalIdr: number
+  deliveryFeeIdr: number
+  discountIdr: number
+  totalIdr: number
+  deduplicated: boolean
+}
+
+export interface SharedStaffAccessProfile {
+  userId: string
+  employeeId?: string
+  displayName: string
+  role: StaffRole
+  branchId?: string
+  isActive: boolean
+}

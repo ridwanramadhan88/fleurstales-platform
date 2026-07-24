@@ -1,0 +1,5842 @@
+@import url('https://fonts.googleapis.com/css2?family=Host+Grotesk:ital,wght@0,300..800;1,300..800&family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800&display=swap');
+
+@font-face {
+  font-family: "Roc Grotesk";
+  src:
+    url("./assets/fonts/RocGrotesk-Medium.woff2") format("woff2"),
+    local("Roc Grotesk Medium"),
+    local("RocGrotesk-Medium");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Roc Grotesk";
+  src:
+    url("./assets/fonts/RocGrotesk-Bold.woff2") format("woff2"),
+    local("Roc Grotesk Bold"),
+    local("RocGrotesk-Bold");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Fleurstales OS — quiet iOS/macOS inspired system */
+  --background: 240 18% 94.2%;
+
+  /* Semantic surface hierarchy — one source of truth for light-mode depth. */
+  --surface-page: 240 18% 94.2%;
+  --surface-card: 0 0% 100%;
+  --surface-panel: 240 13% 90.8%;
+  --surface-track: 240 10% 87.5%;
+  --surface-selected: 220 9% 17%;
+  --surface-footer: 0 0% 100%;
+  --surface-popover: 0 0% 100%;
+  --surface-neutral-badge: 240 9% 85.5%;
+  --surface-warning: 38 78% 92.5%;
+  --surface-success: 142 38% 92.5%;
+  --surface-info: 211 62% 92.5%;
+  --surface-error: 4 62% 93%;
+  --foreground: 240 12% 7%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 10%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 10%;
+
+  --primary: 220 9% 17%;              /* charcoal brand / primary action */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 240 13% 90.5%;
+  --secondary-foreground: 240 10% 14%;
+
+  --muted: 240 12% 89.8%;
+  --muted-foreground: 240 6% 36%;
+
+  --accent: 240 12% 87.8%;
+  --accent-foreground: 240 10% 14%;
+
+  --destructive: 4 90% 58%;               /* iOS systemRed */
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 145 58% 38%;                 /* iOS systemGreen */
+  --success-foreground: 0 0% 100%;
+  --warning: 35 86% 47%;                 /* iOS systemOrange */
+  --warning-foreground: 0 0% 100%;
+  --info: 211 82% 48%;                   /* iOS systemBlue */
+  --info-foreground: 0 0% 100%;
+
+  --border: 240 10% 84.5%;
+  --input: 240 10% 86%;
+  --ring: 220 8% 42%;                   /* neutral focus ring for light mode */
+
+  --chart-1: 220 9% 22%;
+  --chart-2: 336 78% 52%;
+  --chart-3: 35 100% 50%;
+  --chart-4: 142 70% 42%;
+  --chart-5: 262 60% 58%;
+
+  --radius: 0.875rem;
+
+  --sidebar-background: 240 16% 92.8%;
+  --sidebar-foreground: 240 9% 24%;
+  --sidebar-primary: 220 9% 17%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 11% 86.5%;
+  --sidebar-accent-foreground: 240 10% 12%;
+  --sidebar-border: 240 10% 82.5%;
+  --sidebar-ring: 220 8% 42%;
+
+  --shadow-color: 240 22% 18%;
+}
+
+.dark {
+  --background: 240 12% 7%;
+  --surface-page: 240 12% 7%;
+  --surface-card: 240 10% 10%;
+  --surface-panel: 240 8% 15%;
+  --surface-track: 240 8% 19%;
+  --surface-selected: 211 100% 45%;
+  --surface-footer: 240 10% 10%;
+  --surface-popover: 240 10% 10%;
+  --surface-neutral-badge: 240 7% 23%;
+  --surface-warning: 35 28% 15%;
+  --surface-success: 145 22% 14%;
+  --surface-info: 211 25% 15%;
+  --surface-error: 4 25% 15%;
+  --foreground: 0 0% 97%;
+  --card: 240 10% 10%;
+  --card-foreground: 0 0% 97%;
+  --popover: 240 10% 10%;
+  --popover-foreground: 0 0% 97%;
+  --primary: 211 100% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 8% 15%;
+  --secondary-foreground: 0 0% 97%;
+  --muted: 240 8% 15%;
+  --muted-foreground: 240 5% 65%;
+  --accent: 240 8% 16%;
+  --accent-foreground: 0 0% 97%;
+  --destructive: 4 90% 63%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 145 52% 46%;
+  --success-foreground: 145 35% 8%;
+  --warning: 35 88% 58%;
+  --warning-foreground: 35 35% 9%;
+  --info: 205 78% 62%;
+  --info-foreground: 198 35% 8%;
+  --border: 240 8% 18%;
+  --input: 240 8% 18%;
+  --ring: 211 100% 55%;
+  --sidebar-background: 240 12% 9%;
+  --sidebar-foreground: 240 5% 80%;
+  --sidebar-primary: 211 100% 45%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 8% 15%;
+  --sidebar-accent-foreground: 0 0% 97%;
+  --sidebar-border: 240 8% 16%;
+  --sidebar-ring: 211 100% 55%;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Real-device mobile scale. The storefront was still visually oversized on
+ * iPhone Safari, so the phone scale is reduced by a further 10%. */
+@media (max-width: 639px) {
+  html {
+    font-size: 12.96px;
+  }
+}
+
+body {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--surface-page));
+  overscroll-behavior: none;
+  font-synthesis-weight: none;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-kerning: auto;
+  font-feature-settings: normal;
+  font-variant-ligatures: normal;
+}
+
+h1, h2, h3, .font-display {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Tight", "Inter", sans-serif;
+  font-kerning: auto;
+  font-feature-settings: normal;
+  font-variant-ligatures: normal;
+}
+
+html > body * {
+  border-color: hsl(var(--border));
+}
+
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* --- Fleurstales OS design system utilities --- */
+
+.glass-surface {
+  background: hsl(var(--card) / 0.76);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  backdrop-filter: saturate(1.8) blur(20px);
+}
+
+/* Hides the scrollbar on horizontally-scrollable pill/tab rows (filter
+   chips, sub-tabs) while keeping them scrollable — the row already
+   communicates "more content" via clipped edges, so a visible scrollbar
+   underneath is just noise. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.glass-surface-strong {
+  background: hsl(var(--card) / 0.86);
+  -webkit-backdrop-filter: saturate(1.8) blur(24px);
+  backdrop-filter: saturate(1.8) blur(24px);
+}
+
+.elevated-1 {
+  box-shadow:
+    0 1px 2px hsl(var(--shadow-color) / 0.06),
+    0 6px 16px -10px hsl(var(--shadow-color) / 0.22);
+}
+
+.elevated-2 {
+  box-shadow:
+    0 2px 5px hsl(var(--shadow-color) / 0.08),
+    0 16px 34px -16px hsl(var(--shadow-color) / 0.26);
+}
+
+.elevated-3 {
+  box-shadow:
+    0 2px 4px hsl(var(--shadow-color) / 0.05),
+    0 20px 48px -12px hsl(var(--shadow-color) / 0.18);
+}
+
+.inset-hairline {
+  box-shadow: inset 0 0 0 1px hsl(var(--border));
+}
+
+.tap-scale {
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 160ms ease;
+}
+.tap-scale:active {
+  transform: scale(0.96);
+  opacity: 0.92;
+}
+
+/* iOS-style grouped list separators without using ::before hacks everywhere */
+.grouped-list > * + * {
+  border-top: 1px solid hsl(var(--border));
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-sheet-up {
+  animation: sheet-up 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes pop-in {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.animate-pop-in {
+  animation: pop-in 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Stronger light-mode hierarchy: preserve the quiet monochrome system while
+   making cards, tables, controls, and empty states visually distinct. */
+:root:not(.dark) .shadow-ios-sm,
+:root:not(.dark) .shadow-ios {
+  box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 10px 24px -18px hsl(var(--shadow-color) / 0.28);
+}
+
+:root:not(.dark) table thead {
+  background-color: hsl(var(--surface-panel));
+  color: hsl(var(--foreground) / 0.78);
+}
+
+:root:not(.dark) table tbody tr:hover {
+  background-color: hsl(var(--muted) / 0.72);
+}
+
+:root:not(.dark) input:disabled,
+:root:not(.dark) button:disabled {
+  opacity: 0.58;
+}
+
+/* --- Settings Center: view vs. edit mode field styling ---
+   Problem this fixes: Settings panels render the same <input> markup in
+   both modes and just toggle the `disabled` attribute. That leaves
+   read-only ("viewing") screens full of boxes that still *look* like
+   editable fields (borders, input background, ring) even though nothing
+   happens when you click them. This block makes disabled fields inside a
+   panel that is in VIEW mode render as plain detail text instead — no
+   border, no background, no ring — so the UI honestly communicates "this
+   is information", not "this is a control".
+   In EDIT mode, a disabled field is a genuinely locked field (e.g.
+   currency/timezone), so it keeps the muted/greyed control styling to
+   signal "editable elsewhere, not here" rather than "plain text". */
+.settings-panel-view input:disabled,
+.settings-panel-view select:disabled,
+.settings-panel-view textarea:disabled {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  color: hsl(var(--foreground)) !important;
+  opacity: 1 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  cursor: default !important;
+  -webkit-text-fill-color: hsl(var(--foreground));
+}
+.settings-panel-view select:disabled {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: none !important;
+}
+.settings-panel-view input:disabled::placeholder,
+.settings-panel-view textarea:disabled::placeholder {
+  color: hsl(var(--muted-foreground));
+  opacity: 1;
+}
+/* Bordered "prefix" containers (e.g. an "Rp" chip glued to a number input)
+   read as one field visually, so flatten the wrapper too, not just the
+   input inside it. Requires :has() (all evergreen browsers). */
+.settings-panel-view div:has(> input:disabled),
+.settings-panel-view div:has(> select:disabled) {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+.settings-panel-view div:has(> input:disabled) > span,
+.settings-panel-view div:has(> select:disabled) > span {
+  border-color: transparent !important;
+  background-color: transparent !important;
+}
+/* Buttons/toggles meant only to *mutate* data (add row, remove, etc.)
+   should disappear in view mode rather than sit there disabled-looking. */
+.settings-panel-view [data-edit-only] {
+  display: none !important;
+}
+
+/* Neutralize the browser's native autofill highlight (blue/yellow) so
+   autofilled fields keep the app's own background/text styling instead of
+   clashing with it. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  caret-color: hsl(var(--foreground));
+  transition: background-color 9999s ease-in-out 0s;
+  box-shadow: 0 0 0 1000px hsl(var(--background) / 0.8) inset;
+}
+
+/* Semantic informational surfaces use dedicated opaque light/dark tokens instead
+   of faint alpha washes that disappear on the page background. */
+.bg-warning\/5,
+.bg-warning\/10,
+.bg-warning\/15,
+.bg-warning\/20 { background-color: hsl(var(--surface-warning)); }
+.bg-success\/5,
+.bg-success\/10,
+.bg-success\/15,
+.bg-success\/20 { background-color: hsl(var(--surface-success)); }
+.bg-info\/5,
+.bg-info\/10,
+.bg-info\/15,
+.bg-info\/20 { background-color: hsl(var(--surface-info)); }
+.bg-destructive\/5,
+.bg-destructive\/8,
+.bg-destructive\/10,
+.bg-destructive\/15,
+.bg-destructive\/20 { background-color: hsl(var(--surface-error)); }
+
+/* --- Dark mode legibility pass ------------------------------------------------
+   Keep semantic utility colors readable against dark cards. Tailwind's light
+   50/100 surfaces are intentionally remapped to translucent color washes,
+   while 600-950 text colors become brighter foreground tones. */
+.dark {
+  color-scheme: dark;
+  --background: 240 12% 6%;
+  --surface-page: 240 12% 6%;
+  --surface-card: 240 10% 11%;
+  --surface-panel: 240 8% 16%;
+  --surface-track: 240 8% 20%;
+  --surface-selected: 211 100% 45%;
+  --surface-footer: 240 10% 11%;
+  --surface-popover: 240 10% 12%;
+  --surface-neutral-badge: 240 7% 24%;
+  --surface-warning: 35 28% 15%;
+  --surface-success: 145 22% 14%;
+  --surface-info: 211 25% 15%;
+  --surface-error: 4 25% 15%;
+  --foreground: 240 6% 96%;
+  --card: 240 10% 11%;
+  --card-foreground: 240 6% 96%;
+  --popover: 240 10% 12%;
+  --popover-foreground: 240 6% 96%;
+  --secondary: 240 8% 16%;
+  --secondary-foreground: 240 6% 95%;
+  --muted: 240 8% 16%;
+  --muted-foreground: 240 6% 70%;
+  --accent: 240 8% 18%;
+  --accent-foreground: 240 6% 96%;
+  --border: 240 7% 24%;
+  --input: 240 8% 19%;
+  --shadow-color: 240 100% 2%;
+}
+
+.dark .glass-surface,
+.dark .glass-surface-strong {
+  border-color: hsl(var(--border) / 0.9);
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background) / 0.55);
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: hsl(var(--muted-foreground) / 0.9);
+}
+.dark input:disabled,
+.dark select:disabled,
+.dark textarea:disabled,
+.dark button:disabled {
+  opacity: 0.62;
+}
+
+.dark .bg-white,
+.dark .bg-white\/95,
+.dark .hover\:bg-white:hover {
+  background-color: hsl(var(--card));
+}
+.dark .text-black { color: hsl(var(--foreground)); }
+
+/* Semantic dark surfaces and states. */
+.dark .bg-muted\/20,
+.dark .bg-muted\/25,
+.dark .bg-muted\/30,
+.dark .bg-muted\/35,
+.dark .bg-muted\/45 { background-color: hsl(var(--muted) / 0.72); }
+
+.dark .border-border\/40,
+.dark .border-border\/50,
+.dark .border-border\/60 { border-color: hsl(var(--border)); }
+.dark .ring-border\/40,
+.dark .ring-border\/50,
+.dark .ring-border\/60 { --tw-ring-color: hsl(var(--border)); }
+
+.dark .bg-primary\/10 { background-color: hsl(var(--primary) / 0.18); }
+.dark .bg-info\/10 { background-color: hsl(var(--surface-info)); }
+.dark .bg-success\/10 { background-color: hsl(var(--surface-success)); }
+.dark .bg-warning\/10 { background-color: hsl(var(--surface-warning)); }
+.dark .bg-destructive\/10 { background-color: hsl(var(--surface-error)); }
+.dark .bg-warning\/5 { background-color: hsl(var(--surface-warning)); }
+
+.dark .border-primary\/30 { border-color: hsl(var(--primary) / 0.48); }
+.dark .border-info\/30 { border-color: hsl(var(--info) / 0.48); }
+.dark .border-success\/30 { border-color: hsl(var(--success) / 0.48); }
+.dark .border-warning\/30 { border-color: hsl(var(--warning) / 0.48); }
+.dark .border-destructive\/30 { border-color: hsl(var(--destructive) / 0.48); }
+
+/* Tables, separators and chart scaffolding need more contrast in dark mode. */
+.dark table thead { color: hsl(var(--foreground)); }
+.dark table tbody tr:hover { background-color: hsl(var(--muted) / 0.55); }
+.dark .recharts-cartesian-grid line { stroke: hsl(var(--border) / 0.8); }
+.dark .recharts-text { fill: hsl(var(--muted-foreground)); }
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: hsl(var(--popover)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+/* Keep focus visible on dark surfaces. */
+.dark :focus-visible {
+  outline-color: hsl(var(--ring));
+}
+
+
+/* Focused mobile workflows own their action layer; hide global navigation while open. */
+@media (max-width: 767px) {
+  body:has([aria-modal="true"]) nav[aria-label="Primary navigation"],
+  body:has(.mobile-focus-workflow) nav[aria-label="Primary navigation"] {
+    display: none;
+  }
+}
+
+/* Settings nested navigation: content slides horizontally without changing
+   the page's vertical scroll position. */
+@keyframes settings-content-enter-from-right {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes settings-content-enter-from-left {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.settings-content-slide-left {
+  animation: settings-content-enter-from-right 210ms ease-out both;
+}
+
+.settings-content-slide-right {
+  animation: settings-content-enter-from-left 210ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-content-slide-left,
+  .settings-content-slide-right {
+    animation: none;
+  }
+}
+
+
+/* Host Grotesk is the storefront reading face. Roc Grotesk stays reserved
+   for titles and headings so the hierarchy remains clear. */
+.storefront-font {
+  font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 400;
+  font-kerning: normal;
+  font-feature-settings: normal;
+  font-variant-ligatures: normal;
+}
+
+.storefront-font h1,
+.storefront-font h2,
+.storefront-font h3,
+.storefront-font h4,
+.storefront-font h5,
+.storefront-font h6,
+.storefront-font .font-display,
+.storefront-font .sf-page-title,
+.storefront-font .sf-detail-title,
+.storefront-font .sf-section-title,
+.storefront-font .sf-card-title {
+  font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
+  font-kerning: normal;
+  font-feature-settings: normal;
+  font-variant-ligatures: normal;
+}
+
+/* Public storefront sizing system — all customer-facing pages and checkout
+   surfaces derive from this shared scale instead of one-off measurements. */
+:root {
+  --storefront-max-width: 1440px;
+  --sf-green: #00813f;
+  --sf-cream: #faf9f6;
+  --sf-panel: #f0e6dd;
+  --sf-card: #eee4cc;
+
+  --sf-space-1: 0.25rem;
+  --sf-space-2: 0.5rem;
+  --sf-space-3: 0.75rem;
+  --sf-space-4: 1rem;
+  --sf-space-5: 1.25rem;
+  --sf-space-6: 1.5rem;
+  --sf-space-8: 2rem;
+  --sf-space-10: 2.5rem;
+  --sf-space-12: 3rem;
+  --sf-space-16: 4rem;
+  --sf-space-20: 5rem;
+
+  --storefront-gutter-mobile: 1.25rem;
+  --storefront-gutter-tablet: 1.75rem;
+  --storefront-gutter-desktop: 2.5rem;
+
+  --sf-control-sm: 2.5rem;
+  --sf-control-md: 3rem;
+  --sf-control-lg: 3.5rem;
+  --sf-control-lg-desktop: 3.75rem;
+
+  --sf-radius-field: 0.75rem;
+  --sf-radius-card: 1.125rem;
+  --sf-radius-panel: 1.5rem;
+
+  /* Six-level storefront type scale. No customer-facing text is smaller
+     than 13px, and components use these semantic levels instead of one-off
+     sizes. */
+  --sf-type-1: 0.8125rem; /* 13px — labels, metadata, old prices */
+  --sf-type-2: 0.9375rem; /* 15px — body, controls, prices */
+  --sf-type-3: 1.125rem;  /* 18px — card titles, compact headings */
+  --sf-type-4: 1.5rem;    /* 24px — drawer and section headings */
+  --sf-type-5: 2rem;      /* 32px — page and product-detail headings */
+  --sf-type-6: clamp(3.5rem, 7vw, 4.5rem); /* display */
+
+  --sf-label: var(--sf-type-1);
+  --sf-support: var(--sf-type-1);
+  --sf-body: var(--sf-type-2);
+  --sf-card-title: var(--sf-type-3);
+  --sf-section-title: var(--sf-type-4);
+  --sf-detail-title: var(--sf-type-5);
+  --sf-page-title: var(--sf-type-5);
+  --sf-display: var(--sf-type-6);
+  --sf-safe-top: env(safe-area-inset-top, 0px);
+  --sf-browser-bottom-reserve: 0px;
+}
+
+/* Standard mobile reading scale: 16px body copy, 14px supporting text,
+   and 48px compact controls. Desktop and tablet sizing stays unchanged. */
+@media (max-width: 639px) {
+  :root {
+    --sf-type-1: 0.875rem;
+    --sf-type-2: 1rem;
+    --sf-control-sm: 2.75rem;
+    --sf-control-md: 3rem;
+    /* Safari's floating address bar is browser chrome, not represented by
+       env(safe-area-inset-bottom). Reserve a deliberate interaction zone
+       while letting the page background continue underneath it. */
+    --sf-browser-bottom-reserve: max(env(safe-area-inset-bottom), 4.25rem);
+  }
+
+  html,
+  body,
+  #root,
+  .storefront-font {
+    min-height: 100%;
+    background: var(--sf-cream);
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  .storefront-font {
+    min-height: 100dvh;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --storefront-gutter-desktop: 2.5rem;
+  }
+}
+
+
+.sf-type-1 { font-size: var(--sf-type-1); }
+.sf-type-2 { font-size: var(--sf-type-2); }
+.sf-type-3 { font-size: var(--sf-type-3); }
+.sf-type-4 { font-size: var(--sf-type-4); }
+.sf-type-5 { font-size: var(--sf-type-5); }
+.sf-type-6 { font-size: var(--sf-type-6); }
+
+.sf-page-title {
+  font-size: var(--sf-page-title);
+  font-weight: 500;
+  line-height: 0.96;
+}
+
+.sf-detail-title {
+  font-size: var(--sf-detail-title);
+  font-weight: 500;
+  line-height: 0.98;
+}
+
+.sf-section-title {
+  font-size: var(--sf-section-title);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.sf-card-title {
+  min-height: calc(var(--sf-card-title) * 2.32);
+  font-size: var(--sf-card-title);
+  font-weight: 500;
+  line-height: 1.16;
+}
+
+.sf-body {
+  font-size: var(--sf-body);
+  line-height: 1.55;
+}
+
+.sf-support {
+  font-size: var(--sf-support);
+  line-height: 1.5;
+}
+
+.sf-label {
+  font-size: var(--sf-label);
+  font-weight: 500;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.sf-field {
+  width: 100%;
+  min-height: var(--sf-control-md);
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: var(--sf-radius-field);
+  background: #fff;
+  padding-inline: var(--sf-space-4);
+  font-size: var(--sf-body);
+  color: #000;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.sf-field::placeholder { color: rgba(0, 0, 0, 0.34); }
+.sf-field:focus {
+  border-color: var(--sf-green);
+  box-shadow: 0 0 0 3px rgba(0, 129, 63, 0.12);
+}
+
+.sf-textarea {
+  min-height: 6rem;
+  resize: vertical;
+  padding-block: 0.75rem;
+  line-height: 1.5;
+}
+
+.sf-primary-action,
+.sf-secondary-action {
+  min-height: var(--sf-control-lg);
+  border-radius: 999px;
+  padding-inline: var(--sf-space-6);
+  font-size: var(--sf-type-2);
+  font-weight: 500;
+  transition: transform 160ms ease, background-color 160ms ease, opacity 160ms ease;
+}
+
+.sf-primary-action {
+  background: var(--sf-green);
+  color: #fff;
+}
+.sf-primary-action:hover { background: #006e35; }
+.sf-primary-action:disabled { cursor: not-allowed; opacity: 0.35; }
+.sf-secondary-action { color: rgba(0, 0, 0, 0.58); }
+.sf-secondary-action:hover { background: rgba(255, 255, 255, 0.48); }
+
+@media (min-width: 640px) {
+  .sf-primary-action,
+  .sf-secondary-action {
+    min-height: var(--sf-control-lg-desktop);
+    font-size: var(--sf-type-2);
+  }
+}
+
+.sf-product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--sf-space-4);
+  row-gap: var(--sf-space-12);
+}
+
+@media (min-width: 640px) {
+  .sf-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--sf-space-5);
+    row-gap: 3.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .sf-product-grid {
+    column-gap: 1.75rem;
+    row-gap: var(--sf-space-16);
+  }
+}
+
+@media (min-width: 1280px) {
+  .sf-product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Shared sticky storefront top bar used on home, category, detail, and fallback pages. */
+.storefront-topbar {
+  position: sticky;
+  z-index: 80;
+  top: 0;
+  width: 100%;
+  padding-top: var(--sf-safe-top);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.065);
+  background: var(--sf-cream);
+}
+
+/* --- Fleurstales public storefront homepage poster --- */
+.storefront-home {
+  height: 100lvh;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--sf-cream);
+  color: #000;
+}
+
+.storefront-home__poster {
+  position: relative;
+  width: 100%;
+  max-width: 59rem;
+  height: calc(100lvh - 56px - var(--sf-safe-top));
+  min-height: 0;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--sf-cream);
+}
+
+.storefront-home__logo {
+  position: absolute;
+  z-index: 3;
+  top: 2.58%;
+  left: 5.05%;
+  width: auto;
+  height: auto;
+}
+
+.storefront-home__cart {
+  position: absolute;
+  z-index: 5;
+  top: 2.34%;
+  right: 5.22%;
+  width: 8.15%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.storefront-home__cart img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.storefront-home__cart-count {
+  position: absolute;
+  top: -14%;
+  right: -17%;
+  display: grid;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  place-items: center;
+  border: 2px solid #fdf6ee;
+  border-radius: 999px;
+  background: #f569a3;
+  color: #000;
+  font-size: var(--sf-type-1);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.storefront-home__flower {
+  position: absolute;
+  z-index: 1;
+  top: 5.4%;
+  left: 13.5%;
+  width: 94%;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.storefront-home__headline {
+  position: absolute;
+  z-index: 3;
+  top: 28%;
+  left: 7.5%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 74%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #000;
+  cursor: pointer;
+  font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--sf-display);
+  font-weight: 500;
+  line-height: 0.92;
+  text-align: left;
+}
+
+.storefront-home__headline-line {
+  position: relative;
+  display: block;
+  font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.storefront-home__headline-line--accent {
+  margin-block: -0.01em 0.08em;
+  font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.22em;
+  font-weight: 800;
+  line-height: 0.82;
+}
+
+.storefront-home__headline-line--accent::after {
+  position: absolute;
+  right: -0.01em;
+  bottom: -0.12em;
+  left: 0.015em;
+  height: clamp(0.22rem, 0.8vw, 0.32rem);
+  background: #ef75ac;
+  content: "";
+}
+
+.storefront-home__categories {
+  position: absolute;
+  z-index: 4;
+  right: 4.2%;
+  bottom: calc(var(--sf-browser-bottom-reserve) + 1.2%);
+  left: 5.05%;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  background: rgba(244, 235, 228, 0.8);
+  clip-path: polygon(1.2% 3%, 98.8% 0%, 100% 96.5%, 0% 100%);
+}
+
+.storefront-home__category-panel-content {
+  display: block;
+  height: auto;
+  padding: 0.72rem 0.8rem 0.8rem;
+}
+
+.storefront-home__category-grid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  column-gap: 0.15rem;
+}
+
+.storefront-home__category {
+  --category-icon-width: 62%;
+  --category-icon-scale: 1;
+  --category-icon-x: 0%;
+  --category-icon-y: 0%;
+  display: grid;
+  min-width: 0;
+  grid-template-rows: clamp(2.35rem, 8.5vw, 2.8rem) auto;
+  align-items: start;
+  justify-items: center;
+  gap: 0.24rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #282525;
+  cursor: pointer;
+  font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(0.76rem, 3.5vw, 0.9rem);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.storefront-home__category-artwork {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  place-items: center;
+  overflow: visible;
+}
+
+.storefront-home__category-artwork img {
+  display: block;
+  width: var(--category-icon-width);
+  max-width: none;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  transform: translate(var(--category-icon-x), var(--category-icon-y)) scale(var(--category-icon-scale));
+  transform-origin: center;
+}
+
+/* Optical normalization keeps the uneven silhouettes equally prominent. */
+.storefront-home__category--bouquets {
+  --category-icon-width: 46%;
+  --category-icon-y: -2%;
+}
+
+.storefront-home__category--weddings {
+  --category-icon-width: 56%;
+  --category-icon-y: 0%;
+}
+
+.storefront-home__category--graduation {
+  --category-icon-width: 61%;
+  --category-icon-scale: 1.01;
+  --category-icon-y: 1%;
+}
+
+.storefront-home__category--standing {
+  --category-icon-width: 60%;
+  --category-icon-scale: 1.01;
+  --category-icon-x: 1%;
+  --category-icon-y: 1%;
+}
+
+.storefront-home button:focus-visible {
+  outline: 3px solid #1a1a1a;
+  outline-offset: 4px;
+}
+
+@media (max-width: 359px) {
+  .storefront-home__headline {
+    left: 7%;
+    width: 78%;
+    font-size: var(--sf-display);
+  }
+  .storefront-home__categories {
+    right: 3.4%;
+    left: 4.1%;
+  }
+  .storefront-home__category { font-size: var(--sf-type-1); }
+}
+
+@media (min-width: 430px) and (max-width: 767px) {
+  .storefront-home__flower {
+    top: 6%;
+    right: 2%;
+    left: auto;
+    width: auto;
+    height: 82%;
+  }
+
+  .storefront-home__headline {
+    left: 7.5%;
+    width: 48%;
+    font-size: var(--sf-display);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .storefront-home__poster {
+    height: calc(100svh - 60px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .storefront-home {
+    display: grid;
+    min-height: 100svh;
+    place-items: start center;
+  }
+  .storefront-home__poster {
+    width: min(100%, 42rem);
+    height: calc(100svh - 60px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .storefront-home {
+    display: grid;
+    height: 100svh;
+    min-height: 0;
+    grid-template-rows: 64px minmax(0, 1fr);
+    place-items: stretch;
+    padding: 0;
+  }
+
+  .storefront-home__poster {
+    align-self: center;
+    justify-self: center;
+    width: min(calc(100% - clamp(3rem, 6vw, 8rem)), 90rem);
+    max-width: 90rem;
+    height: min(100%, 50rem);
+    min-height: 0;
+    aspect-ratio: auto;
+    border-radius: clamp(0px, 1vw, 18px);
+  }
+
+  .storefront-home__flower {
+    top: 5.5%;
+    right: 7.5%;
+    left: auto;
+    width: auto;
+    height: min(82%, 47rem);
+    max-width: 48%;
+    object-fit: contain;
+    object-position: center;
+  }
+  .storefront-home__headline {
+    top: 29.5%;
+    left: 7%;
+    width: 39%;
+    font-size: var(--sf-display);
+    line-height: 0.92;
+  }
+  .storefront-home__categories {
+    right: 4.5%;
+    bottom: 2.1%;
+    left: 4.5%;
+    height: auto;
+    min-height: 0;
+    clip-path: polygon(1% 0%, 100% 2%, 99% 100%, 0% 98%);
+  }
+  .storefront-home__category-panel-content {
+    padding: var(--sf-space-5) clamp(2rem, 3vw, 3rem);
+  }
+  .storefront-home__category-grid { column-gap: clamp(1.5rem, 2.5vw, 2.5rem); }
+  .storefront-home__category {
+    grid-template-rows: clamp(3.4rem, 4.35vw, 4.2rem) auto;
+    gap: var(--sf-space-2);
+    font-size: var(--sf-type-2);
+  }
+  .storefront-home__category-artwork img {
+    height: auto;
+    max-height: clamp(3.4rem, 4.35vw, 4.2rem);
+    object-fit: contain;
+  }
+  .storefront-home__category--bouquets {
+    --category-icon-width: 46%;
+    --category-icon-scale: 1.04;
+    --category-icon-y: 4%;
+  }
+  .storefront-home__category--weddings {
+    --category-icon-width: 64%;
+    --category-icon-scale: 1;
+    --category-icon-y: -2%;
+  }
+  .storefront-home__category--graduation {
+    --category-icon-width: 58%;
+    --category-icon-scale: 1.02;
+    --category-icon-y: -3%;
+  }
+  .storefront-home__category--standing {
+    --category-icon-width: 60%;
+    --category-icon-scale: 1.01;
+    --category-icon-x: 1%;
+    --category-icon-y: -2%;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 760px) {
+  .storefront-home__poster { height: 100%; }
+  .storefront-home__flower { top: 4.5%; height: 82%; }
+  .storefront-home__headline { top: 28%; font-size: var(--sf-display); }
+  .storefront-home__categories { bottom: 1.4%; height: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storefront-home .tap-scale { transition: none; }
+}
+
+/* Storefront responsive icon and wide-screen safeguards */
+.storefront-icon-nav {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+}
+
+.storefront-icon-action {
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+}
+
+.storefront-icon-artwork img {
+  max-inline-size: 100%;
+  max-block-size: 100%;
+}
+
+@media (min-width: 1024px) {
+  .storefront-icon-nav {
+    inline-size: 3.5rem;
+    block-size: 3.5rem;
+  }
+
+  .storefront-icon-action {
+    inline-size: 3rem;
+    block-size: 3rem;
+  }
+}
+
+@media (min-width: 1600px) {
+  .storefront-home__poster {
+    max-inline-size: 1440px;
+    margin-inline: auto;
+  }
+}
+
+
+/* Storefront footer: full-bleed panel using the exact mirrored silhouette
+   from the product-image container rather than a generic repeated zigzag. */
+.storefront-footer-bleed {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
+
+.storefront-footer-panel {
+  width: 100%;
+  min-height: 0;
+  background: #f0e6dd;
+  clip-path: polygon(
+    0 1.3%,
+    35% 3.1%,
+    76.6% 0,
+    100% 1.35%,
+    100% 100%,
+    0 100%
+  );
+}
+
+.storefront-footer-panel__content {
+  min-height: 0;
+  padding: 3.75rem 0 calc(2rem + var(--sf-browser-bottom-reserve));
+}
+
+@media (min-width: 768px) {
+  .storefront-footer-panel__content {
+    padding: 4rem 0 calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 1024px) {
+  .storefront-footer-panel__content {
+    padding: 4.5rem 0 4.5rem;
+  }
+}
+
+/* Storefront responsive brand lockup */
+.storefront-brand {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  line-height: 0;
+}
+
+.storefront-brand__icon,
+.storefront-brand__type {
+  display: block;
+  flex: 0 0 auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.storefront-brand--header {
+  gap: 0.4rem;
+  transform: translateY(1px);
+}
+.storefront-brand--header .storefront-brand__icon { width: 1.4rem; }
+.storefront-brand--header .storefront-brand__type { width: 8rem; }
+
+.storefront-brand--home {
+  gap: clamp(0.45rem, 1.2vw, 0.9rem);
+}
+.storefront-brand--home .storefront-brand__icon { width: clamp(1.8rem, 6.1vw, 3.2rem); }
+.storefront-brand--home .storefront-brand__type { width: clamp(10.2rem, 38vw, 21.5rem); }
+
+.storefront-brand--footer .storefront-brand__type {
+  width: clamp(14.25rem, 58vw, 15.5rem);
+}
+
+@media (min-width: 640px) {
+  .storefront-brand--header { gap: 0.5rem; }
+  .storefront-brand--header .storefront-brand__icon { width: 1.65rem; }
+  .storefront-brand--header .storefront-brand__type { width: 9.6rem; }
+}
+
+@media (min-width: 1024px) {
+  .storefront-brand--header { gap: 0.6rem; }
+  .storefront-brand--header .storefront-brand__icon { width: 1.95rem; }
+  .storefront-brand--header .storefront-brand__type { width: 12rem; }
+  .storefront-brand--footer .storefront-brand__type { width: 15rem; }
+}
+
+@media (max-width: 359px) {
+  .storefront-brand--header { gap: 0.4rem; }
+  .storefront-brand--header .storefront-brand__icon { width: 1.3rem; }
+  .storefront-brand--header .storefront-brand__type { width: 7.45rem; }
+}
+
+/* Storefront cart icon and count badge. The icon layer is genuinely
+   subtracted beneath the badge, so the real page/image background shows through. */
+.storefront-cart-glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.storefront-cart-glyph--cutout {
+  --storefront-cart-cutout-x: 83%;
+  --storefront-cart-cutout-radius-x: 0.82rem;
+  --storefront-cart-cutout-radius-y: 0.82rem;
+  -webkit-mask-image: radial-gradient(
+    ellipse var(--storefront-cart-cutout-radius-x) var(--storefront-cart-cutout-radius-y)
+      at var(--storefront-cart-cutout-x) 15%,
+    transparent 0 97%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    ellipse var(--storefront-cart-cutout-radius-x) var(--storefront-cart-cutout-radius-y)
+      at var(--storefront-cart-cutout-x) 15%,
+    transparent 0 97%,
+    #000 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.storefront-cart-glyph--cutout-wide {
+  --storefront-cart-cutout-x: 76%;
+  --storefront-cart-cutout-radius-x: 0.98rem;
+}
+
+.storefront-cart-badge {
+  position: absolute;
+  right: -0.12rem;
+  top: -0.16rem;
+  z-index: 2;
+  display: inline-flex;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding-inline: 0.2rem;
+  background: #1a1a1a;
+  color: #fdf6ef;
+  font-family: "Roc Grotesk", "Host Grotesk", sans-serif;
+  font-size: var(--sf-type-1);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.storefront-cart-badge--light,
+.storefront-cart-badge--dark {
+  box-shadow: none;
+}
+
+.storefront-cart-badge--double {
+  font-size: var(--sf-type-1);
+}
+
+.storefront-cart-badge--wide {
+  min-width: 1.48rem;
+  font-size: var(--sf-type-1);
+}
+
+@media (min-width: 1024px) {
+  .storefront-cart-glyph--cutout {
+    --storefront-cart-cutout-radius-x: 0.98rem;
+    --storefront-cart-cutout-radius-y: 0.98rem;
+  }
+
+  .storefront-cart-glyph--cutout-wide {
+    --storefront-cart-cutout-x: 78%;
+    --storefront-cart-cutout-radius-x: 1.12rem;
+  }
+
+  .storefront-cart-badge {
+    right: -0.16rem;
+    top: -0.2rem;
+    min-width: 1.48rem;
+    height: 1.4rem;
+    font-size: var(--sf-type-1);
+  }
+
+  .storefront-cart-badge--double {
+    font-size: var(--sf-type-1);
+  }
+
+  .storefront-cart-badge--wide {
+    min-width: 1.65rem;
+    font-size: var(--sf-type-1);
+  }
+}
+
+/* Long divider dashes stay light and tight so they read cleaner on mobile. */
+.storefront-long-dash {
+  width: 100%;
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.18) 0,
+    rgba(0, 0, 0, 0.18) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+  background-repeat: repeat-x;
+}
+
+.storefront-long-dash--section {
+  height: auto;
+  border-top: 0;
+  background-position: top left;
+  background-size: auto 2px;
+  background-repeat: repeat-x;
+}
+
+.storefront-product-details {
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.18) 0,
+    rgba(0, 0, 0, 0.18) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+  background-position: top left;
+  background-size: auto 2px;
+  background-repeat: repeat-x;
+}
+
+.storefront-product-details summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Storefront checkout — cream editorial sheet with the same asymmetric edge
+   language used by the product image container. */
+.storefront-checkout-sheet {
+  isolation: isolate;
+  border-radius: 0;
+}
+
+.storefront-checkout-sheet::before {
+  position: absolute;
+  z-index: -1;
+  top: -0.78rem;
+  right: 0;
+  left: 0;
+  height: 1.35rem;
+  background: var(--sf-cream);
+  clip-path: polygon(0 58%, 23.4% 0, 65% 62%, 100% 28%, 100% 100%, 0 100%);
+  content: "";
+  pointer-events: none;
+}
+
+.storefront-checkout-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.storefront-checkout-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.storefront-checkout-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+/* Minimal checkout form language: filled fields without permanent outlines,
+   quiet labels, and generous grouping instead of card-on-card decoration. */
+.storefront-checkout-label {
+  display: block;
+  font-size: var(--sf-type-1);
+  font-weight: 500;
+  line-height: 1.2;
+  color: rgba(0, 0, 0, 0.52);
+}
+
+.storefront-checkout-form .sf-field {
+  min-height: 3.25rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding-inline: 1rem;
+  box-shadow: none;
+  font-size: var(--sf-type-2);
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.storefront-checkout-form .sf-field::placeholder {
+  color: rgba(0, 0, 0, 0.28);
+}
+
+.storefront-checkout-form .sf-field:focus {
+  border-color: transparent;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 129, 63, 0.2);
+}
+
+.storefront-checkout-form .sf-textarea {
+  min-height: 5.5rem;
+  padding-block: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .storefront-checkout-sheet {
+    border-radius: 0;
+  }
+
+  .storefront-checkout-sheet::before {
+    display: none;
+  }
+}
+
+/* Storefront component primitives derived from the shared scale. */
+.sf-product-card-image {
+  border-radius: var(--sf-radius-card);
+}
+
+.sf-promo-badge {
+  display: inline-grid;
+  height: 1.625rem;
+  place-items: center;
+  padding: 0 0.625rem;
+  border-radius: 999px;
+  font-size: var(--sf-type-1);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.sf-card-price {
+  font-size: var(--sf-type-2);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.sf-card-old-price {
+  font-size: var(--sf-type-1);
+  line-height: 1.3;
+}
+
+.storefront-gallery-dot {
+  position: relative;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.storefront-gallery-dot::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.38rem;
+  height: 0.38rem;
+  border: 1px solid rgba(253, 246, 239, 0.25);
+  border-radius: 999px;
+  background: rgba(253, 246, 239, 0.55);
+  content: "";
+  transform: translate(-50%, -50%);
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.storefront-gallery-dot:hover::after {
+  background: rgba(253, 246, 239, 0.8);
+}
+
+.storefront-gallery-dot--active::after {
+  background: #fdf6ef;
+  transform: translate(-50%, -50%) scale(1.12);
+}
+
+.sf-filter-control {
+  min-height: 2.5rem;
+  border-radius: 999px;
+  padding-inline: 1rem;
+  font-size: var(--sf-type-1);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .sf-filter-control {
+    min-height: 2.875rem;
+    padding-inline: 1.375rem;
+    font-size: var(--sf-type-2);
+  }
+
+  .sf-card-price { font-size: var(--sf-type-2); }
+  .sf-card-old-price { font-size: var(--sf-type-1); }
+}
+
+@media (min-width: 1024px) {
+  .sf-product-card-image { border-radius: 1.25rem; }
+  .sf-card-price { font-size: var(--sf-type-2); }
+}
+
+/* Storefront header search and category navigation. */
+.storefront-font {
+  --storefront-header-height: 56px;
+}
+
+@media (min-width: 640px) {
+  .storefront-font { --storefront-header-height: 60px; }
+}
+
+@media (min-width: 1024px) {
+  .storefront-font { --storefront-header-height: 64px; }
+}
+
+.storefront-menu-glyph {
+  position: relative;
+  display: block;
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.storefront-menu-glyph > span {
+  position: absolute;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 2.25px;
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: center;
+  transition:
+    top 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.storefront-menu-glyph > span:first-child { top: 0.42rem; }
+.storefront-menu-glyph > span:last-child { top: 0.82rem; }
+
+.storefront-menu-glyph--open > span:first-child {
+  top: calc(50% - 1.125px);
+  transform: rotate(45deg);
+}
+
+.storefront-menu-glyph--open > span:last-child {
+  top: calc(50% - 1.125px);
+  transform: rotate(-45deg);
+}
+
+.storefront-navigation-layer,
+.storefront-search-layer {
+  position: fixed;
+  z-index: 75;
+  inset: var(--storefront-header-height) 0 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 340ms;
+}
+
+.storefront-navigation-layer--open,
+.storefront-search-layer--open {
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.storefront-navigation-backdrop,
+.storefront-search-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.26);
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.storefront-navigation-layer--open .storefront-navigation-backdrop,
+.storefront-search-layer--open .storefront-search-backdrop {
+  opacity: 1;
+}
+
+.storefront-navigation-drawer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: min(80vw, 25rem);
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--sf-cream);
+  color: #000;
+  transform: translateX(100%);
+  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.storefront-navigation-layer--open .storefront-navigation-drawer {
+  transform: translateX(0);
+}
+
+.storefront-navigation-drawer__content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 2rem 1.5rem calc(3rem + env(safe-area-inset-bottom));
+}
+
+.storefront-navigation-drawer__heading {
+  display: grid;
+  gap: 0;
+  padding-bottom: 1.4rem;
+}
+
+.storefront-navigation-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.storefront-navigation-collections {
+  min-width: 0;
+  margin-top: auto;
+  margin-right: -1.5rem;
+  padding-top: clamp(2rem, 7vh, 4rem);
+}
+
+.storefront-navigation-collections__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-right: 1.5rem;
+  padding-bottom: 0.7rem;
+}
+
+.storefront-navigation-collections__heading h3 {
+  font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: normal;
+  font-kerning: normal;
+}
+
+.storefront-navigation-collections__heading span {
+  color: rgba(0, 0, 0, 0.42);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.storefront-navigation-collections__rail {
+  display: flex;
+  gap: 0.7rem;
+  min-width: 0;
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-right: 1.5rem;
+  padding-bottom: 0.2rem;
+  scroll-padding-inline: 0 1.5rem;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.storefront-navigation-collection-card {
+  position: relative;
+  flex: 0 0 clamp(15.85rem, 78vw, 18.2rem);
+  aspect-ratio: 955.84 / 357.97;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 0.8rem;
+  background: transparent;
+  text-align: left;
+  scroll-snap-align: start;
+}
+
+.storefront-navigation-collection-card img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.storefront-navigation-collection-card > span {
+  position: absolute;
+  z-index: 1;
+  top: 20%;
+  left: 7.5%;
+  max-width: 54%;
+  font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1.25rem, 5.2vw, 1.5rem);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: normal;
+  font-kerning: normal;
+}
+
+.storefront-navigation-group {
+  padding-top: 0.35rem;
+}
+
+.storefront-navigation-list > .storefront-navigation-parent:first-child {
+  margin-bottom: 0.45rem;
+}
+
+.storefront-navigation-parent,
+.storefront-navigation-subcategory {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+.storefront-navigation-parent {
+  position: relative;
+  min-height: 3.45rem;
+  padding: 0.85rem 1.5rem 0.85rem 0;
+  font-size: clamp(1.22rem, 5.4vw, 1.5rem);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.storefront-navigation-parent::after {
+  position: absolute;
+  top: 50%;
+  right: 0.1rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #00813f;
+  content: '';
+  opacity: 0;
+  transform: translateY(-50%) scale(0.4);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.storefront-navigation-parent:hover,
+.storefront-navigation-subcategory:hover {
+  color: #00813f;
+}
+
+.storefront-navigation-parent--active::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.storefront-navigation-sublist {
+  display: grid;
+  gap: 0.2rem;
+  margin: -0.1rem 0 1rem 0;
+  padding-left: 0.9rem;
+}
+
+.storefront-navigation-subcategory {
+  position: relative;
+  min-height: 2.35rem;
+  padding: 0.45rem 0;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 1.02rem;
+  line-height: 1.3;
+}
+
+.storefront-navigation-subcategory--active {
+  color: #000;
+  font-weight: 500;
+}
+
+.storefront-navigation-subcategory--active::before {
+  position: absolute;
+  top: 50%;
+  left: -0.9rem;
+  width: 3px;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: #00813f;
+  content: '';
+  transform: translateY(-50%);
+}
+
+.storefront-search-panel {
+  position: absolute;
+  inset: 0 0 auto;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--sf-cream);
+  color: #000;
+  padding: 1.1rem 0 1.25rem;
+  transform: translateY(-105%);
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.storefront-search-layer--open .storefront-search-panel {
+  transform: translateY(0);
+}
+
+.storefront-search-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  min-height: 3.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.storefront-search-form:focus-within {
+  border-color: rgba(0, 0, 0, 0.38);
+}
+
+.storefront-search-form__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 1.15rem;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.storefront-search-form__input {
+  min-width: 0;
+  height: 3.45rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0 0.7rem;
+  color: #000;
+  font-size: 1rem;
+}
+
+.storefront-search-form__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.storefront-search-form__input::placeholder {
+  color: rgba(0, 0, 0, 0.42);
+}
+
+.storefront-search-form__clear {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.storefront-search-form__submit {
+  min-height: 2.6rem;
+  margin-right: 0.42rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #00813f;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.storefront-search-panel__support {
+  margin: 0.7rem 0 0;
+  color: rgba(0, 0, 0, 0.52);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+@media (min-width: 640px) {
+  .storefront-navigation-drawer__content {
+    padding: 2.6rem 2rem calc(3.25rem + env(safe-area-inset-bottom));
+  }
+
+  .storefront-navigation-collections {
+    margin-right: -2rem;
+  }
+
+  .storefront-navigation-collections__heading,
+  .storefront-navigation-collections__rail {
+    padding-right: 2rem;
+  }
+
+  .storefront-search-panel {
+    padding: 1.35rem 0 1.45rem;
+  }
+
+  .storefront-search-form {
+    max-width: 48rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storefront-menu-glyph > span,
+  .storefront-navigation-backdrop,
+  .storefront-search-backdrop,
+  .storefront-navigation-drawer,
+  .storefront-search-panel {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* 2026-07-19 storefront visual refinement */
+.storefront-topbar .storefront-brand--header .storefront-brand__icon {
+  width: 1.55rem;
+}
+.storefront-topbar .storefront-brand--header .storefront-brand__type {
+  display: none;
+}
+
+.storefront-long-dash,
+.storefront-product-details {
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.17) 0,
+    rgba(0, 0, 0, 0.17) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+  background-size: auto 1px;
+}
+
+.storefront-checkout-sheet {
+  background: var(--sf-cream);
+}
+.storefront-checkout-form {
+  background: var(--sf-cream);
+}
+.storefront-checkout-form .sf-field {
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(0,0,0,.025);
+}
+.storefront-checkout-form .sf-field::placeholder {
+  color: rgba(0, 0, 0, 0.30);
+}
+.storefront-checkout-form .sf-field:focus {
+  border-color: rgba(0, 129, 63, 0.58);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 129, 63, 0.10);
+}
+.storefront-checkout-label {
+  color: rgba(0, 0, 0, 0.62);
+}
+.storefront-checkout-sheet > header,
+.storefront-checkout-sheet > nav {
+  background: var(--sf-cream);
+}
+.storefront-checkout-sheet footer {
+  border-top: 1px solid rgba(0,0,0,.07);
+  background: var(--sf-cream);
+}
+
+/* Requested larger editorial headings, without enlarging body text or controls. */
+.sf-page-title { font-size: clamp(3.25rem, 14vw, 3.6rem); }
+.sf-detail-title { font-size: clamp(3rem, 12vw, 3.6rem); }
+.storefront-checkout-sheet #storefront-checkout-title { font-size: 2rem; }
+.storefront-checkout-form h3 { font-size: 1.75rem; }
+
+.sf-filter-control--compact {
+  min-height: 2.25rem;
+  padding-inline: 0.9rem;
+  font-size: 0.95rem;
+}
+
+@media (min-width: 640px) {
+  .sf-filter-control--compact {
+    min-height: 2.5rem;
+    padding-inline: 1.1rem;
+    font-size: 1rem;
+  }
+}
+
+
+/* Optical storefront margin and promo refinement */
+.sf-promo-badge {
+  height: 1.625rem;
+  padding-inline: 0.625rem;
+  font-weight: 700;
+}
+
+/* Mobile optical rhythm audit — visually aligns mixed shapes rather than forcing a rigid numeric grid. */
+@media (max-width: 639px) {
+  .storefront-topbar button[aria-label="Back to Fleurstales home"] {
+    margin-left: -1px;
+  }
+
+  .storefront-topbar button[aria-label="Open categories menu"] {
+    margin-right: -2px;
+  }
+
+  .sf-product-card-image {
+    transform-origin: center;
+  }
+
+  .storefront-checkout-form,
+  .storefront-checkout-scroll {
+    scrollbar-width: none;
+  }
+
+  .storefront-checkout-form::-webkit-scrollbar,
+  .storefront-checkout-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+
+/* Desktop visual audit — keeps the mobile language intact while giving wide
+   screens a deliberate editorial composition instead of simply stretching it. */
+@media (min-width: 1024px) {
+  .storefront-topbar .storefront-brand--header .storefront-brand__icon {
+    width: 1.9rem;
+  }
+
+  .storefront-home__poster {
+    width: min(calc(100% - clamp(4rem, 8vw, 9rem)), 84rem);
+    max-width: 84rem;
+    height: min(100%, 52rem);
+    border-radius: 0;
+  }
+
+  .storefront-home__headline {
+    top: 24.5%;
+    left: 5.5%;
+    width: 43%;
+    font-size: clamp(5rem, 6.2vw, 6.6rem);
+    line-height: 0.88;
+  }
+
+  .storefront-home__flower {
+    top: 2%;
+    right: 3.5%;
+    height: 91%;
+    max-width: 55%;
+  }
+
+  .storefront-home__categories {
+    right: 3%;
+    bottom: 2.6%;
+    left: 3%;
+    clip-path: polygon(0.8% 2%, 99.2% 0%, 100% 97%, 0% 100%);
+  }
+
+  .storefront-home__category-panel-content {
+    padding: 1.25rem clamp(2rem, 3vw, 3rem) 1.35rem;
+  }
+
+  .storefront-home__category-grid {
+    column-gap: clamp(1.25rem, 2.4vw, 2.75rem);
+  }
+
+  .storefront-home__category {
+    grid-template-rows: clamp(4.4rem, 5vw, 5.2rem) auto;
+    gap: 0.45rem;
+    font-size: 1.05rem;
+  }
+
+  .storefront-home__category-artwork img {
+    max-height: clamp(4.4rem, 5vw, 5.2rem);
+  }
+
+  .sf-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: clamp(1.75rem, 2.4vw, 2.5rem);
+    row-gap: 4.5rem;
+  }
+
+  .sf-card-title {
+    min-height: calc(1.3rem * 2.25);
+    font-size: 1.3rem;
+    line-height: 1.12;
+  }
+
+  .sf-card-price {
+    font-size: 1.05rem;
+  }
+
+  .sf-card-old-price {
+    font-size: 0.9rem;
+  }
+
+  .sf-filter-control--compact {
+    min-height: 2.6rem;
+    padding-inline: 1.2rem;
+  }
+
+  .storefront-search-panel {
+    padding: 1.6rem 0;
+  }
+
+  .storefront-search-panel .storefront-search-form {
+    max-width: 56rem;
+    margin-inline: auto;
+  }
+
+  .storefront-search-panel__support {
+    max-width: 56rem;
+    margin-inline: auto;
+  }
+
+  .storefront-navigation-drawer {
+    width: min(34vw, 31rem);
+  }
+
+  .storefront-navigation-drawer__content {
+    padding: 3rem 2.6rem 4rem;
+  }
+
+  .storefront-navigation-parent {
+    min-height: 3.7rem;
+    padding-block: 0.95rem;
+    font-size: 1.55rem;
+  }
+
+  .storefront-navigation-subcategory {
+    font-size: 1.05rem;
+  }
+
+  .storefront-footer-panel__content {
+    padding: 3rem 0 3.5rem;
+  }
+
+  .storefront-checkout-sheet > header {
+    padding-inline: 2.5rem;
+  }
+
+  .storefront-checkout-sheet > nav,
+  .storefront-checkout-sheet .storefront-checkout-scroll,
+  .storefront-checkout-sheet footer {
+    padding-inline: 2.5rem;
+  }
+}
+
+@media (min-width: 1680px) {
+  .sf-product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.storefront-card-signature::before {
+  content: "— ";
+}
+
+/* Lightweight storefront motion layer. Storefront cart movement is
+   defined in the dedicated cart-summary block below. */
+
+@keyframes storefront-results-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.storefront-product-results {
+  animation: storefront-results-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.storefront-material-tab {
+  transform: translateY(0);
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.storefront-material-tab--active {
+  transform: translateY(-1px);
+}
+
+.storefront-category-tab {
+  transform: translateY(0) scale(1);
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.storefront-category-tab--active {
+  transform: translateY(-1px) scale(1.015);
+}
+
+@keyframes storefront-gallery-next {
+  from {
+    opacity: 0.25;
+    transform: translateX(2.5%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes storefront-gallery-previous {
+  from {
+    opacity: 0.25;
+    transform: translateX(-2.5%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.storefront-gallery-image--next {
+  animation: storefront-gallery-next 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.storefront-gallery-image--previous {
+  animation: storefront-gallery-previous 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes storefront-backdrop-enter {
+  from { background-color: rgba(0, 0, 0, 0); }
+  to { background-color: rgba(0, 0, 0, 0.4); }
+}
+
+@keyframes storefront-checkout-enter-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes storefront-checkout-enter-desktop {
+  from {
+    opacity: 0.75;
+    transform: translateX(2.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes storefront-popup-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.storefront-modal-layer {
+  animation: storefront-backdrop-enter 200ms ease both;
+}
+
+.storefront-checkout-sheet--enter {
+  animation: storefront-checkout-enter-mobile 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.storefront-popup-enter {
+  animation: storefront-popup-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (min-width: 640px) {
+  .storefront-checkout-sheet--enter {
+    animation-name: storefront-checkout-enter-desktop;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storefront-mini-cart,
+  .storefront-material-tab,
+  .storefront-category-tab {
+    transition-duration: 0.01ms;
+  }
+
+  .storefront-product-results,
+  .storefront-gallery-image--next,
+  .storefront-gallery-image--previous,
+  .storefront-modal-layer,
+  .storefront-checkout-sheet--enter,
+  .storefront-popup-enter {
+    animation-duration: 0.01ms;
+  }
+}
+
+
+/* Desktop product-detail cleanup: static composition, quieter scale and spacing. */
+@media (min-width: 1024px) {
+  .storefront-product-details {
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    background-image: none;
+  }
+
+  .storefront-product-details dl {
+    max-width: 28rem;
+  }
+
+  .storefront-gallery-dot {
+    width: 0.42rem;
+    height: 0.42rem;
+  }
+
+  .storefront-gallery-dot--active {
+    width: 1.6rem;
+  }
+}
+
+/* Second desktop visual audit — tighter hierarchy, calmer spacing, and
+   less oversized UI without changing the mobile composition. */
+@media (min-width: 1024px) {
+  :root {
+    --sf-page-title: 3rem;
+  }
+
+  .sf-product-grid {
+    column-gap: clamp(1.6rem, 2vw, 2.25rem);
+    row-gap: 3.75rem;
+  }
+
+  .sf-card-title {
+    min-height: calc(1.2rem * 2.25);
+    font-size: 1.2rem;
+    line-height: 1.14;
+  }
+
+  .sf-card-price {
+    font-size: 0.98rem;
+  }
+
+  .sf-card-old-price {
+    font-size: 0.84rem;
+  }
+
+  .sf-filter-control--compact {
+    min-height: 2.45rem;
+    padding-inline: 1.05rem;
+  }
+
+  .storefront-footer-panel__content {
+    padding: 2.6rem 0 3rem;
+  }
+
+  .storefront-navigation-drawer {
+    width: min(31vw, 29rem);
+  }
+
+  .storefront-navigation-drawer__content {
+    padding: 2.55rem 2.35rem 3.25rem;
+  }
+
+  .storefront-navigation-drawer__heading h2 {
+    font-size: 3rem;
+    line-height: 0.94;
+  }
+
+  .storefront-navigation-parent {
+    min-height: 3.25rem;
+    padding-block: 0.78rem;
+    font-size: 1.4rem;
+  }
+
+  .storefront-navigation-subcategory {
+    min-height: 2.15rem;
+    padding-block: 0.36rem;
+    font-size: 1rem;
+  }
+
+  .storefront-search-panel {
+    padding: 1.3rem 0 1.35rem;
+  }
+
+  .storefront-search-panel .storefront-search-form,
+  .storefront-search-panel__support {
+    max-width: 50rem;
+  }
+
+  .storefront-product-details summary {
+    font-size: 0.92rem;
+  }
+}
+
+
+
+
+/* Trigger the natural iOS Safari bottom underlay before the cart-bar starts
+   moving. The fixed reserve-height paint layer reaches beneath the browser
+   toolbar immediately, while the actual cart panel enters on the next frame. */
+@media (max-width: 639px) {
+  html.storefront-mini-cart-underlay-active,
+  body.storefront-mini-cart-underlay-active,
+  body.storefront-mini-cart-underlay-active #app {
+    background-color: var(--sf-cream);
+  }
+
+  body.storefront-mini-cart-underlay-active::after {
+    content: "";
+    position: fixed;
+    z-index: 19;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: var(--sf-browser-bottom-reserve);
+    pointer-events: none;
+    background: var(--sf-cream);
+  }
+}
+
+/* Cart summary: a threshold-triggered panel with movement only.
+   It slides in and out without any opacity transition. */
+.storefront-mini-cart {
+  pointer-events: none;
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
+  overflow: visible;
+  visibility: hidden;
+  transform: translate3d(0, 105%, 0);
+  transition:
+    transform 540ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 540ms;
+  will-change: transform;
+}
+
+.storefront-mini-cart--visible {
+  visibility: visible;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 1080ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0s;
+}
+
+.storefront-mini-cart__panel {
+  pointer-events: none;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 1.25rem;
+  background: var(--sf-cream);
+  box-shadow: 0 -8px 24px rgba(22, 20, 19, 0.07);
+}
+
+.storefront-mini-cart__content {
+  pointer-events: auto;
+  display: flex;
+  width: min(100%, 34rem);
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.storefront-mini-cart[aria-hidden="true"] .storefront-mini-cart__content {
+  pointer-events: none;
+}
+
+.storefront-mini-cart__summary {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.42rem;
+  color: #111;
+}
+
+.storefront-mini-cart__count {
+  font-size: var(--sf-type-2);
+  font-weight: 500;
+  line-height: 1.1;
+  color: rgba(0, 0, 0, 0.58);
+}
+
+.storefront-mini-cart__price {
+  font-size: 1.48rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.storefront-mini-cart__button {
+  display: inline-flex;
+  min-height: 3.5rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border-radius: 999px;
+  background: #00813f;
+  padding-inline: 1.35rem;
+  color: #fdf6ee;
+  font-size: var(--sf-type-2);
+  font-weight: 600;
+  line-height: 1;
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.storefront-mini-cart__button:hover {
+  background: #00753a;
+  transform: translateY(-1px);
+}
+
+.storefront-mini-cart__button:active {
+  transform: scale(0.985);
+}
+
+@media (max-width: 639px) {
+  .storefront-mini-cart__panel {
+    align-items: flex-start;
+    padding: 2.15rem 1.25rem 1.25rem;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 5.8 L34.95 10.6 L76.59 2.4 L100 5.8 L100 100 L0 100 Z' fill='%23faf9f6'/%3E%3Cpath d='M0 5.8 L34.95 10.6 L76.59 2.4 L100 5.8' fill='none' stroke='%23000000' stroke-opacity='.12' stroke-width='.9' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    box-shadow: none;
+    filter: drop-shadow(0 -5px 10px rgba(22, 20, 19, 0.07));
+  }
+
+  .storefront-mini-cart__content {
+    width: 100%;
+    max-width: none;
+    gap: 0.85rem;
+  }
+
+  .storefront-mini-cart__summary {
+    padding-left: 0.15rem;
+  }
+
+  .storefront-mini-cart__button {
+    min-width: 9.75rem;
+    padding-inline: 1.15rem;
+  }
+
+  .storefront-navigation-drawer__content {
+    padding-bottom: calc(2rem + var(--sf-browser-bottom-reserve));
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .storefront-mini-cart,
+  .storefront-mini-cart--visible {
+    transition-duration: 1ms;
+  }
+}
+
+
+
+/* Light-only build: dark mode is intentionally disabled across the app. */
+html {
+  color-scheme: light !important;
+}
+
+html.dark {
+  color-scheme: light !important;
+}
+
+html.dark,
+html.dark body,
+html.dark #root,
+html.dark .storefront-font {
+  color: #000;
+  background-color: var(--sf-cream);
+}
+
+html.dark .storefront-font,
+html.dark .storefront-font * {
+  color-scheme: light;
+}
+
+html.dark .storefront-font .text-black {
+  color: #000 !important;
+}
+
+
+/* Normalized mobile homepage:
+   Use Safari's stable visible viewport instead of trying to render beneath
+   browser chrome. The page stays fixed and non-scrollable, and all important
+   artwork and controls remain inside the visible area. */
+@media (max-width: 639px) {
+  :root {
+    --sf-browser-bottom-reserve: max(env(safe-area-inset-bottom), 0.75rem);
+  }
+
+  html:has(.storefront-home),
+  body:has(.storefront-home),
+  body:has(.storefront-home) #app {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: var(--sf-cream);
+  }
+
+  .storefront-home {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100svh;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--sf-cream);
+  }
+
+  .storefront-home__poster {
+    height: calc(100svh - 56px - var(--sf-safe-top));
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Fit the complete illustration inside the real visible Safari viewport.
+     Height drives the scale so the vase is no longer clipped at the bottom. */
+  .storefront-home__flower {
+    top: 1.5%;
+    right: -1.5%;
+    left: auto;
+    width: auto;
+    height: 97%;
+    max-width: none;
+    transform: none;
+  }
+
+  .storefront-home__categories {
+    bottom: calc(var(--sf-browser-bottom-reserve) + 0.35rem);
+  }
+}
+
+
+/* Homepage reference refinement: full-width translucent zigzag category panel
+   and mixed headline typography. */
+@media (max-width: 639px) {
+  .storefront-home__headline {
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 500;
+    line-height: 0.92;
+  }
+
+  .storefront-home__headline-line--accent {
+    font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.22em;
+    font-weight: 800;
+    line-height: 0.82;
+  }
+
+  .storefront-home__categories {
+    right: 0;
+    bottom: calc(var(--sf-browser-bottom-reserve) + 0.1rem);
+    left: 0;
+    isolation: isolate;
+    overflow: visible;
+    background: transparent;
+    clip-path: none;
+  }
+
+  .storefront-home__categories::before {
+    position: absolute;
+    z-index: 0;
+    top: -1.75rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(244, 235, 228, 0.8);
+    clip-path: polygon(
+      0 1rem,
+      12.5% 1.5rem,
+      25% 0.72rem,
+      37.5% 1.35rem,
+      50% 0.62rem,
+      62.5% 1.28rem,
+      75% 0.52rem,
+      87.5% 1.18rem,
+      100% 0.8rem,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__categories::after {
+    position: absolute;
+    z-index: 2;
+    top: -1.75rem;
+    right: 0;
+    left: 0;
+    height: 1.75rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 28' preserveAspectRatio='none'%3E%3Cpath d='M0 16 L125 24 L250 7 L375 21 L500 5 L625 19 L750 4 L875 17 L1000 12' fill='none' stroke='%23282525' stroke-width='1.25' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__category-panel-content {
+    position: relative;
+    z-index: 3;
+    padding: 1rem 0.65rem 0.8rem;
+  }
+}
+
+
+/* Final homepage visual correction from user reference:
+   - footer-style shallow zigzag panel
+   - 80% opacity
+   - visually matched headline typography and spacing */
+@media (max-width: 639px) {
+  .storefront-home__headline {
+    top: 29%;
+    left: 8.8%;
+    width: 43%;
+    gap: 0.08rem;
+    color: #111;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(2.55rem, 11vw, 4.1rem);
+    font-weight: 500;
+    line-height: 0.92;
+  }
+
+  .storefront-home__headline-line {
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 500;
+    line-height: 0.92;
+    white-space: nowrap;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0.02em 0.03em;
+    font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.26em;
+    font-weight: 800;
+    line-height: 0.82;
+  }
+
+  .storefront-home__headline-line--accent::after {
+    display: none;
+  }
+
+  .storefront-home__categories {
+    right: 0;
+    bottom: calc(var(--sf-browser-bottom-reserve) + 0.1rem);
+    left: 0;
+    width: 100%;
+    overflow: visible;
+    background: transparent;
+    clip-path: none;
+    isolation: isolate;
+  }
+
+  .storefront-home__categories::before {
+    position: absolute;
+    z-index: 0;
+    top: -1.18rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(240, 230, 221, 1);
+    clip-path: polygon(
+      0 0.72rem,
+      16% 0.88rem,
+      35% 1.02rem,
+      63% 0.55rem,
+      81% 0.78rem,
+      100% 0.58rem,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__categories::after {
+    position: absolute;
+    z-index: 2;
+    top: -1.19rem;
+    right: 0;
+    left: 0;
+    height: 1.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 24' preserveAspectRatio='none'%3E%3Cpath d='M0 14 L160 16 L350 18 L630 10 L810 13 L1000 11' fill='none' stroke='%23615b56' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__category-panel-content {
+    position: relative;
+    z-index: 3;
+    padding: 0.92rem 0.7rem 0.72rem;
+  }
+
+  .storefront-home__category-grid {
+    gap: 0.45rem;
+  }
+
+  .storefront-home__category-button {
+    gap: 0.38rem;
+  }
+
+  .storefront-home__category-artwork {
+    width: clamp(2.5rem, 10vw, 3.3rem);
+    height: clamp(2.1rem, 8.4vw, 2.7rem);
+  }
+
+  .storefront-home__category-button span:last-child {
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+}
+
+
+/* Visual-match refinement from reference screenshot:
+   match the homepage poster, headline, vase placement, and translucent
+   zigzag footer panel by eye rather than by numeric scaling. */
+@media (max-width: 639px) {
+  .storefront-home__poster {
+    height: calc(100svh - 56px - var(--sf-safe-top));
+    background: var(--sf-cream);
+  }
+
+  .storefront-home__flower {
+    top: 4.8%;
+    right: -4.4%;
+    left: auto;
+    width: auto;
+    height: 88.8%;
+    max-width: none;
+    transform: none;
+  }
+
+  .storefront-home__headline {
+    top: 30.1%;
+    left: 9.6%;
+    width: 40.5%;
+    gap: 0.08rem;
+    color: #111;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(2.42rem, 10.3vw, 4rem);
+    font-weight: 500;
+    line-height: 0.9;
+  }
+
+  .storefront-home__headline-line {
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 500;
+    line-height: 0.9;
+    white-space: nowrap;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0.04em 0.03em;
+    font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.26em;
+    font-weight: 800;
+    line-height: 0.81;
+  }
+
+  .storefront-home__categories {
+    right: 0;
+    bottom: calc(var(--sf-browser-bottom-reserve) + 0.06rem);
+    left: 0;
+    width: 100%;
+    background: transparent;
+    clip-path: none;
+    isolation: isolate;
+    overflow: visible;
+  }
+
+  .storefront-home__categories::before {
+    position: absolute;
+    z-index: 0;
+    top: -1.18rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(244, 235, 228, 0.8);
+    clip-path: polygon(
+      0 0.78rem,
+      15% 0.92rem,
+      35% 1.02rem,
+      63% 0.56rem,
+      82% 0.82rem,
+      100% 0.64rem,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__categories::after {
+    position: absolute;
+    z-index: 2;
+    top: -1.18rem;
+    right: 0;
+    left: 0;
+    height: 1.22rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 24' preserveAspectRatio='none'%3E%3Cpath d='M0 15 L160 17 L350 19 L635 10 L805 13 L1000 11' fill='none' stroke='%23635e58' stroke-width='1.15' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__category-panel-content {
+    position: relative;
+    z-index: 3;
+    padding: 0.92rem 0.76rem 0.82rem;
+  }
+
+  .storefront-home__category-grid {
+    column-gap: 0.22rem;
+    gap: 0.22rem;
+  }
+
+  .storefront-home__category {
+    grid-template-rows: clamp(2.55rem, 9.2vw, 3rem) auto;
+    gap: 0.2rem;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .storefront-home__category-artwork {
+    width: clamp(2.8rem, 11.4vw, 3.4rem);
+    height: clamp(2.2rem, 9vw, 2.85rem);
+  }
+
+  .storefront-home__category-artwork img {
+    width: 72%;
+  }
+}
+
+/* Final visual eye-match pass for the homepage reference. */
+@media (max-width: 639px) {
+  .storefront-home__poster {
+    height: calc(100svh - 56px - var(--sf-safe-top));
+    background: var(--sf-cream);
+  }
+
+  .storefront-home__flower {
+    top: 5.25%;
+    right: -1.2%;
+    left: auto;
+    width: auto;
+    height: 83.9%;
+    max-width: none;
+    transform: none;
+  }
+
+  .storefront-home__headline {
+    top: 29.25%;
+    left: 9.45%;
+    width: 39.6%;
+    gap: 0;
+    color: #111;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(2.28rem, 9.1vw, 3.65rem);
+    font-weight: 500;
+    line-height: 0.9;
+  }
+
+  .storefront-home__headline-line {
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 500;
+    line-height: 0.9;
+    white-space: nowrap;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0.035em 0.03em;
+    font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.27em;
+    font-weight: 800;
+    line-height: 0.81;
+  }
+
+  .storefront-home__headline-line--accent::after {
+    content: none;
+  }
+
+  .storefront-home__categories {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: transparent;
+    clip-path: none;
+    isolation: isolate;
+    overflow: visible;
+  }
+
+  .storefront-home__categories::before {
+    position: absolute;
+    z-index: 0;
+    top: -1.15rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: #f4ebe4;
+    clip-path: polygon(
+      0 0.79rem,
+      18% 0.88rem,
+      36% 0.96rem,
+      61% 0.74rem,
+      77% 0.62rem,
+      100% 0.73rem,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__categories::after {
+    position: absolute;
+    z-index: 2;
+    top: -1.13rem;
+    right: 0;
+    left: 0;
+    height: 1.22rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 24' preserveAspectRatio='none'%3E%3Cpath d='M0 15 L180 16 L360 18 L610 12 L780 9 L1000 13' fill='none' stroke='%236a645f' stroke-width='1.12' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__category-panel-content {
+    position: relative;
+    z-index: 3;
+    padding: 1rem 0.82rem 0.84rem;
+  }
+
+  .storefront-home__category-grid {
+    column-gap: 0.06rem;
+    gap: 0.06rem;
+  }
+
+  .storefront-home__category {
+    --category-icon-width: 76%;
+    grid-template-rows: 2.85rem auto;
+    gap: 0.18rem;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    color: #173c31;
+  }
+
+  .storefront-home__category-artwork {
+    width: 100%;
+    height: 2.95rem;
+  }
+
+  .storefront-home__category-artwork img {
+    width: var(--category-icon-width);
+  }
+
+  .storefront-home__category--bouquets {
+    --category-icon-width: 59%;
+    --category-icon-y: 0%;
+  }
+
+  .storefront-home__category--weddings {
+    --category-icon-width: 68%;
+    --category-icon-y: 2%;
+  }
+
+  .storefront-home__category--graduation {
+    --category-icon-width: 71%;
+    --category-icon-y: 1%;
+  }
+
+  .storefront-home__category--standing {
+    --category-icon-width: 72%;
+    --category-icon-y: 0%;
+  }
+}
+
+/* Final homepage anchor visual pass for right-top flower / bottom-right vase. */
+@media (max-width: 639px) {
+  .storefront-home__poster {
+    height: calc(100svh - 56px - var(--sf-safe-top));
+    background: #fdf8f1;
+  }
+
+  .storefront-home__flower {
+    top: 3.8%;
+    right: -4.8%;
+    left: auto;
+    width: auto;
+    height: 84.2%;
+    max-width: none;
+    transform: none;
+    transform-origin: top right;
+  }
+
+  .storefront-home__headline {
+    top: 25.2%;
+    left: 8.8%;
+    width: 41%;
+    gap: 0;
+    color: #111111;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(3rem, 9.6vw, 4.3rem);
+    font-weight: 500;
+    line-height: 0.9;
+  }
+
+  .storefront-home__headline-line {
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 500;
+    line-height: 0.9;
+    white-space: nowrap;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0.005em 0.04em;
+    font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.24em;
+    font-weight: 800;
+    line-height: 0.8;
+  }
+
+  .storefront-home__headline-line--accent::after {
+    content: none;
+  }
+
+  .storefront-home__categories {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: transparent;
+    clip-path: none;
+    isolation: isolate;
+    overflow: visible;
+  }
+
+  .storefront-home__categories::before {
+    position: absolute;
+    z-index: 0;
+    top: -0.96rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(244, 235, 228, 1);
+    clip-path: polygon(
+      0 0.86rem,
+      16% 0.92rem,
+      35% 1rem,
+      58% 0.78rem,
+      82% 0.62rem,
+      100% 0.78rem,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__categories::after {
+    position: absolute;
+    z-index: 2;
+    top: -0.98rem;
+    right: 0;
+    left: 0;
+    height: 1.08rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 26' preserveAspectRatio='none'%3E%3Cpath d='M0 16 L160 17 L340 19 L590 14 L790 11 L1000 14' fill='none' stroke='%236f6762' stroke-width='1.08' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__category-panel-content {
+    position: relative;
+    z-index: 3;
+    padding: 1.02rem 0.98rem 1.3rem;
+  }
+
+  .storefront-home__category-grid {
+    column-gap: 0.16rem;
+    gap: 0.16rem;
+    align-items: end;
+  }
+
+  .storefront-home__category {
+    --category-icon-width: 76%;
+    grid-template-rows: 2.75rem auto;
+    gap: 0.14rem;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.66rem;
+    font-weight: 800;
+    line-height: 1.02;
+    text-transform: uppercase;
+    color: #16372f;
+  }
+
+  .storefront-home__category-artwork {
+    width: 100%;
+    height: 2.78rem;
+    align-self: end;
+  }
+
+  .storefront-home__category-artwork img {
+    width: var(--category-icon-width);
+  }
+
+  .storefront-home__category--bouquets {
+    --category-icon-width: 60%;
+    --category-icon-y: 0%;
+  }
+
+  .storefront-home__category--weddings {
+    --category-icon-width: 68%;
+    --category-icon-y: 2%;
+  }
+
+  .storefront-home__category--graduation {
+    --category-icon-width: 71%;
+    --category-icon-y: 1%;
+  }
+
+  .storefront-home__category--standing {
+    --category-icon-width: 72%;
+    --category-icon-y: 0%;
+  }
+}
+
+/* Reference-image proportional match pass. */
+@media (max-width: 639px) {
+  .storefront-home__poster {
+    height: calc(100svh - 56px - var(--sf-safe-top));
+    background: #fdf8f1;
+  }
+
+  /* One SVG, anchored by the flower at top-right and the vase at bottom-right. */
+  .storefront-home__flower {
+    top: 4.2%;
+    right: -0.8%;
+    left: auto;
+    width: auto;
+    height: 78.6%;
+    max-width: none;
+    transform: none;
+    transform-origin: top right;
+  }
+
+  .storefront-home__headline {
+    top: 23.4%;
+    left: 8.65%;
+    width: 43%;
+    gap: 0;
+    color: #101010;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(2.28rem, 7.7vw, 3.25rem);
+    font-weight: 500;
+    line-height: 0.92;
+  }
+
+  .storefront-home__headline-line {
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 500;
+    line-height: 0.92;
+    white-space: nowrap;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0.06em 0.08em;
+    font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.28em;
+    font-weight: 800;
+    line-height: 0.8;
+  }
+
+  .storefront-home__headline-line--accent::after {
+    content: none;
+  }
+
+  .storefront-home__categories {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 18.2%;
+    background: transparent;
+    clip-path: none;
+    isolation: isolate;
+    overflow: visible;
+  }
+
+  .storefront-home__categories::before {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    background: #f4ebe4;
+    clip-path: polygon(
+      0 3.9%,
+      18% 4.4%,
+      35% 4.9%,
+      58% 3.8%,
+      80% 3.1%,
+      100% 3.8%,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__categories::after {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 6.2%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 28' preserveAspectRatio='none'%3E%3Cpath d='M0 17 L180 18 L350 20 L590 15 L790 12 L1000 15' fill='none' stroke='%236f6762' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__category-panel-content {
+    position: relative;
+    z-index: 3;
+    height: 100%;
+    padding: 3.1rem 0.8rem 1.35rem;
+  }
+
+  .storefront-home__category-grid {
+    height: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
+    column-gap: 0.18rem;
+  }
+
+  .storefront-home__category {
+    --category-icon-width: 74%;
+    grid-template-rows: 3.35rem auto;
+    align-items: start;
+    gap: 0.28rem;
+    color: #16372f;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .storefront-home__category-artwork {
+    width: 100%;
+    height: 3.35rem;
+  }
+
+  .storefront-home__category-artwork img {
+    width: var(--category-icon-width);
+    max-height: 100%;
+  }
+
+  .storefront-home__category--bouquets {
+    --category-icon-width: 58%;
+    --category-icon-y: 0%;
+  }
+
+  .storefront-home__category--weddings {
+    --category-icon-width: 67%;
+    --category-icon-y: 1%;
+  }
+
+  .storefront-home__category--graduation {
+    --category-icon-width: 69%;
+    --category-icon-y: 0%;
+  }
+
+  .storefront-home__category--standing {
+    --category-icon-width: 70%;
+    --category-icon-y: 0%;
+  }
+}
+
+/* Home poster rebuild — visual match pass against supplied reference.
+   Keep the header separate and treat the body like a fixed poster canvas. */
+@media (max-width: 639px) {
+  .storefront-home {
+    background: #fdf8f1;
+    overflow: hidden;
+  }
+
+  .storefront-home__poster {
+    position: relative;
+    height: calc(100svh - 3.8rem - var(--sf-safe-top));
+    min-height: calc(100svh - 3.8rem - var(--sf-safe-top));
+    background: #fdf8f1;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .storefront-home__flower {
+    z-index: 1;
+    top: 4.5%;
+    right: -1.9%;
+    left: auto;
+    width: 84.5%;
+    height: auto;
+    max-width: none;
+    object-fit: contain;
+    object-position: top right;
+    transform: none;
+    transform-origin: top right;
+    pointer-events: none;
+  }
+
+  .storefront-home__headline {
+    z-index: 3;
+    top: 23.15%;
+    left: 8.8%;
+    width: clamp(15.5rem, 53vw, 20rem);
+    align-items: flex-start;
+    gap: 0;
+    color: #111111;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(3.0rem, 8.25vw, 3.5rem);
+    font-weight: 500;
+    line-height: 0.94;
+    text-align: left;
+  }
+
+  .storefront-home__headline-line {
+    display: block;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-weight: 500;
+    line-height: 0.94;
+    white-space: nowrap;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0.015em 0.02em;
+    font-family: "Roc Grotesk", "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.36em;
+    font-weight: 700;
+    line-height: 0.86;
+  }
+
+  .storefront-home__headline-line--accent::after {
+    content: none;
+  }
+
+  .storefront-home__categories {
+    z-index: 4;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 18.4%;
+    background: transparent;
+    clip-path: none;
+    overflow: visible;
+    isolation: isolate;
+  }
+
+  .storefront-home__categories::before {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    background: #f4ebe4;
+    clip-path: polygon(
+      0 4.1%,
+      17% 5.7%,
+      35% 6.9%,
+      57% 4.8%,
+      79% 3.2%,
+      100% 4.5%,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__categories::after {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 7%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 32' preserveAspectRatio='none'%3E%3Cpath d='M0 15 L170 17 L350 20 L590 14 L790 10 L1000 14' fill='none' stroke='%23706862' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__category-panel-content {
+    position: relative;
+    z-index: 3;
+    height: 100%;
+    padding: 3.55rem 0.85rem 1.2rem;
+  }
+
+  .storefront-home__category-grid {
+    height: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
+    column-gap: 0.18rem;
+  }
+
+  .storefront-home__category {
+    --category-icon-width: 72%;
+    grid-template-rows: 3.1rem auto;
+    align-items: start;
+    gap: 0.34rem;
+    color: #15372f;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.83rem;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .storefront-home__category-artwork {
+    width: 100%;
+    height: 3.1rem;
+  }
+
+  .storefront-home__category-artwork img {
+    width: var(--category-icon-width);
+    max-height: 100%;
+  }
+
+  .storefront-home__category--bouquets {
+    --category-icon-width: 59%;
+  }
+
+  .storefront-home__category--weddings {
+    --category-icon-width: 69%;
+  }
+
+  .storefront-home__category--graduation {
+    --category-icon-width: 70%;
+  }
+
+  .storefront-home__category--standing {
+    --category-icon-width: 71%;
+  }
+}
+
+/* Homepage bottom tabs use the exact footer zigzag silhouette asset.
+   Only the top edge receives a subtle stroke. The document underlay uses the
+   same panel color so iOS Safari's lower browser area does not reveal cream. */
+@media (max-width: 639px) {
+  html:has(.storefront-home),
+  body:has(.storefront-home),
+  body:has(.storefront-home) #app {
+    background: #f0e6dd;
+  }
+
+  .storefront-home,
+  .storefront-home__poster {
+    background: #fdf8f1;
+  }
+
+  .storefront-home__categories {
+    background: transparent;
+    clip-path: none;
+    isolation: isolate;
+    overflow: visible;
+  }
+
+  .storefront-home__categories::before,
+  .storefront-home__categories::after {
+    content: none;
+  }
+
+  .storefront-home__category-panel-shape {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    pointer-events: none;
+    /* One SVG object: deeper 2x zigzag amplitude, with the fill and muted
+       divider stroke integrated into the same footer panel shape. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 3.4 L34.95 8.2 L76.59 0 L100 3.4 L100 100 L0 100 Z' fill='%23f0e6dd'/%3E%3Cpath d='M0 3.4 L34.95 8.2 L76.59 0 L100 3.4' fill='none' stroke='%23aaa29b' stroke-opacity='.48' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
+  .storefront-home__category-panel-content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    padding: 4.2rem 0.95rem 1.3rem;
+  }
+
+  .storefront-home__category-grid {
+    height: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
+    column-gap: 0.34rem;
+  }
+
+  .storefront-home__category {
+    --category-icon-width: 64%;
+    grid-template-rows: 3.4rem auto;
+    align-items: start;
+    justify-items: center;
+    gap: 0.46rem;
+    color: #15372f;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.79rem;
+    font-weight: 700;
+    line-height: 1.06;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .storefront-home__category-artwork {
+    width: 100%;
+    height: 3.4rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .storefront-home__category-artwork img {
+    width: var(--category-icon-width);
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .storefront-home__category--bouquets {
+    --category-icon-width: 53%;
+  }
+
+  .storefront-home__category--weddings {
+    --category-icon-width: 62%;
+  }
+
+  .storefront-home__category--graduation {
+    --category-icon-width: 63%;
+  }
+
+  .storefront-home__category--standing {
+    --category-icon-width: 64%;
+  }
+}
+
+/* Hero typography: use each font's native/default spacing and kerning.
+   No custom tracking is applied to the headline or any individual line. */
+@media (max-width: 639px) {
+  .storefront-home__headline,
+  .storefront-home__headline-line,
+  .storefront-home__headline-line--accent {
+    font-kerning: auto;
+    font-feature-settings: normal;
+  }
+}
+
+/* Safari mobile finishing pass: keep the footer color continuous beneath the
+   browser toolbar while reserving clear space for the category controls. */
+@media (max-width: 639px) {
+  /* Homepage now reuses the exact same footer-underlay state as the
+     collection page footer. Keep only sizing here; the shared
+     .storefront-font--footer-bleed rule owns the Safari browser tint. */
+  html:has(.storefront-font--footer-bleed),
+  body:has(.storefront-font--footer-bleed),
+  body:has(.storefront-font--footer-bleed) #app {
+    min-height: 100%;
+    background-color: #f0e6dd;
+  }
+
+  body:has(.storefront-font--footer-bleed) {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .storefront-home__poster {
+    height: calc(100dvh - 3.8rem - var(--sf-safe-top));
+    min-height: calc(100dvh - 3.8rem - var(--sf-safe-top));
+  }
+
+  .storefront-home__categories {
+    height: 18%;
+    overflow: visible;
+  }
+
+  .storefront-home__category-panel-shape {
+    bottom: -7rem;
+  }
+
+  .storefront-home__category-panel-content {
+    height: 100%;
+    /* Shift the locked icon/label group slightly upward without changing
+       the container height: transfer 5% of the top padding to the bottom. */
+    padding:
+      clamp(2.48805rem, 6.13719vw, 2.7783225rem)
+      1rem
+      clamp(1.15395rem, 3.39201vw, 1.4017275rem);
+  }
+
+  .storefront-home__category-grid {
+    align-items: start;
+    column-gap: 0.42rem;
+  }
+
+  .storefront-home__category {
+    grid-template-rows: 3.2rem auto;
+    gap: 0.48rem;
+    min-width: 0;
+    font-size: clamp(0.71rem, 2.85vw, 0.82rem);
+    line-height: 1.08;
+  }
+
+  .storefront-home__category-artwork {
+    height: 3.2rem;
+  }
+}
+
+
+/* V2.9.48 — structural Safari footer fix. The homepage category footer is now
+   a sibling of the clipped poster, matching the collection footer behavior. */
+@media (max-width: 639px) {
+  html:has(.storefront-home),
+  body:has(.storefront-home),
+  body:has(.storefront-home) #app,
+  body:has(.storefront-home) .storefront-font {
+    min-height: 100%;
+    background-color: #f0e6dd;
+  }
+
+  .storefront-home {
+    position: relative;
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: visible;
+    background: #f0e6dd;
+  }
+
+  .storefront-home__poster {
+    position: relative;
+    z-index: 0;
+    height: calc(100dvh - 3.8rem - var(--sf-safe-top));
+    min-height: calc(100dvh - 3.8rem - var(--sf-safe-top));
+    overflow: hidden;
+    background: #fdf8f1;
+  }
+
+  .storefront-home__categories {
+    position: absolute;
+    z-index: 4;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 18%;
+    overflow: visible;
+    background: transparent;
+    transform: translateY(10%);
+  }
+
+  .storefront-home__category-panel-shape {
+    inset: 0 0 -8rem;
+  }
+}
+
+
+/* V2.9.53 — supplied grouped homepage assets. The category artwork remains one
+   intact SVG so its original internal proportions, spacing and typography are
+   not reconstructed or altered. Four transparent hit areas preserve navigation. */
+@media (max-width: 639px) {
+  .storefront-home__category-panel-content {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .storefront-home__category-group {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .storefront-home__category-group-artwork {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    /* V2.9.73 — proportionally enlarge the complete locked icon/label group by 7%. */
+    transform: scale(0.9095);
+    transform-origin: center center;
+  }
+
+  .storefront-home__category-group-artwork svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+
+  .storefront-home__category-group-artwork text,
+  .storefront-home__category-group-artwork tspan {
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif !important;
+    font-weight: 800 !important;
+    font-variation-settings: "wght" 800 !important;
+    font-synthesis: none;
+  }
+
+  .storefront-home__category-hit-grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .storefront-home__category-hit {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .storefront-home__category-grid {
+    display: none;
+  }
+}
+
+
+/* V2.9.58 — balanced mobile brand lockup and calmer homepage hero scale. */
+@media (max-width: 639px) {
+  .storefront-topbar .storefront-brand--header {
+    gap: 0.42rem;
+    transform: translateY(1px);
+  }
+
+  .storefront-topbar .storefront-brand--header .storefront-brand__icon {
+    width: 1.48rem;
+  }
+
+  .storefront-topbar .storefront-brand--header .storefront-brand__type {
+    display: block;
+    width: 8.48rem;
+  }
+
+  .storefront-home__headline {
+    font-size: clamp(2.7rem, 7.425vw, 3.15rem);
+    gap: 0.1em;
+  }
+
+  .storefront-home__headline-line {
+    line-height: 0.98;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  .storefront-topbar .storefront-brand--header .storefront-brand__icon {
+    width: 1.38rem;
+  }
+
+  .storefront-topbar .storefront-brand--header .storefront-brand__type {
+    width: 7.72rem;
+  }
+}
+
+/* V2.9.65 — tighten the locked grouped homepage artwork equally from the top
+   and bottom, then shrink its footer container by the removed padding so the
+   panel still finishes flush against the viewport bottom. */
+@media (max-width: 639px) {
+  .storefront-home__categories {
+    bottom: 0;
+    height: calc(18% - 0.16rem);
+  }
+
+  .storefront-home__category-panel-content {
+    padding:
+      clamp(2.488rem, 6.1372vw, 2.7783rem)
+      1rem
+      clamp(0.9719rem, 2.9156vw, 1.1927rem);
+  }
+}
+
+/* V2.9.68 — corrected directly from the clean V2.9.65 baseline: increase the
+   locked homepage category group's vertical padding by 10% and move the whole
+   bottom section 10% farther down. No V2.9.66 reduction is inherited. */
+@media (max-width: 639px) {
+  .storefront-home__categories {
+    transform: translateY(20%);
+  }
+
+  .storefront-home__category-panel-content {
+    padding:
+      clamp(2.7368rem, 6.75092vw, 3.05613rem)
+      1rem
+      clamp(1.06909rem, 3.20716vw, 1.31197rem);
+  }
+}
+
+/* V2.9.71 — move the locked homepage icon/label group farther upward while
+   keeping the bottom section's size and position unchanged: transfer 15% of
+   the current top padding to the bottom padding. */
+@media (max-width: 639px) {
+  .storefront-home__category-panel-content {
+    padding:
+      clamp(2.32628rem, 5.738282vw, 2.5977105rem)
+      1rem
+      clamp(1.47961rem, 4.219798vw, 1.7703895rem);
+  }
+}
+
+/* V2.9.72 — repeat the 15% upward shift from V2.9.71 while keeping the
+   homepage bottom section's overall size and position unchanged. */
+@media (max-width: 639px) {
+  .storefront-home__category-panel-content {
+    padding:
+      clamp(1.977338rem, 4.8775397vw, 2.208053925rem)
+      1rem
+      clamp(1.828552rem, 5.0805403vw, 2.160046075rem);
+  }
+}
+
+/* Category card typography: one normalized Host Grotesk Semi Bold system
+   for both Occasion and Arrangement Type cards. */
+.font-host {
+  font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif !important;
+  font-style: normal;
+  font-weight: 600;
+  font-synthesis: none;
+  font-kerning: normal;
+  font-feature-settings: normal;
+  font-variant-ligatures: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Categories page — flat, raw and deliberate. Artwork carries the visual
+   character; UI chrome stays quiet, compact and consistent. */
+.category-tabs-shell {
+  position: relative;
+  z-index: 2;
+}
+
+.category-tab {
+  border: 0;
+  border-radius: 999px;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.category-tab--active {
+  border-radius: 999px;
+}
+
+.category-art-card {
+  inline-size: 100%;
+  max-inline-size: none;
+  justify-self: stretch;
+  transform: translateZ(0);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.category-art-card img {
+  inline-size: 100% !important;
+  block-size: 100% !important;
+  max-inline-size: none;
+  object-fit: fill !important;
+  transform: scale(1.002);
+  transition: transform 180ms ease;
+}
+
+.category-art-card__title {
+  display: block;
+  max-width: none;
+  overflow: visible;
+  white-space: nowrap;
+  text-wrap: nowrap;
+}
+
+.category-art-card__arrow {
+  transform: translateZ(0);
+}
+
+.category-art-card:active {
+  transform: scale(0.995);
+}
+
+@media (hover: hover) {
+  .category-art-card:hover img {
+    transform: scale(1.012);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-art-card,
+  .category-art-card img {
+    transition: none;
+  }
+}
+
+
+/* V2.9.90 — homepage navigation simplification. The obsolete occasion footer
+   is removed; one artwork-integrated Shop chip now opens the Categories page. */
+.storefront-home__headline {
+  cursor: default;
+}
+
+.storefront-home__hero-shop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.72rem;
+  min-height: 3.25rem;
+  margin-top: clamp(1.15rem, 2.6vw, 1.7rem);
+  padding: 0.7rem 0.76rem 0.7rem 1.35rem;
+  border: 0;
+  border-radius: 999px 999px 1.05rem 999px;
+  background: #15372f;
+  color: #fdf8f1;
+  font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1rem, 2.2vw, 1.18rem);
+  font-weight: 700;
+  font-kerning: auto;
+  line-height: 1;
+  box-shadow: none;
+  transform: rotate(-1.5deg);
+  transform-origin: left center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.storefront-home__hero-shop-arrow {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 999px 999px 0.68rem 999px;
+  background: #f684b1;
+  color: #15372f;
+  font-size: 1.28rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.storefront-home__hero-shop:focus-visible {
+  outline: 3px solid #5e97f2;
+  outline-offset: 4px;
+}
+
+@media (hover: hover) {
+  .storefront-home__hero-shop:hover {
+    transform: rotate(-1.5deg) translateY(-2px);
+  }
+}
+
+@media (max-width: 639px) {
+  html:has(.storefront-home),
+  body:has(.storefront-home),
+  body:has(.storefront-home) #app,
+  body:has(.storefront-home) .storefront-font {
+    background-color: #fdf8f1;
+  }
+
+  body:has(.storefront-home) {
+    padding-bottom: 0;
+  }
+
+  .storefront-home {
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
+    background: #fdf8f1;
+  }
+
+  .storefront-home__poster {
+    height: calc(100dvh - 3.8rem - var(--sf-safe-top));
+    min-height: calc(100dvh - 3.8rem - var(--sf-safe-top));
+    background: #fdf8f1;
+  }
+
+  .storefront-home__headline {
+    width: min(74%, 19rem);
+  }
+
+  .storefront-home__hero-shop {
+    min-height: 3.05rem;
+    margin-top: clamp(1rem, 3.7vw, 1.35rem);
+    padding: 0.62rem 0.66rem 0.62rem 1.2rem;
+    font-size: 1rem;
+  }
+
+  .storefront-home__hero-shop-arrow {
+    width: 1.82rem;
+    height: 1.82rem;
+    font-size: 1.15rem;
+  }
+}
+
+/* Category-led shop header: reuses the exact approved category artwork and
+   crops it into the supplied irregular-bottom container silhouette. */
+.storefront-category-hero {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  overflow: hidden;
+  border-radius: 0;
+  background: var(--sf-cream);
+  line-height: 0;
+}
+
+.storefront-category-hero img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1179 / 447.11;
+  object-fit: cover;
+  clip-path: polygon(0 0, 100% 0, 100% 95.55%, 65.05% 89.62%, 23.41% 100%, 0 95.55%);
+}
+
+.storefront-material-tabs {
+  gap: 0;
+  margin-top: -0.15rem;
+}
+
+.storefront-material-tab {
+  min-height: 4.9rem;
+  padding: 1.5rem 0.35rem 0.72rem;
+  font-size: clamp(0.92rem, 4vw, 1.12rem);
+  line-height: 1.12;
+  white-space: nowrap;
+}
+
+.storefront-product-results {
+  margin-top: -0.15rem;
+}
+
+@media (min-width: 640px) {
+  .storefront-category-hero {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    border-radius: 0;
+  }
+
+  .storefront-material-tab {
+    min-height: 5.5rem;
+    padding-top: 1.75rem;
+    font-size: 1.2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .storefront-category-hero {
+    width: auto;
+    margin-inline: 0;
+    border-radius: 1.25rem;
+  }
+
+  .storefront-category-hero img {
+    clip-path: polygon(0 0, 100% 0, 100% 95.55%, 65.05% 89.62%, 23.41% 100%, 0 95.55%);
+  }
+
+  .storefront-material-tabs {
+    max-width: 46rem;
+  }
+}
+
+/* V2.9.95 — match the supplied full-width category hero reference. */
+.storefront-category-hero {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1179 / 447.11;
+  min-height: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 95.55%, 65.05% 89.62%, 23.41% 100%, 0 95.55%);
+}
+
+.storefront-category-hero img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  clip-path: none;
+}
+
+/* The supplied card SVG exports contain an empty text group and an old arrow.
+   This solid patch clears that area before rendering live, responsive text. */
+.storefront-category-hero::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  bottom: 0;
+  width: 48%;
+  height: 46%;
+  background: var(--storefront-category-background);
+  pointer-events: none;
+}
+
+.storefront-category-hero__text {
+  position: absolute;
+  z-index: 2;
+  left: clamp(2.25rem, 8.3vw, 4.4rem);
+  top: 24%;
+  width: 57%;
+  line-height: 1;
+}
+
+.storefront-category-hero__text h1 {
+  margin: 0;
+  font-family: var(--font-heading, 'Host Grotesk', sans-serif);
+  font-size: clamp(2.3rem, 8.3vw, 4.5rem);
+  font-weight: 600;
+  font-kerning: normal;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.storefront-category-hero__text p {
+  margin: clamp(0.65rem, 2.2vw, 1.15rem) 0 0;
+  font-family: var(--font-body, 'Host Grotesk', sans-serif);
+  font-size: clamp(1.15rem, 4vw, 1.8rem);
+  font-weight: 600;
+  font-kerning: normal;
+  line-height: 1.18;
+  white-space: nowrap;
+}
+
+.storefront-material-tabs {
+  margin-top: 0;
+}
+
+@media (max-width: 420px) {
+  .storefront-category-hero__text {
+    left: 2.15rem;
+    width: 59%;
+  }
+
+  .storefront-category-hero__text h1 {
+    font-size: clamp(2.1rem, 8vw, 2.7rem);
+  }
+
+  .storefront-category-hero__text p {
+    font-size: clamp(1rem, 3.8vw, 1.2rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .storefront-category-hero {
+    clip-path: polygon(0 0, 100% 0, 100% 95.55%, 65.05% 89.62%, 23.41% 100%, 0 95.55%);
+  }
+}
+
+/* Featured Products rail: viewport-wide scrolling with a real leading inset.
+   Padding belongs to the scroll rail itself so the first product always starts
+   inside the page edge, while the rail background remains full viewport width. */
+.featured-products-rail {
+  --featured-edge-space: 18px;
+  box-sizing: border-box;
+  padding-left: var(--featured-edge-space);
+  padding-right: 0;
+  scroll-padding-left: var(--featured-edge-space);
+  overscroll-behavior-inline: contain;
+}
+
+.featured-product-item:first-child {
+  margin-left: 0;
+}
+
+.featured-product-item:last-child {
+  margin-right: var(--featured-edge-space);
+}
+
+
+@media (min-width: 640px) {
+  .featured-products-rail {
+    --featured-edge-space: 28px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .featured-products-rail {
+    --featured-edge-space: 40px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .featured-products-rail {
+    --featured-edge-space: 48px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .featured-products-rail {
+    --featured-edge-space: calc((100vw - 1320px) / 2 + 56px);
+  }
+}
+
+.featured-product-item {
+  width: calc((100vw - 52px) / 2);
+  min-width: calc((100vw - 52px) / 2);
+}
+
+@media (min-width: 640px) {
+  .featured-product-item {
+    width: calc((100vw - 88px) / 3);
+    min-width: calc((100vw - 88px) / 3);
+  }
+}
+
+@media (min-width: 1024px) {
+  .featured-product-item {
+    width: 286px;
+    min-width: 286px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .featured-product-item {
+    width: 300px;
+    min-width: 300px;
+  }
+}
+
+/* Product-card hierarchy: larger one-line names with a compact price lockup. */
+.sf-product-card-name {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  font-size: 1.29375rem;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  .sf-product-card-name {
+    font-size: 1.38rem;
+  }
+}
+
+
+/* V3.0.46 — mobile homepage alignment to the approved poster reference.
+   The grouped SVG is enlarged as one locked composition, the vase is cropped
+   by a flat green foreground edge, and the Shop action returns to a plain
+   artwork-integrated text link. */
+@media (max-width: 639px) {
+  /* Keep the page canvas green so iOS Safari uses the foreground color for
+     the browser underlay beneath its bottom toolbar. The visible storefront
+     and poster remain cream above that underlay. */
+  html:has(.storefront-home),
+  body:has(.storefront-home),
+  body:has(.storefront-home) #app,
+  body:has(.storefront-home) .storefront-font {
+    background-color: #057640;
+  }
+
+  .storefront-home,
+  .storefront-home__poster {
+    background-color: #fff8f0;
+  }
+
+  .storefront-home__poster {
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .storefront-home__flower {
+    z-index: 1;
+    top: 3.05%;
+    right: -8.2%;
+    left: auto;
+    width: auto;
+    height: 100.7%;
+    max-width: none;
+    object-fit: contain;
+    object-position: top right;
+    transform: none;
+    transform-origin: top right;
+  }
+
+  .storefront-home__poster::after {
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 6.6%;
+    background: #057640;
+    clip-path: polygon(
+      0 12%,
+      30% 42%,
+      65% 4%,
+      100% 18%,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__headline {
+    z-index: 3;
+    top: 26.1%;
+    left: 8.5%;
+    width: min(66%, 17rem);
+    gap: clamp(0.2rem, 0.9vw, 0.34rem);
+    font-size: clamp(2.32rem, 6.39vw, 2.71rem);
+    line-height: 0.98;
+  }
+
+  .storefront-home__headline-line {
+    line-height: 0.98;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0;
+    font-size: 1.466em;
+    font-weight: 700;
+    line-height: 0.88;
+  }
+
+  .storefront-home__hero-shop {
+    position: absolute;
+    z-index: 3;
+    top: auto;
+    right: 11.5%;
+    bottom: 29.2%;
+    left: auto;
+    display: inline-flex;
+    min-height: 0;
+    align-items: center;
+    gap: 0.42rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #101010;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(1.05rem, 4.25vw, 1.2rem);
+    font-weight: 500;
+    line-height: 1;
+    box-shadow: none;
+    transform: none;
+    white-space: nowrap;
+  }
+
+  .storefront-home__hero-shop-arrow {
+    display: block;
+    width: 1.24em;
+    height: 1.24em;
+    flex: 0 0 auto;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .storefront-home__hero-shop:active {
+    transform: translateX(2px);
+  }
+}
+
+/* Keep the CTA anchored to the poster after moving it out of the headline
+   wrapper; the mobile reference-specific position above remains authoritative. */
+@media (min-width: 640px) {
+  .storefront-home__hero-shop {
+    position: absolute;
+    z-index: 3;
+    top: 62%;
+    left: 7%;
+  }
+}
+
+
+/* V3.0.55 — locked-mobile desktop parity pass.
+   Every rule below is desktop-only and reuses the approved mobile palette,
+   typography, clipped silhouettes, rounded controls, and existing artwork. */
+@media (min-width: 1024px) {
+  :root {
+    --sf-type-1: 0.875rem;
+    --sf-type-2: 1rem;
+    --sf-type-3: 1.2rem;
+    --sf-type-4: 2rem;
+    --sf-type-5: 2.75rem;
+    --sf-section-title: 2.25rem;
+    --sf-detail-title: 3rem;
+    --sf-page-title: 3.35rem;
+  }
+
+  .storefront-font {
+    --storefront-header-height: 72px;
+  }
+
+  .storefront-topbar > div {
+    height: 72px !important;
+  }
+
+  .storefront-topbar .storefront-brand--header {
+    gap: 0.5rem;
+    transform: translateY(1px);
+  }
+
+  .storefront-topbar .storefront-brand--header .storefront-brand__icon {
+    width: 1.7rem;
+  }
+
+  .storefront-topbar .storefront-brand--header .storefront-brand__type {
+    display: block;
+    width: 10.2rem;
+  }
+
+  .storefront-topbar button.rounded-full {
+    border-radius: 999px;
+  }
+
+  /* Homepage: the same poster composition used on mobile, opened up for width. */
+  .storefront-home {
+    grid-template-rows: 72px minmax(0, 1fr);
+    background: #fff8f0;
+  }
+
+  .storefront-home__poster {
+    isolation: isolate;
+    width: min(100%, 1320px);
+    max-width: 1320px;
+    height: calc(100svh - 72px);
+    min-height: 39rem;
+    overflow: hidden;
+    border-radius: 0;
+    background: #fff8f0;
+  }
+
+  .storefront-home__flower {
+    z-index: 1;
+    top: -3.5%;
+    right: -1.5%;
+    left: auto;
+    width: auto;
+    height: 108%;
+    max-width: none;
+    object-fit: contain;
+    object-position: top right;
+  }
+
+  .storefront-home__poster::after {
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 7.5%;
+    background: #057640;
+    clip-path: polygon(0 12%, 30% 42%, 65% 4%, 100% 18%, 100% 100%, 0 100%);
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__headline {
+    z-index: 3;
+    top: 26%;
+    left: 6%;
+    width: 40%;
+    gap: clamp(0.28rem, 0.55vw, 0.52rem);
+    font-size: clamp(4rem, 5.25vw, 5.8rem);
+    line-height: 0.98;
+  }
+
+  .storefront-home__headline-line {
+    line-height: 0.98;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0;
+    font-size: 1.466em;
+    line-height: 0.88;
+  }
+
+  .storefront-home__hero-shop {
+    position: absolute;
+    z-index: 3;
+    top: auto;
+    right: 13%;
+    bottom: 28%;
+    left: auto;
+    display: inline-flex;
+    min-height: 0;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #101010;
+    font-size: 1.35rem;
+    font-weight: 500;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .storefront-home__hero-shop-arrow {
+    display: block;
+    width: 1.3em;
+    height: 1.3em;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  /* Categories: remove the separate corporate desktop masthead and retain the
+     exact mobile tabs, Shop-by hierarchy, card shapes, and artwork system. */
+  .storefront-categories-page main {
+    max-width: 74rem;
+  }
+
+  .storefront-categories-page main > header {
+    display: none;
+  }
+
+  .storefront-categories-page .category-tabs-shell {
+    margin-inline: 0;
+    padding: 1.5rem 0 1.1rem;
+  }
+
+  .storefront-categories-page .category-tabs-shell > div {
+    width: 100%;
+    gap: 0.65rem;
+  }
+
+  .storefront-categories-page .category-tab {
+    min-height: 3.5rem;
+    padding-inline: 1.4rem;
+    font-size: 1rem;
+  }
+
+  .storefront-categories-page .category-section-title {
+    max-width: 15ch;
+    font-size: clamp(3.4rem, 4.5vw, 4.65rem);
+    line-height: 0.9;
+  }
+
+  .storefront-categories-page main > section[role="tabpanel"] {
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  .storefront-categories-page .category-art-card {
+    border-radius: 1.05rem;
+  }
+
+  /* Shop: keep the mobile full-color hero silhouette and material tabs rather
+     than substituting neutral desktop cards or rounded corporate panels. */
+  .storefront-shop-page > .storefront-topbar + div {
+    padding-top: 1.75rem;
+  }
+
+  .storefront-shop-page .storefront-category-hero {
+    width: 100%;
+    margin-inline: 0;
+    border-radius: 0;
+  }
+
+  .storefront-shop-page .storefront-category-hero__text {
+    left: 6%;
+    top: 23%;
+  }
+
+  .storefront-shop-page .storefront-category-hero__text h1 {
+    font-size: clamp(3.5rem, 5vw, 5.25rem);
+  }
+
+  .storefront-shop-page .storefront-category-hero__text p {
+    font-size: clamp(1.2rem, 1.8vw, 1.75rem);
+  }
+
+  .storefront-shop-page .storefront-material-tabs {
+    max-width: none;
+  }
+
+  .storefront-shop-page .storefront-material-tab {
+    min-height: 5.25rem;
+    padding-top: 1.55rem;
+    font-size: 1.08rem;
+  }
+
+  .storefront-shop-page .sf-section-title {
+    font-size: 2.25rem;
+    line-height: 0.95;
+  }
+
+  .storefront-shop-page .sf-product-card-image,
+  .storefront-product-detail-page .sf-product-card-image {
+    border-radius: var(--sf-radius-card);
+  }
+
+  .storefront-shop-page .sf-product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 1.75rem;
+    row-gap: 4rem;
+  }
+
+  .storefront-shop-page .sf-product-card-name,
+  .storefront-product-detail-page .sf-product-card-name {
+    font-size: 1.28rem;
+  }
+
+  /* Product detail: retain the mobile color chips, clipped gallery, dashed
+     divider, size tiles, and green purchase action within a wide two-column flow. */
+  .storefront-product-detail-layout {
+    max-width: 1240px;
+    grid-template-columns: minmax(0, 620px) minmax(380px, 1fr);
+    gap: clamp(3.5rem, 5vw, 5.5rem);
+    padding-top: 2.5rem;
+  }
+
+  .storefront-product-detail-gallery {
+    border-radius: 0;
+  }
+
+  .storefront-product-detail-info {
+    position: sticky;
+    top: calc(var(--storefront-header-height) + 2rem);
+    max-width: 31rem;
+    padding-top: 0.35rem;
+  }
+
+  .storefront-product-detail-tags {
+    gap: 0.55rem;
+  }
+
+  .storefront-product-detail-info .sf-detail-title {
+    max-width: 13ch;
+    font-size: 3rem !important;
+    line-height: 0.98 !important;
+  }
+
+  .storefront-product-detail-info .storefront-long-dash {
+    display: block;
+  }
+
+  .storefront-product-detail-info .sf-primary-action {
+    min-height: 3.5rem;
+  }
+
+  .storefront-product-detail-page .storefront-product-details {
+    border-top: 0;
+    background-image: repeating-linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.18) 0,
+      rgba(0, 0, 0, 0.18) 6px,
+      transparent 6px,
+      transparent 10px
+    );
+  }
+
+  /* Navigation and search retain the mobile cream surfaces and artwork cards,
+     simply giving them enough width and breathing room on larger screens. */
+  .storefront-navigation-drawer {
+    width: min(44vw, 40rem);
+    border-left-color: rgba(0, 0, 0, 0.08);
+    background: var(--sf-cream);
+  }
+
+  .storefront-navigation-drawer__content {
+    padding: 3rem 3rem 3.5rem;
+  }
+
+  .storefront-navigation-drawer__heading h2 {
+    font-size: 4rem;
+    line-height: 0.92;
+  }
+
+  .storefront-navigation-parent {
+    min-height: 3.75rem;
+    padding-block: 0.9rem;
+    font-size: 1.55rem;
+  }
+
+  .storefront-navigation-collections {
+    margin-right: -3rem;
+    padding-top: 3rem;
+  }
+
+  .storefront-navigation-collections__heading,
+  .storefront-navigation-collections__rail {
+    padding-right: 3rem;
+  }
+
+  .storefront-navigation-collections__heading h3 {
+    font-size: 1.05rem;
+  }
+
+  .storefront-navigation-collection-card {
+    flex-basis: 20rem;
+    border-radius: 0.8rem;
+  }
+
+  .storefront-navigation-collection-card > span {
+    font-size: 1.55rem;
+  }
+
+  .storefront-search-panel {
+    padding: 1.5rem 0 1.6rem;
+    background: var(--sf-cream);
+  }
+
+  .storefront-search-panel .storefront-search-form,
+  .storefront-search-panel__support {
+    max-width: 58rem;
+    margin-inline: auto;
+  }
+
+  .storefront-search-form {
+    min-height: 3.75rem;
+    background: rgba(255, 255, 255, 0.38);
+  }
+
+  /* Checkout and floating cart use the same cream, green, clipped imagery,
+     pill controls, and irregular mobile bar edge. */
+  .storefront-checkout-sheet {
+    width: min(100%, 610px);
+    max-width: 610px !important;
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--sf-cream);
+    box-shadow: -12px 0 36px rgba(22, 20, 19, 0.13);
+  }
+
+  .storefront-checkout-sheet > header h2 {
+    font-size: 2.35rem;
+  }
+
+  .storefront-mini-cart__panel {
+    align-items: flex-start;
+    padding: 2.3rem 2rem 1.5rem;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 5.8 L34.95 10.6 L76.59 2.4 L100 5.8 L100 100 L0 100 Z' fill='%23faf9f6'/%3E%3Cpath d='M0 5.8 L34.95 10.6 L76.59 2.4 L100 5.8' fill='none' stroke='%23000000' stroke-opacity='.12' stroke-width='.9' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    box-shadow: none;
+    filter: drop-shadow(0 -5px 10px rgba(22, 20, 19, 0.07));
+  }
+
+  .storefront-mini-cart__content {
+    width: min(100%, 48rem);
+  }
+
+  .storefront-footer-panel__content {
+    padding: 4rem 0 4.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .storefront-shop-page .sf-product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* V3.0.56 — tablet and desktop storefront composition.
+   The phone layout remains the approved, locked composition below 640px. */
+@media (min-width: 640px) {
+  .storefront-shop-page > .storefront-topbar + div {
+    gap: clamp(2.25rem, 4vw, 3.5rem);
+    padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .storefront-shop-page .storefront-category-hero {
+    width: 100%;
+    margin-inline: 0;
+    border-radius: 1.35rem;
+  }
+
+  .storefront-shop-page .storefront-category-hero__text {
+    left: clamp(2.75rem, 5vw, 4.75rem);
+    top: 25%;
+  }
+
+  .storefront-shop-page .storefront-category-hero__text h1 {
+    font-size: clamp(3.25rem, 5.2vw, 4.75rem);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+
+  .storefront-shop-page .storefront-category-hero__text p {
+    max-width: 24rem;
+    margin-top: clamp(0.7rem, 1.4vw, 1.1rem);
+    font-size: clamp(1.15rem, 1.8vw, 1.55rem);
+    font-weight: 500;
+    line-height: 1.25;
+  }
+
+  .storefront-shop-page .storefront-material-tabs {
+    max-width: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  .storefront-shop-page .storefront-material-tab {
+    min-height: 3.75rem;
+    padding: 0.75rem 1rem 1rem;
+    border-bottom-width: 2px;
+    font-size: 1rem;
+  }
+
+  .storefront-shop-page .sf-section-title {
+    font-size: clamp(1.75rem, 2.4vw, 2.15rem);
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  .featured-products-shell {
+    left: auto;
+    width: 100%;
+    transform: none;
+  }
+
+  .featured-products-rail {
+    --featured-edge-space: 0;
+    gap: clamp(1.25rem, 2.2vw, 2rem);
+    padding: 0;
+    scroll-padding-left: 0;
+  }
+
+  .featured-product-item {
+    width: clamp(15rem, 29vw, 18.5rem);
+    min-width: clamp(15rem, 29vw, 18.5rem);
+  }
+
+  .storefront-shop-page .sf-product-grid {
+    column-gap: clamp(1.25rem, 2.2vw, 2rem);
+    row-gap: clamp(3rem, 5vw, 4.25rem);
+  }
+
+  .storefront-shop-page .sf-product-card-image {
+    border-radius: 1rem;
+  }
+
+  .storefront-shop-page .sf-product-card-name {
+    font-size: clamp(1.05rem, 1.45vw, 1.22rem);
+    letter-spacing: -0.012em;
+    line-height: 1.15;
+  }
+
+  .storefront-shop-page .sf-card-title {
+    min-height: auto;
+  }
+
+  .storefront-shop-page .sf-card-price {
+    font-size: 0.95rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .storefront-shop-page > .storefront-topbar + div {
+    padding-top: 2rem;
+  }
+
+  .featured-product-item {
+    width: calc((100% - 4rem) / 3);
+    min-width: calc((100% - 4rem) / 3);
+  }
+}
+
+@media (min-width: 1280px) {
+  .featured-product-item {
+    width: calc((100% - 6rem) / 4);
+    min-width: calc((100% - 6rem) / 4);
+  }
+}
+
+/* Full storefront tablet/desktop visual pass. Phone composition stays locked. */
+@media (min-width: 640px) {
+  .storefront-topbar .storefront-brand--header .storefront-brand__type {
+    display: block;
+  }
+
+  .storefront-topbar .storefront-brand--header {
+    gap: 0.48rem;
+  }
+
+  .storefront-topbar .storefront-brand--header .storefront-brand__icon {
+    width: 1.6rem;
+  }
+
+  .storefront-topbar .storefront-brand--header .storefront-brand__type {
+    width: 9.25rem;
+  }
+
+  .storefront-navigation-drawer {
+    width: min(62vw, 32rem);
+  }
+
+  .storefront-navigation-drawer__content {
+    padding: clamp(2.25rem, 4vw, 3rem);
+  }
+
+  .storefront-navigation-drawer__heading h2 {
+    font-size: clamp(3rem, 6vw, 3.75rem);
+  }
+
+  .storefront-navigation-collections {
+    margin-right: clamp(-3rem, -4vw, -2.25rem);
+    padding-top: clamp(2rem, 6vh, 3.25rem);
+  }
+
+  .storefront-navigation-collections__heading,
+  .storefront-navigation-collections__rail {
+    padding-right: clamp(2.25rem, 4vw, 3rem);
+  }
+
+  .storefront-navigation-collection-card {
+    flex-basis: min(23rem, calc(100% - 1rem));
+  }
+
+  .storefront-search-panel {
+    padding-block: 1.35rem 1.45rem;
+  }
+
+  .storefront-search-panel .storefront-search-form,
+  .storefront-search-panel__support {
+    width: min(100%, 54rem);
+    margin-inline: auto;
+  }
+
+  .storefront-checkout-sheet {
+    width: min(68vw, 38rem);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .storefront-home__flower {
+    right: 5%;
+    height: 88%;
+    max-width: 66%;
+  }
+
+  .storefront-home__headline {
+    top: 27%;
+    left: 18%;
+    width: 40%;
+  }
+
+  .storefront-home__hero-shop {
+    margin-top: clamp(1.35rem, 3vw, 2rem);
+  }
+
+  .storefront-categories-page main {
+    max-width: 58rem;
+  }
+
+  .storefront-categories-page .category-tabs-shell {
+    padding-block: 1rem 0.8rem;
+  }
+
+  .storefront-categories-page .category-section-title {
+    font-size: clamp(2.75rem, 6vw, 3.5rem);
+  }
+
+  .storefront-product-detail-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(19rem, 0.95fr);
+    align-items: start;
+    gap: clamp(2rem, 4vw, 3rem);
+    padding: clamp(1.75rem, 3vw, 2.5rem) 1.75rem 0;
+  }
+
+  .storefront-product-detail-layout > .storefront-product-detail-gallery {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    border-radius: 1.1rem;
+  }
+
+  .storefront-product-detail-layout > div {
+    display: contents;
+  }
+
+  .storefront-product-detail-info {
+    position: sticky;
+    top: calc(var(--storefront-header-height) + 1.5rem);
+    max-width: none;
+    padding: 0;
+  }
+
+  .storefront-product-detail-info .sf-detail-title {
+    max-width: 13ch;
+    font-size: clamp(2rem, 4vw, 2.65rem);
+    line-height: 0.98;
+  }
+
+  .storefront-product-detail-info .sf-type-5 {
+    font-size: 1.45rem;
+  }
+
+  .storefront-product-detail-info .sf-body {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .storefront-product-detail-info .sf-primary-action {
+    min-height: 3.25rem;
+  }
+
+  .storefront-product-detail-page main > .storefront-container > section {
+    margin-top: 4.5rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}
+
+@media (min-width: 1024px) {
+  .storefront-topbar .storefront-brand--header .storefront-brand__icon {
+    width: 1.85rem;
+  }
+
+  .storefront-topbar .storefront-brand--header .storefront-brand__type {
+    width: 11.25rem;
+  }
+
+  .storefront-navigation-drawer {
+    width: min(44vw, 38rem);
+  }
+
+  .storefront-checkout-sheet {
+    width: min(44vw, 38rem);
+  }
+
+  .storefront-product-detail-page .storefront-mini-cart,
+  .storefront-product-detail-page .storefront-mini-cart--visible {
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 0s;
+  }
+
+  .storefront-product-detail-page .storefront-mini-cart__panel {
+    align-items: center;
+    min-height: 0;
+    padding: 1rem max(2.5rem, calc((100vw - 1320px) / 2 + 3.5rem));
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--sf-cream);
+    background-image: none;
+    box-shadow: 0 -10px 30px rgba(22, 20, 19, 0.08);
+    filter: none;
+  }
+
+  .storefront-product-detail-page .storefront-mini-cart__content {
+    width: min(100%, 1320px);
+    gap: 2rem;
+  }
+
+  .storefront-product-detail-page .storefront-mini-cart__summary {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 1.25rem;
+  }
+
+  .storefront-product-detail-page .storefront-mini-cart__count {
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .storefront-product-detail-page .storefront-mini-cart__price {
+    font-size: 1.45rem;
+  }
+
+  .storefront-product-detail-page .storefront-mini-cart__button {
+    min-height: 3.25rem;
+    min-width: 10.75rem;
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .storefront-home__flower {
+    display: none;
+  }
+
+  .storefront-product-detail-info {
+    position: static;
+    top: auto;
+  }
+
+  .storefront-product-detail-page .storefront-product-details > summary {
+    display: none;
+  }
+
+  .storefront-product-detail-page .storefront-product-details > :not(summary) {
+    display: grid;
+  }
+
+  .storefront-product-detail-page .storefront-product-details {
+    margin-top: 0.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    background-image: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .storefront-home__poster {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .storefront-home__poster::after {
+    height: 11.25%;
+  }
+
+  .storefront-home__flower {
+    top: 15%;
+    right: 0;
+    width: auto;
+    height: 82%;
+    max-width: none;
+    object-position: top right;
+    transform: scale(1.12);
+    transform-origin: top right;
+  }
+
+  .storefront-home__headline {
+    top: 25%;
+    left: 7%;
+    width: 38%;
+    gap: 0;
+    font-size: clamp(3.75rem, 4.8vw, 5.25rem);
+    line-height: 0.96;
+    letter-spacing: normal;
+    font-kerning: normal;
+  }
+
+  .storefront-home__headline-line {
+    line-height: 0.96;
+    letter-spacing: normal;
+    font-kerning: normal;
+  }
+
+  .storefront-home__headline-line--accent {
+    margin-block: 0.03em 0.13em;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.28em;
+    line-height: 0.88;
+    letter-spacing: normal;
+    font-kerning: normal;
+  }
+
+  .storefront-home__headline-line--accent::after {
+    display: none;
+  }
+
+  .storefront-home__hero-shop {
+    top: 68%;
+    right: auto;
+    bottom: auto;
+    left: 8.5%;
+    min-height: 0;
+    gap: 0.55rem;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #101010;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+
+  .storefront-home__hero-shop-arrow {
+    display: block;
+    width: 1.25em;
+    height: 1.25em;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+  }
+
+  .storefront-home__hero-shop:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.storefront-home__desktop-flower,
+.storefront-home__desktop-ground {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .storefront-home__poster {
+    isolation: isolate;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    background: #fff;
+  }
+
+  .storefront-home__poster::after {
+    display: none;
+  }
+
+  .storefront-home__desktop-flower {
+    position: absolute;
+    z-index: 1;
+    right: 5%;
+    bottom: 3.5%;
+    display: block;
+    width: auto;
+    height: 82%;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .storefront-home__desktop-ground {
+    --desktop-ground-height: 18%;
+    --desktop-ground-edge-height: 68px;
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: -2px;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: calc(var(--desktop-ground-height) + 4px);
+    background: transparent;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .storefront-home__desktop-ground::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: var(--desktop-ground-edge-height);
+    background: #057640;
+    clip-path: polygon(
+      0 15.4%,
+      11.75% 25.5%,
+      29.59% 7.8%,
+      50% 23%,
+      76.12% 0,
+      100% 25.5%,
+      100% 100%,
+      0 100%
+    );
+    content: "";
+  }
+
+  .storefront-home__desktop-ground::after {
+    position: absolute;
+    top: calc(var(--desktop-ground-edge-height) - 1px);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: #057640;
+    content: "";
+  }
+
+  .storefront-home__headline {
+    top: 22%;
+    left: 8%;
+    width: auto;
+    gap: 0;
+    color: #fff;
+    font-family: "Roc Grotesk", "Host Grotesk", sans-serif;
+    font-size: clamp(2.8rem, 5.2vw, 4.7rem);
+    font-weight: 500;
+    font-kerning: normal;
+    font-feature-settings: normal;
+    line-height: 1;
+    letter-spacing: normal;
+  }
+
+  .storefront-home__headline-line,
+  .storefront-home__headline-line--accent {
+    margin: 0;
+    padding: 0 0.14em 0.035em;
+    color: #fff;
+    font-family: "Roc Grotesk", "Host Grotesk", sans-serif;
+    font-size: 1em;
+    font-weight: 500;
+    font-kerning: normal;
+    font-feature-settings: normal;
+    line-height: 1;
+    letter-spacing: normal;
+  }
+
+  .storefront-home__headline-line--accent::after {
+    display: none;
+  }
+
+  .storefront-home__headline-line:nth-child(1) {
+    background: #057640;
+  }
+
+  .storefront-home__headline-line:nth-child(2) {
+    background: #fa771c;
+  }
+
+  .storefront-home__headline-line:nth-child(3) {
+    background: #5e97f2;
+  }
+
+  .storefront-home__hero-shop {
+    top: 64%;
+    right: auto;
+    bottom: auto;
+    left: 9.25%;
+    min-height: 0;
+    gap: 0.5rem;
+    padding: 0 0 0.16rem;
+    border-bottom: 3px solid #057640;
+    border-radius: 0;
+    background: transparent;
+    color: #057640;
+    font-family: "Roc Grotesk", "Host Grotesk", sans-serif;
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+    font-weight: 700;
+    font-kerning: normal;
+    font-feature-settings: normal;
+    line-height: normal;
+    letter-spacing: normal;
+  }
+
+  .storefront-home__hero-shop-arrow {
+    width: 1.25em;
+    height: 1.25em;
+  }
+}
+
+@media (min-width: 1024px) {
+  .storefront-home__desktop-flower {
+    right: 9%;
+    bottom: 4%;
+    height: 89%;
+  }
+
+  .storefront-home__headline {
+    top: 22%;
+    left: 10%;
+    font-size: clamp(3.5rem, 4.9vw, 7.5rem);
+  }
+
+  .storefront-home__hero-shop {
+    top: 65%;
+    left: 11.1%;
+    font-size: clamp(1.2rem, 1.6vw, 2.25rem);
+  }
+}
+
+/* Keep the homepage Shop action identical at every breakpoint: text, arrow,
+   and one underline only. */
+.storefront-home__hero-shop {
+  min-height: 0;
+  gap: 0.5rem;
+  padding: 0 0 0.16rem;
+  border: 0;
+  border-bottom: 2px solid #057640;
+  border-radius: 0;
+  background: transparent;
+  color: #057640;
+  box-shadow: none;
+  transform: none;
+}
+
+.storefront-checkout-form .sf-branch-select {
+  min-height: 3.75rem;
+  border-color: rgba(0, 0, 0, 0.16);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.storefront-date-popover [data-radix-popper-content-wrapper],
+.storefront-time-popover [data-radix-popper-content-wrapper] {
+  max-width: calc(100vw - 1rem);
+}
+
+@media (max-width: 639px) {
+  .storefront-checkout-form input.sf-field,
+  .storefront-checkout-form textarea.sf-field,
+  .storefront-checkout-form select.sf-field {
+    font-size: 16px;
+  }
+
+  .storefront-date-popover,
+  .storefront-time-popover {
+    max-width: calc(100vw - 1rem);
+  }
+
+  .storefront-date-popover .rdp {
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  .storefront-date-popover .rdp-caption_label {
+    font-size: 1rem;
+  }
+
+  .storefront-date-popover .rdp-head_cell {
+    font-size: 0.875rem;
+  }
+
+  .storefront-date-popover .rdp-day {
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1rem;
+  }
+}
+
+.storefront-home__hero-shop-arrow {
+  display: block;
+  width: 1.25em;
+  height: 1.25em;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: currentColor;
+  box-shadow: none;
+}
+
+/* Keep active category tabs intentional after pointer or keyboard use. The
+   browser's default amber outline reads as an unrelated warning color against
+   the storefront palette; keyboard focus remains clearly visible in green. */
+.storefront-categories-page .category-tab:focus {
+  outline: none;
+}
+
+.storefront-categories-page .category-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(5, 118, 64, 0.3);
+}
+
+.storefront-shop-page .storefront-material-tab:focus {
+  outline: none;
+}
+
+.storefront-shop-page .storefront-material-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(5, 118, 64, 0.3);
+}
+
+.storefront-product-detail-page .sf-primary-action:focus,
+.storefront-product-detail-page .storefront-mini-cart__button:focus {
+  outline: none;
+}
+
+.storefront-product-detail-page .sf-primary-action:focus-visible,
+.storefront-product-detail-page .storefront-mini-cart__button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(5, 118, 64, 0.28);
+}
+
+.storefront-time-popover [role="option"]:focus {
+  outline: none;
+}
+
+.storefront-time-popover [role="option"]:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(5, 118, 64, 0.3);
+}
+
+@media (hover: hover) {
+  .storefront-home__hero-shop:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Portrait tablets use the mobile poster system. Landscape tablets retain the
+   wider desktop composition. */
+@media (min-width: 640px) and (max-width: 1180px) and (orientation: portrait) {
+  .storefront-home,
+  .storefront-home__poster {
+    background: #fff8f0;
+  }
+
+  .storefront-home__poster {
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .storefront-home__desktop-flower,
+  .storefront-home__desktop-ground {
+    display: none;
+  }
+
+  .storefront-home__flower {
+    z-index: 1;
+    top: 3.05%;
+    right: -8.2%;
+    left: auto;
+    display: block;
+    width: auto;
+    height: 100.7%;
+    max-width: none;
+    object-fit: contain;
+    object-position: top right;
+    transform: none;
+    transform-origin: top right;
+  }
+
+  .storefront-home__poster::after {
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    display: block;
+    height: 6.6%;
+    background: #057640;
+    clip-path: polygon(0 12%, 30% 42%, 65% 4%, 100% 18%, 100% 100%, 0 100%);
+    content: "";
+    pointer-events: none;
+  }
+
+  .storefront-home__headline {
+    z-index: 3;
+    top: 26.1%;
+    left: 8.5%;
+    width: min(66%, 24rem);
+    gap: clamp(0.2rem, 0.9vw, 0.34rem);
+    color: #101010;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(2.7rem, 6.39vw, 4.2rem);
+    font-weight: 500;
+    line-height: 0.98;
+  }
+
+  .storefront-home__headline-line,
+  .storefront-home__headline-line--accent {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: #101010;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    line-height: 0.98;
+  }
+
+  .storefront-home__headline-line--accent {
+    font-size: 1.466em;
+    font-weight: 700;
+    line-height: 0.88;
+  }
+
+  .storefront-home__headline-line:nth-child(1),
+  .storefront-home__headline-line:nth-child(2),
+  .storefront-home__headline-line:nth-child(3) {
+    background: transparent;
+  }
+
+  .storefront-home__headline-line--accent::after {
+    display: none;
+  }
+
+  .storefront-home__hero-shop {
+    top: auto;
+    right: 11.5%;
+    bottom: 29.2%;
+    left: auto;
+    font-family: "Host Grotesk", "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(1.15rem, 2.5vw, 1.5rem);
+    font-weight: 500;
+  }
+}
+
+.storefront-home__flower,
+.storefront-home__desktop-flower {
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.storefront-home__artwork-base {
+  cursor: default;
+  pointer-events: none;
+}
+
+.storefront-home__blue-flower {
+  overflow: visible;
+}
+
+.storefront-home__blue-flower path {
+  fill: #5e97f2;
+  transform: rotate(var(--flower-rotation, 0deg));
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transition: transform 0.8s cubic-bezier(.4, 0, .2, 1);
+  will-change: transform;
+}
+
+.storefront-home__blue-flower:focus,
+.storefront-home__blue-flower:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storefront-home__blue-flower path {
+    transition: none;
+  }
+}
+
+/* V3.0.56 checkout readability pass: fewer competing labels, a warmer
+   editorial scale, and enough drawer width for calm line lengths. */
+.storefront-checkout-sheet .checkout-section-title {
+  font-size: clamp(1.45rem, 2vw, 1.7rem);
+  letter-spacing: -0.025em;
+}
+
+.storefront-checkout-sheet .sf-type-1,
+.storefront-checkout-sheet .sf-label {
+  font-size: 0.9rem;
+}
+
+.storefront-checkout-sheet .sf-type-2,
+.storefront-checkout-sheet .sf-support {
+  font-size: 1rem;
+}
+
+.storefront-checkout-sheet .sf-type-3 {
+  font-size: 1.125rem;
+}
+
+.storefront-checkout-form .sf-field {
+  min-height: 3.6rem;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.storefront-checkout-form .sf-textarea {
+  min-height: 5.25rem;
+  padding-block: 0.9rem;
+}
+
+.storefront-checkout-sheet > nav {
+  font-size: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .storefront-checkout-sheet {
+    width: min(47vw, 42rem);
+    max-width: 42rem !important;
+  }
+}

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 955.84 357.97" role="img" aria-label="Thumbelina collection artwork">
+  <rect width="955.84" height="357.97" rx="28" fill="#F6BF46"/>
+<g transform="translate(607 35)">
+    <path d="M70 260h202l-18 56H87Z" fill="#E85E83"/>
+    <path d="m87 273 167-5-7 16-153 5Z" fill="#FBF6EC"/>
+    <path d="M98 210h144l22 55H78Z" fill="#F8DFC2"/>
+    <path d="M102 224h136" stroke="#A84361" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 18"/>
+    <path d="m137 208-21-73 13-5 25 77Zm52 0 19-91 14 3-17 91Zm-9-4-4-108 14-1 7 109Z" fill="#174C38"/>
+    <path d="m126 157-54-20 16-31 50 34Zm78-19 46-36 20 25-57 29Zm-27-15-17-58 35-2-5 59Z" fill="#2A6B4B"/>
+    <g transform="translate(30 82)">
+      <path d="m72 14 21 7 12 20-6 22-21 12-23-5-13-19 4-23 18-14Z" fill="#5A75D0"/>
+      <circle cx="73" cy="44" r="10" fill="#F7C347"/>
+    </g>
+    <g transform="translate(110 67) scale(.82)">
+      <path d="m72 14 21 7 12 20-6 22-21 12-23-5-13-19 4-23 18-14Z" fill="#F0799C"/>
+      <circle cx="73" cy="44" r="10" fill="#174C38"/>
+    </g>
+    <g transform="translate(176 91) scale(.64)">
+      <path d="m72 14 21 7 12 20-6 22-21 12-23-5-13-19 4-23 18-14Z" fill="#FBF6EC"/>
+      <circle cx="73" cy="44" r="10" fill="#E85E83"/>
+    </g>
+    <g transform="translate(78 139) scale(.56)">
+      <path d="m72 14 21 7 12 20-6 22-21 12-23-5-13-19 4-23 18-14Z" fill="#F07A31"/>
+      <circle cx="73" cy="44" r="10" fill="#F7C347"/>
+    </g>
+    <g transform="translate(153 145) scale(.48)">
+      <path d="m72 14 21 7 12 20-6 22-21 12-23-5-13-19 4-23 18-14Z" fill="#A88BC9"/>
+      <circle cx="73" cy="44" r="10" fill="#FBF6EC"/>
+    </g>
+    <rect x="280" y="45" width="16" height="16" transform="rotate(18 288 53)" fill="#E85E83"/>
+    <rect x="24" y="56" width="12" height="12" transform="rotate(-17 30 62)" fill="#5077CF"/>
+  </g>
+</svg>
