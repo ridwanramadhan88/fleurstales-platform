@@ -50,6 +50,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
   matchedCustomer,
   paymentMethod,
   bankAccounts,
+  detailsError,
   setVoucherCode,
   setVoucherMessage,
   setPaymentMethod,
@@ -276,6 +277,11 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
     </div>
 
     <footer className="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-2.5 border-t border-black/12 bg-[var(--sf-cream)] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-7 sm:pb-5 lg:px-8">
+      {detailsError && (
+        <p role="alert" className="col-span-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {detailsError}
+        </p>
+      )}
       <button
         type="button"
         onClick={() => setStep('details')}
