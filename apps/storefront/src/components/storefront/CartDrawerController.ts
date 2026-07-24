@@ -15,6 +15,7 @@ import { getStorefrontAvailableTimeSlots, isStorefrontDateUnavailable, validateS
 import type { CartDrawerProps } from './CartDrawer'
 import { generateId } from '../../lib/id'
 import type { CreateStorefrontOrderInput } from '../../data/shared/contracts'
+import { bootstrapSharedData } from '../../data/shared/bootstrap'
 import { resolveStorefrontOrderPricing } from '../../data/shared/orderDomain'
 import { resolvedPricingToOrderLineItems } from '../../data/shared/orderLocalAdapter'
 import { normalizeWhatsappNumber } from '../../lib/formatters'
@@ -299,7 +300,7 @@ export const useCartDrawerController = (
     setStep('review')
   }
 
-  const handleConfirmOrder = () => {
+  const handleConfirmOrder = async () => {
     const validationError = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
     const paymentError = paymentMethod === 'transfer' && bankAccounts.length === 0
       ? 'Bank transfer is unavailable for this branch.'
@@ -348,6 +349,30 @@ export const useCartDrawerController = (
     } catch (error) {
       setDetailsError(error instanceof Error ? error.message : 'The order could not be validated.')
       setStep('details')
+      return
+    }
+
+    const shared = bootstrapSharedData()
+    if (shared.enabled) {
+      try {
+        const order = await shared.repositories.checkout.createOrder(checkoutRequest)
+        setPlacedOrderTotals({
+          itemsTotalIdr: order.itemsSubtotalIdr,
+          deliveryFeeIdr: order.deliveryFeeIdr,
+          discountIdr: order.discountIdr,
+          grandTotalIdr: order.totalIdr,
+        })
+        setPlacedOrderNumber(order.orderNumber)
+        setDetailsError(null)
+        onOrderPlaced(order.orderNumber)
+        setStep('summary')
+      } catch (error) {
+        setDetailsError(
+          error instanceof Error
+            ? error.message
+            : 'We could not place your order. Please check your connection and try again.',
+        )
+      }
       return
     }
 
