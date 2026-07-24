@@ -102,7 +102,7 @@ export const OrderActivityTimeline: FC<OrderActivityTimelineProps> = ({
   const lastIndex = rows.length - 1
 
   return (
-    <section className="space-y-1 rounded-xl bg-card px-3 py-3 ring-1 ring-border/70">
+    <section className="space-y-1 rounded-xl bg-card px-3 py-3 ring-1 ring-border/35">
       <p className="text-sm font-semibold leading-5 text-foreground">Activity timeline</p>
       <div className="mt-2">
         {rows.map((row, index) => (

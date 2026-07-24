@@ -44,7 +44,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
         {/* Actions: kept outside the scrollable body (not sticky-within-scroll)
             so it always sits below all content as a fixed dialog footer and
             can never overlap the last row of content while scrolling. */}
-        <section className="shrink-0 z-20 isolate -mx-4 -mb-3 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-border bg-surface-footer px-4 py-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:flex sm:rounded-b-3xl sm:px-5">
+        <section className="shrink-0 z-20 isolate -mx-4 -mb-3 flex items-center justify-between gap-2 border-t border-border/45 bg-surface-footer px-4 py-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:rounded-b-3xl sm:px-5">
             <div className="flex items-center gap-2">
               {isEditing && (
                 <button
@@ -56,7 +56,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
                 </button>
               )}
             </div>
-            <div className="flex min-w-0 items-center justify-end gap-2">
+            <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
               {!isEditing && (
                 <button
                   type="button"

@@ -66,7 +66,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
 
   return (
     <>
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 via-card to-card px-4 py-3.5 shadow-ios-sm ring-1 ring-black/[0.02]">
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/10 via-card to-card px-4 py-3.5 shadow-ios-sm">
         {!isEditing ? (
           <>
             <span className="inline-flex items-center gap-2">
@@ -201,7 +201,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
         </section>
       )}
 
-      <section className="space-y-4 rounded-2xl border border-border/70 bg-card p-4 shadow-ios-sm ring-1 ring-black/[0.02]">
+      <section className="space-y-4 rounded-2xl border border-border/40 bg-card p-4 shadow-ios-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -219,30 +219,46 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
           )}
         </div>
 
-        <div className="divide-y divide-border/60 rounded-lg border border-border/60">
+        <div className="divide-y divide-border/45 rounded-xl border border-border/40">
           {items.map((item, index) => {
             const lineTotal = item.unitPriceIdr * item.quantity
             const isEditableCustomLine =
               isEditing && items.length === 1 && !item.productId && index === 0
+
             return (
-              <div key={item.id} className="flex items-start justify-between gap-3 px-3 py-2.5">
-                <div className="min-w-0 flex-1">
-                  {isEditableCustomLine ? (
-                    <input
-                      value={draft.productName}
-                      onChange={(event) => onDraftChange('productName', event.target.value)}
-                      className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm"
-                      placeholder="Product / item name"
-                    />
-                  ) : (
-                    <p className="text-sm font-semibold leading-5 text-foreground">
-                      {item.productName || productDisplay.name || 'Custom order'}
+              <div key={item.id} className="flex items-start justify-between gap-3 px-3 py-3">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <div className="size-12 shrink-0 overflow-hidden rounded-xl bg-surface-panel ring-1 ring-border/30">
+                    {productDisplay.imageUrl && index === 0 ? (
+                      <img
+                        src={productDisplay.imageUrl}
+                        alt={item.productName || productDisplay.name || 'Product'}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex size-full items-center justify-center text-muted-foreground">
+                        <Package2 className="size-5" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    {isEditableCustomLine ? (
+                      <input
+                        value={draft.productName}
+                        onChange={(event) => onDraftChange('productName', event.target.value)}
+                        className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm"
+                        placeholder="Product / item name"
+                      />
+                    ) : (
+                      <p className="text-sm font-semibold leading-5 text-foreground">
+                        {item.productName || productDisplay.name || 'Custom order'}
+                      </p>
+                    )}
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {item.quantity} × Rp {formatter.format(item.unitPriceIdr)}
+                      {item.variantId ? ` · Variant ${item.variantId}` : ''}
                     </p>
-                  )}
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {item.quantity} × Rp {formatter.format(item.unitPriceIdr)}
-                    {item.variantId ? ` · Variant ${item.variantId}` : ''}
-                  </p>
+                  </div>
                 </div>
                 <p className="shrink-0 text-sm font-semibold text-foreground">
                   Rp {formatter.format(lineTotal)}
@@ -302,9 +318,9 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
               </p>
             </div>
           </div>
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-panel px-3 py-2.5 ring-1 ring-border/60">
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-panel px-3 py-2.5">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground ring-1 ring-border/60">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground">
                 <User className="size-3.5" />
               </span>
               <div className="min-w-0">
