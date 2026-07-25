@@ -396,7 +396,10 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     onConfirmEmployeeAccessChange: async () => {
       if (!detailsEmployee || !detailsForm) return
       try {
-        await syncStaffAccessProfileSupabase({ ...detailsEmployee, username: detailsForm.username.trim(), systemRole: detailsForm.systemRole, position: detailsForm.systemRole })
+        await syncStaffAccessProfileSupabase(
+          { ...detailsEmployee, username: detailsForm.username.trim(), systemRole: detailsForm.systemRole, position: detailsForm.systemRole },
+          detailsForm.pin || undefined,
+        )
       } catch (cause) {
         setDetailsError(cause instanceof Error ? cause.message : 'Unable to synchronize the staff role with Supabase Auth.')
         setPendingAccessConfirmation(null)

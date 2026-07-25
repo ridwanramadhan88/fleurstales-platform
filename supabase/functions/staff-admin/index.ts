@@ -14,6 +14,19 @@ type InviteRequest = {
   redirectTo?: string
 }
 
+type UpdateRequest = {
+  action: 'update'
+  employeeId: string
+  username: string
+  pin?: string
+  displayName: string
+  role: StaffRole
+  branchId?: string | null
+  isActive: boolean
+}
+
+type StaffRequest = InviteRequest | UpdateRequest
+
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: {
@@ -91,18 +104,62 @@ Deno.serve(async (request) => {
     if (profileError) throw profileError
     if (!actorProfile?.isActive) return json({ error: 'ACTIVE_STAFF_REQUIRED' }, 403)
 
-    const body = await request.json() as InviteRequest
-    if ((body.action ?? 'invite') !== 'invite') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
+    const body = await request.json() as StaffRequest
+    const action = body.action ?? 'invite'
+    if (action !== 'invite' && action !== 'update') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
     const employeeId = body.employeeId?.trim()
-    const email = body.email?.trim().toLowerCase()
     const username = body.username?.trim().toLowerCase()
     const pin = body.pin?.trim()
     const displayName = body.displayName?.trim()
     const role = body.role
-    if (!employeeId || !displayName || !username || !usernamePattern.test(username) || !pin || !/^\d{6}$/.test(pin) || !validRoles.has(role)) {
-      return json({ error: 'INVALID_STAFF_INVITE' }, 400)
+    if (!employeeId || !displayName || !username || !usernamePattern.test(username) || !validRoles.has(role)) {
+      return json({ error: action === 'update' ? 'INVALID_STAFF_UPDATE' : 'INVALID_STAFF_INVITE' }, 400)
     }
 
+    if (action === 'update') {
+      const update = body as UpdateRequest
+      if (pin && !/^\d{6}$/.test(pin)) return json({ error: 'INVALID_STAFF_PIN' }, 400)
+      const { data: target, error: targetError } = await admin
+        .from('staff_access_profiles')
+        .select('user_id,employee_id,display_name,role,username,branch_id,is_active')
+        .eq('employee_id', employeeId)
+        .maybeSingle()
+      if (targetError) throw targetError
+      if (!target) return json({ error: 'STAFF_LOGIN_NOT_FOUND' }, 404)
+
+      const syncInput = {
+        p_employee_id: employeeId,
+        p_display_name: displayName,
+        p_role: role,
+        p_username: username,
+        p_is_active: update.isActive,
+        p_branch_id: update.branchId ?? null,
+      }
+      const { data: synced, error: syncError } = await userClient.rpc('sync_staff_access_profile', syncInput)
+      if (syncError) return json({ error: 'STAFF_ACCESS_UPDATE_REJECTED', message: syncError.message }, 400)
+      if (!synced) return json({ error: 'STAFF_LOGIN_NOT_FOUND' }, 404)
+
+      if (pin) {
+        const { error: passwordError } = await admin.auth.admin.updateUserById(target.user_id, { password: pin })
+        if (passwordError) {
+          await userClient.rpc('sync_staff_access_profile', {
+            p_employee_id: target.employee_id,
+            p_display_name: target.display_name,
+            p_role: target.role,
+            p_username: target.username,
+            p_is_active: target.is_active,
+            p_branch_id: target.branch_id,
+          })
+          return json({ error: 'STAFF_CREDENTIAL_UPDATE_FAILED', message: passwordError.message }, 400)
+        }
+      }
+
+      return json({ ok: true, userId: target.user_id, employeeId, username, role, isActive: update.isActive })
+    }
+
+    const invite = body as InviteRequest
+    const email = invite.email?.trim().toLowerCase()
+    if (!pin || !/^\d{6}$/.test(pin)) return json({ error: 'INVALID_STAFF_INVITE' }, 400)
     const { data: mayInvite, error: invitePermissionError } = await userClient.rpc('can_invite_staff_role', { p_role: role })
     if (invitePermissionError) throw invitePermissionError
     if (!mayInvite) return json({ error: 'STAFF_INVITE_FORBIDDEN' }, 403)
@@ -123,15 +180,15 @@ Deno.serve(async (request) => {
     if (existingUsername) return json({ error: 'USERNAME_ALREADY_IN_USE' }, 409)
 
     const authEmail = email && isEmail(email) ? email : `${username}@staff.fleurstales.local`
-    const { data: invite, error: inviteError } = await admin.auth.admin.createUser({
+    const { data: invitedUser, error: inviteError } = await admin.auth.admin.createUser({
       email: authEmail,
       password: pin,
       email_confirm: true,
       user_metadata: { fleurstales_employee_id: employeeId, fleurstales_display_name: displayName },
     })
-    if (inviteError || !invite.user) return json({ error: 'INVITE_FAILED', message: inviteError?.message ?? 'Supabase did not return the staff user.' }, 400)
+    if (inviteError || !invitedUser.user) return json({ error: 'INVITE_FAILED', message: inviteError?.message ?? 'Supabase did not return the staff user.' }, 400)
 
-    const userId = invite.user.id
+    const userId = invitedUser.user.id
     try {
       const { error: metadataError } = await admin.auth.admin.updateUserById(userId, {
         app_metadata: { fleurstales_employee_id: employeeId },
@@ -144,7 +201,7 @@ Deno.serve(async (request) => {
         username,
         display_name: displayName,
         role,
-        branch_id: body.branchId ?? null,
+        branch_id: invite.branchId ?? null,
         is_active: true,
       }, { onConflict: 'user_id' })
       if (accessError) throw accessError
