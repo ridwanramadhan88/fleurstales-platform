@@ -11,6 +11,10 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 })
 
 const usernamePattern = /^[a-z][a-z0-9._-]*$/
+const invalidLogin = (stage: string): Response => {
+  console.warn('staff-login rejected', { stage })
+  return json({ error: 'INVALID_LOGIN' }, 401)
+}
 
 const getSecretKey = (): string => {
   const modern = Deno.env.get('SUPABASE_SECRET_KEYS')
@@ -56,7 +60,7 @@ Deno.serve(async (request) => {
     const body = await request.json() as { username?: string; credential?: string }
     const username = body.username?.trim().toLowerCase() ?? ''
     const credential = body.credential ?? ''
-    if (!usernamePattern.test(username) || credential.length < 6) return json({ error: 'INVALID_LOGIN' }, 401)
+    if (!usernamePattern.test(username) || credential.length < 6) return invalidLogin('invalid_input')
 
     const admin = createClient(url, getSecretKey(), { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
     const auth = createClient(url, getPublishableKey(), { auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false } })
@@ -65,14 +69,15 @@ Deno.serve(async (request) => {
       .select('user_id,is_active')
       .eq('username', username)
       .maybeSingle()
-    if (profileError || !profile?.is_active) return json({ error: 'INVALID_LOGIN' }, 401)
+    if (profileError) return invalidLogin('profile_lookup_failed')
+    if (!profile?.is_active) return invalidLogin('profile_missing_or_inactive')
 
     const { data: userResult, error: userError } = await admin.auth.admin.getUserById(profile.user_id)
     const email = userResult.user?.email
-    if (userError || !email) return json({ error: 'INVALID_LOGIN' }, 401)
+    if (userError || !email) return invalidLogin('auth_user_lookup_failed')
 
     const { data: signedIn, error: signInError } = await auth.auth.signInWithPassword({ email, password: credential })
-    if (signInError || !signedIn.session) return json({ error: 'INVALID_LOGIN' }, 401)
+    if (signInError || !signedIn.session) return invalidLogin('credential_rejected')
     return json({ session: signedIn.session })
   } catch (cause) {
     console.error('staff-login failed', cause)
