@@ -16,6 +16,7 @@ export interface SharedStaffSession {
   employeeId?: string
   displayName: string
   role: StaffRole
+  username?: string
   /** Operational/default branch attached to the staff access profile. */
   branchId?: string
   isActive: boolean
@@ -64,6 +65,7 @@ export const buildSupabaseStaffSession = (profile: SharedStaffAccessProfile): Sh
   employeeId: profile.employeeId,
   displayName: profile.displayName,
   role: profile.role,
+  username: profile.username,
   branchId: profile.branchId,
   isActive: profile.isActive,
 })

@@ -60,6 +60,24 @@ export const signInSupabaseWithPassword = async (email: string, password: string
   return data.session
 }
 
+export const signInSupabaseWithUsername = async (username: string, credential: string): Promise<Session> => {
+  const authClient = getSupabaseAuthClient()
+  if (!authClient) throw new Error('Supabase Auth is not configured.')
+  const { data, error } = await authClient.functions.invoke('staff-login', {
+    body: { username: username.trim().toLowerCase(), credential },
+  })
+  if (error) throw error
+  const session = data?.session as { access_token?: string; refresh_token?: string } | undefined
+  if (!session?.access_token || !session.refresh_token) throw new Error('Sign-in did not return a session.')
+  const { data: restored, error: restoreError } = await authClient.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  })
+  if (restoreError || !restored.session) throw restoreError ?? new Error('Unable to restore the staff session.')
+  syncBrowserSession(restored.session)
+  return restored.session
+}
+
 export const sendSupabasePasswordReset = async (email: string): Promise<void> => {
   const authClient = getSupabaseAuthClient()
   if (!authClient) throw new Error('Supabase Auth is not configured.')

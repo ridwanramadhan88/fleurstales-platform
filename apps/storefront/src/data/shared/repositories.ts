@@ -69,6 +69,7 @@ const mapStaffAccessProfile = (row: StaffAccessProfileRow): SharedStaffAccessPro
   employeeId: optional(row.employee_id),
   displayName: row.display_name,
   role: row.role,
+  username: optional(row.username),
   branchId: optional(row.branch_id),
   isActive: row.is_active,
 })

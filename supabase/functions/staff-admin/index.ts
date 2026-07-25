@@ -5,7 +5,9 @@ type StaffRole = 'admin' | 'finance' | 'hr' | 'florist'
 type InviteRequest = {
   action?: 'invite'
   employeeId: string
-  email: string
+  email?: string
+  username: string
+  pin: string
   displayName: string
   role: StaffRole
   branchId?: string | null
@@ -62,6 +64,7 @@ const parseSecretKey = (): string => {
 
 const isEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 const validRoles = new Set<StaffRole>(['admin', 'finance', 'hr', 'florist'])
+const usernamePattern = /^[a-z][a-z0-9._-]*$/
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return json({ ok: true })
@@ -92,9 +95,11 @@ Deno.serve(async (request) => {
     if ((body.action ?? 'invite') !== 'invite') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
     const employeeId = body.employeeId?.trim()
     const email = body.email?.trim().toLowerCase()
+    const username = body.username?.trim().toLowerCase()
+    const pin = body.pin?.trim()
     const displayName = body.displayName?.trim()
     const role = body.role
-    if (!employeeId || !displayName || !email || !isEmail(email) || !validRoles.has(role)) {
+    if (!employeeId || !displayName || !username || !usernamePattern.test(username) || !pin || !/^\d{6}$/.test(pin) || !validRoles.has(role)) {
       return json({ error: 'INVALID_STAFF_INVITE' }, 400)
     }
 
@@ -104,19 +109,27 @@ Deno.serve(async (request) => {
 
     const { data: existingProfile, error: existingProfileError } = await admin
       .from('staff_access_profiles')
-      .select('user_id')
+      .select('user_id,username')
       .eq('employee_id', employeeId)
       .maybeSingle()
     if (existingProfileError) throw existingProfileError
     if (existingProfile) return json({ error: 'EMPLOYEE_ALREADY_HAS_LOGIN' }, 409)
+    const { data: existingUsername, error: existingUsernameError } = await admin
+      .from('staff_access_profiles')
+      .select('user_id')
+      .eq('username', username)
+      .maybeSingle()
+    if (existingUsernameError) throw existingUsernameError
+    if (existingUsername) return json({ error: 'USERNAME_ALREADY_IN_USE' }, 409)
 
-    const { data: invite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-      data: { fleurstales_employee_id: employeeId, fleurstales_display_name: displayName },
-      redirectTo: body.redirectTo,
+    const authEmail = email && isEmail(email) ? email : `${username}@staff.fleurstales.local`
+    const { data: invite, error: inviteError } = await admin.auth.admin.createUser({
+      email: authEmail,
+      password: pin,
+      email_confirm: true,
+      user_metadata: { fleurstales_employee_id: employeeId, fleurstales_display_name: displayName },
     })
-    if (inviteError || !invite.user) {
-      return json({ error: 'INVITE_FAILED', message: inviteError?.message ?? 'Supabase did not return the invited user.' }, 400)
-    }
+    if (inviteError || !invite.user) return json({ error: 'INVITE_FAILED', message: inviteError?.message ?? 'Supabase did not return the staff user.' }, 400)
 
     const userId = invite.user.id
     try {
@@ -128,6 +141,7 @@ Deno.serve(async (request) => {
       const { error: accessError } = await admin.from('staff_access_profiles').upsert({
         user_id: userId,
         employee_id: employeeId,
+        username,
         display_name: displayName,
         role,
         branch_id: body.branchId ?? null,
@@ -139,7 +153,7 @@ Deno.serve(async (request) => {
       throw cause
     }
 
-    return json({ ok: true, userId, employeeId, email, role })
+    return json({ ok: true, userId, employeeId, username, role })
   } catch (cause) {
     console.error('staff-admin failed', cause)
     return json({ error: 'STAFF_ADMIN_FAILED', message: cause instanceof Error ? cause.message : 'Unknown error.' }, 500)

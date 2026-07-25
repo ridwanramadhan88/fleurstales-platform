@@ -104,9 +104,10 @@ production employee/session foundation on top of V3.2:
 
 New non-Owner Auth accounts are created by `functions/staff-admin`, never by a
 browser-held secret. The function verifies the signed-in staff user against the
-database permission model, sends the Supabase invitation, and links the Auth
-user to `staff_access_profiles`. Invited staff finish password setup in the OS
-login flow.
+database permission model, creates the Supabase Auth user with the staff PIN,
+and links the Auth user and OS username to `staff_access_profiles`. The public
+`staff-login` function resolves username + password/PIN to a normal Supabase
+session while keeping the internal Auth email private.
 
 After applying all migrations, also run:
 

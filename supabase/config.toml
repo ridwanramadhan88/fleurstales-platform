@@ -417,3 +417,8 @@ enabled = true
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/staff-admin/index.ts"
+
+[functions.staff-login]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/staff-login/index.ts"

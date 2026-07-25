@@ -372,15 +372,14 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       if (!settings.staffRoles.roles.includes(systemRole)) { result = employeeCommandError('disabled_role', 'The selected role is disabled in Owner Settings.', 'systemRole'); return state }
       if (actor.role !== 'owner' && systemRole !== employee.systemRole) { result = employeeCommandError('forbidden', 'Only Owner can edit employee roles.', 'systemRole'); return state }
       if (systemRole !== employee.systemRole) { const roleResult = canChangeEmployeeRole({ employees: state.employees, employeeId, nextRole: systemRole, actor }); if (!roleResult.ok) { result = employeeCommandError(roleResult.reason.includes('last active owner') ? 'last_owner' : 'forbidden', roleResult.reason, 'systemRole'); return state } }
-      const usesEmailAuth = Boolean(employee.email)
-      const nextUsername = usesEmailAuth ? employee.username : normalizeUsername(username ?? employee.username ?? '')
-      if (actor.role === 'owner' && !usesEmailAuth) {
+      const nextUsername = normalizeUsername(username ?? employee.username ?? '')
+      if (actor.role === 'owner') {
         if (!nextUsername || !/^[a-z][a-z0-9._-]*$/.test(nextUsername)) { result = employeeCommandError('invalid_username', 'Username must be lowercase and start with a letter.', 'username'); return state }
         if (state.employees.some((item) => item.id !== employeeId && item.username === nextUsername)) { result = employeeCommandError('duplicate_username', 'Username is already in use.', 'username'); return state }
         if (pin && !/^\d{6}$/.test(pin)) { result = employeeCommandError('invalid_pin', 'PIN must contain exactly 6 numbers.', 'pin'); return state }
       }
       result = { ok: true, employeeId }
-      return { employees: state.employees.map((item) => item.id === employeeId ? { ...item, systemRole, position: getEmployeeRoleLabel(systemRole), username: actor.role === 'owner' && !usesEmailAuth ? nextUsername : item.username, pin: actor.role === 'owner' && !usesEmailAuth && pin ? pin : item.pin } : item) }
+      return { employees: state.employees.map((item) => item.id === employeeId ? { ...item, systemRole, position: getEmployeeRoleLabel(systemRole), username: actor.role === 'owner' ? nextUsername : item.username, pin: actor.role === 'owner' && pin ? pin : item.pin } : item) }
     })
     return result
   },

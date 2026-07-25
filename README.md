@@ -74,6 +74,9 @@ migration in `supabase/migrations`, then execute the database smoke tests:
 
 First-Owner provisioning is driven by trusted Supabase Auth app metadata; no
 personal owner email is used as an authorization rule. New non-Owner staff are
-invited by the `staff-admin` Edge Function, which is deployed by the manual
-production workflow after database migrations and before the web apps. The web
-applications must never receive a service-role/secret key.
+created by the `staff-admin` Edge Function with an OS username and six-digit PIN.
+The private Auth email is generated server-side when no email is supplied, and
+the public `staff-login` Edge Function resolves username sign-in to Supabase
+Auth without exposing that internal email. Both functions are deployed by the
+manual production workflow after database migrations and before the web apps.
+The web applications must never receive a service-role/secret key.

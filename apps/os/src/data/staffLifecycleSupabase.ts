@@ -5,7 +5,8 @@ import { isSupabaseConfigured } from './shared/supabaseConfig'
 
 export interface ProvisionStaffInput {
   employeeId: string
-  email: string
+  username: string
+  pin: string
   displayName: string
   role: Exclude<UserRole, 'owner'>
   branchId?: string
@@ -31,6 +32,7 @@ export const syncStaffAccessProfileSupabase = async (employee: Employee): Promis
     p_employee_id: employee.id,
     p_display_name: employee.name,
     p_role: employee.systemRole,
+    p_username: employee.username ?? null,
     p_is_active: employee.status === 'active',
     p_branch_id: employee.branch || null,
   })

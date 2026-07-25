@@ -265,20 +265,20 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     const common = { name: form.name, position: form.systemRole, systemRole: form.systemRole, phone: form.phone, hireDate, actor }
     let result: HrEmployeeCommandResult
     if (canCreateAccounts && isSupabaseConfigured()) {
-      const eligibility = canCreateStaffAccount({ employees, email: form.email, systemRole: form.systemRole, actor, hrManagedRoles })
+      const eligibility = canCreateStaffAccount({ employees, username: form.username, pin: form.pin, systemRole: form.systemRole, actor, hrManagedRoles })
       if (!eligibility.ok) {
         const lower = eligibility.reason.toLowerCase()
-        setFormErrors({ [lower.includes('email') ? 'email' : 'systemRole']: eligibility.reason })
+        setFormErrors({ [lower.includes('username') ? 'username' : lower.includes('pin') ? 'pin' : 'systemRole']: eligibility.reason })
         return
       }
       const employeeId = `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       try {
-        await provisionStaffAccountSupabase({ employeeId, email: form.email, displayName: form.name, role: form.systemRole as Exclude<UserRole, 'owner'> })
+        await provisionStaffAccountSupabase({ employeeId, username: form.username, pin: form.pin, displayName: form.name, role: form.systemRole as Exclude<UserRole, 'owner'> })
       } catch (cause) {
         setDetailsError(cause instanceof Error ? cause.message : 'Unable to create the staff login invitation.')
         return
       }
-      result = createStaffAccount({ ...common, employeeId, email: form.email })
+      result = createStaffAccount({ ...common, employeeId, username: form.username, pin: form.pin })
     } else {
       result = canCreateAccounts
         ? createStaffAccount({ ...common, username: form.username, pin: form.pin })
@@ -377,7 +377,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       if (!detailsEmployee || !detailsForm) return
       const errors: EmployeeFieldErrors = {}
       if (!assignableRoles.includes(detailsForm.systemRole)) errors.systemRole = 'Select an enabled role.'
-      if (canEditCredentials && !isSupabaseConfigured()) {
+      if (canEditCredentials) {
         if (!/^[a-z][a-z0-9._-]*$/.test(detailsForm.username.trim())) errors.username = 'Use lowercase letters, numbers, dots, underscores, or hyphens.'
         if (detailsForm.pin && !/^\d{6}$/.test(detailsForm.pin)) errors.pin = 'PIN must contain exactly 6 numbers.'
       }
@@ -385,6 +385,8 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       if (Object.keys(errors).length) return
       const changes: string[] = []
       if (detailsForm.systemRole !== detailsEmployee.systemRole) changes.push(`Role: ${detailsEmployee.systemRole} → ${detailsForm.systemRole}`)
+      if (detailsForm.username.trim() !== (detailsEmployee.username ?? '')) changes.push(`Username: ${detailsEmployee.username ?? 'none'} → ${detailsForm.username.trim()}`)
+      if (detailsForm.pin) changes.push('Login credential updated')
       if (changes.length) { setPendingAccessConfirmation({ changes }); return }
       if (isSupabaseConfigured()) { setDetailsError(null); setDetailsMessage('Access settings already match Supabase Auth.'); return }
       const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, username: detailsForm.username, pin: detailsForm.pin, actor: { name: actorName, role } })
@@ -394,7 +396,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     onConfirmEmployeeAccessChange: async () => {
       if (!detailsEmployee || !detailsForm) return
       try {
-        await syncStaffAccessProfileSupabase({ ...detailsEmployee, systemRole: detailsForm.systemRole, position: detailsForm.systemRole })
+        await syncStaffAccessProfileSupabase({ ...detailsEmployee, username: detailsForm.username.trim(), systemRole: detailsForm.systemRole, position: detailsForm.systemRole })
       } catch (cause) {
         setDetailsError(cause instanceof Error ? cause.message : 'Unable to synchronize the staff role with Supabase Auth.')
         setPendingAccessConfirmation(null)

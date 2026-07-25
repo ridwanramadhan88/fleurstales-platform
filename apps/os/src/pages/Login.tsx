@@ -13,7 +13,7 @@ import { isSupabaseConfigured } from '../data/shared/supabaseConfig'
 import {
   initializeSupabaseAuth,
   sendSupabasePasswordReset,
-  signInSupabaseWithPassword,
+  signInSupabaseWithUsername,
   signOutSupabase,
   subscribeSupabaseAuth,
   updateSupabasePassword,
@@ -103,7 +103,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           await finishSupabaseSignIn()
           return
         }
-        await signInSupabaseWithPassword(email, password)
+        await signInSupabaseWithUsername(username, password)
         await finishSupabaseSignIn()
         return
       }
@@ -129,7 +129,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     ? 'We’ll email you a secure reset link.'
     : mode === 'set-password'
       ? 'Choose a password for your Fleurstales OS account.'
-      : usesSupabase ? 'Use your staff email and password.' : 'Use your staff username and six-digit PIN.'
+      : usesSupabase ? 'Use your staff username and password or PIN.' : 'Use your staff username and six-digit PIN.'
 
   return (
     <div className="min-h-screen bg-background px-4 pb-6 pt-[max(1rem,env(safe-area-inset-top))] text-foreground sm:flex sm:items-center sm:justify-center sm:py-8">
@@ -155,16 +155,16 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
             <p className="mt-0.5 text-sm text-muted-foreground">{authHelp}</p>
           </div>
 
-          {usesSupabase && mode !== 'set-password' ? <label className="block space-y-1.5">
+          {usesSupabase && mode === 'forgot' ? <label className="block space-y-1.5">
             <span className="text-xs font-medium">Email</span>
             <input aria-label="Email" autoComplete="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
-          {!usesSupabase ? <label className="block space-y-1.5">
+          {mode === 'signin' ? <label className="block space-y-1.5">
             <span className="text-xs font-medium">Username</span>
             <input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder="username" className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {(!usesSupabase || mode !== 'forgot') ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">{usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password') : 'PIN'}</span>
+            <span className="text-xs font-medium">{usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password / PIN') : 'PIN'}</span>
             <input
               aria-label={usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password') : 'PIN'}
               autoComplete={mode === 'set-password' ? 'new-password' : 'current-password'}
@@ -173,7 +173,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
               maxLength={usesSupabase ? undefined : 6}
               value={usesSupabase ? password : pin}
               onChange={(e) => usesSupabase ? setPassword(e.target.value) : setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder={usesSupabase ? (mode === 'set-password' ? 'At least 8 characters' : 'Password') : '6-digit PIN'}
+              placeholder={usesSupabase ? (mode === 'set-password' ? 'At least 8 characters' : 'Password or 6-digit PIN') : '6-digit PIN'}
               className="h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
             />
           </label> : null}
@@ -183,7 +183,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           </label> : null}
           {error && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive ring-1 ring-destructive/30">{error}</p>}
           {notice && <p role="status" className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-foreground ring-1 ring-primary/25">{notice}</p>}
-          <button type="submit" disabled={isSigningIn || (usesSupabase ? (mode === 'forgot' ? !email : mode === 'set-password' ? !password || !confirmPassword : !email || !password) : !username || pin.length !== 6)} className="tap-scale flex w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 disabled:bg-primary/45 disabled:text-primary-foreground/90 disabled:opacity-100 px-[18px] whitespace-nowrap h-11 gap-2">
+          <button type="submit" disabled={isSigningIn || (usesSupabase ? (mode === 'forgot' ? !email : mode === 'set-password' ? !password || !confirmPassword : !username || !password) : !username || pin.length !== 6)} className="tap-scale flex w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 disabled:bg-primary/45 disabled:text-primary-foreground/90 disabled:opacity-100 px-[18px] whitespace-nowrap h-11 gap-2">
             {mode === 'forgot' ? <Mail className="size-4" /> : mode === 'set-password' ? <KeyRound className="size-4" /> : <LogIn className="size-4" />}
             {isSigningIn ? 'Please wait…' : mode === 'forgot' ? 'Send reset link' : mode === 'set-password' ? 'Save password' : 'Sign in'}
           </button>
@@ -212,7 +212,7 @@ const staffSessionToEmployee = (session: SharedStaffSession): Employee => ({
   status: 'active',
   phone: '',
   hireDate: new Date().toISOString().slice(0, 10),
-  username: session.role,
+  username: session.username ?? session.role,
 })
 
 export default LoginPage

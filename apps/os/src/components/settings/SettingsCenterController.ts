@@ -476,19 +476,17 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
         if (staffAccountDraft.phone.trim() && !/^\+?[0-9][0-9 ()-]{7,19}$/.test(staffAccountDraft.phone.trim())) errors['staff.account.phone'] = 'Enter a valid WhatsApp number.'
         if (!/^\d{4}-\d{2}-\d{2}$/.test(staffAccountDraft.hireDate) || staffAccountDraft.hireDate > today) errors['staff.account.hireDate'] = 'Enter a valid hire date that is not in the future.'
         if (!Number.isInteger(staffAccountDraft.baseSalaryIdr) || staffAccountDraft.baseSalaryIdr <= 0) errors['staff.account.baseSalaryIdr'] = 'Base salary must be a positive whole rupiah amount.'
-        const usesSupabaseStaffAuth = isSupabaseConfigured()
         const eligibility = canCreateStaffAccount({
           employees,
-          email: usesSupabaseStaffAuth ? staffAccountDraft.email : undefined,
-          username: usesSupabaseStaffAuth ? undefined : staffAccountDraft.username,
-          pin: usesSupabaseStaffAuth ? undefined : staffAccountDraft.pin,
+          username: staffAccountDraft.username,
+          pin: staffAccountDraft.pin,
           systemRole: staffAccountDraft.systemRole,
           actor: { name: actorName, role },
           hrManagedRoles: editValue.staffRoles.hrManagedRoles,
         })
         if (!eligibility.ok) {
           const lower = eligibility.reason.toLowerCase()
-          errors[lower.includes('email') ? 'staff.account.email' : lower.includes('pin') ? 'staff.account.pin' : 'staff.account.username'] = eligibility.reason
+          errors[lower.includes('pin') ? 'staff.account.pin' : 'staff.account.username'] = eligibility.reason
         }
       }
     }
@@ -538,7 +536,8 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
             if (isSupabaseConfigured()) {
               await provisionStaffAccountSupabase({
                 employeeId,
-                email: staffAccountDraft.email,
+                username: staffAccountDraft.username,
+                pin: staffAccountDraft.pin,
                 displayName: staffAccountDraft.name,
                 role: staffAccountDraft.systemRole as Exclude<UserRole, 'owner'>,
               })
@@ -546,9 +545,9 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
             const result = createStaffAccount({
               ...staffAccountDraft,
               employeeId,
-              email: isSupabaseConfigured() ? staffAccountDraft.email : undefined,
-              username: isSupabaseConfigured() ? undefined : staffAccountDraft.username,
-              pin: isSupabaseConfigured() ? undefined : staffAccountDraft.pin,
+              email: undefined,
+              username: staffAccountDraft.username,
+              pin: staffAccountDraft.pin,
               position: staffAccountDraft.systemRole,
               actor: { name: actorName, role: 'owner' },
             })

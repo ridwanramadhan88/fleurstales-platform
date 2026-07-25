@@ -32,6 +32,7 @@ const [
   homeSource,
   loginSource,
   staffAdminFunction,
+  staffLoginFunction,
   releaseWorkflow,
 ] = await Promise.all([
   read('supabase/migrations/20260725203000_security_concurrency_hardening.sql'),
@@ -57,6 +58,7 @@ const [
   read('apps/os/src/pages/Home.tsx'),
   read('apps/os/src/pages/Login.tsx'),
   read('supabase/functions/staff-admin/index.ts'),
+  read('supabase/functions/staff-login/index.ts'),
   read('.github/workflows/release-production.yml'),
 ])
 
@@ -210,13 +212,15 @@ assert(staffSettingsRuntime.includes('public.can_invite_staff_role'), 'Trusted s
 assert(staffSettingsRuntime.includes('public.sync_staff_access_profile'), 'Staff access-profile synchronization RPC is missing.')
 assert(staffLifecycleSync.includes("functions.invoke('staff-admin'"), 'OS does not call the trusted staff provisioning function.')
 assert(staffLifecycleSync.includes("'sync_staff_access_profile'"), 'OS does not synchronize staff profile changes.')
-assert(staffAdminFunction.includes('inviteUserByEmail'), 'Staff provisioning function does not create Supabase Auth invitations.')
+assert(staffAdminFunction.includes('auth.admin.createUser') || staffAdminFunction.includes('inviteUserByEmail'), 'Staff provisioning function does not create Supabase Auth users.')
 assert(staffAdminFunction.includes('SUPABASE_SECRET_KEYS'), 'Staff provisioning function is not using server-only secret credentials.')
 assert(staffAdminFunction.includes("rpc('can_invite_staff_role'"), 'Staff provisioning function does not verify database authority.')
 assert(staffAdminFunction.includes("from('staff_access_profiles')"), 'Staff provisioning function does not link Auth users to staff access profiles.')
 assert(loginSource.includes("type=(?:recovery|invite)"), 'Login does not handle invited staff password setup links.')
 assert(loginSource.includes('updateSupabasePassword'), 'Invited staff cannot establish their password.')
+assert(staffLoginFunction.includes('signInWithPassword'), 'Username login function does not delegate credential verification to Supabase Auth.')
 assert(releaseWorkflow.includes('functions deploy staff-admin'), 'Production release does not deploy the staff provisioning Edge Function.')
+assert(releaseWorkflow.includes('functions deploy staff-login'), 'Production release does not deploy the username login Edge Function.')
 
 assert(staffSettingsRuntime.includes('PAYROLL_PAYMENT_REQUIRES_EXACTLY_ONE_PROPOSAL'), 'Payroll payment does not enforce one proposal per payment command.')
 assert(staffSettingsRuntime.includes("return private.apply_payroll_workflow_state('record_payment'"), 'Exact payroll payment wrapper does not delegate to the authoritative workflow transaction.')

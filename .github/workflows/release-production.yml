@@ -52,6 +52,7 @@ jobs:
         with:
           node-version: 22
       - run: npx -y supabase@2.109.1 functions deploy staff-admin --project-ref "$SUPABASE_PROJECT_ID"
+      - run: npx -y supabase@2.109.1 functions deploy staff-login --project-ref "$SUPABASE_PROJECT_ID"
 
   deploy-storefront:
     needs: deploy-functions
