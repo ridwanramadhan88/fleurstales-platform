@@ -129,7 +129,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     ? 'We’ll email you a secure reset link.'
     : mode === 'set-password'
       ? 'Choose a password for your Fleurstales OS account.'
-      : usesSupabase ? 'Use your staff username and password or PIN.' : 'Use your staff username and six-digit PIN.'
+      : usesSupabase ? 'Use your staff username or email and password/PIN.' : 'Use your staff username and six-digit PIN.'
 
   return (
     <div className="min-h-screen bg-background px-4 pb-6 pt-[max(1rem,env(safe-area-inset-top))] text-foreground sm:flex sm:items-center sm:justify-center sm:py-8">
@@ -160,8 +160,8 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
             <input aria-label="Email" autoComplete="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {mode === 'signin' ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">Username</span>
-            <input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder="username" className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
+            <span className="text-xs font-medium">{usesSupabase ? 'Username or email' : 'Username'}</span>
+            <input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder={usesSupabase ? 'username or email' : 'username'} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {(!usesSupabase || mode !== 'forgot') ? <label className="block space-y-1.5">
             <span className="text-xs font-medium">{usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password / PIN') : 'PIN'}</span>

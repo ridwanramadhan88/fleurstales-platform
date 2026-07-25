@@ -12,6 +12,25 @@ export interface ProvisionStaffInput {
   branchId?: string
 }
 
+const staffFunctionError = async (error: unknown, fallback: string): Promise<Error> => {
+  if (error && typeof error === 'object' && 'context' in error) {
+    const context = error.context
+    if (context instanceof Response) {
+      try {
+        const body = await context.clone().json() as { error?: string; message?: string }
+        if (body.message) return new Error(body.message)
+        if (body.error === 'USERNAME_ALREADY_IN_USE') return new Error('Username is already in use.')
+        if (body.error === 'EMPLOYEE_ALREADY_HAS_LOGIN') return new Error('This employee already has a login account.')
+        if (body.error === 'STAFF_LOGIN_NOT_FOUND') return new Error('This employee has no Supabase login account yet.')
+        if (body.error === 'STAFF_CREDENTIAL_UPDATE_FAILED') return new Error('The role was restored because the new PIN could not be saved.')
+      } catch {
+        // Use the clear workflow fallback below.
+      }
+    }
+  }
+  return new Error(fallback)
+}
+
 export const provisionStaffAccountSupabase = async (input: ProvisionStaffInput): Promise<void> => {
   if (!isSupabaseConfigured()) return
   const client = getSupabaseAuthClient()
@@ -20,21 +39,26 @@ export const provisionStaffAccountSupabase = async (input: ProvisionStaffInput):
   const { data, error } = await client.functions.invoke('staff-admin', {
     body: { action: 'invite', ...input, redirectTo },
   })
-  if (error) throw error
+  if (error) throw await staffFunctionError(error, 'Unable to create the staff login account.')
   if (data?.error) throw new Error(data.message ?? data.error)
 }
 
-export const syncStaffAccessProfileSupabase = async (employee: Employee): Promise<void> => {
+export const syncStaffAccessProfileSupabase = async (employee: Employee, pin?: string): Promise<void> => {
   if (!isSupabaseConfigured()) return
   const client = getSupabaseAuthClient()
   if (!client) return
-  const { error } = await client.rpc('sync_staff_access_profile', {
-    p_employee_id: employee.id,
-    p_display_name: employee.name,
-    p_role: employee.systemRole,
-    p_username: employee.username ?? null,
-    p_is_active: employee.status === 'active',
-    p_branch_id: employee.branch || null,
+  const { data, error } = await client.functions.invoke('staff-admin', {
+    body: {
+      action: 'update',
+      employeeId: employee.id,
+      displayName: employee.name,
+      role: employee.systemRole,
+      username: employee.username ?? '',
+      isActive: employee.status === 'active',
+      branchId: employee.branch || null,
+      pin: pin || undefined,
+    },
   })
-  if (error) throw error
+  if (error) throw await staffFunctionError(error, 'Unable to synchronize the staff login account.')
+  if (data?.error) throw new Error(data.message ?? data.error)
 }

@@ -25,6 +25,7 @@ const [
   actionPermissions,
   sectionPermissions,
   staffSettingsRuntime,
+  staffAccessWorkflowRepair,
   internalSettingsSync,
   runtimeBranchSync,
   staffLifecycleSync,
@@ -51,6 +52,7 @@ const [
   read('apps/os/src/config/actionPermissions.ts'),
   read('apps/os/src/config/permissions.ts'),
   read('supabase/migrations/20260725223000_staff_settings_runtime_authority.sql'),
+  read('supabase/migrations/20260725225000_staff_access_workflow_repair.sql'),
   read('apps/os/src/data/internalSettingsSupabaseSync.ts'),
   read('apps/os/src/data/runtimeBranchSupabase.ts'),
   read('apps/os/src/data/staffLifecycleSupabase.ts'),
@@ -211,11 +213,15 @@ assert(staffSettingsRuntime.includes('private.enabled_staff_roles'), 'Staff invi
 assert(staffSettingsRuntime.includes('public.can_invite_staff_role'), 'Trusted staff invite authorization helper is missing.')
 assert(staffSettingsRuntime.includes('public.sync_staff_access_profile'), 'Staff access-profile synchronization RPC is missing.')
 assert(staffLifecycleSync.includes("functions.invoke('staff-admin'"), 'OS does not call the trusted staff provisioning function.')
-assert(staffLifecycleSync.includes("'sync_staff_access_profile'"), 'OS does not synchronize staff profile changes.')
+assert(staffLifecycleSync.includes("action: 'update'"), 'OS does not synchronize staff account edits through the trusted Auth function.')
 assert(staffAdminFunction.includes('auth.admin.createUser') || staffAdminFunction.includes('inviteUserByEmail'), 'Staff provisioning function does not create Supabase Auth users.')
 assert(staffAdminFunction.includes('SUPABASE_SECRET_KEYS'), 'Staff provisioning function is not using server-only secret credentials.')
 assert(staffAdminFunction.includes("rpc('can_invite_staff_role'"), 'Staff provisioning function does not verify database authority.')
 assert(staffAdminFunction.includes("from('staff_access_profiles')"), 'Staff provisioning function does not link Auth users to staff access profiles.')
+assert(staffAdminFunction.includes("rpc('sync_staff_access_profile'"), 'Trusted staff account edits do not use the authorized profile RPC.')
+assert(staffAdminFunction.includes("action === 'update'"), 'Staff provisioning function does not support account edits.')
+assert(staffAdminFunction.includes('updateUserById(target.user_id, { password: pin })'), 'Staff PIN edits do not update Supabase Auth credentials.')
+assert(staffAccessWorkflowRepair.includes("'hr', p_employee_id"), 'Staff access activity still uses an invalid business activity entity type.')
 assert(loginSource.includes("type=(?:recovery|invite)"), 'Login does not handle invited staff password setup links.')
 assert(loginSource.includes('updateSupabasePassword'), 'Invited staff cannot establish their password.')
 assert(staffLoginFunction.includes('signInWithPassword'), 'Username login function does not delegate credential verification to Supabase Auth.')
