@@ -478,6 +478,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
         if (!Number.isInteger(staffAccountDraft.baseSalaryIdr) || staffAccountDraft.baseSalaryIdr <= 0) errors['staff.account.baseSalaryIdr'] = 'Base salary must be a positive whole rupiah amount.'
         const eligibility = canCreateStaffAccount({
           employees,
+          email: staffAccountDraft.email,
           username: staffAccountDraft.username,
           pin: staffAccountDraft.pin,
           systemRole: staffAccountDraft.systemRole,
@@ -486,7 +487,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
         })
         if (!eligibility.ok) {
           const lower = eligibility.reason.toLowerCase()
-          errors[lower.includes('pin') ? 'staff.account.pin' : 'staff.account.username'] = eligibility.reason
+          errors[lower.includes('email') ? 'staff.account.email' : lower.includes('pin') ? 'staff.account.pin' : 'staff.account.username'] = eligibility.reason
         }
       }
     }
@@ -536,6 +537,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
             if (isSupabaseConfigured()) {
               await provisionStaffAccountSupabase({
                 employeeId,
+                email: staffAccountDraft.email,
                 username: staffAccountDraft.username,
                 pin: staffAccountDraft.pin,
                 displayName: staffAccountDraft.name,
@@ -545,7 +547,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
             const result = createStaffAccount({
               ...staffAccountDraft,
               employeeId,
-              email: undefined,
+              email: staffAccountDraft.email,
               username: staffAccountDraft.username,
               pin: staffAccountDraft.pin,
               position: staffAccountDraft.systemRole,

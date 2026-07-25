@@ -97,8 +97,8 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           return
         }
         if (mode === 'set-password') {
-          if (password.length < 8) throw new Error('Use at least 8 characters for your password.')
-          if (password !== confirmPassword) throw new Error('Passwords do not match.')
+          if (!/^\d{6}$/.test(password) && password.length < 8) throw new Error('Use a 6-digit PIN or a password with at least 8 characters.')
+          if (password !== confirmPassword) throw new Error('Password / PIN entries do not match.')
           await updateSupabasePassword(password)
           await finishSupabaseSignIn()
           return
@@ -124,11 +124,11 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     }
   }
 
-  const authTitle = mode === 'forgot' ? 'Reset password' : mode === 'set-password' ? 'Create password' : 'Sign in'
+  const authTitle = mode === 'forgot' ? 'Reset password / PIN' : mode === 'set-password' ? 'Create password / PIN' : 'Sign in'
   const authHelp = mode === 'forgot'
     ? 'We’ll email you a secure reset link.'
     : mode === 'set-password'
-      ? 'Choose a password for your Fleurstales OS account.'
+      ? 'Choose a 6-digit PIN or a password with at least 8 characters.'
       : usesSupabase ? 'Use your staff username or email and password/PIN.' : 'Use your staff username and six-digit PIN.'
 
   return (
@@ -164,31 +164,31 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
             <input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder={usesSupabase ? 'username or email' : 'username'} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {(!usesSupabase || mode !== 'forgot') ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">{usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password / PIN') : 'PIN'}</span>
+            <span className="text-xs font-medium">{usesSupabase ? (mode === 'set-password' ? 'New password / PIN' : 'Password / PIN') : 'PIN'}</span>
             <input
-              aria-label={usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password') : 'PIN'}
+              aria-label={usesSupabase ? (mode === 'set-password' ? 'New password / PIN' : 'Password') : 'PIN'}
               autoComplete={mode === 'set-password' ? 'new-password' : 'current-password'}
               inputMode={usesSupabase ? undefined : 'numeric'}
               type="password"
               maxLength={usesSupabase ? undefined : 6}
               value={usesSupabase ? password : pin}
               onChange={(e) => usesSupabase ? setPassword(e.target.value) : setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder={usesSupabase ? (mode === 'set-password' ? 'At least 8 characters' : 'Password or 6-digit PIN') : '6-digit PIN'}
+              placeholder={usesSupabase ? (mode === 'set-password' ? '6-digit PIN or 8+ character password' : 'Password or 6-digit PIN') : '6-digit PIN'}
               className="h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
             />
           </label> : null}
           {usesSupabase && mode === 'set-password' ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">Confirm password</span>
-            <input aria-label="Confirm password" autoComplete="new-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repeat password" className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
+            <span className="text-xs font-medium">Confirm password / PIN</span>
+            <input aria-label="Confirm password / PIN" autoComplete="new-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repeat password or PIN" className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {error && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive ring-1 ring-destructive/30">{error}</p>}
           {notice && <p role="status" className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-foreground ring-1 ring-primary/25">{notice}</p>}
           <button type="submit" disabled={isSigningIn || (usesSupabase ? (mode === 'forgot' ? !email : mode === 'set-password' ? !password || !confirmPassword : !username || !password) : !username || pin.length !== 6)} className="tap-scale flex w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 disabled:bg-primary/45 disabled:text-primary-foreground/90 disabled:opacity-100 px-[18px] whitespace-nowrap h-11 gap-2">
             {mode === 'forgot' ? <Mail className="size-4" /> : mode === 'set-password' ? <KeyRound className="size-4" /> : <LogIn className="size-4" />}
-            {isSigningIn ? 'Please wait…' : mode === 'forgot' ? 'Send reset link' : mode === 'set-password' ? 'Save password' : 'Sign in'}
+            {isSigningIn ? 'Please wait…' : mode === 'forgot' ? 'Send reset link' : mode === 'set-password' ? 'Save password / PIN' : 'Sign in'}
           </button>
           {usesSupabase && mode !== 'set-password' ? <button type="button" onClick={() => { setMode(mode === 'forgot' ? 'signin' : 'forgot'); setError(null); setNotice(null) }} className="w-full text-center text-xs font-medium text-muted-foreground hover:text-foreground">
-            {mode === 'forgot' ? 'Back to sign in' : 'Forgot password?'}
+            {mode === 'forgot' ? 'Back to sign in' : 'Forgot password / PIN?'}
           </button> : null}
         </form>
 
@@ -213,6 +213,7 @@ const staffSessionToEmployee = (session: SharedStaffSession): Employee => ({
   phone: '',
   hireDate: new Date().toISOString().slice(0, 10),
   username: session.username ?? session.role,
+  email: session.email,
 })
 
 export default LoginPage

@@ -40,6 +40,7 @@ export interface EmployeeDetailsFormState {
   systemRole: UserRole
   phone: string
   hireDate: string
+  email: string
   username: string
   pin: string
 }
@@ -231,6 +232,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     detailsForm.name !== detailsEmployee.name ||
     detailsForm.phone !== detailsEmployee.phone ||
     detailsForm.hireDate !== detailsEmployee.hireDate ||
+    detailsForm.email !== (detailsEmployee.email ?? '') ||
     detailsForm.systemRole !== detailsEmployee.systemRole ||
     detailsForm.username !== (detailsEmployee.username ?? '') ||
     Boolean(detailsForm.pin)
@@ -265,23 +267,23 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     const common = { name: form.name, position: form.systemRole, systemRole: form.systemRole, phone: form.phone, hireDate, actor }
     let result: HrEmployeeCommandResult
     if (canCreateAccounts && isSupabaseConfigured()) {
-      const eligibility = canCreateStaffAccount({ employees, username: form.username, pin: form.pin, systemRole: form.systemRole, actor, hrManagedRoles })
+      const eligibility = canCreateStaffAccount({ employees, email: form.email, username: form.username, pin: form.pin, systemRole: form.systemRole, actor, hrManagedRoles })
       if (!eligibility.ok) {
         const lower = eligibility.reason.toLowerCase()
-        setFormErrors({ [lower.includes('username') ? 'username' : lower.includes('pin') ? 'pin' : 'systemRole']: eligibility.reason })
+        setFormErrors({ [lower.includes('email') ? 'email' : lower.includes('username') ? 'username' : lower.includes('pin') ? 'pin' : 'systemRole']: eligibility.reason })
         return
       }
       const employeeId = `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       try {
-        await provisionStaffAccountSupabase({ employeeId, username: form.username, pin: form.pin, displayName: form.name, role: form.systemRole as Exclude<UserRole, 'owner'> })
+        await provisionStaffAccountSupabase({ employeeId, email: form.email, username: form.username, pin: form.pin, displayName: form.name, role: form.systemRole as Exclude<UserRole, 'owner'> })
       } catch (cause) {
         setDetailsError(cause instanceof Error ? cause.message : 'Unable to create the staff login invitation.')
         return
       }
-      result = createStaffAccount({ ...common, employeeId, username: form.username, pin: form.pin })
+      result = createStaffAccount({ ...common, employeeId, email: form.email, username: form.username, pin: form.pin })
     } else {
       result = canCreateAccounts
-        ? createStaffAccount({ ...common, username: form.username, pin: form.pin })
+        ? createStaffAccount({ ...common, email: form.email, username: form.username, pin: form.pin })
         : addEmployee(common)
     }
     if (!result.ok) { applyEmployeeCommandError(result, 'form'); return }
@@ -338,7 +340,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     },
     onOpenEmployeeDetails: (employee) => {
       setDetailsEmployee(employee); setProfileErrors({}); setAccessErrors({}); setDetailsError(null); setDetailsMessage(null); setPendingAccessConfirmation(null); setPendingDetailsCloseConfirmation(false)
-      setDetailsForm({ name: employee.name, systemRole: employee.systemRole, phone: employee.phone, hireDate: employee.hireDate, username: employee.username ?? '', pin: '' })
+      setDetailsForm({ name: employee.name, systemRole: employee.systemRole, phone: employee.phone, hireDate: employee.hireDate, email: employee.email ?? '', username: employee.username ?? '', pin: '' })
     },
     onCloseEmployeeDetails: () => {
       if (hasUnsavedEmployeeDetails) { setPendingDetailsCloseConfirmation(true); return }
@@ -378,6 +380,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       const errors: EmployeeFieldErrors = {}
       if (!assignableRoles.includes(detailsForm.systemRole)) errors.systemRole = 'Select an enabled role.'
       if (canEditCredentials) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(detailsForm.email.trim())) errors.email = 'Enter a valid recovery email address.'
         if (!/^[a-z][a-z0-9._-]*$/.test(detailsForm.username.trim())) errors.username = 'Use lowercase letters, numbers, dots, underscores, or hyphens.'
         if (detailsForm.pin && !/^\d{6}$/.test(detailsForm.pin)) errors.pin = 'PIN must contain exactly 6 numbers.'
       }
@@ -385,11 +388,12 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       if (Object.keys(errors).length) return
       const changes: string[] = []
       if (detailsForm.systemRole !== detailsEmployee.systemRole) changes.push(`Role: ${detailsEmployee.systemRole} → ${detailsForm.systemRole}`)
+      if (detailsForm.email.trim().toLowerCase() !== (detailsEmployee.email ?? '').toLowerCase()) changes.push(`Recovery email: ${detailsEmployee.email ?? 'none'} → ${detailsForm.email.trim().toLowerCase()}`)
       if (detailsForm.username.trim() !== (detailsEmployee.username ?? '')) changes.push(`Username: ${detailsEmployee.username ?? 'none'} → ${detailsForm.username.trim()}`)
       if (detailsForm.pin) changes.push('Login credential updated')
       if (changes.length) { setPendingAccessConfirmation({ changes }); return }
       if (isSupabaseConfigured()) { setDetailsError(null); setDetailsMessage('Access settings already match Supabase Auth.'); return }
-      const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, username: detailsForm.username, pin: detailsForm.pin, actor: { name: actorName, role } })
+      const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, email: detailsForm.email, username: detailsForm.username, pin: detailsForm.pin, actor: { name: actorName, role } })
       if (!result.ok) { applyEmployeeCommandError(result, 'access'); return }
       setDetailsError(null); setDetailsMessage('Access settings updated.')
     },
@@ -397,7 +401,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       if (!detailsEmployee || !detailsForm) return
       try {
         await syncStaffAccessProfileSupabase(
-          { ...detailsEmployee, username: detailsForm.username.trim(), systemRole: detailsForm.systemRole, position: detailsForm.systemRole },
+          { ...detailsEmployee, email: detailsForm.email.trim().toLowerCase(), username: detailsForm.username.trim(), systemRole: detailsForm.systemRole, position: detailsForm.systemRole },
           detailsForm.pin || undefined,
         )
       } catch (cause) {
@@ -405,11 +409,11 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
         setPendingAccessConfirmation(null)
         return
       }
-      const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, username: detailsForm.username, pin: detailsForm.pin, actor: { name: actorName, role } })
+      const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, email: detailsForm.email, username: detailsForm.username, pin: detailsForm.pin, actor: { name: actorName, role } })
       if (!result.ok) { applyEmployeeCommandError(result, 'access'); setPendingAccessConfirmation(null); return }
       const updated = useHrStore.getState().employees.find((item) => item.id === detailsEmployee.id) ?? null
       setDetailsEmployee(updated); setPendingAccessConfirmation(null); setDetailsError(null); setDetailsMessage('Role change confirmed.')
-      if (updated) setDetailsForm((current) => current ? { ...current, systemRole: updated.systemRole, username: updated.username ?? '', pin: '' } : current)
+      if (updated) setDetailsForm((current) => current ? { ...current, systemRole: updated.systemRole, email: updated.email ?? '', username: updated.username ?? '', pin: '' } : current)
     },
     onCancelEmployeeAccessChange: () => setPendingAccessConfirmation(null),
     onRequestEmployeeStatusChange: (employee) => { setStatusActionError(null); setPendingStatusEmployee(employee) },

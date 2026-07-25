@@ -52,6 +52,7 @@ export interface StaffAccessProfileRow {
   display_name: string
   role: StaffRole
   username: string | null
+  email: string | null
   branch_id: string | null
   is_active: boolean
   created_at: string

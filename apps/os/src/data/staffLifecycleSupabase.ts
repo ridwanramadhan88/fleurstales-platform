@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from './shared/supabaseConfig'
 
 export interface ProvisionStaffInput {
   employeeId: string
+  email: string
   username: string
   pin: string
   displayName: string
@@ -20,6 +21,8 @@ const staffFunctionError = async (error: unknown, fallback: string): Promise<Err
         const body = await context.clone().json() as { error?: string; message?: string }
         if (body.message) return new Error(body.message)
         if (body.error === 'USERNAME_ALREADY_IN_USE') return new Error('Username is already in use.')
+        if (body.error === 'EMAIL_ALREADY_IN_USE') return new Error('Email is already in use.')
+        if (body.error === 'INVALID_STAFF_EMAIL') return new Error('Enter a valid staff email address.')
         if (body.error === 'EMPLOYEE_ALREADY_HAS_LOGIN') return new Error('This employee already has a login account.')
         if (body.error === 'STAFF_LOGIN_NOT_FOUND') return new Error('This employee has no Supabase login account yet.')
         if (body.error === 'STAFF_CREDENTIAL_UPDATE_FAILED') return new Error('The role was restored because the new PIN could not be saved.')
@@ -51,6 +54,7 @@ export const syncStaffAccessProfileSupabase = async (employee: Employee, pin?: s
     body: {
       action: 'update',
       employeeId: employee.id,
+      email: employee.email?.trim().toLowerCase() || undefined,
       displayName: employee.name,
       role: employee.systemRole,
       username: employee.username ?? '',

@@ -5,7 +5,7 @@ type StaffRole = 'admin' | 'finance' | 'hr' | 'florist'
 type InviteRequest = {
   action?: 'invite'
   employeeId: string
-  email?: string
+  email: string
   username: string
   pin: string
   displayName: string
@@ -17,6 +17,7 @@ type InviteRequest = {
 type UpdateRequest = {
   action: 'update'
   employeeId: string
+  email?: string
   username: string
   pin?: string
   displayName: string
@@ -110,6 +111,7 @@ Deno.serve(async (request) => {
     const employeeId = body.employeeId?.trim()
     const username = body.username?.trim().toLowerCase()
     const pin = body.pin?.trim()
+    const email = body.email?.trim().toLowerCase()
     const displayName = body.displayName?.trim()
     const role = body.role
     if (!employeeId || !displayName || !username || !usernamePattern.test(username) || !validRoles.has(role)) {
@@ -118,14 +120,25 @@ Deno.serve(async (request) => {
 
     if (action === 'update') {
       const update = body as UpdateRequest
+      if (email && !isEmail(email)) return json({ error: 'INVALID_STAFF_EMAIL' }, 400)
       if (pin && !/^\d{6}$/.test(pin)) return json({ error: 'INVALID_STAFF_PIN' }, 400)
       const { data: target, error: targetError } = await admin
         .from('staff_access_profiles')
-        .select('user_id,employee_id,display_name,role,username,branch_id,is_active')
+        .select('user_id,employee_id,display_name,role,username,email,branch_id,is_active')
         .eq('employee_id', employeeId)
         .maybeSingle()
       if (targetError) throw targetError
       if (!target) return json({ error: 'STAFF_LOGIN_NOT_FOUND' }, 404)
+      if (email && email !== target.email) {
+        const { data: existingEmail, error: existingEmailError } = await admin
+          .from('staff_access_profiles')
+          .select('user_id')
+          .ilike('email', email)
+          .neq('user_id', target.user_id)
+          .maybeSingle()
+        if (existingEmailError) throw existingEmailError
+        if (existingEmail) return json({ error: 'EMAIL_ALREADY_IN_USE' }, 409)
+      }
 
       const syncInput = {
         p_employee_id: employeeId,
@@ -139,9 +152,12 @@ Deno.serve(async (request) => {
       if (syncError) return json({ error: 'STAFF_ACCESS_UPDATE_REJECTED', message: syncError.message }, 400)
       if (!synced) return json({ error: 'STAFF_LOGIN_NOT_FOUND' }, 404)
 
-      if (pin) {
-        const { error: passwordError } = await admin.auth.admin.updateUserById(target.user_id, { password: pin })
-        if (passwordError) {
+      if (email && email !== target.email) {
+        const { error: profileEmailError } = await admin
+          .from('staff_access_profiles')
+          .update({ email })
+          .eq('user_id', target.user_id)
+        if (profileEmailError) {
           await userClient.rpc('sync_staff_access_profile', {
             p_employee_id: target.employee_id,
             p_display_name: target.display_name,
@@ -150,15 +166,38 @@ Deno.serve(async (request) => {
             p_is_active: target.is_active,
             p_branch_id: target.branch_id,
           })
-          return json({ error: 'STAFF_CREDENTIAL_UPDATE_FAILED', message: passwordError.message }, 400)
+          return json({ error: profileEmailError.code === '23505' ? 'EMAIL_ALREADY_IN_USE' : 'STAFF_ACCESS_UPDATE_REJECTED', message: profileEmailError.message }, 400)
         }
       }
 
-      return json({ ok: true, userId: target.user_id, employeeId, username, role, isActive: update.isActive })
+      if (pin || (email && email !== target.email)) {
+        const credentials = {
+          ...(pin ? { password: pin } : {}),
+          ...(email && email !== target.email ? { email, email_confirm: true } : {}),
+        }
+        const { error: credentialError } = await admin.auth.admin.updateUserById(target.user_id, credentials)
+        if (credentialError) {
+          if (email && email !== target.email) {
+            await admin.from('staff_access_profiles').update({ email: target.email }).eq('user_id', target.user_id)
+          }
+          await userClient.rpc('sync_staff_access_profile', {
+            p_employee_id: target.employee_id,
+            p_display_name: target.display_name,
+            p_role: target.role,
+            p_username: target.username,
+            p_is_active: target.is_active,
+            p_branch_id: target.branch_id,
+          })
+          const duplicateEmail = /already|registered|exists/i.test(credentialError.message)
+          return json({ error: duplicateEmail ? 'EMAIL_ALREADY_IN_USE' : 'STAFF_CREDENTIAL_UPDATE_FAILED', message: credentialError.message }, 400)
+        }
+      }
+
+      return json({ ok: true, userId: target.user_id, employeeId, email: email ?? target.email, username, role, isActive: update.isActive })
     }
 
     const invite = body as InviteRequest
-    const email = invite.email?.trim().toLowerCase()
+    if (!email || !isEmail(email)) return json({ error: 'INVALID_STAFF_EMAIL' }, 400)
     if (!pin || !/^\d{6}$/.test(pin)) return json({ error: 'INVALID_STAFF_INVITE' }, 400)
     const { data: mayInvite, error: invitePermissionError } = await userClient.rpc('can_invite_staff_role', { p_role: role })
     if (invitePermissionError) throw invitePermissionError
@@ -166,12 +205,12 @@ Deno.serve(async (request) => {
 
     const { data: existingProfile, error: existingProfileError } = await admin
       .from('staff_access_profiles')
-      .select('user_id,employee_id,username,role,is_active')
+      .select('user_id,employee_id,email,username,role,is_active')
       .eq('employee_id', employeeId)
       .maybeSingle()
     if (existingProfileError) throw existingProfileError
     if (existingProfile) {
-      if (existingProfile.username === username && existingProfile.role === role && existingProfile.is_active) {
+      if (existingProfile.email === email && existingProfile.username === username && existingProfile.role === role && existingProfile.is_active) {
         return json({
           ok: true,
           existing: true,
@@ -190,10 +229,16 @@ Deno.serve(async (request) => {
       .maybeSingle()
     if (existingUsernameError) throw existingUsernameError
     if (existingUsername) return json({ error: 'USERNAME_ALREADY_IN_USE' }, 409)
+    const { data: existingEmail, error: existingEmailError } = await admin
+      .from('staff_access_profiles')
+      .select('user_id')
+      .ilike('email', email)
+      .maybeSingle()
+    if (existingEmailError) throw existingEmailError
+    if (existingEmail) return json({ error: 'EMAIL_ALREADY_IN_USE' }, 409)
 
-    const authEmail = email && isEmail(email) ? email : `${username}@staff.fleurstales.local`
     const { data: invitedUser, error: inviteError } = await admin.auth.admin.createUser({
-      email: authEmail,
+      email,
       password: pin,
       email_confirm: true,
       user_metadata: { fleurstales_employee_id: employeeId, fleurstales_display_name: displayName },
@@ -210,6 +255,7 @@ Deno.serve(async (request) => {
       const { error: accessError } = await admin.from('staff_access_profiles').upsert({
         user_id: userId,
         employee_id: employeeId,
+        email,
         username,
         display_name: displayName,
         role,
@@ -222,7 +268,7 @@ Deno.serve(async (request) => {
       throw cause
     }
 
-    return json({ ok: true, userId, employeeId, username, role })
+    return json({ ok: true, userId, employeeId, email, username, role })
   } catch (cause) {
     console.error('staff-admin failed', cause)
     return json({ error: 'STAFF_ADMIN_FAILED', message: cause instanceof Error ? cause.message : 'Unknown error.' }, 500)
