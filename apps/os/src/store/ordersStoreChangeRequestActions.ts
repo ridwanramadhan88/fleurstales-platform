@@ -74,7 +74,7 @@ export const createOrderChangeRequestActions = (
       order: target,
       actor,
       expectedRevision,
-      kind: 'finance_decision',
+      kind: 'change_request_resolution',
       permissions: useSettingsStore.getState().permissions,
       action: 'order.change_request.approve',
     })
@@ -146,7 +146,7 @@ export const createOrderChangeRequestActions = (
       order: target,
       actor,
       expectedRevision,
-      kind: 'finance_decision',
+      kind: 'change_request_resolution',
       permissions: useSettingsStore.getState().permissions,
       action: 'order.change_request.reject',
     })

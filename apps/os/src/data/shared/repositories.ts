@@ -29,6 +29,7 @@ import type {
   Json,
   OccasionRow,
   OrderItemRow,
+  OrderPaymentEventRow,
   OrderRow,
   ProductImageRow,
   ProductOccasionRow,
@@ -68,6 +69,7 @@ const mapStaffAccessProfile = (row: StaffAccessProfileRow): SharedStaffAccessPro
   employeeId: optional(row.employee_id),
   displayName: row.display_name,
   role: row.role,
+  username: optional(row.username),
   branchId: optional(row.branch_id),
   isActive: row.is_active,
 })
@@ -509,7 +511,7 @@ export const createCustomerAdminRepository = (client: SupabaseHttpClient): Custo
 })
 
 
-type OrderWithItemsRow = OrderRow & { order_items?: OrderItemRow[] }
+type OrderWithItemsRow = OrderRow & { order_items?: OrderItemRow[]; order_payment_events?: OrderPaymentEventRow[] }
 
 const mapCustomerSuggestions = (value: Json | null): SharedOrder['customerProfileSuggestions'] => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
@@ -541,6 +543,34 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   paymentStatus: row.payment_status,
   paymentMethod: optional(row.payment_method),
   paidAmountIdr: row.paid_amount_idr,
+  paymentHistory: [...(row.order_payment_events ?? [])]
+    .sort((a, b) => a.occurred_at.localeCompare(b.occurred_at) || a.id.localeCompare(b.id))
+    .map((event) => ({
+      id: event.id,
+      type: event.type,
+      amountIdr: event.amount_idr,
+      previousPaidAmountIdr: event.previous_paid_amount_idr,
+      resultingPaidAmountIdr: event.resulting_paid_amount_idr,
+      resultingStatus: event.resulting_status,
+      method: optional(event.method),
+      reference: optional(event.reference),
+      proofId: optional(event.proof_id),
+      note: optional(event.note),
+      actorId: optional(event.actor_id),
+      actorName: event.actor_name,
+      occurredAt: event.occurred_at,
+      idempotencyKey: event.idempotency_key,
+      ledgerTransactionId: optional(event.ledger_transaction_id),
+    })),
+  refundAmountIdr: optional(row.refund_amount_idr),
+  refundReason: optional(row.refund_reason),
+  refundInitiatedBy: optional(row.refund_initiated_by),
+  refundInitiatedAt: optional(row.refund_initiated_at),
+  refundCompletedBy: optional(row.refund_completed_by),
+  refundCompletedAt: optional(row.refund_completed_at),
+  refundCancelledBy: optional(row.refund_cancelled_by),
+  refundCancelledAt: optional(row.refund_cancelled_at),
+  refundCancellationReason: optional(row.refund_cancellation_reason),
   scheduleLabel: optional(row.schedule_label),
   scheduleDate: optional(row.schedule_date),
   scheduleTime: optional(row.schedule_time),
@@ -553,10 +583,36 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   deliveryAddress: optional(row.delivery_address),
   deliveryInstructions: optional(row.delivery_instructions),
   promoCode: optional(row.promo_code),
+  floristDisplayName: optional(row.florist_display_name),
+  floristAssignedEmployeeId: optional(row.florist_assigned_employee_id),
+  floristAssignedAt: optional(row.florist_assigned_at),
+  floristAssignedForDate: optional(row.florist_assigned_for_date),
+  floristAssignedForTime: optional(row.florist_assigned_for_time),
+  floristAssignedByEmployeeId: optional(row.florist_assigned_by_employee_id),
+  floristAssignedByName: optional(row.florist_assigned_by_name),
+  floristScheduleOverride: row.florist_schedule_override,
+  floristScheduleOverrideReason: optional(row.florist_schedule_override_reason),
+  floristScheduledBranchId: optional(row.florist_scheduled_branch_id),
+  floristAssignedBranchId: optional(row.florist_assigned_branch_id),
+  floristScheduledShiftStart: optional(row.florist_scheduled_shift_start),
+  floristScheduledShiftEnd: optional(row.florist_scheduled_shift_end),
+  processingStartedAt: optional(row.processing_started_at),
+  adminHandledEmployeeId: optional(row.admin_handled_employee_id),
+  adminHandledByName: optional(row.admin_handled_by_name),
   completedAt: optional(row.completed_at),
   financeVerified: row.finance_verified,
   financeVerifiedBy: optional(row.finance_verified_by),
   financeVerifiedAt: optional(row.finance_verified_at),
+  financeVerificationStatus: optional(row.finance_verification_status),
+  financeVerificationNote: optional(row.finance_verification_note),
+  financeVerificationActor: optional(row.finance_verification_actor),
+  financeVerificationAt: optional(row.finance_verification_at),
+  financeResubmittedBy: optional(row.finance_resubmitted_by),
+  financeResubmittedAt: optional(row.finance_resubmitted_at),
+  financeResubmissionNote: optional(row.finance_resubmission_note),
+  financeSubmissionRevision: optional(row.finance_submission_revision),
+  pendingChangeRequest: row.pending_change_request ?? undefined,
+  editUnlocked: row.edit_unlocked,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
   items: [...(row.order_items ?? [])]
@@ -581,7 +637,7 @@ export const createOrdersAdminRepository = (client: SupabaseHttpClient): OrdersA
     if (options?.branchId) filters.branch_id = options.branchId
     if (options?.customerId) filters.customer_id = options.customerId
     const rows = await client.select('orders', {
-      select: '*,order_items(*)',
+      select: '*,order_items(*),order_payment_events(*)',
       filters,
       order: [{ column: 'created_at', ascending: false }],
     }) as unknown as OrderWithItemsRow[]
@@ -590,7 +646,7 @@ export const createOrdersAdminRepository = (client: SupabaseHttpClient): OrdersA
 
   async getOrder(orderId) {
     const rows = await client.select('orders', {
-      select: '*,order_items(*)',
+      select: '*,order_items(*),order_payment_events(*)',
       filters: { id: orderId },
       limit: 1,
     }) as unknown as OrderWithItemsRow[]

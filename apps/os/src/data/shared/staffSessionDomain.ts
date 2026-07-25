@@ -16,6 +16,7 @@ export interface SharedStaffSession {
   employeeId?: string
   displayName: string
   role: StaffRole
+  username?: string
   /** Operational/default branch attached to the staff access profile. */
   branchId?: string
   isActive: boolean
@@ -64,6 +65,7 @@ export const buildSupabaseStaffSession = (profile: SharedStaffAccessProfile): Sh
   employeeId: profile.employeeId,
   displayName: profile.displayName,
   role: profile.role,
+  username: profile.username,
   branchId: profile.branchId,
   isActive: profile.isActive,
 })
@@ -76,9 +78,9 @@ export const canSharedSession = (session: SharedSession, capability: SharedDataC
     case 'catalog:write': return session.role === 'owner' || session.role === 'admin'
     case 'catalog:cost:read': return session.role === 'owner' || session.role === 'finance'
     case 'store:write': return session.role === 'owner'
-    case 'customers:read':
+    case 'customers:read': return session.role === 'owner' || session.role === 'admin' || session.role === 'finance'
     case 'customers:write': return session.role === 'owner' || session.role === 'admin'
-    case 'orders:read': return true
+    case 'orders:read': return session.role !== 'hr'
     case 'orders:write': return session.role === 'owner' || session.role === 'admin' || session.role === 'finance'
     default: return false
   }

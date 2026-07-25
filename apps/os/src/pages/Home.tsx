@@ -61,6 +61,7 @@ import { getDefaultFinanceWorkspaceModule, getFinanceWorkspaceModules, type Fina
 import { toast } from '../hooks/use-toast'
 import { requestAppConfirmation } from '../components/ui/app-confirm'
 import { getBranchSwitchDecision, isOperationalBranchRole } from '../domain/branchSelectionDomain'
+import { setRuntimeBranchContext } from '../data/runtimeBranchSupabase'
 import { getLocalDateString, nowInJakarta } from '../domain/orderTimingDomain'
 import { useAuditLogStore } from '../store/auditLogStore'
 import {
@@ -337,10 +338,14 @@ const HomePage: FC<HomePageProps> = ({
       ? navigate(toOrders({ orderNumber: item.orderNumber }))
       : item.target === 'finance_orders'
         ? navigate(toFinanceModule('collect_orders'))
+        : item.target === 'finance_payroll'
+          ? navigate(toFinanceModule('payroll'))
         : item.target === 'hr_attendance'
           ? navigate(toHrSection('attendance', item.targetId))
           : item.target === 'hr_reports'
             ? navigate(toHrSection('reports', item.targetId))
+          : item.target === 'hr_payroll'
+            ? navigate(toHrSection('payroll', item.targetId))
           : item.target === 'my_schedule'
             ? navigate(toAppTab('dashboard'))
             : false
@@ -368,9 +373,15 @@ const HomePage: FC<HomePageProps> = ({
       if (!confirmed) return
     }
 
-    setActiveBranch(nextBranch)
     if (isOperationalBranchRole(userRole) && nextBranch !== 'All') {
       const date = getLocalDateString(nowInJakarta())
+      try {
+        await setRuntimeBranchContext({ scheduledBranchId, operationalBranchId: nextBranch, operationalDate: date })
+      } catch (error) {
+        toast({ title: 'Branch switch failed', description: error instanceof Error ? error.message : 'Unable to update the server branch context.', variant: 'destructive' })
+        return
+      }
+      setActiveBranch(nextBranch)
       setOperationalBranch(nextBranch, date)
       if (scheduledBranchId !== nextBranch) {
         useAuditLogStore.getState().append({
@@ -387,6 +398,8 @@ const HomePage: FC<HomePageProps> = ({
           },
         })
       }
+    } else {
+      setActiveBranch(nextBranch)
     }
   }
 

@@ -9,7 +9,8 @@
 import type { PermissionMatrix } from '../types/settings'
 import type { OrderTableRow } from '../types/orders'
 import type { UserRole } from '../store/userStore'
-import { canAccessSection, canEditSection } from '../config/permissions'
+import { canEditSection } from '../config/permissions'
+import { DEFAULT_ACTION_PERMISSIONS, hasActionPermission, type ActionPermissionMatrix } from '../config/actionPermissions'
 import { canDirectlyEditOrder, isOrderLocked } from './orderWorkflowDomain'
 
 export interface OrderActor {
@@ -28,6 +29,7 @@ export type OrderMutationKind =
   | 'fulfillment'
   | 'change_request'
   | 'finance_decision'
+  | 'change_request_resolution'
   | 'finance_resubmit'
   | 'refund'
 
@@ -52,7 +54,7 @@ export const isOrderInActorRowScope = (
   order: OrderTableRow,
   actor: OrderActor,
 ): boolean => {
-  if (!isWithinActorBranch(order, actor)) return false
+  if (actor.role !== 'florist' && !isWithinActorBranch(order, actor)) return false
 
   if (actor.role === 'owner' || actor.role === 'admin' || actor.role === 'finance') {
     return true
@@ -67,26 +69,42 @@ export const canViewOrder = (
   order: OrderTableRow,
   actor: OrderActor,
   permissions: PermissionMatrix,
-): boolean =>
-  canAccessSection(actor.role, 'orders', permissions) &&
-  isOrderInActorRowScope(order, actor)
+  actionPermissions: ActionPermissionMatrix = DEFAULT_ACTION_PERMISSIONS,
+): boolean => {
+  const canRead = hasActionPermission(actor.role, 'orders.read_all', actionPermissions, permissions)
+    || hasActionPermission(actor.role, 'orders.read_assigned', actionPermissions, permissions)
+  return canRead && isOrderInActorRowScope(order, actor)
+}
 
 export const authorizeOrderMutation = ({
   order,
   actor,
   permissions,
   kind,
+  actionPermissions = DEFAULT_ACTION_PERMISSIONS,
 }: {
   order: OrderTableRow
   actor: OrderActor
   permissions: PermissionMatrix
   kind: OrderMutationKind
+  actionPermissions?: ActionPermissionMatrix
 }): OrderAuthorizationResult => {
-  if (!canViewOrder(order, actor, permissions)) {
+  if (!canViewOrder(order, actor, permissions, actionPermissions)) {
     return { allowed: false, reason: 'This order is outside your permitted scope.' }
   }
 
-  if (kind === 'finance_decision') {
+  const capability = kind === 'status' ? 'orders.advance_status'
+    : kind === 'assignment' ? 'orders.assign'
+    : kind === 'change_request' ? 'orders.submit_change_request'
+    : kind === 'finance_decision' ? 'finance.verify_order'
+    : kind === 'change_request_resolution' ? 'orders.resolve_change_request'
+    : kind === 'refund' ? 'finance.approve_refund'
+    : 'orders.edit'
+  if (!hasActionPermission(actor.role, capability, actionPermissions, permissions)) {
+    return { allowed: false, reason: 'This action is disabled for your role.' }
+  }
+
+  if (kind === 'finance_decision' || kind === 'change_request_resolution') {
     return actor.role === 'finance' || actor.role === 'owner'
       ? { allowed: true }
       : { allowed: false, reason: 'Only Finance or Owner can make this decision.' }

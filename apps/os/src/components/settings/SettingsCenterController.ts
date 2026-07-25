@@ -36,6 +36,8 @@ import { summarizeActionPermissions, summarizeSectionChanges } from '../../domai
 import { SETTINGS_NAVIGATION_REQUEST_EVENT, type SettingsNavigationRequestDetail } from './settingsNavigationGuard'
 import type { StaffAccountDraft } from './settingsDraftTypes'
 import { canCreateStaffAccount } from '../../domain/staffAccountDomain'
+import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
+import { provisionStaffAccountSupabase } from '../../data/staffLifecycleSupabase'
 
 export interface SettingsNavItem {
   id: SettingsSectionId
@@ -80,7 +82,7 @@ export interface SettingsCenterViewModel {
    * change is actually committed to the settings store. */
   saveConfirmationOpen: boolean
   pendingChangeSummary: string[]
-  onConfirmSave: () => void
+  onConfirmSave: () => Promise<void>
   onCancelSaveConfirmation: () => void
 
   storeProfile: StoreProfileSettings
@@ -471,10 +473,21 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
       if (staffAccountDraft) {
         if (!staffAccountDraft.name.trim()) errors['staff.account.name'] = 'Full name is required.'
         if (!editValue.staffRoles.roles.includes(staffAccountDraft.systemRole) || staffAccountDraft.systemRole === 'owner') errors['staff.account.systemRole'] = 'Choose an enabled non-Owner role.'
+        if (staffAccountDraft.phone.trim() && !/^\+?[0-9][0-9 ()-]{7,19}$/.test(staffAccountDraft.phone.trim())) errors['staff.account.phone'] = 'Enter a valid WhatsApp number.'
         if (!/^\d{4}-\d{2}-\d{2}$/.test(staffAccountDraft.hireDate) || staffAccountDraft.hireDate > today) errors['staff.account.hireDate'] = 'Enter a valid hire date that is not in the future.'
         if (!Number.isInteger(staffAccountDraft.baseSalaryIdr) || staffAccountDraft.baseSalaryIdr <= 0) errors['staff.account.baseSalaryIdr'] = 'Base salary must be a positive whole rupiah amount.'
-        const eligibility = canCreateStaffAccount({ employees, username: staffAccountDraft.username, pin: staffAccountDraft.pin, systemRole: staffAccountDraft.systemRole, actor: { name: actorName, role }, hrManagedRoles: editValue.staffRoles.hrManagedRoles })
-        if (!eligibility.ok) errors[eligibility.reason.toLowerCase().includes('pin') ? 'staff.account.pin' : 'staff.account.username'] = eligibility.reason
+        const eligibility = canCreateStaffAccount({
+          employees,
+          username: staffAccountDraft.username,
+          pin: staffAccountDraft.pin,
+          systemRole: staffAccountDraft.systemRole,
+          actor: { name: actorName, role },
+          hrManagedRoles: editValue.staffRoles.hrManagedRoles,
+        })
+        if (!eligibility.ok) {
+          const lower = eligibility.reason.toLowerCase()
+          errors[lower.includes('pin') ? 'staff.account.pin' : 'staff.account.username'] = eligibility.reason
+        }
       }
     }
     setValidationErrors(errors)
@@ -502,7 +515,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
     stageSave(true)
   }
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (!pendingSave) return
     const normalizedEditValue = pendingSave
     if (activeSection === 'payroll') {
@@ -518,7 +531,31 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
           if (nextSalary !== (employee.baseSalaryIdr ?? 0)) updateEmployeeBaseSalary(employee.id, nextSalary, { name: actorName, role: 'owner' })
         }
         if (staffAccountDraft) {
-          createStaffAccount({ ...staffAccountDraft, position: staffAccountDraft.systemRole, actor: { name: actorName, role: 'owner' } })
+          const employeeId = `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+          try {
+            if (isSupabaseConfigured()) {
+              await provisionStaffAccountSupabase({
+                employeeId,
+                username: staffAccountDraft.username,
+                pin: staffAccountDraft.pin,
+                displayName: staffAccountDraft.name,
+                role: staffAccountDraft.systemRole as Exclude<UserRole, 'owner'>,
+              })
+            }
+            const result = createStaffAccount({
+              ...staffAccountDraft,
+              employeeId,
+              email: undefined,
+              username: staffAccountDraft.username,
+              pin: staffAccountDraft.pin,
+              position: staffAccountDraft.systemRole,
+              actor: { name: actorName, role: 'owner' },
+            })
+            if (!result.ok) throw new Error(result.reason)
+          } catch (cause) {
+            setSaveFeedback(cause instanceof Error ? cause.message : 'Staff account could not be created.')
+            return
+          }
         }
       }
     }
@@ -691,7 +728,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
       const defaultRole = editValue.staffRoles.roles.includes(editValue.staffRoles.defaultRole) && editValue.staffRoles.defaultRole !== 'owner'
         ? editValue.staffRoles.defaultRole
         : (editValue.staffRoles.roles.find((roleValue) => roleValue !== 'owner') ?? 'florist')
-      setStaffAccountDraft({ name: '', username: '', pin: '123456', systemRole: defaultRole, phone: '', hireDate: today, baseSalaryIdr: 3_000_000 })
+      setStaffAccountDraft({ name: '', email: '', username: '', pin: '123456', systemRole: defaultRole, phone: '', hireDate: today, baseSalaryIdr: 3_000_000 })
       setSaveFeedback(null)
     },
     onCancelStaffAccountDraft: () => setStaffAccountDraft(null),

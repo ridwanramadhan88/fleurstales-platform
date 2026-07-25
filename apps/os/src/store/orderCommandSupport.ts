@@ -12,6 +12,7 @@ import {
 } from '../domain/orderConcurrencyDomain'
 import { useAuditLogStore, type AuditOutcome } from './auditLogStore'
 import type { OrderCommandFailure } from './ordersStoreTypes'
+import { useSettingsStore } from './settingsStore'
 
 export const auditOrderCommand = ({
   order,
@@ -73,7 +74,10 @@ export const validateOrderCommand = ({
     }
   }
 
-  const authorization = authorizeOrderMutation({ order, actor, permissions, kind })
+  const authorization = authorizeOrderMutation({
+    order, actor, permissions, kind,
+    actionPermissions: useSettingsStore.getState().actionPermissions,
+  })
   if (!authorization.allowed) {
     auditOrderCommand({
       order,

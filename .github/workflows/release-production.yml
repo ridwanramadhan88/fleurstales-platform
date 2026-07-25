@@ -39,8 +39,23 @@ jobs:
       - run: npx -y supabase@2.109.1 link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
       - run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
 
-  deploy-storefront:
+  deploy-functions:
     needs: migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx -y supabase@2.109.1 functions deploy staff-admin --project-ref "$SUPABASE_PROJECT_ID"
+      - run: npx -y supabase@2.109.1 functions deploy staff-login --project-ref "$SUPABASE_PROJECT_ID"
+
+  deploy-storefront:
+    needs: deploy-functions
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -60,7 +75,7 @@ jobs:
       - run: npx -y vercel@56.5.0 deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}" --cwd apps/storefront
 
   deploy-os:
-    needs: migrate
+    needs: deploy-functions
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

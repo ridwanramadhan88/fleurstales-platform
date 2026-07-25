@@ -22,6 +22,10 @@
         "./src/*"
       ]
     },
+    "types": [
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ],
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
@@ -31,6 +35,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "supabase/functions/**"
   ]
 }

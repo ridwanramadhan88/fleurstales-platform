@@ -32,7 +32,7 @@ describe('role notification visibility', () => {
   it.each([
     ['owner', ['order_pending_verification', 'hr_attendance_problem']],
     ['admin', ['finance_rejected', 'schedule_published']],
-    ['finance', ['admin_resubmitted']],
+    ['finance', ['order_pending_verification', 'admin_resubmitted']],
     ['hr', ['hr_attendance_problem']],
     ['florist', ['schedule_published']],
   ] as [UserRole, AlertKind[]][])('%s sees only important role tasks', (role, expected) => {

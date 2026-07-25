@@ -7,15 +7,6 @@ import { useUserStore } from '../../store/userStore'
 vi.mock('../../domain/selfieImageDomain', async () => {
   const actual = await vi.importActual<typeof import('../../domain/selfieImageDomain')>('../../domain/selfieImageDomain')
   return { ...actual, compressSelfieToSquareJpeg: vi.fn(async () => 'data:image/jpeg;base64,abc') }
-  it('does not unlock the selfie step when the employee is outside the branch radius', async () => {
-    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (success: PositionCallback) => success({ coords: { latitude:-6.2, longitude:106.8, accuracy:10 } } as GeolocationPosition) } })
-    render(<SelfieAttendanceCard />)
-    fireEvent.click(screen.getByRole('button', { name: 'Verify location' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Move within/)
-    expect(screen.queryByRole('button', { name: 'Open camera' })).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Upload check-in selfie photo')).not.toBeInTheDocument()
-  })
-
 })
 
 const admin = {

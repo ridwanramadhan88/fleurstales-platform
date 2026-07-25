@@ -1,5 +1,5 @@
 import React from 'react'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { HrTabContentContainer } from './HrTabContentContainer'
 import { useHrStore } from '../../store/hrStore'
@@ -10,13 +10,13 @@ const staff: Employee = { id:'staff-1', name:'Rina', position:'Florist', branch:
 afterEach(() => cleanup())
 beforeEach(() => { useUserStore.setState({ employeeId:'hr-1', username:'hr', role:'hr', name:'Star' }); useHrStore.setState({ employees:[owner, staff], attendance:[] }) })
 describe('employee details UI', () => {
-  it('moves employee status action into details', () => {
+  it('moves employee status action into details', async () => {
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
     const staffRow = screen.getByText('Rina').closest('article')!
     fireEvent.click(within(staffRow).getByRole('button', { name:'Details' }))
     fireEvent.click(screen.getByRole('button', { name:'Deactivate' }))
     fireEvent.click(screen.getByRole('button', { name:'Confirm' }))
-    expect(useHrStore.getState().employees.find((item) => item.id === staff.id)?.status).toBe('inactive')
+    await waitFor(() => expect(useHrStore.getState().employees.find((item) => item.id === staff.id)?.status).toBe('inactive'))
   })
   it('keeps protected Owner records out of the HR employee editor', () => {
     useHrStore.setState({ employees:[owner], attendance:[] })
@@ -24,7 +24,7 @@ describe('employee details UI', () => {
     expect(screen.queryByRole('button', { name:'Details' })).not.toBeInTheDocument()
     expect(screen.getByText('No employees match the selected filters.')).toBeInTheDocument()
   })
-  it('lets owner edit role and keeps position equal to role', () => {
+  it('lets owner edit role and keeps position equal to role', async () => {
     useUserStore.setState({ employeeId:'owner-1', username:'owner', role:'owner', name:'Titi' })
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
     const staffRow = screen.getByText('Rina').closest('article')!
@@ -33,7 +33,7 @@ describe('employee details UI', () => {
     fireEvent.click(screen.getByRole('button', { name:'Save access' }))
     expect(screen.getByText(/Role: florist → admin/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name:'Confirm changes' }))
-    expect(useHrStore.getState().employees.find((item) => item.id === staff.id)).toMatchObject({ systemRole:'admin', position:'Admin' })
+    await waitFor(() => expect(useHrStore.getState().employees.find((item) => item.id === staff.id)).toMatchObject({ systemRole:'admin', position:'Admin' }))
   })
   it('shows field validation beside invalid profile fields', () => {
     render(<HrTabContentContainer activeBranch="Kedamaian" />)

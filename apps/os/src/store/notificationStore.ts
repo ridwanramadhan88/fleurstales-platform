@@ -8,6 +8,7 @@ interface NotificationStoreState {
   notifications: NotificationRecord[]
   readIds: string[]
   syncAlerts: (alerts: AlertItem[]) => void
+  upsertServerNotifications: (notifications: NotificationRecord[], serverReadIds?: string[]) => void
   markRead: (ids: string[]) => void
 }
 
@@ -35,6 +36,15 @@ export const useNotificationStore = create<NotificationStoreState>()(
               ...updates,
               ...state.notifications.filter((item) => !updateIds.has(item.id)),
             ],
+          }
+        }),
+      upsertServerNotifications: (records, serverReadIds = []) =>
+        set((state) => {
+          const byId = new Map(state.notifications.map((item) => [item.id, item]))
+          for (const record of records) byId.set(record.id, record)
+          return {
+            notifications: Array.from(byId.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+            readIds: Array.from(new Set([...state.readIds, ...serverReadIds])),
           }
         }),
       markRead: (ids) =>

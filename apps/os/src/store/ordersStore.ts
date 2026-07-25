@@ -621,6 +621,15 @@ export const useOrdersStore = create<OrdersStoreState>()(
           action: 'order.status.update',
         })
         if (denied) return denied
+        const assignmentDenied = validateOrderCommand({
+          order: target,
+          actor,
+          expectedRevision,
+          kind: 'assignment',
+          permissions: useSettingsStore.getState().permissions,
+          action: 'order.florist.assign_and_process',
+        })
+        if (assignmentDenied) return assignmentDenied
         if (target!.status === 'processing') {
           return { allowed: false, code: 'NO_CHANGE', reason: 'This order is already Processing.' }
         }
@@ -716,9 +725,9 @@ export const useOrdersStore = create<OrdersStoreState>()(
           order: target,
           actor,
           expectedRevision,
-          kind: 'details',
+          kind: 'assignment',
           permissions: useSettingsStore.getState().permissions,
-          action: 'order.details.update',
+          action: 'order.florist.reassign',
         })
         if (denied) return denied
         if (!['owner', 'admin'].includes(actor.role)) {

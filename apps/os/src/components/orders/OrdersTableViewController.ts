@@ -138,6 +138,7 @@ export const useOrdersTableViewController = ({
   const customers = useCustomerStore((state) => state.customers)
 
   const permissions = useSettingsStore((state) => state.permissions)
+  const actionPermissions = useSettingsStore((state) => state.actionPermissions)
   const hasOrdersEditAccess = canEditSection(currentUserRole, 'orders', permissions)
 
   const actor = {
@@ -177,7 +178,7 @@ export const useOrdersTableViewController = ({
   }
 
   const allOrders: OrderTableRow[] = localOrders.filter((order) =>
-    canViewOrder(order, actor, permissions),
+    canViewOrder(order, actor, permissions, actionPermissions),
   )
 
   const branchOrders = allOrders.filter(
@@ -266,7 +267,7 @@ export const useOrdersTableViewController = ({
   const getNextStatusForOrder = (order: OrderTableRow): OrderStatus | null =>
     hasOrdersEditAccess &&
     canDirectlyEditOrder(order, currentUserRole) &&
-    authorizeOrderMutation({ order, actor, permissions, kind: 'status' }).allowed
+    authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'status' }).allowed
       ? getNextStatus(order)
       : null
 

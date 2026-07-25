@@ -44,4 +44,21 @@ for (const sharedPath of sharedPaths) {
   }
 }
 
-console.log('Shared data and fixtures are byte-identical across both applications.')
+const canonicalSupabaseDirectory = path.join(root, 'supabase')
+const canonicalSupabaseFiles = await collectFiles(canonicalSupabaseDirectory)
+for (const applicationRoot of [storefrontRoot, osRoot]) {
+  const applicationSupabaseDirectory = path.join(applicationRoot, 'supabase')
+  const applicationSupabaseFiles = await collectFiles(applicationSupabaseDirectory)
+  if (JSON.stringify(applicationSupabaseFiles) !== JSON.stringify(canonicalSupabaseFiles)) {
+    throw new Error(`${path.relative(root, applicationSupabaseDirectory)} differs from the canonical Supabase file list.`)
+  }
+  for (const relative of canonicalSupabaseFiles) {
+    const canonicalHash = await digest(path.join(canonicalSupabaseDirectory, relative))
+    const applicationHash = await digest(path.join(applicationSupabaseDirectory, relative))
+    if (applicationHash !== canonicalHash) {
+      throw new Error(`${path.relative(root, applicationSupabaseDirectory)}/${relative} differs from canonical Supabase.`)
+    }
+  }
+}
+
+console.log('Shared data, fixtures, and Supabase contracts are byte-identical across both applications.')

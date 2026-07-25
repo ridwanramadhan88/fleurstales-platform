@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react'
-import { MemoryRouter, Route, Routes } from 'react-router'
 import HomePage from './pages/Home'
 import LoginPage from './pages/Login'
 import { useUserStore } from './store/userStore'
@@ -19,39 +18,83 @@ import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
 import { clearSharedSession, getSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
 import { signOutSupabase } from './api/supabaseAuth'
 import { connectOperationalSupabase, stopOperationalSupabaseSync } from './data/operationalSupabaseSync'
+import { connectAuthorizationSupabase, stopAuthorizationSupabaseSync } from './data/authorizationSupabaseSync'
+import { connectInternalSettingsSupabase, stopInternalSettingsSupabaseSync } from './data/internalSettingsSupabaseSync'
+import { setRuntimeBranchContext } from './data/runtimeBranchSupabase'
+import { connectPayrollSupabase, stopPayrollSupabaseSync } from './data/payrollSupabaseSync'
+import { connectRealtimeSupabase, stopRealtimeSupabaseSync } from './data/realtimeSupabaseSync'
 
 export default function App() {
   const [view, setView] = useState<'login' | 'admin'>('login')
   const [selectedBranch, setSelectedBranch] = useState<BranchFilter>('All')
   const signIn = useUserStore((state) => state.signIn)
-  const scheduleOverrides = useHrStore((state) => state.scheduleOverrides)
-  const employeeDefaultSchedules = useHrStore((state) => state.employeeDefaultSchedules)
-  const settings = useSettingsStore()
   const { theme, toggleTheme } = useTheme()
 
   const handleSignIn = useCallback(async (employee: Employee) => {
     const role = employee.systemRole
     const today = getLocalDateString(nowInJakarta())
+    const profileBranch = employee.branch || undefined
+
+    // Establish identity first so permission-scoped Supabase hydration can run.
+    signIn({ employeeId: employee.id, name: employee.name, username: employee.username ?? role, role, branchId: profileBranch, scheduledBranchId: profileBranch })
+    if (getSharedSession().source !== 'supabase') {
+      setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: profileBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
+    }
+
+    // Scheduling inputs and HR schedules must be hydrated before today's
+    // scheduled/default branch is calculated.
+    await connectAuthorizationSupabase()
+    await connectInternalSettingsSupabase()
+    await connectOperationalSupabase()
+
+    const hr = useHrStore.getState()
+    const currentSettings = useSettingsStore.getState()
+    const hydratedEmployee = hr.employees.find((candidate) => candidate.id === employee.id) ?? employee
     const effective = getEffectiveScheduleForDate({
-      employee,
+      employee: hydratedEmployee,
       date: today,
-      defaults: employeeDefaultSchedules,
-      overrides: scheduleOverrides,
-      settings: { scheduling: settings.getSchedulingSettingsForDate(today), branches: settings.branches },
+      defaults: hr.employeeDefaultSchedules,
+      overrides: hr.scheduleOverrides,
+      settings: { scheduling: currentSettings.getSchedulingSettingsForDate(today), branches: currentSettings.branches },
     })
     const assignedBranch = effective.shift.isWorking ? effective.shift.branchId : undefined
-    signIn({ employeeId: employee.id, name: employee.name, username: employee.username ?? role, role, branchId: assignedBranch, scheduledBranchId: assignedBranch })
-    if (getSharedSession().source !== 'supabase') {
-      setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: assignedBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
+    const activeBranches = currentSettings.branches.filter((branch) => branch.isActive)
+    const profileBranchIsActive = profileBranch && activeBranches.some((branch) => branch.id === profileBranch)
+    const fallbackOperationalBranch = profileBranchIsActive
+      ? profileBranch
+      : (activeBranches.find((branch) => branch.isDefault)?.id ?? activeBranches[0]?.id)
+    const requiresOperationalBranch = role === 'admin' || role === 'florist'
+    const operationalBranch = assignedBranch ?? (requiresOperationalBranch ? fallbackOperationalBranch : undefined)
+
+    if (getSharedSession().source === 'supabase') {
+      if (requiresOperationalBranch && !operationalBranch) {
+        throw new Error('No active Fleurstales branch is available for this staff session.')
+      }
+      await setRuntimeBranchContext({
+        scheduledBranchId: assignedBranch,
+        operationalBranchId: operationalBranch,
+        operationalDate: today,
+      })
     }
-    setSelectedBranch(assignedBranch || 'All')
-    await connectOperationalSupabase()
+
+    signIn({
+      employeeId: hydratedEmployee.id,
+      name: hydratedEmployee.name,
+      username: hydratedEmployee.username ?? role,
+      role,
+      branchId: operationalBranch,
+      scheduledBranchId: assignedBranch,
+    })
+    setSelectedBranch(operationalBranch || 'All')
+    await connectPayrollSupabase()
     setView('admin')
     if (role === 'owner') void refreshBusinessOsStoreFromRemote()
     void refreshBusinessOsCatalogFromRemote()
     void refreshBusinessOsOrdersFromRemote()
     void refreshBusinessOsCustomersFromRemote()
-  }, [employeeDefaultSchedules, scheduleOverrides, settings, signIn])
+    void connectRealtimeSupabase()
+  }, [signIn])
+
 
   const handleSignOut = () => {
     stopBusinessOsCatalogBridge()
@@ -59,6 +102,10 @@ export default function App() {
     stopBusinessOsOrderBridge()
     stopBusinessOsCustomerBridge()
     stopOperationalSupabaseSync()
+    stopAuthorizationSupabaseSync()
+    stopInternalSettingsSupabaseSync()
+    stopPayrollSupabaseSync()
+    stopRealtimeSupabaseSync()
     clearSharedSession()
     void signOutSupabase()
     void signOutSharedBackend()
@@ -70,20 +117,11 @@ export default function App() {
   }
 
   return (
-    <MemoryRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <HomePage
-              onSignOut={handleSignOut}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              initialBranch={selectedBranch}
-            />
-          }
-        />
-      </Routes>
-    </MemoryRouter>
+    <HomePage
+      onSignOut={handleSignOut}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+      initialBranch={selectedBranch}
+    />
   )
 }

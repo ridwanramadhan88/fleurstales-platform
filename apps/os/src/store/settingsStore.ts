@@ -22,7 +22,7 @@ import type {
   PayrollDefaultSettings,
   SchedulingSettings,
 } from '../types/settings'
-import type { AccessLevel, AppSection } from '../config/permissions'
+import { isSectionEligibleForRole, type AccessLevel, type AppSection } from '../config/permissions'
 import { DEFAULT_ACTION_PERMISSIONS, guardActionPermissions, hasActionPermission, type ActionCapability, type ActionPermissionMatrix } from '../config/actionPermissions'
 import type { UserRole } from './userStore'
 import { DEFAULT_OWNER_SETTINGS } from '../domain/settings/defaultOwnerSettings'
@@ -85,10 +85,14 @@ interface SettingsStoreState extends OwnerSettingsStateValue {
 const withSettingsSectionGuard = (permissions: PermissionMatrix): PermissionMatrix => {
   const guarded = { ...permissions }
   for (const role of Object.keys(guarded) as Array<keyof PermissionMatrix>) {
+    const rolePermissions = { ...guarded[role] }
+    for (const section of Object.keys(rolePermissions) as AppSection[]) {
+      if (!isSectionEligibleForRole(role, section)) rolePermissions[section] = 'none'
+    }
     guarded[role] = {
-      ...guarded[role],
+      ...rolePermissions,
       settings: role === 'owner' ? 'edit' : 'none',
-      scheduling: role === 'owner' ? 'edit' : guarded[role].scheduling,
+      scheduling: role === 'owner' ? 'edit' : rolePermissions.scheduling,
     }
   }
   return guarded

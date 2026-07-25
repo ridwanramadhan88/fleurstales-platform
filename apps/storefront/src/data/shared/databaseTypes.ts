@@ -51,6 +51,7 @@ export interface StaffAccessProfileRow {
   employee_id: string | null
   display_name: string
   role: StaffRole
+  username: string | null
   branch_id: string | null
   is_active: boolean
   created_at: string
@@ -390,6 +391,7 @@ export interface OrderActivityRow {
   description: string
   actor: string
   occurred_at: string
+  metadata: Json
   created_at: string
 }
 

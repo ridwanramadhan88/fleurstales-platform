@@ -10,11 +10,11 @@ export interface NotificationRecord extends AlertItem {
 }
 
 const ROLE_ALERT_KINDS: Record<UserRole, readonly AlertKind[]> = {
-  owner: ['order_pending_verification', 'hr_attendance_problem'],
-  admin: ['finance_rejected', 'schedule_published'],
-  finance: ['admin_resubmitted'],
-  hr: ['hr_attendance_problem'],
-  florist: ['schedule_published'],
+  owner: ['order_pending_verification', 'hr_attendance_problem', 'order_received', 'order_change_requested', 'order_change_resolved', 'payroll_submitted', 'payroll_rejected', 'payroll_approved', 'payroll_paid'],
+  admin: ['finance_rejected', 'schedule_published', 'order_received', 'order_change_resolved'],
+  finance: ['admin_resubmitted', 'order_pending_verification', 'order_change_requested', 'payroll_submitted'],
+  hr: ['hr_attendance_problem', 'payroll_rejected', 'payroll_approved', 'payroll_paid'],
+  florist: ['schedule_published', 'order_assigned'],
 }
 
 const isNotificationRelevantToRole = (

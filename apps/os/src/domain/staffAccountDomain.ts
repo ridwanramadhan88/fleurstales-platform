@@ -9,6 +9,7 @@ export type StaffAccountResult = { ok: true } | { ok: false; reason: string }
 export const normalizeUsername = (value: string): string => value.trim().toLowerCase()
 const isValidUsername = (value: string): boolean => /^[a-z][a-z0-9._-]*$/.test(value)
 const isValidPin = (value: string): boolean => /^\d{6}$/.test(value)
+const isValidEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
 /**
  * Which roles an actor may create accounts for. Owner may create any
@@ -33,8 +34,9 @@ const canCreateAccountForRole = (
 
 export const canCreateStaffAccount = (params: {
   employees: Employee[]
-  username: string
-  pin: string
+  username?: string
+  pin?: string
+  email?: string
   systemRole: UserRole
   actor: StaffAccountActor
   hrManagedRoles?: Partial<HrManagedRolesByArea>
@@ -47,9 +49,15 @@ export const canCreateStaffAccount = (params: {
         : 'This role cannot create employee accounts.'
     return { ok: false, reason }
   }
-  const username = normalizeUsername(params.username)
+  const email = params.email?.trim().toLowerCase()
+  if (email) {
+    if (!isValidEmail(email)) return { ok: false, reason: 'Enter a valid staff email address.' }
+    if (params.employees.some((employee) => employee.email?.trim().toLowerCase() === email)) return { ok: false, reason: 'Email is already in use.' }
+    return { ok: true }
+  }
+  const username = normalizeUsername(params.username ?? '')
   if (!isValidUsername(username)) return { ok: false, reason: 'Username must be lowercase and start with a letter. Use only letters, numbers, dots, underscores, or hyphens.' }
-  if (!isValidPin(params.pin)) return { ok: false, reason: 'PIN must contain exactly 6 numbers.' }
+  if (!isValidPin(params.pin ?? '')) return { ok: false, reason: 'PIN must contain exactly 6 numbers.' }
   if (params.employees.some((employee) => employee.username === username)) return { ok: false, reason: 'Username is already in use.' }
   return { ok: true }
 }

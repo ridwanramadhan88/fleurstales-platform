@@ -3,7 +3,10 @@ import type {
   CatalogOrderType,
   CatalogVariantStatus,
   CustomerCreatedSource,
+  FinanceVerificationStatus,
+  Json,
   OrderFulfillment,
+  OrderPaymentEventType,
   OrderSource,
   OrderStatus,
   PaymentAccountType,
@@ -251,6 +254,24 @@ export interface SharedOrderItem {
   unitPriceIdr: number
 }
 
+export interface SharedOrderPaymentEvent {
+  id: string
+  type: OrderPaymentEventType
+  amountIdr: number
+  previousPaidAmountIdr: number
+  resultingPaidAmountIdr: number
+  resultingStatus: PaymentStatus
+  method?: PaymentMethod
+  reference?: string
+  proofId?: string
+  note?: string
+  actorId?: string
+  actorName: string
+  occurredAt: string
+  idempotencyKey: string
+  ledgerTransactionId?: string
+}
+
 export interface SharedOrder {
   id: string
   orderNumber: string
@@ -272,6 +293,16 @@ export interface SharedOrder {
   paymentStatus: PaymentStatus
   paymentMethod?: PaymentMethod
   paidAmountIdr: number
+  paymentHistory?: SharedOrderPaymentEvent[]
+  refundAmountIdr?: number
+  refundReason?: string
+  refundInitiatedBy?: string
+  refundInitiatedAt?: string
+  refundCompletedBy?: string
+  refundCompletedAt?: string
+  refundCancelledBy?: string
+  refundCancelledAt?: string
+  refundCancellationReason?: string
   scheduleLabel?: string
   scheduleDate?: string
   scheduleTime?: string
@@ -284,10 +315,36 @@ export interface SharedOrder {
   deliveryAddress?: string
   deliveryInstructions?: string
   promoCode?: string
+  floristDisplayName?: string
+  floristAssignedEmployeeId?: string
+  floristAssignedAt?: string
+  floristAssignedForDate?: string
+  floristAssignedForTime?: string
+  floristAssignedByEmployeeId?: string
+  floristAssignedByName?: string
+  floristScheduleOverride?: boolean
+  floristScheduleOverrideReason?: string
+  floristScheduledBranchId?: string
+  floristAssignedBranchId?: string
+  floristScheduledShiftStart?: string
+  floristScheduledShiftEnd?: string
+  processingStartedAt?: string
+  adminHandledEmployeeId?: string
+  adminHandledByName?: string
   completedAt?: string
   financeVerified?: boolean
   financeVerifiedBy?: string
   financeVerifiedAt?: string
+  financeVerificationStatus?: FinanceVerificationStatus
+  financeVerificationNote?: string
+  financeVerificationActor?: string
+  financeVerificationAt?: string
+  financeResubmittedBy?: string
+  financeResubmittedAt?: string
+  financeResubmissionNote?: string
+  financeSubmissionRevision?: number
+  pendingChangeRequest?: Json
+  editUnlocked?: boolean
   createdAt: string
   updatedAt: string
   items: SharedOrderItem[]
@@ -340,6 +397,7 @@ export interface SharedStaffAccessProfile {
   employeeId?: string
   displayName: string
   role: StaffRole
+  username?: string
   branchId?: string
   isActive: boolean
 }
