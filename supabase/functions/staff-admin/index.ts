@@ -166,11 +166,23 @@ Deno.serve(async (request) => {
 
     const { data: existingProfile, error: existingProfileError } = await admin
       .from('staff_access_profiles')
-      .select('user_id,username')
+      .select('user_id,employee_id,username,role,is_active')
       .eq('employee_id', employeeId)
       .maybeSingle()
     if (existingProfileError) throw existingProfileError
-    if (existingProfile) return json({ error: 'EMPLOYEE_ALREADY_HAS_LOGIN' }, 409)
+    if (existingProfile) {
+      if (existingProfile.username === username && existingProfile.role === role && existingProfile.is_active) {
+        return json({
+          ok: true,
+          existing: true,
+          userId: existingProfile.user_id,
+          employeeId: existingProfile.employee_id,
+          username: existingProfile.username,
+          role: existingProfile.role,
+        })
+      }
+      return json({ error: 'EMPLOYEE_ALREADY_HAS_LOGIN' }, 409)
+    }
     const { data: existingUsername, error: existingUsernameError } = await admin
       .from('staff_access_profiles')
       .select('user_id')

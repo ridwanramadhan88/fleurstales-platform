@@ -221,6 +221,7 @@ assert(staffAdminFunction.includes("from('staff_access_profiles')"), 'Staff prov
 assert(staffAdminFunction.includes("rpc('sync_staff_access_profile'"), 'Trusted staff account edits do not use the authorized profile RPC.')
 assert(staffAdminFunction.includes("action === 'update'"), 'Staff provisioning function does not support account edits.')
 assert(staffAdminFunction.includes('updateUserById(target.user_id, { password: pin })'), 'Staff PIN edits do not update Supabase Auth credentials.')
+assert(staffAdminFunction.includes('existing: true'), 'Staff provisioning retries are not idempotent.')
 assert(staffAccessWorkflowRepair.includes("'hr', p_employee_id"), 'Staff access activity still uses an invalid business activity entity type.')
 assert(loginSource.includes("type=(?:recovery|invite)"), 'Login does not handle invited staff password setup links.')
 assert(loginSource.includes('updateSupabasePassword'), 'Invited staff cannot establish their password.')
