@@ -50,11 +50,8 @@ export const canCreateStaffAccount = (params: {
     return { ok: false, reason }
   }
   const email = params.email?.trim().toLowerCase()
-  if (email) {
-    if (!isValidEmail(email)) return { ok: false, reason: 'Enter a valid staff email address.' }
-    if (params.employees.some((employee) => employee.email?.trim().toLowerCase() === email)) return { ok: false, reason: 'Email is already in use.' }
-    return { ok: true }
-  }
+  if (!email || !isValidEmail(email)) return { ok: false, reason: 'Enter a valid staff email address.' }
+  if (params.employees.some((employee) => employee.email?.trim().toLowerCase() === email)) return { ok: false, reason: 'Email is already in use.' }
   const username = normalizeUsername(params.username ?? '')
   if (!isValidUsername(username)) return { ok: false, reason: 'Username must be lowercase and start with a letter. Use only letters, numbers, dots, underscores, or hyphens.' }
   if (!isValidPin(params.pin ?? '')) return { ok: false, reason: 'PIN must contain exactly 6 numbers.' }

@@ -26,6 +26,7 @@ const [
   sectionPermissions,
   staffSettingsRuntime,
   staffAccessWorkflowRepair,
+  staffEmailActivityRepair,
   internalSettingsSync,
   runtimeBranchSync,
   staffLifecycleSync,
@@ -53,6 +54,7 @@ const [
   read('apps/os/src/config/permissions.ts'),
   read('supabase/migrations/20260725223000_staff_settings_runtime_authority.sql'),
   read('supabase/migrations/20260725225000_staff_access_workflow_repair.sql'),
+  read('supabase/migrations/20260725226000_staff_email_and_activity_domain_repair.sql'),
   read('apps/os/src/data/internalSettingsSupabaseSync.ts'),
   read('apps/os/src/data/runtimeBranchSupabase.ts'),
   read('apps/os/src/data/staffLifecycleSupabase.ts'),
@@ -220,9 +222,15 @@ assert(staffAdminFunction.includes("rpc('can_invite_staff_role'"), 'Staff provis
 assert(staffAdminFunction.includes("from('staff_access_profiles')"), 'Staff provisioning function does not link Auth users to staff access profiles.')
 assert(staffAdminFunction.includes("rpc('sync_staff_access_profile'"), 'Trusted staff account edits do not use the authorized profile RPC.')
 assert(staffAdminFunction.includes("action === 'update'"), 'Staff provisioning function does not support account edits.')
-assert(staffAdminFunction.includes('updateUserById(target.user_id, { password: pin })'), 'Staff PIN edits do not update Supabase Auth credentials.')
+assert(staffAdminFunction.includes('updateUserById(target.user_id, credentials)'), 'Staff credential edits do not update Supabase Auth credentials.')
 assert(staffAdminFunction.includes('existing: true'), 'Staff provisioning retries are not idempotent.')
 assert(staffAccessWorkflowRepair.includes("'hr', p_employee_id"), 'Staff access activity still uses an invalid business activity entity type.')
+assert(staffEmailActivityRepair.includes("'hr',v_session_id::text"), 'Runtime branch activity still uses an invalid business activity entity type.')
+assert(staffEmailActivityRepair.includes("'authorization','primary'"), 'Internal Settings activity still uses an invalid business activity entity type.')
+assert(staffEmailActivityRepair.includes("when 'order_drafts' then 'order'"), 'Operational activity domains are not mapped to constrained business activity types.')
+assert(staffEmailActivityRepair.includes('add column if not exists email text'), 'Staff recovery email is not persisted in the access profile.')
+assert(staffAdminFunction.includes('email_confirm: true'), 'Staff recovery emails are not synchronized to confirmed Supabase Auth email.')
+assert(staffLifecycleSync.includes('email: employee.email'), 'Staff recovery email edits are not sent to the trusted Auth function.')
 assert(loginSource.includes("type=(?:recovery|invite)"), 'Login does not handle invited staff password setup links.')
 assert(loginSource.includes('updateSupabasePassword'), 'Invited staff cannot establish their password.')
 assert(staffLoginFunction.includes('signInWithPassword'), 'Username login function does not delegate credential verification to Supabase Auth.')

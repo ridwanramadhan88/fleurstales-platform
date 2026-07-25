@@ -398,6 +398,7 @@ export interface SharedStaffAccessProfile {
   displayName: string
   role: StaffRole
   username?: string
+  email?: string
   branchId?: string
   isActive: boolean
 }
