@@ -2,18 +2,31 @@
   "name": "fleurstales-platform",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "esbuild-style-plugin": {
+      "glob": "13.0.6"
+    }
   },
   "packageManager": "npm@11.16.0",
   "scripts": {
     "build": "npm run build:storefront && npm run build:os",
     "build:storefront": "npm run build --workspace=fleurstales-storefront",
     "build:os": "npm run build --workspace=fleurstales-os",
-    "check": "npm run check:shared-parity && npm run check:storefront && npm run check:os",
+    "check": "npm run check:supabase-security && npm run check:shared-parity && npm run check:storefront && npm run check:os",
     "check:shared-parity": "node scripts/check-shared-parity.mjs",
     "check:storefront": "npm run check --workspace=fleurstales-storefront",
-    "check:os": "npm run check --workspace=fleurstales-os"
+    "check:os": "npm run check --workspace=fleurstales-os",
+    "check:supabase-security": "node scripts/check-supabase-security.mjs"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.10",
+    "glob": "13.0.6",
+    "vitest": "4.1.10"
   }
 }

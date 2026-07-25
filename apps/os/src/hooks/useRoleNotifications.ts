@@ -9,6 +9,7 @@ import { useHrStore } from '../store/hrStore'
 import { usePayrollStore } from '../store/payrollStore'
 import type { BranchFilter } from '../types/orders'
 import type { NotificationItem } from '../types/notifications'
+import { markServerNotificationsRead } from '../data/realtimeSupabaseSync'
 
 export const useRoleNotifications = (activeBranch: BranchFilter) => {
   const role = useUserStore((state) => state.role)
@@ -77,7 +78,14 @@ export const useRoleNotifications = (activeBranch: BranchFilter) => {
   return {
     items,
     unreadCount: items.filter((item) => !item.isRead).length,
-    markAllRead: () => markRead(items.map((item) => item.id)),
-    markRead: (id: string) => markRead([id]),
+    markAllRead: () => {
+      const ids = items.map((item) => item.id)
+      markRead(ids)
+      void markServerNotificationsRead(ids).catch(() => undefined)
+    },
+    markRead: (id: string) => {
+      markRead([id])
+      void markServerNotificationsRead([id]).catch(() => undefined)
+    },
   }
 }

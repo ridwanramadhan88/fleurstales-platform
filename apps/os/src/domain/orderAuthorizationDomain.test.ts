@@ -57,14 +57,14 @@ describe('order row-level authorization', () => {
     ).toMatchObject({ allowed: false })
   })
 
-  it('removes Orders visibility from Florists', () => {
+  it('limits Florists to orders assigned to them', () => {
     expect(
       canViewOrder(
         kedamaianOrder,
         { employeeId: 'florist-a', name: 'Florist A', role: 'florist', branchId: 'Kedamaian' },
         DEFAULT_ROLE_SECTION_ACCESS,
       ),
-    ).toBe(false)
+    ).toBe(true)
     expect(
       canViewOrder(
         kedamaianOrder,

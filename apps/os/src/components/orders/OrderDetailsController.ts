@@ -169,6 +169,7 @@ export const useOrderDetailsController = ({
   const currentUserEmployeeId = useUserStore((state) => state.employeeId)
   const currentUserBranchId = useUserStore((state) => state.branchId)
   const permissions = useSettingsStore((state) => state.permissions)
+  const actionPermissions = useSettingsStore((state) => state.actionPermissions)
   const hasOrdersEditAccess = canEditSection(userRole, 'orders', permissions)
   const actor = {
     employeeId: currentUserEmployeeId,
@@ -185,9 +186,10 @@ export const useOrderDetailsController = ({
   const canEdit =
     hasOrdersEditAccess &&
     canDirectlyEditOrder(order, userRole) &&
-    authorizeOrderMutation({ order, actor, permissions, kind: 'details' }).allowed
-  const canAdvance = authorizeOrderMutation({ order, actor, permissions, kind: 'status' }).allowed
+    authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'details' }).allowed
+  const canAdvance = authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'status' }).allowed
   const canVerify = canVerifyOrder(userRole)
+    && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'finance_decision' }).allowed
   // Whether Finance/Owner can verify THIS order right now: separate from
   // `locked`, because an order is locked for editing as soon as it's
   // finished — well before it's verified. Gating the Verify action on
@@ -196,11 +198,13 @@ export const useOrderDetailsController = ({
   // eligibility instead (finished, not yet verified, not rejected).
   const canVerifyThisOrder =
     canVerify &&
-    canViewOrder(order, actor, permissions) &&
+    canViewOrder(order, actor, permissions, actionPermissions) &&
     isPendingFinanceVerification(order)
   const canRequestChange =
-    locked && !canEdit && canViewOrder(order, actor, permissions) && canSubmitChangeRequest(userRole)
-  const canResolveRequest = canViewOrder(order, actor, permissions) && canResolveChangeRequest(userRole)
+    locked && !canEdit && canSubmitChangeRequest(userRole)
+    && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'change_request' }).allowed
+  const canResolveRequest = canResolveChangeRequest(userRole)
+    && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'change_request_resolution' }).allowed
   const hasPendingRequest = Boolean(order.pendingChangeRequest)
 
   const nextStatus = getNextStatus(order)

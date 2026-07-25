@@ -32,6 +32,7 @@ interface OrderRuntimeState {
     orderNumber: string,
     event: Omit<OrderActivityEvent, 'id' | 'at'>,
   ) => void
+  upsertServerActivities: (activities: Record<string, OrderActivityEvent[]>) => void
   clearActivities: () => void
 }
 
@@ -57,6 +58,16 @@ export const useOrderRuntimeStore = create<OrderRuntimeState>()(
           },
         }))
       },
+      upsertServerActivities: (incoming) =>
+        set((state) => {
+          const next = { ...state.activities }
+          for (const [orderNumber, events] of Object.entries(incoming)) {
+            const byId = new Map((next[orderNumber] ?? []).map((event) => [event.id, event]))
+            for (const event of events) byId.set(event.id, event)
+            next[orderNumber] = Array.from(byId.values()).sort((a, b) => b.at.localeCompare(a.at))
+          }
+          return { activities: next }
+        }),
       clearActivities: () => set({ activities: {} }),
     }),
     {

@@ -22,7 +22,7 @@ import { refreshSupabaseStaffSession } from '../data/shared/staffSessionBridge'
 import type { SharedStaffSession } from '../data/shared/staffSessionDomain'
 
 export interface LoginPageProps {
-  onSignIn: (employee: Employee) => void
+  onSignIn: (employee: Employee) => void | Promise<void>
   theme?: Theme
   onToggleTheme?: () => void
 }
@@ -52,7 +52,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     const employee = profile.employeeId
       ? employees.find((candidate) => candidate.id === profile.employeeId)
       : undefined
-    onSignIn(employee ?? staffSessionToEmployee(profile))
+    await onSignIn(employee ?? staffSessionToEmployee(profile))
   }
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
         return
       }
       setError(null)
-      onSignIn(account)
+      await onSignIn(account)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to reach the sign-in service.')
     } finally {

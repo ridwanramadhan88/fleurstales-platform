@@ -91,8 +91,13 @@ describe('settingsStore — permissions', () => {
   })
 
   it('updateRoleSectionAccess patches a single cell', () => {
+    useSettingsStore.getState().updateRoleSectionAccess('admin', 'customers', 'view')
+    expect(useSettingsStore.getState().permissions.admin.customers).toBe('view')
+  })
+
+  it('rejects cross-domain section access for ineligible roles', () => {
     useSettingsStore.getState().updateRoleSectionAccess('admin', 'revenue', 'view')
-    expect(useSettingsStore.getState().permissions.admin.revenue).toBe('view')
+    expect(useSettingsStore.getState().permissions.admin.revenue).toBe('none')
   })
 
   it('never lets the settings section be edited away from owner', () => {
@@ -179,6 +184,6 @@ describe('settingsStore — section-level save', () => {
 
     expect(useSettingsStore.getState().permissions.admin.settings).toBe('none')
     expect(useSettingsStore.getState().permissions.owner.scheduling).toBe('edit')
-    expect(useSettingsStore.getState().permissions.admin.scheduling).toBe('view')
+    expect(useSettingsStore.getState().permissions.admin.scheduling).toBe('none')
   })
 })

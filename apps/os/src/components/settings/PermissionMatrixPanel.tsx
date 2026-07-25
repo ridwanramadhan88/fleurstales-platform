@@ -11,8 +11,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '..
 import { Switch } from '../ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import type { SettingsValidationErrors } from '../../domain/settings/settingsValidation'
-import type { AccessLevel, AppSection } from '../../config/permissions'
-import { CAPABILITY_REGISTRY, type ActionCapability, type ActionPermissionMatrix } from '../../config/actionPermissions'
+import { isSectionEligibleForRole, type AccessLevel, type AppSection } from '../../config/permissions'
+import { CAPABILITY_REGISTRY, isCapabilityEligibleForRole, type ActionCapability, type ActionPermissionMatrix } from '../../config/actionPermissions'
 import type { UserRole } from '../../store/userStore'
 import type { PermissionMatrix } from '../../types/settings'
 import { InfoDisclosure } from '../ui/info-disclosure'
@@ -107,6 +107,7 @@ const ACCESS_DESCRIPTIONS: Record<AccessLevel, string> = {
 
 const capabilitySector = (capability: ActionCapability): Sector => {
   if (capability.startsWith('settings.')) return 'Store Management'
+  if (capability.startsWith('orders.')) return 'Operations'
   if (capability === 'finance.view_collect_orders' || capability === 'finance.verify_order') return 'Operations'
   if (capability.startsWith('finance.')) return 'Sales & Finance'
   return 'People & HR'
@@ -114,6 +115,7 @@ const capabilitySector = (capability: ActionCapability): Sector => {
 
 const capabilityWorkspaceLabel = (capability: ActionCapability): string => {
   if (capability.startsWith('settings.')) return 'Owner Settings'
+  if (capability.startsWith('orders.')) return capability === 'orders.read_assigned' ? 'Assigned Work' : 'Orders'
   if (capability === 'finance.view_collect_orders' || capability === 'finance.verify_order') return 'Order Collection'
   if (capability.includes('payroll') && capability.startsWith('finance.')) return 'Payroll Review'
   if (capability.includes('refund')) return 'Refunds'
@@ -144,7 +146,7 @@ const SAFETY_NOTES: Partial<Record<ActionCapability, string>> = {
   'settings.edit_payroll': 'Future payroll periods only.',
 }
 
-const isViewCapability = (capability: ActionCapability) => capability.includes('.view_') || capability === 'hr.view_employees'
+const isViewCapability = (capability: ActionCapability) => capability.includes('.view_') || capability === 'hr.view_employees' || capability === 'orders.read_all' || capability === 'orders.read_assigned'
 
 const getEffectiveLevel = (workspace: WorkspaceDefinition, level: AccessLevel): AccessLevel => workspace.readOnly && level === 'edit' ? 'view' : level
 
@@ -191,14 +193,17 @@ export const PermissionMatrixPanel: FC<Props> = ({
         const needsManage = !isViewCapability(item.id)
         const parentAllows = parentLevel !== 'none' && (!needsManage || parentLevel === 'edit')
         const safetyLocked = item.id.startsWith('settings.')
-        const enabled = Boolean(actionPermissions[role]?.[item.id]) && parentAllows
+        const roleEligible = isCapabilityEligibleForRole(role, item.id)
+        const enabled = Boolean(actionPermissions[role]?.[item.id]) && parentAllows && roleEligible
         const unavailableReason = parentLevel === 'none'
           ? 'Set the parent workspace to View Only or Manage first.'
           : needsManage && parentLevel !== 'edit'
             ? 'Requires Manage access to the parent workspace.'
-            : safetyLocked && role !== 'owner'
-              ? 'Protected Owner-only setting.'
-              : null
+            : !roleEligible
+              ? 'This capability belongs to another staff authority domain.'
+              : safetyLocked && role !== 'owner'
+                ? 'Protected Owner-only setting.'
+                : null
 
         return (
           <div key={item.id} className={`flex gap-4 px-4 py-3 ${parentAllows ? 'bg-background' : 'bg-surface-panel'}`}>
@@ -218,7 +223,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
               {isEditing ? (
                 <Switch
                   checked={enabled}
-                  disabled={!parentAllows || safetyLocked}
+                  disabled={!parentAllows || safetyLocked || !roleEligible}
                   onCheckedChange={(checked) => onUpdateActionAccess(role, item.id, checked)}
                   aria-label={`${item.label}: ${enabled ? 'allowed' : 'not allowed'}`}
                 />
@@ -249,7 +254,8 @@ export const PermissionMatrixPanel: FC<Props> = ({
           {sector.workspaces.map((workspace) => {
             const rawLevel = permissions[role]?.[workspace.section] ?? 'none'
             const displayedLevel = getEffectiveLevel(workspace, rawLevel)
-            const locked = workspace.section === 'settings'
+            const roleEligible = isSectionEligibleForRole(role, workspace.section)
+            const locked = workspace.section === 'settings' || !roleEligible
             const levels: AccessLevel[] = workspace.readOnly ? ['none', 'view'] : ['none', 'view', 'edit']
             const workspaceActions = sectorActions.filter((item) => item.parentSection === workspace.section)
 
@@ -295,6 +301,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
                         <AccessBadge level={displayedLevel} />
                       )}
                       <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{ACCESS_DESCRIPTIONS[displayedLevel]}</p>
+                      {!roleEligible && <p className="mt-1 text-2xs font-medium text-warning">This workspace belongs to another staff authority domain.</p>}
                       {role === 'owner' && <p className="mt-1 text-2xs font-medium text-warning">Owner access cannot be set to None, preventing the only recovery role from being locked out.</p>}
                     </div>
 

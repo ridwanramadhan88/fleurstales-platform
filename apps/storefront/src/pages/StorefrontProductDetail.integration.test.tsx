@@ -17,7 +17,7 @@ describe('storefront product detail page', () => {
     const user = userEvent.setup()
     render(<StorefrontPage />)
 
-    await user.click(screen.getByRole('button', { name: 'View Petite Rainbow' }))
+    await user.click(screen.getAllByRole('button', { name: 'View Petite Rainbow' })[0])
 
     expect(window.location.pathname).toMatch(/^\/shop\/product\//)
     expect(screen.getByRole('button', { name: 'Back to shop' })).toBeInTheDocument()

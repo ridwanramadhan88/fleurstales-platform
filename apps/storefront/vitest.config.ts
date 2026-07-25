@@ -7,8 +7,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  esbuild: {
-    jsx: 'automatic',
+  oxc: {
+    jsx: {
+      runtime: 'automatic',
+    },
   },
   test: {
     exclude: [...configDefaults.exclude, 'src/workflows/App.workflows.test.tsx'],
@@ -18,9 +20,8 @@ export default defineConfig({
     css: false,
     pool: 'forks',
     fileParallelism: false,
-    poolOptions: {
-      forks: { singleFork: true },
-    },
+    maxWorkers: 1,
+    isolate: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

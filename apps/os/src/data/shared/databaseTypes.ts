@@ -390,6 +390,7 @@ export interface OrderActivityRow {
   description: string
   actor: string
   occurred_at: string
+  metadata: Json
   created_at: string
 }
 

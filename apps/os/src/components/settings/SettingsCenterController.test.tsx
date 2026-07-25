@@ -10,7 +10,7 @@ beforeEach(() => {
 })
 
 describe('SettingsCenterController edit and leave flow', () => {
-  it('stages and confirms a section-only save', () => {
+  it('stages and confirms a section-only save', async () => {
     useSettingsStore.setState((state) => ({
       paymentMethods: { ...state.paymentMethods, paymentInstructions: '' },
     }))
@@ -25,7 +25,9 @@ describe('SettingsCenterController edit and leave flow', () => {
     expect(result.current.pendingChangeSummary.some((line) => line.includes('Store name'))).toBe(true)
     expect(useSettingsStore.getState().storeProfile.storeName).not.toBe('Fleurstales Updated')
 
-    act(() => result.current.onConfirmSave())
+    await act(async () => {
+      await result.current.onConfirmSave()
+    })
 
     expect(useSettingsStore.getState().storeProfile.storeName).toBe('Fleurstales Updated')
     expect(useSettingsStore.getState().paymentMethods.paymentInstructions).toBe('')
@@ -78,7 +80,7 @@ describe('SettingsCenterController edit and leave flow', () => {
     expect(useSettingsStore.getState().storeProfile.storeName).toBe(originalName)
   })
 
-  it('saves first and only then completes the pending navigation', () => {
+  it('saves first and only then completes the pending navigation', async () => {
     const { result } = renderHook(() => useSettingsCenterController())
 
     act(() => result.current.onEdit())
@@ -90,7 +92,9 @@ describe('SettingsCenterController edit and leave flow', () => {
     expect(result.current.activeSection).toBe('store-profile')
     expect(useSettingsStore.getState().storeProfile.storeName).not.toBe('Save Then Leave')
 
-    act(() => result.current.onConfirmSave())
+    await act(async () => {
+      await result.current.onConfirmSave()
+    })
 
     expect(useSettingsStore.getState().storeProfile.storeName).toBe('Save Then Leave')
     expect(result.current.activeSection).toBe('branches')

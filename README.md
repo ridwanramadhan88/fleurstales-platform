@@ -47,3 +47,33 @@ The manual production workflow expects:
 - `FLEURSTALES_SUPABASE_PUBLISHABLE_KEY`
 
 Keep production release manual until the staging flow is verified.
+
+## Supabase authority (V3.3)
+
+V3.3 keeps the application UI/contracts compatible while completing the production staff/session foundation on top of V3.2. The ordered migrations after the V3.1 hardening add:
+
+- revisioned Owner-configured section/action permissions and feature settings;
+- command-scoped Payroll authority with HR/Finance separation;
+- capability + branch/assignment scoped Orders authority and server actor evidence;
+- RPC-owned Catalog/CRM/Store mutations;
+- dedicated action-aware HR/Finance operational writers;
+- immutable audit, durable business activity, per-user notifications, and Realtime;
+- permission-aware notification delivery/read policies;
+- Supabase Auth staff invitation + `staff_access_profiles` lifecycle synchronization;
+- revisioned shared staff-role, attendance, scheduling, and payroll Settings;
+- schedule-first per-session runtime operational branch context consumed by RLS;
+- safe role-family eligibility for configurable capabilities;
+- exactly-one-proposal semantics for final payroll payment.
+
+Before production, run `npm run check:supabase-security`, apply every ordered
+migration in `supabase/migrations`, then execute the database smoke tests:
+
+- `supabase/tests/security_authorization_smoke.sql`
+- `supabase/tests/v32_authorization_matrix_smoke.sql`
+- `supabase/tests/v33_staff_settings_runtime_smoke.sql`
+
+First-Owner provisioning is driven by trusted Supabase Auth app metadata; no
+personal owner email is used as an authorization rule. New non-Owner staff are
+invited by the `staff-admin` Edge Function, which is deployed by the manual
+production workflow after database migrations and before the web apps. The web
+applications must never receive a service-role/secret key.

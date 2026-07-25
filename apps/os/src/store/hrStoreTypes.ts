@@ -29,6 +29,8 @@ export interface Employee {
   status: EmployeeStatus
   phone: string
   hireDate: string
+  /** Supabase Auth email for production staff login. */
+  email?: string
   /** Lowercase login identifier for the internal demo app. */
   username?: string
   /** Demo-only six-digit PIN. Production must store a salted hash server-side. */

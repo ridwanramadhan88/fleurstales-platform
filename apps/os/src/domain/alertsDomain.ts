@@ -39,6 +39,14 @@ export type AlertKind =
   | 'admin_resubmitted'
   | 'hr_attendance_problem'
   | 'schedule_published'
+  | 'order_received'
+  | 'order_assigned'
+  | 'order_change_requested'
+  | 'order_change_resolved'
+  | 'payroll_submitted'
+  | 'payroll_rejected'
+  | 'payroll_approved'
+  | 'payroll_paid'
 
 /**
  * @description Single alert item used by UI components.
@@ -60,7 +68,7 @@ export interface AlertItem {
   /** Order number this alert refers to, when applicable. */
   orderNumber?: string
   /** Destination opened when the notification is selected. */
-  target?: 'order' | 'finance_orders' | 'hr_attendance' | 'hr_reports' | 'my_schedule'
+  target?: 'order' | 'finance_orders' | 'finance_payroll' | 'hr_attendance' | 'hr_reports' | 'hr_payroll' | 'my_schedule'
   /** Optional record identifier for the destination. */
   targetId?: string
 }

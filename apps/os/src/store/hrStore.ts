@@ -47,7 +47,7 @@ import type {
 } from './hrStoreTypes'
 
 
-export type HrEmployeeCommandField = 'name' | 'phone' | 'hireDate' | 'branch' | 'systemRole' | 'username' | 'pin' | 'baseSalaryIdr'
+export type HrEmployeeCommandField = 'name' | 'phone' | 'hireDate' | 'branch' | 'systemRole' | 'email' | 'username' | 'pin' | 'baseSalaryIdr'
 export type HrEmployeeCommandResult =
   | { ok: true; employeeId: string }
   | { ok: false; code: 'not_found' | 'forbidden' | 'invalid_name' | 'invalid_phone' | 'invalid_hire_date' | 'future_hire_date' | 'invalid_branch' | 'disabled_role' | 'invalid_username' | 'duplicate_username' | 'invalid_pin' | 'last_owner' | 'unknown'; reason: string; fieldErrors?: Partial<Record<HrEmployeeCommandField, string>> }
@@ -94,8 +94,10 @@ interface HrStoreState {
     systemRole: UserRole
     phone: string
     hireDate: string
-    username: string
-    pin: string
+    employeeId?: string
+    email?: string
+    username?: string
+    pin?: string
     baseSalaryIdr?: number
     actor: HrActor
   }) => HrEmployeeCommandResult
@@ -288,12 +290,12 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     return result
   },
 
-  createStaffAccount: ({ name, systemRole, phone, hireDate, username, pin, baseSalaryIdr, actor }) => {
+  createStaffAccount: ({ employeeId, name, systemRole, phone, hireDate, email, username, pin, baseSalaryIdr, actor }) => {
     if (!isActionAuthorized(actor.role, 'hr.create_employee')) return employeeCommandError('forbidden', 'This role cannot create employees.')
     let result: HrEmployeeCommandResult = employeeCommandError('unknown', 'Account could not be created.')
     set((state) => {
-      const eligibility = canCreateStaffAccount({ employees: state.employees, username, pin, systemRole, actor, hrManagedRoles: useSettingsStore.getState().staffRoles.hrManagedRoles })
-      if (!eligibility.ok) { const lower = eligibility.reason.toLowerCase(); const field = lower.includes('username') ? 'username' : lower.includes('pin') ? 'pin' : undefined; result = employeeCommandError(lower.includes('username') ? 'invalid_username' : lower.includes('pin') ? 'invalid_pin' : 'forbidden', eligibility.reason, field); return state }
+      const eligibility = canCreateStaffAccount({ employees: state.employees, username, pin, email, systemRole, actor, hrManagedRoles: useSettingsStore.getState().staffRoles.hrManagedRoles })
+      if (!eligibility.ok) { const lower = eligibility.reason.toLowerCase(); const field = lower.includes('email') ? 'email' : lower.includes('username') ? 'username' : lower.includes('pin') ? 'pin' : undefined; result = employeeCommandError(lower.includes('username') ? 'invalid_username' : lower.includes('pin') ? 'invalid_pin' : 'forbidden', eligibility.reason, field); return state }
       const settings = useSettingsStore.getState()
       if (!settings.staffRoles.roles.includes(systemRole)) { result = employeeCommandError('disabled_role', 'The selected role is disabled in Owner Settings.', 'systemRole'); return state }
       const cleanName = name.trim(); const cleanPhone = phone.trim()
@@ -302,9 +304,10 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       if (!/^\d{4}-\d{2}-\d{2}$/.test(hireDate)) { result = employeeCommandError('invalid_hire_date', 'Hire date is required.', 'hireDate'); return state }
       if (hireDate > todayIsoDate()) { result = employeeCommandError('future_hire_date', 'Hire date cannot be in the future.', 'hireDate'); return state }
       if (baseSalaryIdr !== undefined && (!Number.isInteger(baseSalaryIdr) || baseSalaryIdr <= 0)) { result = employeeCommandError('unknown', 'Base salary must be a positive whole rupiah amount.', 'baseSalaryIdr'); return state }
-      const normalized = normalizeUsername(username)
-      if (state.employees.some((item) => item.username === normalized)) { result = employeeCommandError('duplicate_username', 'Username is already in use.', 'username'); return state }
-      const employee: Employee = { id: `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: cleanName, position: getEmployeeRoleLabel(systemRole), branch: '' as BranchId, systemRole, status: 'active', phone: cleanPhone, hireDate, username: normalized, pin, baseSalaryIdr }
+      const normalized = username ? normalizeUsername(username) : undefined
+      if (normalized && state.employees.some((item) => item.username === normalized)) { result = employeeCommandError('duplicate_username', 'Username is already in use.', 'username'); return state }
+      const normalizedEmail = email?.trim().toLowerCase()
+      const employee: Employee = { id: employeeId ?? `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: cleanName, position: getEmployeeRoleLabel(systemRole), branch: '' as BranchId, systemRole, status: 'active', phone: cleanPhone, hireDate, email: normalizedEmail, username: normalized, pin, baseSalaryIdr }
       result = { ok: true, employeeId: employee.id }
       return { employees: [employee, ...state.employees] }
     })
@@ -369,14 +372,15 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       if (!settings.staffRoles.roles.includes(systemRole)) { result = employeeCommandError('disabled_role', 'The selected role is disabled in Owner Settings.', 'systemRole'); return state }
       if (actor.role !== 'owner' && systemRole !== employee.systemRole) { result = employeeCommandError('forbidden', 'Only Owner can edit employee roles.', 'systemRole'); return state }
       if (systemRole !== employee.systemRole) { const roleResult = canChangeEmployeeRole({ employees: state.employees, employeeId, nextRole: systemRole, actor }); if (!roleResult.ok) { result = employeeCommandError(roleResult.reason.includes('last active owner') ? 'last_owner' : 'forbidden', roleResult.reason, 'systemRole'); return state } }
-      const nextUsername = normalizeUsername(username ?? employee.username ?? '')
-      if (actor.role === 'owner') {
+      const usesEmailAuth = Boolean(employee.email)
+      const nextUsername = usesEmailAuth ? employee.username : normalizeUsername(username ?? employee.username ?? '')
+      if (actor.role === 'owner' && !usesEmailAuth) {
         if (!nextUsername || !/^[a-z][a-z0-9._-]*$/.test(nextUsername)) { result = employeeCommandError('invalid_username', 'Username must be lowercase and start with a letter.', 'username'); return state }
         if (state.employees.some((item) => item.id !== employeeId && item.username === nextUsername)) { result = employeeCommandError('duplicate_username', 'Username is already in use.', 'username'); return state }
         if (pin && !/^\d{6}$/.test(pin)) { result = employeeCommandError('invalid_pin', 'PIN must contain exactly 6 numbers.', 'pin'); return state }
       }
       result = { ok: true, employeeId }
-      return { employees: state.employees.map((item) => item.id === employeeId ? { ...item, systemRole, position: getEmployeeRoleLabel(systemRole), username: actor.role === 'owner' ? nextUsername : item.username, pin: actor.role === 'owner' && pin ? pin : item.pin } : item) }
+      return { employees: state.employees.map((item) => item.id === employeeId ? { ...item, systemRole, position: getEmployeeRoleLabel(systemRole), username: actor.role === 'owner' && !usesEmailAuth ? nextUsername : item.username, pin: actor.role === 'owner' && !usesEmailAuth && pin ? pin : item.pin } : item) }
     })
     return result
   },

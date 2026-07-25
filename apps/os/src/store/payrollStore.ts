@@ -10,6 +10,7 @@ import type { EmployeePointEntry } from './hrStoreTypes'
 import type { UserRole } from './userStore'
 import { validatePayrollForFinance } from '../domain/payrollFinanceReviewDomain'
 import { evaluatePayrollScheduleAdjustment, payrollPeriodsOverlap, validatePayrollScheduleSnapshot } from '../domain/payrollScheduleAdjustmentDomain'
+import { publishPayrollWorkflowMutation } from '../data/payrollWorkflowEvents'
 
 const TEST_RUNTIME = (globalThis as typeof globalThis & { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV === 'test'
 
@@ -258,6 +259,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
         compensation,
       ],
     }))
+    publishPayrollWorkflowMutation('set_compensation')
     return { ok:true, compensationId:compensation.id }
   },
 
@@ -305,6 +307,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       }
     })
     set((state) => ({ employeePayrolls:[...state.employeePayrolls.filter((draft) => draft.payrollPeriodId !== payrollPeriodId), ...drafts] }))
+    publishPayrollWorkflowMutation('generate')
     return { ok:true, affected:drafts.length }
   },
 
@@ -324,6 +327,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const finalPayrollIdr = unadjusted + adjustmentIdr
     if (finalPayrollIdr < draft.baseSalaryIdr) return { ok:false, code:'calculation_mismatch', reason:'An adjustment cannot reduce payroll below base salary.' }
     set((state) => ({ employeePayrolls:state.employeePayrolls.map((item) => item.id === payrollDraftId ? { ...item, hrAdjustmentIdr:adjustmentIdr, hrAdjustmentReason:normalizedReason || undefined, finalPayrollIdr } : item) }))
+    publishPayrollWorkflowMutation('prepare')
     return { ok:true, draftId:payrollDraftId }
   },
 
@@ -363,6 +367,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       payrollProposals:[...state.payrollProposals.filter((item)=>item.id!==proposal.id), proposal],
       employeePayrolls:state.employeePayrolls.map((draft)=>resubmittedIds.has(draft.id) ? { ...draft, status:'pending_finance_review', submittedAt:now, submittedBy:actor.name, rejectionReason:undefined } : draft),
     }))
+    publishPayrollWorkflowMutation('submit')
     return { ok:true, affected:resubmittedIds.size, proposalId:proposal.id }
   },
 
@@ -388,6 +393,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       employeePayrolls:state.employeePayrolls.map((draft)=>candidates.some((candidate)=>candidate.id===draft.id) ? { ...draft, status:'finance_verified', financeReviewedAt:now, financeReviewedBy:actor.name, rejectionReason:undefined } : draft),
       payrollProposalReviews:[...state.payrollProposalReviews, review],
     }))
+    publishPayrollWorkflowMutation('approve_all')
     return { ok:true, proposalId:proposal.id, affected:candidates.length }
   },
 
@@ -413,6 +419,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id?{...item,employeePayrollIds:remainingIds,...totals,status:nextStatus,financeNote:nextStatus==='returned_to_hr'?item.financeNote:undefined}:item),
       payrollReviews:[...state.payrollReviews,review],
     }))
+    publishPayrollWorkflowMutation('resolve_rejected')
     return {ok:true,draftId:draft.id,proposalId:proposal.id}
   },
 
@@ -449,6 +456,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       employeePayrolls:state.employeePayrolls.map((draft)=>proposal.employeePayrollIds.includes(draft.id) ? { ...draft, status:'paid', paidAt:paymentDate, paidBy:actor.name, paymentMethod:normalizedMethod, paymentReference:normalizedReference, paymentNote:normalizedNote || undefined } : draft),
       payrollProposalReviews:[...state.payrollProposalReviews, review],
     }))
+    publishPayrollWorkflowMutation('record_payment')
     return { ok:true, proposalId:proposal.id, affected:proposal.employeePayrollIds.length }
   },
 
@@ -472,6 +480,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id?{...item,status:nextStatus,financeDecisionAt:nextStatus==='finance_approved'?now:item.financeDecisionAt,financeDecisionBy:nextStatus==='finance_approved'?actor.name:item.financeDecisionBy}:item),
       payrollReviews:[...state.payrollReviews,review],
     }))
+    publishPayrollWorkflowMutation('approve_employee')
     return {ok:true,draftId:draft.id,proposalId:proposal.id}
   },
   rejectEmployeePayroll: ({ payrollDraftId, note, actor }) => {
@@ -491,6 +500,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id?{...item,status:'returned_to_hr',financeNote:`${draft.employeeName}: ${normalizedNote}`,financeDecisionAt:now,financeDecisionBy:actor.name}:item),
       payrollReviews:[...state.payrollReviews,review],
     }))
+    publishPayrollWorkflowMutation('reject_employee')
     return {ok:true,draftId:draft.id,proposalId:proposal.id}
   },
 
@@ -523,6 +533,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       payrollScheduleAdjustments:[...state.payrollScheduleAdjustments, adjustment],
       periods:state.periods.map((item) => item.id === payrollPeriodId ? { ...item, ...proposed, status:getPayrollScheduleStage(proposed, localToday(now, timezone)), source:'finance_adjustment', lastAdjustedAt:createdAt, lastAdjustedBy:actor.name } : item),
     }))
+    publishPayrollWorkflowMutation('adjust_schedule')
     return { ok:true, adjustmentId:adjustment.id, status:adjustment.status }
   },
 

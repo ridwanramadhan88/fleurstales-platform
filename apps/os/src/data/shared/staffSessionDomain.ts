@@ -76,9 +76,9 @@ export const canSharedSession = (session: SharedSession, capability: SharedDataC
     case 'catalog:write': return session.role === 'owner' || session.role === 'admin'
     case 'catalog:cost:read': return session.role === 'owner' || session.role === 'finance'
     case 'store:write': return session.role === 'owner'
-    case 'customers:read':
+    case 'customers:read': return session.role === 'owner' || session.role === 'admin' || session.role === 'finance'
     case 'customers:write': return session.role === 'owner' || session.role === 'admin'
-    case 'orders:read': return true
+    case 'orders:read': return session.role !== 'hr'
     case 'orders:write': return session.role === 'owner' || session.role === 'admin' || session.role === 'finance'
     default: return false
   }

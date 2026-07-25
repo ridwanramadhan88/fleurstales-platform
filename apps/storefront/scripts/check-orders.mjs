@@ -47,7 +47,7 @@ const cart = fs.readFileSync(path.join(root, 'src/components/storefront/CartDraw
 if (!cart.includes('variantId?: string')) throw new Error('Cart lines must preserve the selected variant id.')
 
 const repositories = fs.readFileSync(path.join(root, 'src/data/shared/repositories.ts'), 'utf8')
-for (const token of ['createOrdersAdminRepository', "select: '*,order_items(*)'", 'product_name_snapshot', 'p_promo_code']) {
+for (const token of ['createOrdersAdminRepository', "select: '*,order_items(*),order_payment_events(*)'", 'product_name_snapshot', 'p_promo_code']) {
   if (!repositories.includes(token)) throw new Error(`Order repository missing: ${token}`)
 }
 const bootstrap = fs.readFileSync(path.join(root, 'src/data/shared/bootstrap.ts'), 'utf8')
