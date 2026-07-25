@@ -60,13 +60,30 @@ export const signInSupabaseWithPassword = async (email: string, password: string
   return data.session
 }
 
-export const signInSupabaseWithUsername = async (username: string, credential: string): Promise<Session> => {
+export const signInSupabaseWithUsername = async (identifier: string, credential: string): Promise<Session> => {
   const authClient = getSupabaseAuthClient()
   if (!authClient) throw new Error('Supabase Auth is not configured.')
+  const normalizedIdentifier = identifier.trim().toLowerCase()
+  if (normalizedIdentifier.includes('@')) {
+    return signInSupabaseWithPassword(normalizedIdentifier, credential)
+  }
   const { data, error } = await authClient.functions.invoke('staff-login', {
-    body: { username: username.trim().toLowerCase(), credential },
+    body: { username: normalizedIdentifier, credential },
   })
-  if (error) throw error
+  if (error) {
+    const context = 'context' in error ? error.context : null
+    if (context instanceof Response) {
+      try {
+        const failure = await context.clone().json() as { error?: string }
+        if (failure.error === 'INVALID_LOGIN') {
+          throw new Error('Incorrect username or password/PIN.')
+        }
+      } catch (cause) {
+        if (cause instanceof Error && cause.message === 'Incorrect username or password/PIN.') throw cause
+      }
+    }
+    throw new Error('Unable to reach the staff sign-in service. Please try again.')
+  }
   const session = data?.session as { access_token?: string; refresh_token?: string } | undefined
   if (!session?.access_token || !session.refresh_token) throw new Error('Sign-in did not return a session.')
   const { data: restored, error: restoreError } = await authClient.auth.setSession({
