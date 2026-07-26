@@ -217,7 +217,7 @@ begin
   -- No personal email may be a permanent owner-authority primitive.
   if exists (
     select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where pg_get_functiondef(p.oid) ilike '%new.email%'
+    where case when p.prokind in ('f','p') then pg_get_functiondef(p.oid) ilike '%new.email%' else false end
       and (p.proname ilike '%owner%' or p.proname ilike '%bootstrap%')
   ) then
     raise exception 'Owner bootstrap still authorizes by personal email';
