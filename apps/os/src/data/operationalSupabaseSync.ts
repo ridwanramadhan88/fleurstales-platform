@@ -18,6 +18,7 @@ import {
   writeOrderDraftRecords,
 } from '../store/orderDraftPersistence'
 import { createHydrationCoordinator } from './hydrationCoordinator'
+import { stableStringifySharedData } from './shared/sharedDataBundleDomain'
 
 type Slice = Record<string, unknown>
 type OperationalDomain = 'hr' | 'payroll' | 'finance' | 'stock' | 'vouchers' | 'order_drafts'
@@ -40,6 +41,7 @@ const timers = new Map<OperationalDomain, ReturnType<typeof setTimeout>>()
 const saving = new Set<OperationalDomain>()
 const dirty = new Set<OperationalDomain>()
 const conflicted = new Set<OperationalDomain>()
+const syncedSnapshots = new Map<OperationalDomain, string>()
 let unsubscribers: Array<() => void> = []
 let stopDraftListener: (() => void) | undefined
 const hydrationCoordinator = createHydrationCoordinator()
@@ -108,6 +110,9 @@ const snapshotForDomain = (domain: OperationalDomain): Json => {
   }
 }
 
+const snapshotFingerprint = (snapshot: Json): string =>
+  stableStringifySharedData(snapshot)
+
 const applyDomainSnapshot = (domain: OperationalDomain, snapshot: Json): void => {
   switch (domain) {
     case 'hr': {
@@ -157,7 +162,13 @@ const loadDomain = async (domain: OperationalDomain, apply = true): Promise<Oper
   )
   revisions.set(domain, response.revision)
   if (apply) {
-    if (response.snapshot !== null) applyDomainSnapshot(domain, response.snapshot)
+    if (response.snapshot !== null) {
+      // Record the server value before updating Zustand. Store subscriptions
+      // fire for remote hydration too; without this baseline every Realtime
+      // refresh is mistaken for a local edit and written back to Supabase.
+      syncedSnapshots.set(domain, snapshotFingerprint(response.snapshot))
+      applyDomainSnapshot(domain, response.snapshot)
+    }
     conflicted.delete(domain)
   }
   return response
@@ -179,6 +190,8 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
       dirty.delete(domain)
       const expectedRevision = revisions.get(domain) ?? 0
       const snapshot = snapshotForDomain(domain)
+      const fingerprint = snapshotFingerprint(snapshot)
+      if (syncedSnapshots.get(domain) === fingerprint) continue
       updateHealth({ status: 'saving', message: undefined })
 
       try {
@@ -198,6 +211,7 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
                 p_snapshot: snapshot,
               })
         revisions.set(domain, response.revision)
+        syncedSnapshots.set(domain, fingerprint)
         updateHealth({
           status: 'saved',
           lastSavedAt: response.updatedAt ?? new Date().toISOString(),
@@ -297,6 +311,7 @@ export const stopOperationalSupabaseSync = (): void => {
   timers.clear()
   dirty.clear()
   conflicted.clear()
+  syncedSnapshots.clear()
   saving.clear()
   unsubscribers.forEach((unsubscribe) => unsubscribe())
   unsubscribers = []
