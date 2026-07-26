@@ -33,7 +33,7 @@ export interface Employee {
   email?: string
   /** Lowercase login identifier for the internal demo app. */
   username?: string
-  /** Demo-only six-digit PIN. Production must store a salted hash server-side. */
+  /** Legacy local credential field. Production credentials remain only in Supabase Auth. */
   pin?: string
   /** Employee-specific monthly base salary. Payroll never derives this from role. */
   baseSalaryIdr?: number

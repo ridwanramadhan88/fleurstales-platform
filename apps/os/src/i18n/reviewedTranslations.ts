@@ -34,7 +34,7 @@ export const ID_REVIEWED_TRANSLATIONS: Record<string, string> = {
   "Customer": "Customer",
   "Staff": "Staff",
   "Username": "Username",
-  "PIN": "PIN",
+  "Password": "Password",
   "Profile": "Profile",
   "Save": "Save",
   "Edit": "Edit",

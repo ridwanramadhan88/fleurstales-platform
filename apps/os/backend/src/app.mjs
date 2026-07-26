@@ -85,7 +85,7 @@ export const createApplication = (overrides = {}) => {
 
       if (req.method === 'POST' && url.pathname === '/auth/login') {
         const input = await readJsonBody(req)
-        const result = authService.login(input.username, input.pin)
+        const result = authService.login(input.username, input.password)
         if (!result) return sendJson(res, cors, 401, { error: 'INVALID_CREDENTIALS' })
         return sendJson(res, cors, 200, result)
       }

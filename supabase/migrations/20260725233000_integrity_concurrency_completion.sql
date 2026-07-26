@@ -260,7 +260,7 @@ with ranked as (
 )
 delete from public.business_activities b using ranked r where b.id=r.id and r.rn>1;
 with ranked as (
-  select id,row_number() over(partition by user_id,kind,entity_id,title,date_trunc('second',created_at) order by created_at,id) rn
+  select id,row_number() over(partition by recipient_user_id,kind,entity_id,title,date_trunc('second',created_at) order by created_at,id) rn
   from public.staff_notifications where kind='order_pending_verification'
 )
 delete from public.staff_notifications n using ranked r where n.id=r.id and r.rn>1;

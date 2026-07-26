@@ -167,7 +167,7 @@ const migrate11to12 = (snapshot: DataSlice): DataSlice => {
       ['emp-akbar','Akbar','admin','akbar'],['emp-teta','Teta','admin','teta'],['emp-shofi','Shofi','admin','shofi'],
       ['emp-zahra','Zahra','florist','zahra'],['emp-vero','Vero','florist','vero'],['emp-zizi','Zizi','florist','zizi'],
       ['emp-dela','Dela','florist','dela'],['emp-dila','Dila','florist','dila'],['emp-gaby','Gaby','florist','gaby'],
-    ].map(([id,name,role,username])=>({id,name,position:role==='admin'?'Admin':'Florist',branch:'',systemRole:role,status:'active',phone:'',hireDate:'2024-01-01',username,pin:'123456'}))
+    ].map(([id,name,role,username])=>({id,name,position:role==='admin'?'Admin':'Florist',branch:'',systemRole:role,status:'active',phone:'',hireDate:'2024-01-01',username,pin:'Fleur1'}))
     hr.employees=[...existing.map((entry)=>isRecord(entry)?({...entry,branch:''}):entry),...real]
     hr.employeeDefaultSchedules=[]
   }

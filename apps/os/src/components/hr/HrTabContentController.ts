@@ -385,8 +385,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       if (canEditCredentials) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(detailsForm.email.trim())) errors.email = 'Enter a valid recovery email address.'
         if (!/^[a-z][a-z0-9._-]*$/.test(detailsForm.username.trim())) errors.username = 'Use lowercase letters, numbers, dots, underscores, or hyphens.'
-        if (detailsForm.pin && usesProductionPassword && !isStrongStaffPassword(detailsForm.pin)) errors.pin = STAFF_PASSWORD_HELP
-        if (detailsForm.pin && !usesProductionPassword && !/^\d{6}$/.test(detailsForm.pin)) errors.pin = 'PIN must contain exactly 6 numbers.'
+        if (detailsForm.pin && !isStrongStaffPassword(detailsForm.pin)) errors.pin = STAFF_PASSWORD_HELP
       }
       setAccessErrors(errors)
       if (Object.keys(errors).length) return

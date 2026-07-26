@@ -24,7 +24,7 @@ const createTestApp = async () => {
 const login = async (baseUrl) => {
   const response = await fetch(`${baseUrl}/auth/login`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'owner', pin: '123456' }),
+    body: JSON.stringify({ username: 'owner', password: 'Fleur1' }),
   })
   assert.equal(response.status, 200)
   return (await response.json()).token

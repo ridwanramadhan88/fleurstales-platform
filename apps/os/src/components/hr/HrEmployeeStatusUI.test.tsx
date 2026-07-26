@@ -5,8 +5,8 @@ import { HrTabContentContainer } from './HrTabContentContainer'
 import { useHrStore } from '../../store/hrStore'
 import { useUserStore } from '../../store/userStore'
 import type { Employee } from '../../store/hrStoreTypes'
-const owner: Employee = { id:'owner-1', name:'Titi', position:'Owner', branch:'Kedamaian', systemRole:'owner', status:'active', phone:'', hireDate:'2024-01-01', email:'owner@example.com', username:'owner', pin:'123456' }
-const staff: Employee = { id:'staff-1', name:'Rina', position:'Florist', branch:'Kedamaian', systemRole:'florist', status:'active', phone:'', hireDate:'2025-01-01', email:'rina@example.com', username:'rina', pin:'123456' }
+const owner: Employee = { id:'owner-1', name:'Titi', position:'Owner', branch:'Kedamaian', systemRole:'owner', status:'active', phone:'', hireDate:'2024-01-01', email:'owner@example.com', username:'owner', pin:'Fleur1' }
+const staff: Employee = { id:'staff-1', name:'Rina', position:'Florist', branch:'Kedamaian', systemRole:'florist', status:'active', phone:'', hireDate:'2025-01-01', email:'rina@example.com', username:'rina', pin:'Fleur1' }
 afterEach(() => cleanup())
 beforeEach(() => { useUserStore.setState({ employeeId:'hr-1', username:'hr', role:'hr', name:'Star' }); useHrStore.setState({ employees:[owner, staff], attendance:[] }) })
 describe('employee details UI', () => {

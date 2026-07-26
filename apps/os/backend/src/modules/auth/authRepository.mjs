@@ -3,15 +3,15 @@ import crypto from 'node:crypto'
 const nowIso = () => new Date().toISOString()
 const tokenHash = (token) => crypto.createHash('sha256').update(token).digest('hex')
 
-const hashPin = (pin, salt = crypto.randomBytes(16).toString('hex')) => {
-  const digest = crypto.scryptSync(String(pin), salt, 32).toString('hex')
+const hashPassword = (password, salt = crypto.randomBytes(16).toString('hex')) => {
+  const digest = crypto.scryptSync(String(password), salt, 32).toString('hex')
   return `${salt}:${digest}`
 }
 
-const verifyPin = (pin, stored) => {
+const verifyPassword = (password, stored) => {
   const [salt, expected] = String(stored || '').split(':')
   if (!salt || !expected) return false
-  const actual = crypto.scryptSync(String(pin), salt, 32).toString('hex')
+  const actual = crypto.scryptSync(String(password), salt, 32).toString('hex')
   const a = Buffer.from(actual, 'hex')
   const b = Buffer.from(expected, 'hex')
   return a.length === b.length && crypto.timingSafeEqual(a, b)
@@ -49,7 +49,7 @@ export class AuthRepository {
     const existingById = new Map(this.db.prepare('SELECT id, pin_hash FROM users').all().map((row) => [row.id, row.pin_hash]))
     const timestamp = nowIso()
     for (const user of users) {
-      const pinHash = existingById.get(user.employeeId) || hashPin(user.pin)
+      const pinHash = existingById.get(user.employeeId) || hashPassword(user.password)
       this.upsertUserStmt.run(
         user.employeeId,
         String(user.username || '').trim().toLowerCase(),
@@ -66,9 +66,9 @@ export class AuthRepository {
     }
   }
 
-  authenticate(username, pin) {
+  authenticate(username, password) {
     const user = this.findUserByUsernameStmt.get(String(username || '').trim().toLowerCase())
-    if (!user || !verifyPin(pin, user.pin_hash)) return undefined
+    if (!user || !verifyPassword(password, user.pin_hash)) return undefined
     return user
   }
 

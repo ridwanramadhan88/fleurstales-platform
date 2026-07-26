@@ -732,7 +732,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
       const defaultRole = editValue.staffRoles.roles.includes(editValue.staffRoles.defaultRole) && editValue.staffRoles.defaultRole !== 'owner'
         ? editValue.staffRoles.defaultRole
         : (editValue.staffRoles.roles.find((roleValue) => roleValue !== 'owner') ?? 'florist')
-      setStaffAccountDraft({ name: '', email: '', username: '', pin: isSupabaseConfigured() ? '' : '123456', systemRole: defaultRole, phone: '', hireDate: today, baseSalaryIdr: 3_000_000 })
+      setStaffAccountDraft({ name: '', email: '', username: '', pin: '', systemRole: defaultRole, phone: '', hireDate: today, baseSalaryIdr: 3_000_000 })
       setSaveFeedback(null)
     },
     onCancelStaffAccountDraft: () => setStaffAccountDraft(null),

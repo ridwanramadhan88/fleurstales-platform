@@ -31,6 +31,8 @@ assert((sql.match(/pg_advisory_xact_lock/g) ?? []).length >= 2, 'Storefront and 
 assert(sql.includes('v_result:=public.create_storefront_order_v34_internal'), 'Storefront checkout still passes through the unsafe V3.5 dedupe wrapper.')
 assert(sql.includes("v_canonical_snapshot:=jsonb_set(v_canonical_snapshot,'{employeePointEntries}'"), 'Employee points are not rebuilt from the normalized authority.')
 assert(sql.includes("'id','att-'||replace(gen_random_uuid()::text"), 'Attendance IDs are still browser-controlled.')
+assert(sql.includes('partition by recipient_user_id,kind,entity_id,title'), 'Notification deduplication does not use the staff_notifications recipient column.')
+assert(!sql.includes('partition by user_id,kind,entity_id,title'), 'Notification deduplication references the nonexistent staff_notifications.user_id column.')
 assert(submit.includes('authoritativeDeliveryFeeIdr'), 'Internal Order submission does not use authoritative branch fee.')
 assert(pricing.includes('authoritativeDeliveryFeeIdr'), 'Internal Order review is not using authoritative branch fee.')
 assert(structure.includes('Set in Store Settings for this branch.'), 'Delivery fee is not visibly server-configured/read-only.')

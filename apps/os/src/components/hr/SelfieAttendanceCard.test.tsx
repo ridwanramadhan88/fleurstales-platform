@@ -12,7 +12,7 @@ vi.mock('../../domain/selfieImageDomain', async () => {
 const admin = {
   id: 'admin-1', name: 'Sari', position: 'Branch Admin', branch: '' as const,
   systemRole: 'admin' as const, status: 'active' as const, phone: '', hireDate: '2026-01-01',
-  username: 'admin', pin: '123456',
+  username: 'admin', pin: 'Fleur1',
 }
 
 afterEach(() => { cleanup(); vi.useRealTimers() })

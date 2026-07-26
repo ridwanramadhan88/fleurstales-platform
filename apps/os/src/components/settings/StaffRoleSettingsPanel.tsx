@@ -13,7 +13,6 @@ import type { StaffRoleSettings } from '../../types/settings'
 import type { SettingsValidationErrors } from '../../domain/settings/settingsValidation'
 import { compactValueRowClass, SettingsSectionHeader } from './SettingsPrimitives'
 import type { StaffAccountDraft } from './settingsDraftTypes'
-import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 
 interface Props {
   isEditing: boolean
@@ -66,8 +65,6 @@ export const StaffRoleSettingsPanel: FC<Props> = ({
   }
 
   const nonOwnerEmployees = employees.filter((employee) => employee.systemRole !== 'owner')
-  const usesProductionPassword = isSupabaseConfigured()
-
   return (
     <section className="space-y-5">
       <SettingsSectionHeader icon={Users} title="People configuration" description="Role availability, new-account defaults, HR management scope, and employee base salaries." />
@@ -91,7 +88,7 @@ export const StaffRoleSettingsPanel: FC<Props> = ({
       ) : (
         <>
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><UserPlus className="size-4" /><h3 className="text-sm font-semibold leading-5">Create staff account</h3></div><p className="mt-1 text-xs text-muted-foreground">Email is used only for secure password or PIN recovery. Staff can sign in with their username or email.</p></div>{!staffAccountDraft && <button type="button" onClick={onStartStaffAccountDraft} className="inline-flex items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"><Plus className="size-3.5" /> Add account draft</button>}</div>
+            <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><UserPlus className="size-4" /><h3 className="text-sm font-semibold leading-5">Create staff account</h3></div><p className="mt-1 text-xs text-muted-foreground">Email is used for secure password recovery. Staff can sign in with their username or email.</p></div>{!staffAccountDraft && <button type="button" onClick={onStartStaffAccountDraft} className="inline-flex items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"><Plus className="size-3.5" /> Add account draft</button>}</div>
             {staffAccountDraft && (
               <div className="mt-4 rounded-xl bg-surface-panel p-3 ring-1 ring-border/60">
                 <div className="mb-3 flex items-center justify-between gap-3"><p className="text-xs font-semibold">New account draft</p><button type="button" onClick={onCancelStaffAccountDraft} className="inline-flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted rounded-full p-0 size-11 rounded-full p-0 whitespace-nowrap" aria-label="Remove account draft"><X className="size-4" /></button></div>
@@ -100,7 +97,7 @@ export const StaffRoleSettingsPanel: FC<Props> = ({
                   <Field label="Role" error={validationErrors['staff.account.systemRole']}><select value={staffAccountDraft.systemRole} onChange={(event) => onUpdateStaffAccountDraft({ systemRole: event.target.value as UserRole })} className={FIELD_CLASS}>{staffRoles.roles.filter((role) => role !== 'owner').map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></Field>
                   <Field label="Username" error={validationErrors['staff.account.username']}><input value={staffAccountDraft.username} onChange={(event) => onUpdateStaffAccountDraft({ username: event.target.value.toLowerCase() })} className={FIELD_CLASS} /></Field>
                   <Field label="Recovery email" error={validationErrors['staff.account.email']}><input type="email" autoComplete="email" value={staffAccountDraft.email} onChange={(event) => onUpdateStaffAccountDraft({ email: event.target.value.toLowerCase() })} className={FIELD_CLASS} /></Field>
-                  <Field label={usesProductionPassword ? "Password" : "PIN"} error={validationErrors['staff.account.pin']}><input type="password" inputMode={usesProductionPassword ? undefined : "numeric"} maxLength={usesProductionPassword ? undefined : 6} autoComplete="new-password" value={staffAccountDraft.pin} onChange={(event) => onUpdateStaffAccountDraft({ pin: usesProductionPassword ? event.target.value : event.target.value.replace(/\D/g, '').slice(0, 6) })} placeholder={usesProductionPassword ? "12+ chars, mixed case, number, symbol" : "6 numbers"} className={FIELD_CLASS} /></Field>
+                  <Field label="Password" error={validationErrors['staff.account.pin']}><input type="password" autoComplete="new-password" value={staffAccountDraft.pin} onChange={(event) => onUpdateStaffAccountDraft({ pin: event.target.value })} placeholder="6+ chars, uppercase, lowercase, number" className={FIELD_CLASS} /></Field>
                   <Field label="Hire date" error={validationErrors['staff.account.hireDate']}><input type="date" value={staffAccountDraft.hireDate} onChange={(event) => onUpdateStaffAccountDraft({ hireDate: event.target.value })} className={FIELD_CLASS} /></Field>
                   <Field label="Monthly base salary" error={validationErrors['staff.account.baseSalaryIdr']}><div className="flex h-10 overflow-hidden rounded-lg border border-border bg-background"><span className="flex items-center border-r border-border px-2 text-xs text-muted-foreground">Rp</span><input type="number" min={1} step={100000} value={staffAccountDraft.baseSalaryIdr} onChange={(event) => onUpdateStaffAccountDraft({ baseSalaryIdr: Number(event.target.value) })} className="min-w-0 flex-1 px-2 text-sm outline-none" /></div></Field>
                 </div>

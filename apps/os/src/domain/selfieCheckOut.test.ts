@@ -4,7 +4,7 @@ import { useSettingsStore } from '../store/settingsStore'
 import { DEFAULT_OWNER_SETTINGS } from './settings/defaultOwnerSettings'
 
 const selfie = 'data:image/jpeg;base64,abc'
-const admin = { id:'admin-1', name:'Sari', position:'Admin', branch:'Kedamaian' as const, systemRole:'admin' as const, status:'active' as const, phone:'', hireDate:'2026-01-01', username:'admin', pin:'123456' }
+const admin = { id:'admin-1', name:'Sari', position:'Admin', branch:'Kedamaian' as const, systemRole:'admin' as const, status:'active' as const, phone:'', hireDate:'2026-01-01', username:'admin', pin:'Fleur1' }
 
 describe('selfie check-out', () => {
   beforeEach(() => {

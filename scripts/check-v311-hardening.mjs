@@ -21,9 +21,9 @@ requireText('apps/os/src/components/ui/sheet.tsx', ['responsiveRight:'])
 requireText('apps/os/src/components/ui/app-confirm.ts', ['max-w-lg'])
 forbidText('apps/os/src/components/ui/app-confirm.ts', ['max-w-2xl'])
 
-requireText('apps/os/src/domain/staffCredentialDomain.ts', ['STAFF_PASSWORD_MIN_LENGTH = 12', 'isStrongStaffPassword'])
-requireText('supabase/config.toml', ['minimum_password_length = 12', 'password_requirements = "lower_upper_letters_digits_symbols"'])
-requireText('supabase/functions/staff-login/index.ts', ['service_consume_staff_login_attempt', 'MIN_PRODUCTION_PASSWORD_LENGTH = 12', 'MAX_BODY_BYTES = 4096'])
+requireText('apps/os/src/domain/staffCredentialDomain.ts', ['STAFF_PASSWORD_MIN_LENGTH = 6', 'isStrongStaffPassword'])
+requireText('supabase/config.toml', ['minimum_password_length = 6', 'password_requirements = "lower_upper_letters_digits"'])
+requireText('supabase/functions/staff-login/index.ts', ['service_consume_staff_login_attempt', 'MIN_PRODUCTION_PASSWORD_LENGTH = 6', 'MAX_BODY_BYTES = 4096'])
 requireText('supabase/functions/staff-admin/index.ts', ['service_create_staff_access_profile', 'service_update_staff_access_email', 'isStrongPassword'])
 forbidText('supabase/functions/staff-admin/index.ts', [".from('staff_access_profiles').update(", ".from('staff_access_profiles').upsert(", ".from('staff_access_profiles').insert(", ".from('staff_access_profiles').delete("])
 

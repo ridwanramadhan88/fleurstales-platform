@@ -210,18 +210,18 @@ export const todayIsoDate = (): string => getLocalDateString(nowInJakarta())
  * @description Operational staff accounts. Admins and Florists have no permanent branch.
  */
 const INITIAL_EMPLOYEES: Employee[] = TEST_RUNTIME ? [
-  { id:'emp-budi', name:'Budi', position:'Owner', branch:'', systemRole:'owner', status:'active', phone:'', hireDate:'2021-01-10', username:'owner', pin:'123456', baseSalaryIdr:7_000_000 },
-  { id:'emp-dewi', name:'Dewi', position:'Finance', branch:'', systemRole:'finance', status:'active', phone:'', hireDate:'2023-06-01', username:'finance', pin:'123456', baseSalaryIdr:5_000_000 },
-  { id:'emp-bintang', name:'Bintang', position:'HR', branch:'', systemRole:'hr', status:'active', phone:'', hireDate:'2024-01-15', username:'hr', pin:'123456', baseSalaryIdr:4_500_000 },
-  { id:'emp-akbar', name:'Akbar', position:'Admin', branch:'', systemRole:'admin', status:'active', phone:'', hireDate:'2024-01-01', username:'akbar', pin:'123456', baseSalaryIdr:4_500_000 },
-  { id:'emp-teta', name:'Teta', position:'Admin', branch:'', systemRole:'admin', status:'active', phone:'', hireDate:'2024-01-01', username:'teta', pin:'123456', baseSalaryIdr:4_500_000 },
-  { id:'emp-shofi', name:'Shofi', position:'Admin', branch:'', systemRole:'admin', status:'active', phone:'', hireDate:'2024-01-01', username:'shofi', pin:'123456', baseSalaryIdr:4_500_000 },
-  { id:'emp-zahra', name:'Zahra', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'zahra', pin:'123456', baseSalaryIdr:4_000_000 },
-  { id:'emp-vero', name:'Vero', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'vero', pin:'123456', baseSalaryIdr:4_000_000 },
-  { id:'emp-zizi', name:'Zizi', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'zizi', pin:'123456', baseSalaryIdr:4_000_000 },
-  { id:'emp-dela', name:'Dela', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'dela', pin:'123456', baseSalaryIdr:4_000_000 },
-  { id:'emp-dila', name:'Dila', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'dila', pin:'123456', baseSalaryIdr:4_000_000 },
-  { id:'emp-gaby', name:'Gaby', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'gaby', pin:'123456', baseSalaryIdr:4_000_000 },
+  { id:'emp-budi', name:'Budi', position:'Owner', branch:'', systemRole:'owner', status:'active', phone:'', hireDate:'2021-01-10', username:'owner', pin:'Fleur1', baseSalaryIdr:7_000_000 },
+  { id:'emp-dewi', name:'Dewi', position:'Finance', branch:'', systemRole:'finance', status:'active', phone:'', hireDate:'2023-06-01', username:'finance', pin:'Fleur1', baseSalaryIdr:5_000_000 },
+  { id:'emp-bintang', name:'Bintang', position:'HR', branch:'', systemRole:'hr', status:'active', phone:'', hireDate:'2024-01-15', username:'hr', pin:'Fleur1', baseSalaryIdr:4_500_000 },
+  { id:'emp-akbar', name:'Akbar', position:'Admin', branch:'', systemRole:'admin', status:'active', phone:'', hireDate:'2024-01-01', username:'akbar', pin:'Fleur1', baseSalaryIdr:4_500_000 },
+  { id:'emp-teta', name:'Teta', position:'Admin', branch:'', systemRole:'admin', status:'active', phone:'', hireDate:'2024-01-01', username:'teta', pin:'Fleur1', baseSalaryIdr:4_500_000 },
+  { id:'emp-shofi', name:'Shofi', position:'Admin', branch:'', systemRole:'admin', status:'active', phone:'', hireDate:'2024-01-01', username:'shofi', pin:'Fleur1', baseSalaryIdr:4_500_000 },
+  { id:'emp-zahra', name:'Zahra', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'zahra', pin:'Fleur1', baseSalaryIdr:4_000_000 },
+  { id:'emp-vero', name:'Vero', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'vero', pin:'Fleur1', baseSalaryIdr:4_000_000 },
+  { id:'emp-zizi', name:'Zizi', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'zizi', pin:'Fleur1', baseSalaryIdr:4_000_000 },
+  { id:'emp-dela', name:'Dela', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'dela', pin:'Fleur1', baseSalaryIdr:4_000_000 },
+  { id:'emp-dila', name:'Dila', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'dila', pin:'Fleur1', baseSalaryIdr:4_000_000 },
+  { id:'emp-gaby', name:'Gaby', position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2024-01-01', username:'gaby', pin:'Fleur1', baseSalaryIdr:4_000_000 },
 ] : []
 
 const historicalShift = (employeeId:string,date:string,branchId:string,startTime:string,endTime:string,isWorking=true):ScheduleOverride => ({
@@ -384,8 +384,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
         if (nextEmail && state.employees.some((item) => item.id !== employeeId && item.email?.trim().toLowerCase() === nextEmail)) { result = employeeCommandError('duplicate_email', 'Email is already in use.', 'email'); return state }
         if (!nextUsername || !/^[a-z][a-z0-9._-]*$/.test(nextUsername)) { result = employeeCommandError('invalid_username', 'Username must be lowercase and start with a letter.', 'username'); return state }
         if (state.employees.some((item) => item.id !== employeeId && item.username === nextUsername)) { result = employeeCommandError('duplicate_username', 'Username is already in use.', 'username'); return state }
-        if (pin && productionAuth && !isStrongStaffPassword(pin)) { result = employeeCommandError('invalid_pin', STAFF_PASSWORD_HELP, 'pin'); return state }
-        if (pin && !productionAuth && !/^\d{6}$/.test(pin)) { result = employeeCommandError('invalid_pin', 'PIN must contain exactly 6 numbers.', 'pin'); return state }
+        if (pin && !isStrongStaffPassword(pin)) { result = employeeCommandError('invalid_pin', STAFF_PASSWORD_HELP, 'pin'); return state }
       }
       result = { ok: true, employeeId }
       return { employees: state.employees.map((item) => item.id === employeeId ? { ...item, systemRole, position: getEmployeeRoleLabel(systemRole), email: actor.role === 'owner' && nextEmail !== undefined ? nextEmail : item.email, username: actor.role === 'owner' ? nextUsername : item.username, pin: actor.role === 'owner' && pin && !productionAuth ? pin : item.pin } : item) }

@@ -32,7 +32,6 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
   const employees = useHrStore((state) => state.employees)
   const usesSupabase = isSupabaseConfigured()
   const [username, setUsername] = useState('')
-  const [pin, setPin] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -109,12 +108,13 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
         await finishSupabaseSignIn()
         return
       }
+      if (!isStrongStaffPassword(password)) throw new Error(STAFF_PASSWORD_HELP)
       const normalized = normalizeUsername(username)
       const account = isSharedBackendConfigured()
-        ? await signInSharedBackend(normalized, pin)
-        : employees.find((employee) => employee.status === 'active' && employee.username === normalized && employee.pin === pin) ?? null
+        ? await signInSharedBackend(normalized, password)
+        : employees.find((employee) => employee.status === 'active' && employee.username === normalized && employee.pin === password) ?? null
       if (!account) {
-        setError('Invalid username or PIN, or this account is inactive.')
+        setError('Invalid username or password, or this account is inactive.')
         return
       }
       setError(null)
@@ -131,7 +131,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     ? 'We’ll email you a secure reset link.'
     : mode === 'set-password'
       ? STAFF_PASSWORD_HELP
-      : usesSupabase ? 'Use your staff username or email and password.' : 'Use your staff username and six-digit PIN.'
+      : 'Use your staff username or email and password.'
 
   return (
     <div className="min-h-screen bg-background px-4 pb-6 pt-[max(1rem,env(safe-area-inset-top))] text-foreground sm:flex sm:items-center sm:justify-center sm:py-8">
@@ -166,16 +166,14 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
             <input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder={usesSupabase ? 'username or email' : 'username'} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {(!usesSupabase || mode !== 'forgot') ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">{usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password') : 'PIN'}</span>
+            <span className="text-xs font-medium">{mode === 'set-password' ? 'New password' : 'Password'}</span>
             <input
-              aria-label={usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password') : 'PIN'}
+              aria-label={mode === 'set-password' ? 'New password' : 'Password'}
               autoComplete={mode === 'set-password' ? 'new-password' : 'current-password'}
-              inputMode={usesSupabase ? undefined : 'numeric'}
               type="password"
-              maxLength={usesSupabase ? undefined : 6}
-              value={usesSupabase ? password : pin}
-              onChange={(e) => usesSupabase ? setPassword(e.target.value) : setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder={usesSupabase ? (mode === 'set-password' ? '12+ characters' : 'Password') : '6-digit PIN'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === 'set-password' ? '6+ characters' : 'Password'}
               className="h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
             />
           </label> : null}
@@ -185,7 +183,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           </label> : null}
           {error && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive ring-1 ring-destructive/30">{error}</p>}
           {notice && <p role="status" className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-foreground ring-1 ring-primary/25">{notice}</p>}
-          <button type="submit" disabled={isSigningIn || (usesSupabase ? (mode === 'forgot' ? !email : mode === 'set-password' ? !password || !confirmPassword : !username || !password) : !username || pin.length !== 6)} className="tap-scale flex w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 disabled:bg-primary/45 disabled:text-primary-foreground/90 disabled:opacity-100 px-[18px] whitespace-nowrap h-11 gap-2">
+          <button type="submit" disabled={isSigningIn || (usesSupabase ? (mode === 'forgot' ? !email : mode === 'set-password' ? !password || !confirmPassword : !username || !password) : !username || !password)} className="tap-scale flex w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 disabled:bg-primary/45 disabled:text-primary-foreground/90 disabled:opacity-100 px-[18px] whitespace-nowrap h-11 gap-2">
             {mode === 'forgot' ? <Mail className="size-4" /> : mode === 'set-password' ? <KeyRound className="size-4" /> : <LogIn className="size-4" />}
             {isSigningIn ? 'Please wait…' : mode === 'forgot' ? 'Send reset link' : mode === 'set-password' ? 'Save password' : 'Sign in'}
           </button>
@@ -194,10 +192,10 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           </button> : null}
         </form>
 
-        {!usesSupabase && <InfoDisclosure title="Demo staff credentials" className="text-center">
+        {!usesSupabase && <InfoDisclosure title="Local staff credentials" className="text-center">
           <div className="space-y-1 text-left">
             <p>Username: <code>owner</code>, <code>finance</code>, <code>hr</code>, or staff names such as <code>akbar</code> or <code>zahra</code>.</p>
-            <p>PIN: <code>123456</code></p>
+            <p>Password: <code>Fleur1</code></p>
           </div>
         </InfoDisclosure>}
       </div>

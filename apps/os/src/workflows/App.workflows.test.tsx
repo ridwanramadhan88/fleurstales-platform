@@ -25,7 +25,7 @@ const originalConsoleWarn = console.warn
 const chooseRole = async (role: 'Owner' | 'Admin') => {
   const user = userEvent.setup()
   await user.type(screen.getByLabelText('Username'), role === 'Admin' ? 'akbar' : role.toLowerCase())
-  await user.type(screen.getByLabelText('PIN'), '123456')
+  await user.type(screen.getByLabelText('Password'), 'Fleur1')
   await user.click(screen.getByRole('button', { name: 'Sign in' }))
   return user
 }

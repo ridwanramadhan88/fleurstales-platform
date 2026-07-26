@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.8'
 
 const MAX_BODY_BYTES = 4096
-const MIN_PRODUCTION_PASSWORD_LENGTH = 12
+const MIN_PRODUCTION_PASSWORD_LENGTH = 6
 const REJECTION_DELAY_MS = 250
 
 const configuredOrigins = (): string[] => (Deno.env.get('FLEURSTALES_ALLOWED_ORIGINS') ?? '')

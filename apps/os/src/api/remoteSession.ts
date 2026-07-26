@@ -20,14 +20,14 @@ export const authHeaders = (): HeadersInit => {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-export const signInSharedBackend = async (username: string, pin: string): Promise<Employee | null> => {
+export const signInSharedBackend = async (username: string, password: string): Promise<Employee | null> => {
   if (!sharedApiUrl) return null
   let response: Response
   try {
     response = await fetch(`${sharedApiUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ username, pin }),
+      body: JSON.stringify({ username, password }),
     })
   } catch {
     const isLocalBackend = /^https?:\/\/(localhost|127\.0\.0\.1)(?::|\/|$)/i.test(sharedApiUrl)

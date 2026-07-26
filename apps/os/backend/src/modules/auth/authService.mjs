@@ -4,8 +4,8 @@ export class AuthService {
     this.sessionHours = sessionHours
   }
 
-  login(username, pin) {
-    const user = this.repository.authenticate(username, pin)
+  login(username, password) {
+    const user = this.repository.authenticate(username, password)
     if (!user) return undefined
     const session = this.repository.createSession(user.id, this.sessionHours)
     return {
