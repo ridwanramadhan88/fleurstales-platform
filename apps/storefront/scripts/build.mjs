@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild'
 import { createServer } from 'node:http'
-import { readFile, stat, writeFile } from 'node:fs/promises'
+import { cp, readFile, stat, writeFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { rimraf } from 'rimraf'
 import stylePlugin from 'esbuild-style-plugin'
@@ -11,6 +11,8 @@ const args = process.argv.slice(2)
 const isProd = args[0] === '--production'
 
 await rimraf('dist')
+
+const copyPublicAssets = () => cp('public', 'dist', { recursive: true, force: true })
 
 const injectPublicRuntimeConfig = async () => {
   const config = Object.fromEntries(Object.entries({
@@ -66,10 +68,12 @@ const esbuildOpts = {
 
 if (isProd) {
   await esbuild.build(esbuildOpts)
+  await copyPublicAssets()
   await injectPublicRuntimeConfig()
 } else {
   const ctx = await esbuild.context(esbuildOpts)
   await ctx.watch()
+  await copyPublicAssets()
   await injectPublicRuntimeConfig()
 
   const mime = {
