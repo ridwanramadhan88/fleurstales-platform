@@ -17,7 +17,7 @@ begin
     end if;
   end loop;
 
-  if to_regprocedure('public.create_storefront_order(text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text)') is null then
+  if to_regprocedure('public.create_storefront_order(text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text)') is null then
     raise exception 'Missing create_storefront_order RPC';
   end if;
 
