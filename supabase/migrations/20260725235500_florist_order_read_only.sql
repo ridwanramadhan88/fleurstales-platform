@@ -8,11 +8,11 @@ update private.action_capability_registry
 set allowed_roles = array['owner','admin']::text[]
 where capability = 'orders.advance_status';
 
-update private.role_action_permissions
-set enabled = false,
-    updated_at = now()
-where role = 'florist'
-  and capability = 'orders.advance_status';
+insert into private.role_action_permissions (role, capability, enabled, updated_at)
+values ('florist', 'orders.advance_status', false, now())
+on conflict (role, capability) do update
+set enabled = excluded.enabled,
+    updated_at = excluded.updated_at;
 
 -- Preserve the complete V3.7 writer as an internal implementation, then add a
 -- final public role boundary. Older internal validators still contain the
