@@ -8,6 +8,7 @@ interface Props {
   form: CatalogFormState
   product?: CatalogProduct | null
   categoryOptions: CatalogCategory[]
+  arrangementTypeOptions: string[]
   setForm: Dispatch<SetStateAction<CatalogFormState>>
   readOnlyInputClass: string
   labelClass: string
@@ -16,7 +17,7 @@ interface Props {
 const inputClass = 'h-11 w-full rounded-xl border border-border bg-card px-3.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20'
 const selectClass = 'h-11 rounded-xl border border-border bg-card px-3.5 text-sm shadow-none'
 
-export const CatalogProductDetailsSection: FC<Props> = ({ form, product, categoryOptions, setForm, readOnlyInputClass, labelClass }) => {
+export const CatalogProductDetailsSection: FC<Props> = ({ form, product, categoryOptions, arrangementTypeOptions, setForm, readOnlyInputClass, labelClass }) => {
   const update = <K extends keyof CatalogFormState>(field: K, value: CatalogFormState[K]) =>
     setForm((previous) => ({ ...previous, [field]: value }))
 
@@ -42,7 +43,7 @@ export const CatalogProductDetailsSection: FC<Props> = ({ form, product, categor
 
         <div className="space-y-1.5"><label className={labelClass}>Material type · Required</label><Select value={form.material} onValueChange={(value) => update('material', value as CatalogMaterial)}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="fresh">Fresh</SelectItem><SelectItem value="artificial">Artificial</SelectItem></SelectContent></Select></div>
 
-        <div className="space-y-1.5"><label className={labelClass}>Arrangement Type</label><input value={form.productType} onChange={(event) => update('productType', event.target.value)} placeholder="Bouquet, Standing Flower, Flower Cake..." className={inputClass} /></div>
+        <div className="space-y-1.5"><label className={labelClass}>Arrangement Type · Required</label><Select value={form.productType} onValueChange={(value) => update('productType', value)}><SelectTrigger className={selectClass}><SelectValue placeholder="Select arrangement type" /></SelectTrigger><SelectContent>{arrangementTypeOptions.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-1.5"><label className={labelClass}>Collection / Series</label><input value={form.collectionSeries} onChange={(event) => update('collectionSeries', event.target.value)} placeholder="Example: Omakase" className={inputClass} /><p className="text-xs text-muted-foreground">Saved separately; the storefront name follows Collection / Series - Product Name.</p></div>
 
         <div className="space-y-1.5"><label className={labelClass}>Pricing type</label><Select value={form.pricingType} onValueChange={(value) => update('pricingType', value as CatalogFormState['pricingType'])}><SelectTrigger className={selectClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Fixed">Fixed</SelectItem><SelectItem value="Starts From">Starts From</SelectItem></SelectContent></Select></div>

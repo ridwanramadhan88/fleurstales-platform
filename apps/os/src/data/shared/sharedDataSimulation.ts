@@ -62,11 +62,19 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
   const emit = () => listeners.forEach((listener) => listener(clone(bundle)))
   let sizeGuideTemplates: SharedSizeGuideTemplate[] = []
   let sizeGuideTargets: SharedSizeGuideTarget[] = []
+  let arrangementTypes = [...new Set(
+    bundle.catalog.products
+      .map((product) => product.productType?.trim())
+      .filter((value): value is string => Boolean(value)),
+  )]
 
   const catalog: CatalogAdminRepository = {
     async listOccasions(options) {
       const rows = bundle.catalog.occasions
       return clone(options?.includeInactive ? rows : rows.filter((row) => row.isActive))
+    },
+    async listArrangementTypes() {
+      return arrangementTypes.map((name, sortOrder) => ({ name, sortOrder }))
     },
     async listProducts(options) {
       let rows = options?.includeInactive ? bundle.catalog.products : bundle.catalog.products.filter((row) => row.isActive)
@@ -104,6 +112,10 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         productCount: bundle.catalog.products.length,
         occasionCount: bundle.catalog.occasions.length,
       }
+    },
+    async replaceArrangementTypes(names) {
+      arrangementTypes = [...names]
+      return { count: arrangementTypes.length }
     },
     async uploadProductImage(input) {
       const image: SharedProductImage = {

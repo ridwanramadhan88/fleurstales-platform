@@ -6,6 +6,8 @@ import type {
   CreateStorefrontOrderResult,
   StorefrontCheckoutQuoteResult,
   SharedBranch,
+  SharedArrangementType,
+  SharedArrangementTypesReplaceResult,
   SharedCatalogAdminState,
   SharedCatalogReplaceResult,
   SharedCustomer,
@@ -36,6 +38,7 @@ export interface StaffAccessRepository {
 
 export interface CatalogReadRepository {
   listOccasions(options?: { includeInactive?: boolean }): Promise<SharedOccasion[]>
+  listArrangementTypes(): Promise<SharedArrangementType[]>
   listProducts(options?: { includeInactive?: boolean; includeCosts?: boolean }): Promise<SharedProduct[]>
   getProduct(productId: string): Promise<SharedProduct | null>
   listSizeGuideTemplates(): Promise<SharedSizeGuideTemplate[]>
@@ -49,6 +52,7 @@ export interface CatalogAdminRepository extends CatalogReadRepository {
     occasions: SharedOccasion[]
     products: SharedProduct[]
   }): Promise<SharedCatalogReplaceResult>
+  replaceArrangementTypes(names: string[]): Promise<SharedArrangementTypesReplaceResult>
   uploadProductImage(input: {
     productId: string
     image: SharedProductImageMetadataInput

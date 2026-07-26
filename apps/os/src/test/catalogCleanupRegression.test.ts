@@ -50,7 +50,8 @@ describe('Catalog cleanup regressions', () => {
     const categories = read('src/components/catalog/CatalogCategoriesDialog.tsx')
     const bulk = read('src/components/product/BulkActionBar.tsx')
 
-    expect(categories).toContain('max-w-5xl')
+    expect(categories).toContain('max-w-2xl')
+    expect(categories).toContain('grid-rows-[auto_minmax(0,1fr)_auto]')
     expect(categories).toContain('Occasion name · Required')
     expect(categories).toContain('SKU prefix · Required')
     expect(categories).toContain('active product')

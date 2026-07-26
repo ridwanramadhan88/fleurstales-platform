@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   Ruler,
   Sparkles,
+  Shapes,
   Tags,
   Upload,
 } from 'lucide-react'
@@ -23,6 +24,7 @@ import { CatalogProductDetailSheet } from './CatalogProductDetailSheet'
 import { CatalogItemFormSheet } from './CatalogItemFormSheet'
 import { BulkActionBar } from '../product/BulkActionBar'
 import { CatalogCategoriesDialogContainer } from './CatalogCategoriesDialogContainer'
+import { CatalogArrangementTypesDialog } from './CatalogArrangementTypesDialog'
 import { CatalogPromoFeatureDialogContainer } from './CatalogPromoFeatureDialogContainer'
 import { CatalogSizeGuideDialog } from './CatalogSizeGuideDialog'
 import { Button } from '../ui/button'
@@ -95,11 +97,13 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
   manageMode,
   selectedIds,
   categoriesDialogOpen,
+  arrangementTypesDialogOpen,
   promoFeatureDialogOpen,
   sizeGuideDialogOpen,
   quickFilter,
   overview,
   categoryNames,
+  arrangementTypes,
   availableCategories,
   availableSubCategories,
   filteredProducts,
@@ -135,6 +139,8 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
   onUpdateProduct,
   onOpenCategoriesDialog,
   onCloseCategoriesDialog,
+  onOpenArrangementTypesDialog,
+  onCloseArrangementTypesDialog,
   onOpenPromoFeatureDialog,
   onClosePromoFeatureDialog,
   onOpenSizeGuideDialog,
@@ -188,6 +194,9 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onOpenCategoriesDialog}>
                     <Tags className="mr-2 size-4" /> Manage occasions
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onOpenArrangementTypesDialog}>
+                    <Shapes className="mr-2 size-4" /> Manage arrangement types
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onOpenPromoFeatureDialog}>
                     <Sparkles className="mr-2 size-4" /> Promo & featured products
@@ -318,10 +327,12 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
         onClose={onCloseSheet}
         product={sheetTarget !== 'new' ? sheetTarget : null}
         categoryOptions={categoryNames}
+        arrangementTypeOptions={arrangementTypes}
         onCreate={onCreateProduct}
         onUpdate={onUpdateProduct}
       />
       <CatalogCategoriesDialogContainer open={categoriesDialogOpen} onClose={onCloseCategoriesDialog} />
+      <CatalogArrangementTypesDialog open={arrangementTypesDialogOpen} onClose={onCloseArrangementTypesDialog} />
       <CatalogPromoFeatureDialogContainer open={promoFeatureDialogOpen} onClose={onClosePromoFeatureDialog} />
       <CatalogSizeGuideDialog open={sizeGuideDialogOpen} onClose={onCloseSizeGuideDialog} />
     </section>

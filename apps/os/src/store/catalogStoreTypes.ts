@@ -180,6 +180,8 @@ export interface CatalogStoreState {
   deletedProductIds: string[]
   /** User-managed top-level categories, in display order. */
   categories: CatalogCategoryConfig[]
+  /** User-managed arrangement types used by product forms and size-guide targeting. */
+  arrangementTypes: string[]
   saveSizeGuideTemplate: (input: { id?: string; name: string; imageUrl: string; byteSize: number }) => string
   deleteSizeGuideTemplate: (templateId: string) => void
   assignSizeGuide: (input:
@@ -195,6 +197,9 @@ export interface CatalogStoreState {
   renameCategory: (id: string, name: string) => CategoryMutationResult
   /** Deletes a category when it has no active products. Inactive products move to Uncategorized. */
   deleteCategory: (id: string) => CategoryMutationResult
+  addArrangementType: (name: string) => CategoryMutationResult
+  renameArrangementType: (currentName: string, nextName: string) => CategoryMutationResult
+  deleteArrangementType: (name: string) => CategoryMutationResult
   addProduct: (product: NewCatalogProductInput) => void
   updateProduct: (
     productId: string,

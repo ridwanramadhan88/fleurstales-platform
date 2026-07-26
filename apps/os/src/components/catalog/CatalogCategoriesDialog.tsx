@@ -64,7 +64,7 @@ export const CatalogCategoriesDialog: FC<CatalogCategoriesDialogViewModel> = ({
   onDelete,
 }) => (
   <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
-    <DialogContent className="flex max-h-[92vh] max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0">
+    <DialogContent className="grid h-[min(760px,calc(100dvh-2rem))] max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 lg:max-w-2xl">
       <DialogHeader className="border-b border-border/70 px-6 py-5">
         <DialogTitle>Manage occasions</DialogTitle>
         <DialogDescription>
@@ -82,7 +82,7 @@ export const CatalogCategoriesDialog: FC<CatalogCategoriesDialogViewModel> = ({
           return (
             <article key={row.id} className="rounded-2xl border border-border/75 bg-card p-4">
               {isEditing ? (
-                <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem_auto] sm:items-end">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">Occasion name · Required</label>
                     <input
@@ -158,7 +158,7 @@ export const CatalogCategoriesDialog: FC<CatalogCategoriesDialogViewModel> = ({
       </div>
 
       <div className="border-t border-border bg-card px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto] sm:items-end">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem]">
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Occasion name · Required</label>
             <input
@@ -181,7 +181,7 @@ export const CatalogCategoriesDialog: FC<CatalogCategoriesDialogViewModel> = ({
           <button
             type="button"
             onClick={onAdd}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground sm:col-span-2 sm:justify-self-end"
           >
             <Plus className="size-4" />
             Add occasion

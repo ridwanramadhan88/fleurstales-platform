@@ -31,6 +31,7 @@ export interface CatalogItemFormSheetProps {
   onClose: () => void
   product?: CatalogProduct | null
   categoryOptions: CatalogCategory[]
+  arrangementTypeOptions: string[]
   onCreate: (params: NewCatalogProductInput) => void
   onUpdate: (params: {
     productId: string
@@ -132,6 +133,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   onClose,
   product,
   categoryOptions,
+  arrangementTypeOptions,
   onCreate,
   onUpdate,
 }) => {
@@ -185,6 +187,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     const nextErrors: string[] = []
     if (!form.name.trim()) nextErrors.push('Product name is required.')
     if (!form.category) nextErrors.push('Main occasion is required.')
+    if (!form.productType.trim()) nextErrors.push('Arrangement type is required.')
     if (form.variants.length === 0) nextErrors.push('Add at least one product variant.')
 
     const parsedVariants: NewCatalogVariantInput[] = []
@@ -279,6 +282,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                 form={form}
                 product={product}
                 categoryOptions={categoryOptions}
+                arrangementTypeOptions={arrangementTypeOptions}
                 setForm={setForm}
                 readOnlyInputClass={readOnlyInputClass}
                 labelClass={labelClass}

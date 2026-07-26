@@ -6,6 +6,8 @@ import type {
   CreateStorefrontOrderResult,
   StorefrontCheckoutQuoteResult,
   SharedBranch,
+  SharedArrangementType,
+  SharedArrangementTypesReplaceResult,
   SharedCatalogAdminState,
   SharedCatalogReplaceResult,
   SharedCustomer,
@@ -26,6 +28,7 @@ import type {
 } from './contracts'
 import type {
   BranchRow,
+  ArrangementTypeRow,
   CustomerAddressRow,
   CustomerRow,
   DeleteCustomerProfileRpcArgs,
@@ -45,6 +48,7 @@ import type {
   SaveCustomerProfileRpcArgs,
   ReplaceProductImagesMetadataRpcArgs,
   ReplaceSizeGuideLibraryRpcArgs,
+  ReplaceArrangementTypesRpcArgs,
   SizeGuideTargetRow,
   SizeGuideTemplateRow,
   StoreProfileRow,
@@ -210,6 +214,12 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
     })
     return rows.map(mapOccasion)
   },
+  async listArrangementTypes() {
+    const rows: ArrangementTypeRow[] = await client.select('arrangement_types', {
+      order: [{ column: 'sort_order' }, { column: 'name' }],
+    })
+    return rows.map((row): SharedArrangementType => ({ name: row.name, sortOrder: row.sort_order }))
+  },
 
   async listProducts(options) {
     const [products, occasions, variants, images, costByVariantId] = await Promise.all([
@@ -261,6 +271,13 @@ export const createCatalogAdminRepository = (client: SupabaseHttpClient): Catalo
       }
       return client.rpc<SharedCatalogReplaceResult>(
         'replace_catalog_snapshot',
+        args as unknown as Record<string, Json>,
+      )
+    },
+    async replaceArrangementTypes(names) {
+      const args: ReplaceArrangementTypesRpcArgs = { p_names: asJson(names) }
+      return client.rpc<SharedArrangementTypesReplaceResult>(
+        'replace_arrangement_types',
         args as unknown as Record<string, Json>,
       )
     },

@@ -59,7 +59,8 @@ const normalizeTags = (category: string, occasionTags?: string[]): string[] =>
 const mapRemoteCatalog = (
   occasions: SharedOccasion[],
   products: SharedProduct[],
-): Pick<CatalogStoreState, 'categories' | 'products'> => {
+  arrangementTypes?: string[],
+): Pick<CatalogStoreState, 'categories' | 'products' | 'arrangementTypes'> => {
   const occasionById = new Map(occasions.map((occasion) => [occasion.id, occasion]))
   const categories: CatalogCategoryConfig[] = occasions
     .filter((occasion) => occasion.isActive)
@@ -122,7 +123,14 @@ const mapRemoteCatalog = (
       }
     })
 
-  return { categories, products: mappedProducts }
+  const productArrangementTypes = mappedProducts
+    .map((product) => product.productType?.trim())
+    .filter((value): value is string => Boolean(value))
+  return {
+    categories,
+    products: mappedProducts,
+    arrangementTypes: [...new Set([...(arrangementTypes ?? []), ...productArrangementTypes])],
+  }
 }
 
 const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccasion[]; products: SharedProduct[] } => {
@@ -183,6 +191,7 @@ const snapshotHash = (state: CatalogStoreState): string => JSON.stringify({
   ...buildRemoteSnapshot(state),
   sizeGuideTemplates: state.sizeGuideTemplates,
   sizeGuideTargets: state.sizeGuideTargets,
+  arrangementTypes: state.arrangementTypes,
 })
 
 const productImageHash = (product: CatalogProduct): string => JSON.stringify(
@@ -215,8 +224,9 @@ const applyRemoteCatalog = (
   occasions: SharedOccasion[],
   products: SharedProduct[],
   deletedProductCodes?: string[],
+  arrangementTypes?: string[],
 ): void => {
-  const mapped = mapRemoteCatalog(occasions, products)
+  const mapped = mapRemoteCatalog(occasions, products, arrangementTypes)
   suppressLocalSync = true
   try {
     useCatalogStore.setState((state: CatalogStoreState) => ({
@@ -338,13 +348,14 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
   try {
     const role = useUserStore.getState().role
     const canManageCatalog = canEditSection(role, 'catalog', useSettingsStore.getState().permissions)
-    const [occasions, products, adminState, sizeGuideTemplates, sizeGuideTargets] = canManageCatalog
+    const [occasions, products, adminState, sizeGuideTemplates, sizeGuideTargets, arrangementTypes] = canManageCatalog
       ? await Promise.all([
           shared.repositories.catalogAdmin.listOccasions({ includeInactive: true }),
           shared.repositories.catalogAdmin.listProducts({ includeInactive: true, includeCosts: true }),
           shared.repositories.catalogAdmin.getAdminState(),
           shared.repositories.catalogAdmin.listSizeGuideTemplates(),
           shared.repositories.catalogAdmin.listSizeGuideTargets(),
+          shared.repositories.catalogAdmin.listArrangementTypes(),
         ])
       : await Promise.all([
           shared.repositories.catalog.listOccasions(),
@@ -352,6 +363,7 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
           Promise.resolve({ revision: 0, deletedProductCodes: [] }),
           shared.repositories.catalog.listSizeGuideTemplates(),
           shared.repositories.catalog.listSizeGuideTargets(),
+          Promise.resolve([]),
         ])
     if (occasions.length === 0 || products.length === 0) {
       setBridgeStatus({
@@ -363,7 +375,12 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
       return false
     }
 
-    applyRemoteCatalog(occasions, products, adminState.deletedProductCodes)
+    applyRemoteCatalog(
+      occasions,
+      products,
+      adminState.deletedProductCodes,
+      arrangementTypes.map((item) => item.name),
+    )
     suppressLocalSync = true
     try { applyRemoteSizeGuideLibrary(sizeGuideTemplates, sizeGuideTargets) } finally { suppressLocalSync = false }
     remoteRevision = canManageCatalog ? adminState.revision : undefined
@@ -436,6 +453,9 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
       occasions: snapshot.occasions,
       products: snapshot.products,
     })
+    await shared.repositories.catalogAdmin.replaceArrangementTypes(
+      useCatalogStore.getState().arrangementTypes,
+    )
     await syncLocalSizeGuideLibrary(shared.repositories.catalogAdmin)
     remoteRevision = result.revision
     lastSyncedHash = snapshotHash(useCatalogStore.getState())

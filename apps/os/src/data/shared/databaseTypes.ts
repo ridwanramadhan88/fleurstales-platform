@@ -133,6 +133,12 @@ export interface OccasionRow {
   updated_at: string
 }
 
+export interface ArrangementTypeRow {
+  name: string
+  sort_order: number
+  created_at: string
+}
+
 export interface ProductRow {
   id: string
   product_code: string
@@ -413,6 +419,10 @@ export interface ReplaceSizeGuideLibraryRpcArgs {
   p_targets: Json
 }
 
+export interface ReplaceArrangementTypesRpcArgs {
+  p_names: Json
+}
+
 export interface ReplacePublicStoreSnapshotRpcArgs {
   p_base_revision: number
   p_profile: Json
@@ -465,6 +475,7 @@ export interface Database {
       public_payment_accounts: TableDefinition<PublicPaymentAccountRow>
       storefront_payment_settings: TableDefinition<StorefrontPaymentSettingsRow>
       occasions: TableDefinition<OccasionRow>
+      arrangement_types: TableDefinition<ArrangementTypeRow>
       products: TableDefinition<ProductRow>
       product_occasions: TableDefinition<ProductOccasionRow>
       product_variants: TableDefinition<ProductVariantRow>
@@ -508,6 +519,10 @@ export interface Database {
       }
       replace_size_guide_library: {
         Args: ReplaceSizeGuideLibraryRpcArgs
+        Returns: Json
+      }
+      replace_arrangement_types: {
+        Args: ReplaceArrangementTypesRpcArgs
         Returns: Json
       }
       save_customer_profile: {

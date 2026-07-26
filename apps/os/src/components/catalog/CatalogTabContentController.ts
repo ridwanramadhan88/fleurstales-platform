@@ -39,11 +39,13 @@ export interface CatalogTabContentViewModel {
   manageMode: boolean
   selectedIds: Set<string>
   categoriesDialogOpen: boolean
+  arrangementTypesDialogOpen: boolean
   promoFeatureDialogOpen: boolean
   sizeGuideDialogOpen: boolean
   quickFilter: 'featured' | 'promo' | null
   overview: ReturnType<typeof getCatalogOverviewStats>
   categoryNames: string[]
+  arrangementTypes: string[]
   availableCategories: string[]
   availableSubCategories: CatalogMaterial[]
   filteredProducts: CatalogProduct[]
@@ -83,6 +85,8 @@ export interface CatalogTabContentViewModel {
     }) => void
   onOpenCategoriesDialog: () => void
   onCloseCategoriesDialog: () => void
+  onOpenArrangementTypesDialog: () => void
+  onCloseArrangementTypesDialog: () => void
   onOpenPromoFeatureDialog: () => void
   onClosePromoFeatureDialog: () => void
   onOpenSizeGuideDialog: () => void
@@ -116,6 +120,7 @@ export const useCatalogTabContentController = ({
   const importCsv = useCatalogStore((state) => state.importCsv)
   const exportCsv = useCatalogStore((state) => state.exportCsv)
   const categories = useCatalogStore((state) => state.categories)
+  const arrangementTypes = useCatalogStore((state) => state.arrangementTypes)
   const orders = useOrdersStore((state) => state.orders)
   const userRole = useUserStore((state) => state.role)
   const permissions = useSettingsStore((state) => state.permissions)
@@ -133,6 +138,7 @@ export const useCatalogTabContentController = ({
   const [manageMode, setManageMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false)
+  const [arrangementTypesDialogOpen, setArrangementTypesDialogOpen] = useState(false)
   const [promoFeatureDialogOpen, setPromoFeatureDialogOpen] = useState(false)
   const [sizeGuideDialogOpen, setSizeGuideDialogOpen] = useState(false)
   const [quickFilter, setQuickFilter] = useState<'featured' | 'promo' | null>(null)
@@ -191,11 +197,13 @@ export const useCatalogTabContentController = ({
     manageMode,
     selectedIds,
     categoriesDialogOpen,
+    arrangementTypesDialogOpen,
     promoFeatureDialogOpen,
     sizeGuideDialogOpen,
     quickFilter,
     overview,
     categoryNames,
+    arrangementTypes,
     availableCategories,
     availableSubCategories,
     filteredProducts,
@@ -337,6 +345,8 @@ export const useCatalogTabContentController = ({
     },
     onOpenCategoriesDialog: () => setCategoriesDialogOpen(true),
     onCloseCategoriesDialog: () => setCategoriesDialogOpen(false),
+    onOpenArrangementTypesDialog: () => setArrangementTypesDialogOpen(true),
+    onCloseArrangementTypesDialog: () => setArrangementTypesDialogOpen(false),
     onOpenPromoFeatureDialog: () => setPromoFeatureDialogOpen(true),
     onClosePromoFeatureDialog: () => setPromoFeatureDialogOpen(false),
     onOpenSizeGuideDialog: () => setSizeGuideDialogOpen(true),

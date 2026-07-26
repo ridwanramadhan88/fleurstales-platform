@@ -24,6 +24,15 @@ export interface SharedOccasion {
   isActive: boolean
 }
 
+export interface SharedArrangementType {
+  name: string
+  sortOrder: number
+}
+
+export interface SharedArrangementTypesReplaceResult {
+  count: number
+}
+
 export interface SharedProductVariant {
   id: string
   productId: string
