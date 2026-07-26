@@ -56,9 +56,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: npx -y supabase@2.109.1 link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
       - name: Preview production migration plan
-        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --dry-run
+        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --include-all --dry-run
       - name: Apply production migrations
-        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
+        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --include-all --yes
       - name: Lint live Supabase schema
         run: npx -y supabase@2.109.1 db lint --linked --schema public --level error --fail-on error
       - name: Run every live Fleurstales database smoke test
