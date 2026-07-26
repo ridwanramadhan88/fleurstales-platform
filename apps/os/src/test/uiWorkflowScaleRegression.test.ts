@@ -6,7 +6,8 @@ const read = (path: string) => readFileSync(path, 'utf8')
 describe('mobile workflow UI scale regressions', () => {
   it('keeps the top bar visually minimal and touch friendly', () => {
     const topBar = read('src/components/dashboard/TopBar.tsx')
-    expect(topBar).toContain('bg-background/95')
+    expect(topBar).toContain('apple-material')
+    expect(topBar).toContain('bg-surface-card/80')
     expect(topBar).toContain('bg-transparent text-foreground')
     expect(topBar).toContain('size-10 items-center justify-center rounded-full')
     expect(topBar).toContain('border border-border/80 bg-card')

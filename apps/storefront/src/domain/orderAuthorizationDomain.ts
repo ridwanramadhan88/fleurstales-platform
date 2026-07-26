@@ -76,12 +76,15 @@ export const authorizeOrderMutation = ({
   actor,
   permissions,
   kind,
+  nextStatus,
 }: {
   order: OrderTableRow
   actor: OrderActor
   permissions: PermissionMatrix
   kind: OrderMutationKind
+  nextStatus?: OrderStatus
 }): OrderAuthorizationResult => {
+  void nextStatus
   if (!canViewOrder(order, actor, permissions)) {
     return { allowed: false, reason: 'This order is outside your permitted scope.' }
   }

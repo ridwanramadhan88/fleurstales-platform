@@ -3,7 +3,7 @@ import { getActiveGuideStep, isGuideSectionComplete } from './newOrderGuide'
 import { initialNewOrderValues } from './useNewOrderForm'
 
 describe('new order guided priority', () => {
-  it('follows customer, items, source, fulfillment, date, time, then payment', () => {
+  it('follows customer, product, variant, source, fulfillment, date, time, then payment', () => {
     const values = { ...initialNewOrderValues }
 
     expect(getActiveGuideStep(values)?.field).toBe('customerName')
@@ -12,6 +12,8 @@ describe('new order guided priority', () => {
     values.customerWhatsappNumber = '08123456789'
     expect(getActiveGuideStep(values)?.field).toBe('orderItemCatalogId')
     values.orderItemCatalogId = 'product-1'
+    expect(getActiveGuideStep(values)?.field).toBe('orderItemVariantId')
+    values.orderItemVariantId = 'variant-1'
     expect(getActiveGuideStep(values)?.field).toBe('orderType')
     values.orderType = 'admin_created'
     expect(getActiveGuideStep(values)?.field).toBe('fulfillmentType')

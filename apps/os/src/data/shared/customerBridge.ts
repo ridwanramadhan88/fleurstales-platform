@@ -154,7 +154,7 @@ const flushCustomer = async (id: string, currentGeneration = generation): Promis
         const base = confirmedSnapshots.get(id) ?? remote
         const latestLocal = useCustomerStore.getState().customers.find((item) => item.id === id) ?? customer
         const { merged, conflicts } = mergeCustomer(base, latestLocal, remote)
-        confirmed.set(id, remote.revision)
+        confirmed.set(id, remoteShared.revision)
         confirmedSnapshots.set(id, remote)
         applyingRemote = true
         try {
@@ -209,7 +209,7 @@ export const mergeBusinessOsCustomerFromRemote = async (id: string): Promise<voi
     return
   }
   const { merged, conflicts } = mergeCustomer(base, local, remote)
-  confirmed.set(id, remote.revision)
+  confirmed.set(id, remoteShared.revision)
   confirmedSnapshots.set(id, remote)
   applyingRemote = true
   try { useCustomerStore.setState((state) => ({ customers: state.customers.map((item) => item.id === id ? merged : item) })) }

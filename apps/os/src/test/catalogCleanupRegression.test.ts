@@ -10,7 +10,7 @@ describe('Catalog cleanup regressions', () => {
     const images = read('src/components/catalog/CatalogProductImagesField.tsx')
     const variants = read('src/components/catalog/CatalogVariantsSection.tsx')
 
-    expect(form).toContain('sm:max-w-5xl')
+    expect(form).toContain('size="workspace"')
     expect(form).toContain('h-[100dvh]')
     expect(form).toContain('title="Product information"')
     expect(form).toContain('title="Variants"')
@@ -50,7 +50,7 @@ describe('Catalog cleanup regressions', () => {
     const categories = read('src/components/catalog/CatalogCategoriesDialog.tsx')
     const bulk = read('src/components/product/BulkActionBar.tsx')
 
-    expect(categories).toContain('max-w-3xl')
+    expect(categories).toContain('max-w-5xl')
     expect(categories).toContain('Occasion name · Required')
     expect(categories).toContain('SKU prefix · Required')
     expect(categories).toContain('active product')

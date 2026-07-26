@@ -28,7 +28,7 @@ describe('desktop and tablet overlay scale', () => {
     expect(newOrder).toContain('md:max-w-6xl')
     expect(orderDetails).toContain('size="workspace"')
     expect(financeReview).toContain('md:max-w-6xl')
-    expect(customer).toContain('side="right"')
+    expect(customer).toContain('side="responsiveRight"')
     expect(customer).toContain('size="wide"')
     expect(assignFlorist).toContain('size="wide"')
     expect(catalogForm).toContain('size="workspace"')

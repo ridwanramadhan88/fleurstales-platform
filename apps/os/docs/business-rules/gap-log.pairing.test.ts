@@ -334,6 +334,7 @@ describe('§21 — "cash disallowed for delivery" now has one shared implementat
       promoCode: '',
       orderItemMode: 'custom',
       orderItemCatalogId: '',
+      orderItemVariantId: '',
       orderItemCustomName: 'Bouquet',
       orderItemCustomPrice: '100000',
       orderType: 'walk_in',
