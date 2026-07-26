@@ -177,11 +177,15 @@ begin
   end if;
 
   if not exists (
-    select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.proname='save_finance_operational_state'
-      and pg_get_functiondef(p.oid) ilike '%finance.create_ledger_entry%'
-      and pg_get_functiondef(p.oid) ilike '%finance.verify_ledger_entry%'
-      and pg_get_functiondef(p.oid) ilike '%FINANCE_LEDGER_ENTRY_IMMUTABLE%'
+    select 1
+    from (
+      select string_agg(pg_get_functiondef(p.oid), E'\n') as function_defs
+      from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname='public' and p.proname in ('save_finance_operational_state','save_finance_operational_state_v34_internal','save_finance_operational_state_v36_internal')
+    ) defs
+    where defs.function_defs ilike '%finance.create_ledger_entry%'
+      and defs.function_defs ilike '%finance.verify_ledger_entry%'
+      and defs.function_defs ilike '%FINANCE_LEDGER_ENTRY_IMMUTABLE%'
   ) then
     raise exception 'Finance operational writer is not action-aware/append-only';
   end if;
