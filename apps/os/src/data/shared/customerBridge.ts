@@ -17,6 +17,9 @@ let conflicted = new Set<string>()
 let conflictLocalRevisions = new Map<string, number>()
 let retryAttempts = new Map<string, number>()
 let retryTimers = new Map<string, ReturnType<typeof setTimeout>>()
+let lastRefreshError: string | undefined
+
+export const getBusinessOsCustomersRefreshError = (): string | undefined => lastRefreshError
 
 export const stopBusinessOsCustomerBridge = (): void => {
   generation += 1
@@ -255,7 +258,10 @@ export const refreshBusinessOsCustomerMetricsFromRemote = async (customerId?: st
 /** Hydrates CRM and starts row-level, conflict-aware synchronization. */
 export const refreshBusinessOsCustomersFromRemote = async (): Promise<boolean> => {
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
-  if (!shared.enabled) return false
+  if (!shared.enabled) {
+    lastRefreshError = 'Supabase is not configured.'
+    return false
+  }
   try {
     const [customers, metrics] = await Promise.all([
       shared.repositories.customersAdmin.listCustomers(),
@@ -293,9 +299,11 @@ export const refreshBusinessOsCustomersFromRemote = async (): Promise<boolean> =
         if ((customer.revision ?? 1) > expected) void flushCustomer(customer.id, currentGeneration)
       }
     })
+    lastRefreshError = undefined
     return true
-  } catch {
+  } catch (error) {
     applyingRemote = false
+    lastRefreshError = error instanceof Error ? error.message : 'Customer synchronization failed.'
     return false
   }
 }

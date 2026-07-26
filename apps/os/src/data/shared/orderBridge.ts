@@ -9,6 +9,9 @@ import { SupabaseHttpError } from './supabaseHttpClient'
 
 let stopOrderSync: (() => void) | undefined
 let syncGeneration = 0
+let lastRefreshError: string | undefined
+
+export const getBusinessOsOrdersRefreshError = (): string | undefined => lastRefreshError
 
 interface SaveOrderOperationalStateResult {
   id: string
@@ -133,7 +136,10 @@ export const stopBusinessOsOrderBridge = (): void => {
  */
 export const refreshBusinessOsOrdersFromRemote = async (): Promise<boolean> => {
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
-  if (!shared.enabled) return false
+  if (!shared.enabled) {
+    lastRefreshError = 'Supabase is not configured.'
+    return false
+  }
 
   try {
     const orders = await shared.repositories.ordersAdmin.listOrders()
@@ -218,9 +224,11 @@ export const refreshBusinessOsOrdersFromRemote = async (): Promise<boolean> => {
         if (confirmed !== undefined && localRevision > confirmed) void flushOrder(id)
       }
     })
+    lastRefreshError = undefined
     return true
-  } catch {
+  } catch (error) {
     // Keep local operational data visible if remote read is temporarily unavailable.
+    lastRefreshError = error instanceof Error ? error.message : 'Order synchronization failed.'
     return false
   }
 }

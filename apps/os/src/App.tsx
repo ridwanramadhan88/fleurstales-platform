@@ -10,10 +10,10 @@ import type { Employee } from './store/hrStoreTypes'
 import type { BranchFilter } from './types/orders'
 import { useTheme } from './hooks/useTheme'
 import { isSharedBackendConfigured, signOutSharedBackend } from './api/remoteSession'
-import { refreshBusinessOsCatalogFromRemote, stopBusinessOsCatalogBridge } from './data/shared/catalogBridge'
-import { refreshBusinessOsOrdersFromRemote, stopBusinessOsOrderBridge } from './data/shared/orderBridge'
-import { refreshBusinessOsCustomersFromRemote, stopBusinessOsCustomerBridge } from './data/shared/customerBridge'
-import { refreshBusinessOsStoreFromRemote, stopBusinessOsStoreBridge } from './data/shared/storeBridge'
+import { getCatalogBridgeStatus, refreshBusinessOsCatalogFromRemote, stopBusinessOsCatalogBridge } from './data/shared/catalogBridge'
+import { getBusinessOsOrdersRefreshError, refreshBusinessOsOrdersFromRemote, stopBusinessOsOrderBridge } from './data/shared/orderBridge'
+import { getBusinessOsCustomersRefreshError, refreshBusinessOsCustomersFromRemote, stopBusinessOsCustomerBridge } from './data/shared/customerBridge'
+import { getStoreBridgeStatus, refreshBusinessOsStoreFromRemote, stopBusinessOsStoreBridge } from './data/shared/storeBridge'
 import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
 import { clearSharedSession, getSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
 import { signOutSupabase } from './api/supabaseAuth'
@@ -114,7 +114,13 @@ export default function App() {
         refreshBusinessOsCustomersFromRemote(),
       ])
       if (getSharedSession().source === 'supabase' && (!storeReady || !catalogReady || !ordersReady || !customersReady)) {
-        throw new Error('Fleurstales production data could not be fully hydrated. The OS was not opened with prototype fallback data.')
+        const failures = [
+          !storeReady ? `Store (${getStoreBridgeStatus().message ?? 'unknown client error'})` : undefined,
+          !catalogReady ? `Catalog (${getCatalogBridgeStatus().message ?? 'unknown client error'})` : undefined,
+          !ordersReady ? `Orders (${getBusinessOsOrdersRefreshError() ?? 'unknown client error'})` : undefined,
+          !customersReady ? `Customers (${getBusinessOsCustomersRefreshError() ?? 'unknown client error'})` : undefined,
+        ].filter((failure): failure is string => Boolean(failure))
+        throw new Error(`Fleurstales production data could not be fully hydrated: ${failures.join(', ')}. The OS was not opened with prototype fallback data.`)
       }
       await hydrateSecurityAuditFromSupabase().catch(() => false)
       await connectRealtimeSupabase()
