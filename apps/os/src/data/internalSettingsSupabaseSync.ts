@@ -9,6 +9,7 @@ import { bootstrapSharedData } from './shared/bootstrap'
 import type { Json } from './shared/databaseTypes'
 import { browserSupabaseTokenProvider, getSupabaseBrowserSession } from './shared/supabaseSession'
 import { SupabaseHttpError } from './shared/supabaseHttpClient'
+import { toast } from '../hooks/use-toast'
 
 type InternalSettingsResponse = {
   revision: number
@@ -119,9 +120,17 @@ const persistInternalSettings = async (): Promise<void> => {
         p_observed_revision: undefined,
       }).catch(() => undefined)
       await hydrateInternalSettingsFromSupabase().catch(() => undefined)
+      toast({
+        title: 'Settings not saved',
+        description: 'Settings changed in another session. The latest values were reloaded; reapply your change.',
+      })
       return
     }
     console.error('Unable to save Fleurstales internal settings.', error)
+    toast({
+      title: 'Settings not saved',
+      description: error instanceof Error ? error.message : 'Unable to save settings.',
+    })
   }
 }
 

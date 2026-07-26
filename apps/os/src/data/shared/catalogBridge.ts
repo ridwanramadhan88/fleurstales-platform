@@ -198,7 +198,6 @@ const productImageHash = (product: CatalogProduct): string => JSON.stringify(
   buildCatalogImageStoragePlan(product).images.map((image) => ({
     id: image.id,
     storagePath: image.storagePath,
-    url: image.url,
     altText: image.altText,
     sortOrder: image.sortOrder,
     isPrimary: image.isPrimary,
@@ -437,6 +436,10 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
       if (remoteImageHashes.get(product.id) === imageHash) continue
       const synced = await syncCatalogProductImagesToRemote(product, workingRevision)
       workingRevision = synced.revision
+      // Image metadata replacement advances the shared Catalog revision. Keep
+      // the browser's authoritative revision current even if a later stage
+      // (arrangement types / size guides) fails.
+      remoteRevision = workingRevision
       suppressLocalSync = true
       try {
         useCatalogStore.setState((state) => ({
@@ -453,11 +456,14 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
       occasions: snapshot.occasions,
       products: snapshot.products,
     })
+    // Commit the revision immediately after this revision-advancing stage.
+    // lastSyncedHash remains unchanged until the complete pipeline succeeds,
+    // so a later failure stays visibly dirty and can be retried safely.
+    remoteRevision = result.revision
     await shared.repositories.catalogAdmin.replaceArrangementTypes(
       useCatalogStore.getState().arrangementTypes,
     )
     await syncLocalSizeGuideLibrary(shared.repositories.catalogAdmin)
-    remoteRevision = result.revision
     lastSyncedHash = snapshotHash(useCatalogStore.getState())
     succeeded = true
     setBridgeStatus({

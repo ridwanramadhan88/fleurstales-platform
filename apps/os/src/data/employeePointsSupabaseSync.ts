@@ -4,6 +4,11 @@ import { useUserStore } from '../store/userStore'
 import { bootstrapSharedData } from './shared/bootstrap'
 import type { Json } from './shared/databaseTypes'
 import { browserSupabaseTokenProvider, getSupabaseBrowserSession } from './shared/supabaseSession'
+import {
+  acknowledgeHrPointProjection,
+  beginHrPointMutation,
+  endHrPointMutation,
+} from './operationalSupabaseSync'
 
 interface HrDomainResponse {
   revision: number
@@ -19,7 +24,7 @@ const client = () => bootstrapSharedData(browserSupabaseTokenProvider)
 const snapshotMap = (): Map<string, EmployeePointEntry> =>
   new Map(useHrStore.getState().employeePointEntries.map((entry) => [entry.id, { ...entry }]))
 
-const refreshPointsOnly = async (): Promise<void> => {
+export const refreshEmployeePointsFromSupabase = async (): Promise<void> => {
   const boot = client()
   if (!boot.enabled || !getSupabaseBrowserSession()) return
   const response = await boot.repositories.client.rpc<HrDomainResponse>('get_operational_domain_state', { p_domain: 'hr' })
@@ -29,6 +34,12 @@ const refreshPointsOnly = async (): Promise<void> => {
   const entries = Array.isArray(snapshot.employeePointEntries)
     ? snapshot.employeePointEntries as unknown as EmployeePointEntry[]
     : []
+
+  // Update the generic HR writer's revision/baseline before Zustand notifies
+  // its broad HR subscription. This prevents a points-only Realtime refresh
+  // from being mistaken for a new full HR edit.
+  acknowledgeHrPointProjection(response.revision, entries as unknown as Json)
+
   applyingRemote = true
   try {
     useHrStore.setState({ employeePointEntries: entries })
@@ -77,12 +88,15 @@ const persistChanges = async (): Promise<void> => {
   // Capture the optimistic state immediately so a second Zustand notification
   // cannot enqueue the same business command while the first is in flight.
   baseline = current
+  await beginHrPointMutation()
   try {
     for (const command of commands) await command()
-    await refreshPointsOnly()
+    await refreshEmployeePointsFromSupabase()
   } catch (error) {
     console.error('Unable to synchronize employee point command.', error)
-    await refreshPointsOnly().catch(() => undefined)
+    await refreshEmployeePointsFromSupabase().catch(() => undefined)
+  } finally {
+    endHrPointMutation()
   }
 }
 
@@ -96,7 +110,7 @@ export const connectEmployeePointsSupabase = async (): Promise<boolean> => {
   if (!getSupabaseBrowserSession()) return false
   const role = useUserStore.getState().role
   if (role !== 'owner' && role !== 'hr') return true
-  await refreshPointsOnly()
+  await refreshEmployeePointsFromSupabase()
   stopSubscription?.()
   stopSubscription = useHrStore.subscribe(() => {
     if (!applyingRemote) schedule()

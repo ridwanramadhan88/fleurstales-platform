@@ -7,6 +7,7 @@ import type { Json } from './shared/databaseTypes'
 import { browserSupabaseTokenProvider, getSupabaseBrowserSession } from './shared/supabaseSession'
 import { SupabaseHttpError } from './shared/supabaseHttpClient'
 import { subscribePayrollWorkflowMutations, type PayrollWorkflowCommand } from './payrollWorkflowEvents'
+import { toast } from '../hooks/use-toast'
 
 type PayrollStateResponse = {
   domain: 'payroll'
@@ -89,8 +90,11 @@ const persistCommand = async (command: PayrollWorkflowCommand): Promise<void> =>
     })
     revision = response.revision
   } catch (error) {
-    if (isConflict(error) || error instanceof SupabaseHttpError) {
-      if (isConflict(error)) {
+    const conflict = isConflict(error)
+    const message = error instanceof Error ? error.message : 'The payroll change was rejected.'
+
+    if (conflict || error instanceof SupabaseHttpError) {
+      if (conflict) {
         void boot.repositories.client.rpc('record_mutation_conflict', {
           p_action: 'payroll.save',
           p_entity_type: 'payroll',
@@ -102,9 +106,20 @@ const persistCommand = async (command: PayrollWorkflowCommand): Promise<void> =>
       // The server owns payroll authority. Rejected/stale local state is
       // replaced instead of being retried as a last-write-wins snapshot.
       await hydratePayrollFromSupabase().catch(() => undefined)
+      toast({
+        title: conflict ? 'Payroll changed elsewhere' : 'Payroll change not saved',
+        description: conflict
+          ? 'The latest payroll was reloaded. Reapply your change before saving again.'
+          : message,
+      })
       return
     }
+
     console.error(`Unable to persist payroll command ${command}.`, error)
+    toast({
+      title: 'Payroll change not saved',
+      description: message,
+    })
   }
 }
 

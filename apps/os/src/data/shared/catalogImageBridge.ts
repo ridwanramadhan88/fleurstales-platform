@@ -22,6 +22,8 @@ export interface CatalogImageRemoteSyncResult {
   product: CatalogProduct
 }
 
+const isBundledCatalogImagePath = (path?: string): boolean => Boolean(path?.startsWith('demo/'))
+
 const toMetadata = (image: CatalogProductImage): SharedProductImageMetadataInput | null => {
   if (!image.storagePath) return null
   return {
@@ -109,12 +111,17 @@ export const syncCatalogProductImagesToRemote = async (
 
     const storedImages: CatalogProductImage[] = plan.images.map((image) => ({
       ...image,
-      url: image.storagePath
+      // demo/... assets are bundled with the application, not stored in
+      // Supabase Storage. Keep their existing /catalog-demo/... URL until
+      // the user explicitly replaces them with a newly uploaded image.
+      url: image.storagePath && !isBundledCatalogImagePath(image.storagePath)
         ? shared.repositories.client.storagePublicUrl('product-images', image.storagePath)
         : image.url,
     }))
     const currentPaths = new Set(plan.metadata.map((image) => image.storagePath))
-    const removedPaths = [...previousPaths].filter((path) => !currentPaths.has(path))
+    const removedPaths = [...previousPaths].filter(
+      (path) => !currentPaths.has(path) && !isBundledCatalogImagePath(path),
+    )
     if (removedPaths.length > 0) {
       await shared.repositories.catalogAdmin.removeProductImageObjects(removedPaths)
     }

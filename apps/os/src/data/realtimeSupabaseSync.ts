@@ -11,6 +11,7 @@ import { hydrateAuthorizationFromSupabase } from './authorizationSupabaseSync'
 import { hydratePayrollFromSupabase } from './payrollSupabaseSync'
 import { hydrateInternalSettingsFromSupabase } from './internalSettingsSupabaseSync'
 import { connectOperationalSupabase, hydrateOperationalStateFromSupabase, stopOperationalSupabaseSync } from './operationalSupabaseSync'
+import { refreshEmployeePointsFromSupabase } from './employeePointsSupabaseSync'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
 import { mergeBusinessOsCustomerFromRemote, refreshBusinessOsCustomerMetricsFromRemote } from './shared/customerBridge'
 import { hydrateMyStaffOperations } from './staffOperationsSupabaseSync'
@@ -195,6 +196,19 @@ const queueOperationalHydrate = (): void => {
   }, 250)
 }
 
+let pointRefreshQueued = false
+let pointRefreshTimer: ReturnType<typeof setTimeout> | undefined
+const queuePointRefresh = (): void => {
+  if (pointRefreshQueued) return
+  pointRefreshQueued = true
+  if (pointRefreshTimer) clearTimeout(pointRefreshTimer)
+  pointRefreshTimer = setTimeout(() => {
+    pointRefreshQueued = false
+    pointRefreshTimer = undefined
+    void refreshEmployeePointsFromSupabase().catch(() => undefined)
+  }, 150)
+}
+
 const refreshAuthorizationRuntime = async (): Promise<void> => {
   await hydrateAuthorizationFromSupabase()
   await hydrateInternalSettingsFromSupabase().catch(() => undefined)
@@ -216,13 +230,18 @@ export const startRealtimeSupabaseSync = (): void => {
       void hydrateServerNotifications().catch(() => undefined)
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'business_activities' }, (payload) => {
-      const row = payload.new as { entity_type?: string }
+      const row = payload.new as { entity_type?: string; kind?: string }
       if (row.entity_type === 'payroll') {
         void hydratePayrollFromSupabase().catch(() => undefined)
         queueOperationalHydrate()
       }
-      if (row.entity_type === 'finance' || row.entity_type === 'hr' || row.entity_type === 'stock') {
+      if (row.entity_type === 'finance' || row.entity_type === 'stock') {
         queueOperationalHydrate()
+      }
+      if (row.entity_type === 'hr') {
+        if (row.kind === 'order_points_generated') queuePointRefresh()
+        else if (row.kind === 'attendance_recorded') queueRosterRefresh()
+        else queueOperationalHydrate()
       }
       if (row.entity_type === 'authorization') void refreshAuthorizationRuntime().catch(() => undefined)
       if (row.entity_type === 'internal_settings') void hydrateInternalSettingsFromSupabase().catch(() => undefined)
@@ -237,7 +256,7 @@ export const startRealtimeSupabaseSync = (): void => {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_attendance_records' }, queueRosterRefresh)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_roster_refresh_events' }, queueRosterRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_point_events' }, () => {
-      queueOperationalHydrate()
+      queuePointRefresh()
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
       queueOrderRefresh()
@@ -254,6 +273,12 @@ export const stopRealtimeSupabaseSync = (): void => {
   const client = getSupabaseAuthClient()
   const channel = realtimeChannel
   realtimeChannel = undefined
+  if (operationalHydrateTimer) clearTimeout(operationalHydrateTimer)
+  operationalHydrateTimer = undefined
+  operationalHydrateQueued = false
+  if (pointRefreshTimer) clearTimeout(pointRefreshTimer)
+  pointRefreshTimer = undefined
+  pointRefreshQueued = false
   if (client && channel) void client.removeChannel(channel)
 }
 

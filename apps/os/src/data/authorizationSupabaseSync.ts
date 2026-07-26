@@ -7,6 +7,7 @@ import { bootstrapSharedData } from './shared/bootstrap'
 import type { Json } from './shared/databaseTypes'
 import { browserSupabaseTokenProvider, getSupabaseBrowserSession } from './shared/supabaseSession'
 import { SupabaseHttpError } from './shared/supabaseHttpClient'
+import { toast } from '../hooks/use-toast'
 
 type AuthorizationResponse = {
   revision: number
@@ -134,11 +135,19 @@ const persistAuthorization = async (): Promise<void> => {
       // Never last-write-wins Owner permissions. Pull the authoritative matrix;
       // the Owner can review/reapply their change after the Settings UI refreshes.
       await hydrateAuthorizationFromSupabase().catch(() => undefined)
+      toast({
+        title: 'Permissions not saved',
+        description: 'Permissions changed in another session. The latest values were reloaded; reapply your change.',
+      })
       return
     }
     // Keep the local UI usable if Supabase is temporarily unavailable. The next
     // saved Settings change will retry because lastSerialized was not advanced.
     console.error('Unable to save Fleurstales authorization configuration.', error)
+    toast({
+      title: 'Permissions not saved',
+      description: error instanceof Error ? error.message : 'Unable to save permissions.',
+    })
   }
 }
 

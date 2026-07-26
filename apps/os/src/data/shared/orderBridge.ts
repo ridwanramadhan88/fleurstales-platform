@@ -6,6 +6,7 @@ import { sharedOrderToOrderTableRow } from './orderLocalAdapter'
 import { browserSupabaseTokenProvider } from './supabaseSession'
 import type { Json } from './databaseTypes'
 import { SupabaseHttpError } from './supabaseHttpClient'
+import { toast } from '../../hooks/use-toast'
 
 let stopOrderSync: (() => void) | undefined
 let syncGeneration = 0
@@ -191,11 +192,14 @@ export const refreshBusinessOsOrdersFromRemote = async (): Promise<boolean> => {
               },
             )
             confirmedRevisions.set(id, result.revision)
+            lastRefreshError = undefined
           } catch (error) {
             const isConflict = error instanceof SupabaseHttpError && (
               error.message.includes('REVISION_CONFLICT:order') ||
               (typeof error.payload === 'object' && error.payload !== null && 'code' in error.payload && error.payload.code === '40001')
             )
+            const message = error instanceof Error ? error.message : 'The order change was rejected.'
+
             // A stale or rejected mutation is never retried against a newer
             // revision. Pull the authoritative row instead of last-write-wins.
             await refreshConflictedOrder(id).catch(() => undefined)
@@ -207,6 +211,17 @@ export const refreshBusinessOsOrdersFromRemote = async (): Promise<boolean> => {
                 p_expected_revision: expectedRevision,
                 p_observed_revision: confirmedRevisions.get(id),
               }).catch(() => undefined)
+              lastRefreshError = 'Order changed elsewhere. The latest order was reloaded.'
+              toast({
+                title: 'Order changed elsewhere',
+                description: 'The latest order was reloaded. Reapply your change and save again.',
+              })
+            } else {
+              lastRefreshError = message
+              toast({
+                title: 'Order not saved',
+                description: message,
+              })
             }
             return
           }

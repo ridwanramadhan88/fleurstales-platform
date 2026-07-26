@@ -42,6 +42,9 @@ const saving = new Set<OperationalDomain>()
 const dirty = new Set<OperationalDomain>()
 const conflicted = new Set<OperationalDomain>()
 const syncedSnapshots = new Map<OperationalDomain, string>()
+const syncedSnapshotValues = new Map<OperationalDomain, Json>()
+let hrPointMutationDepth = 0
+const hrGenericSaveWaiters = new Set<() => void>()
 // Circuit breaker: if a domain racks up repeated conflicts in a short
 // window, something is retrying without making progress (a stale client,
 // or a feedback loop between realtime hydrates and auto-save). Once open,
@@ -223,7 +226,9 @@ const loadDomain = async (
       // perpetual "local edit" that doesn't exist and re-save on every
       // hydrate - which is exactly what was hammering Supabase.
       const appliedSnapshot = applyDomainSnapshot(domain, response.snapshot)
-      syncedSnapshots.set(domain, snapshotFingerprint(appliedSnapshot ?? response.snapshot))
+      const canonicalSnapshot = appliedSnapshot ?? response.snapshot
+      syncedSnapshotValues.set(domain, canonicalSnapshot)
+      syncedSnapshots.set(domain, snapshotFingerprint(canonicalSnapshot))
     }
     conflicted.delete(domain)
   }
@@ -232,6 +237,10 @@ const loadDomain = async (
 
 const persistDomain = async (domain: OperationalDomain): Promise<void> => {
   if (hydrationCoordinator.isHydrating || !getSupabaseBrowserSession() || !canWrite(domain) || conflicted.has(domain)) return
+  if (domain === 'hr' && hrPointMutationDepth > 0) {
+    dirty.add(domain)
+    return
+  }
   if (saving.has(domain)) {
     dirty.add(domain)
     return
@@ -243,6 +252,10 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
   saving.add(domain)
   try {
     do {
+      // A point command owns the HR revision while it is in flight. Preserve
+      // any pending generic HR edit and let it resume after the point command
+      // acknowledges the authoritative revision.
+      if (domain === 'hr' && hrPointMutationDepth > 0) return
       dirty.delete(domain)
       const expectedRevision = revisions.get(domain) ?? 0
       const snapshot = snapshotForDomain(domain)
@@ -267,6 +280,7 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
                 p_snapshot: snapshot,
               })
         revisions.set(domain, response.revision)
+        syncedSnapshotValues.set(domain, snapshot)
         syncedSnapshots.set(domain, fingerprint)
         updateHealth({
           status: 'saved',
@@ -306,18 +320,61 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
     } while (dirty.has(domain))
   } finally {
     saving.delete(domain)
+    if (domain === 'hr' && hrGenericSaveWaiters.size > 0) {
+      const waiters = [...hrGenericSaveWaiters]
+      hrGenericSaveWaiters.clear()
+      for (const resolve of waiters) resolve()
+    }
   }
 }
 
 const schedule = (domain: OperationalDomain): void => {
   if (hydrationCoordinator.isHydrating || !getSupabaseBrowserSession() || !canWrite(domain) || conflicted.has(domain)) return
   dirty.add(domain)
+  if (domain === 'hr' && hrPointMutationDepth > 0) return
   const existing = timers.get(domain)
   if (existing) clearTimeout(existing)
   timers.set(domain, setTimeout(() => {
     timers.delete(domain)
     void persistDomain(domain)
   }, 350))
+}
+
+/**
+ * Dedicated point RPCs and the generic HR snapshot share one revision counter.
+ * These helpers serialize the two writers without allowing either one to mark
+ * unrelated local HR edits as saved.
+ */
+export const beginHrPointMutation = async (): Promise<void> => {
+  hrPointMutationDepth += 1
+  const pendingTimer = timers.get('hr')
+  if (pendingTimer) {
+    clearTimeout(pendingTimer)
+    timers.delete('hr')
+  }
+  if (saving.has('hr')) {
+    await new Promise<void>((resolve) => hrGenericSaveWaiters.add(resolve))
+  }
+}
+
+export const acknowledgeHrPointProjection = (nextRevision: number, pointEntries: Json): void => {
+  if (!Number.isFinite(nextRevision) || !Array.isArray(pointEntries)) return
+  revisions.set('hr', nextRevision)
+
+  const baseline = syncedSnapshotValues.get('hr')
+  if (!isRecord(baseline)) return
+
+  const nextBaseline = {
+    ...baseline,
+    employeePointEntries: pointEntries,
+  } as Json
+  syncedSnapshotValues.set('hr', nextBaseline)
+  syncedSnapshots.set('hr', snapshotFingerprint(nextBaseline))
+}
+
+export const endHrPointMutation = (): void => {
+  hrPointMutationDepth = Math.max(0, hrPointMutationDepth - 1)
+  if (hrPointMutationDepth === 0 && dirty.has('hr')) schedule('hr')
 }
 
 const hydrateOperationalState = async (): Promise<boolean> => {
@@ -387,6 +444,10 @@ export const stopOperationalSupabaseSync = (): void => {
   conflictStreaks.clear()
   circuitOpen.clear()
   syncedSnapshots.clear()
+  syncedSnapshotValues.clear()
+  hrPointMutationDepth = 0
+  for (const resolve of hrGenericSaveWaiters) resolve()
+  hrGenericSaveWaiters.clear()
   saving.clear()
   unsubscribers.forEach((unsubscribe) => unsubscribe())
   unsubscribers = []

@@ -3,6 +3,7 @@ import type { CustomerProfile } from '../../store/customerStoreTypes'
 import type { CustomerBusinessMetric, SharedCustomer } from './contracts'
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider } from './supabaseSession'
+import { SupabaseHttpError } from './supabaseHttpClient'
 import { toast } from '../../hooks/use-toast'
 
 let stopCustomerSync: (() => void) | undefined
@@ -17,7 +18,12 @@ let conflicted = new Set<string>()
 let conflictLocalRevisions = new Map<string, number>()
 let retryAttempts = new Map<string, number>()
 let retryTimers = new Map<string, ReturnType<typeof setTimeout>>()
+let deleteRetryAttempts = new Map<string, number>()
+let deleteRetryTimers = new Map<string, ReturnType<typeof setTimeout>>()
 let lastRefreshError: string | undefined
+
+const CUSTOMER_MAX_RETRY_ATTEMPTS = 5
+const DELETE_MAX_ATTEMPTS = 3
 
 export const getBusinessOsCustomersRefreshError = (): string | undefined => lastRefreshError
 
@@ -35,6 +41,9 @@ export const stopBusinessOsCustomerBridge = (): void => {
   retryAttempts = new Map()
   for (const timer of retryTimers.values()) clearTimeout(timer)
   retryTimers = new Map()
+  deleteRetryAttempts = new Map()
+  for (const timer of deleteRetryTimers.values()) clearTimeout(timer)
+  deleteRetryTimers = new Map()
 }
 
 const toSharedCustomer = (customer: CustomerProfile): SharedCustomer => ({
@@ -91,9 +100,54 @@ const clearRetry = (customerId: string): void => {
   retryAttempts.delete(customerId)
 }
 
+const clearDeleteRetry = (customerId: string): void => {
+  const timer = deleteRetryTimers.get(customerId)
+  if (timer) clearTimeout(timer)
+  deleteRetryTimers.delete(customerId)
+  deleteRetryAttempts.delete(customerId)
+}
+
+const isCustomerConflict = (error: unknown): boolean =>
+  error instanceof SupabaseHttpError &&
+  (error.message.includes('CUSTOMER_CONFLICT') ||
+    (typeof error.payload === 'object' && error.payload !== null &&
+      'code' in error.payload && error.payload.code === '40001'))
+
+const isTransientCustomerError = (error: unknown): boolean => {
+  if (!(error instanceof SupabaseHttpError)) return true
+  return error.status === 408 || error.status === 429 || error.status >= 500
+}
+
+const restoreCustomer = (id: string, remote?: SharedCustomer | null): void => {
+  const restored = remote ? fromShared(remote) : confirmedSnapshots.get(id)
+  if (!restored) return
+  applyingRemote = true
+  try {
+    useCustomerStore.setState((state) => ({
+      customers: state.customers.some((item) => item.id === id)
+        ? state.customers.map((item) => item.id === id ? restored : item)
+        : [restored, ...state.customers],
+    }))
+  } finally {
+    applyingRemote = false
+  }
+  confirmed.set(id, restored.revision ?? confirmed.get(id) ?? 1)
+  confirmedSnapshots.set(id, restored)
+}
+
 const scheduleRetry = (customerId: string, currentGeneration = generation): void => {
   if (currentGeneration !== generation || conflicted.has(customerId) || retryTimers.has(customerId)) return
   const attempt = (retryAttempts.get(customerId) ?? 0) + 1
+  if (attempt > CUSTOMER_MAX_RETRY_ATTEMPTS) {
+    dirty.delete(customerId)
+    restoreCustomer(customerId)
+    clearRetry(customerId)
+    toast({
+      title: 'Customer not saved',
+      description: 'Supabase could not save this customer after several attempts. The last confirmed profile was restored.',
+    })
+    return
+  }
   retryAttempts.set(customerId, attempt)
   const delay = Math.min(30_000, 750 * (2 ** Math.min(attempt - 1, 5)))
   const timer = setTimeout(() => {
@@ -150,9 +204,31 @@ const flushCustomer = async (id: string, currentGeneration = generation): Promis
       try {
         const saved = await shared.repositories.customersAdmin.saveCustomer(toSharedCustomer(customer), expected)
         applyRemote(saved, currentGeneration)
-      } catch {
+      } catch (error) {
+        if (!isCustomerConflict(error)) {
+          if (isTransientCustomerError(error)) {
+            dirty.add(id)
+            scheduleRetry(id, currentGeneration)
+            break
+          }
+
+          const remoteShared = await shared.repositories.customersAdmin.getCustomer(id).catch(() => null)
+          restoreCustomer(id, remoteShared)
+          dirty.delete(id)
+          clearRetry(id)
+          toast({
+            title: 'Customer not saved',
+            description: error instanceof Error ? error.message : 'The customer change was rejected.',
+          })
+          break
+        }
+
         const remoteShared = await shared.repositories.customersAdmin.getCustomer(id).catch(() => null)
-        if (!remoteShared) { dirty.add(id); scheduleRetry(id, currentGeneration); break }
+        if (!remoteShared) {
+          dirty.add(id)
+          scheduleRetry(id, currentGeneration)
+          break
+        }
         const remote = fromShared(remoteShared)
         const base = confirmedSnapshots.get(id) ?? remote
         const latestLocal = useCustomerStore.getState().customers.find((item) => item.id === id) ?? customer
@@ -169,30 +245,58 @@ const flushCustomer = async (id: string, currentGeneration = generation): Promis
     } while (dirty.has(id) && !conflicted.has(id))
   } finally {
     inFlight.delete(id)
-    if (dirty.has(id) && !conflicted.has(id)) scheduleRetry(id, currentGeneration)
+    if (dirty.has(id) && !conflicted.has(id) && !retryTimers.has(id)) scheduleRetry(id, currentGeneration)
   }
 }
 
 const flushDelete = async (id: string, expected: number): Promise<void> => {
-  if (pendingDeletes.has(id)) return
+  if (pendingDeletes.has(id) || deleteRetryTimers.has(id)) return
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
   if (!shared.enabled) return
+
+  const attempt = (deleteRetryAttempts.get(id) ?? 0) + 1
+  deleteRetryAttempts.set(id, attempt)
   pendingDeletes.add(id)
+
   try {
     await shared.repositories.customersAdmin.deleteCustomer(id, expected)
     confirmed.delete(id)
     confirmedSnapshots.delete(id)
-  } catch {
+    clearDeleteRetry(id)
+  } catch (error) {
     const remote = await shared.repositories.customersAdmin.getCustomer(id).catch(() => null)
-    const nextExpected = remote?.revision ?? expected
-    if (!retryTimers.has(`delete:${id}`)) {
-      const timer = setTimeout(() => {
-        retryTimers.delete(`delete:${id}`)
-        void flushDelete(id, nextExpected)
-      }, 2_000)
-      retryTimers.set(`delete:${id}`, timer)
+
+    if (isCustomerConflict(error) || (remote && remote.revision !== expected)) {
+      restoreCustomer(id, remote)
+      clearDeleteRetry(id)
+      toast({
+        title: 'Customer not deleted',
+        description: 'This customer changed in another session. The latest customer profile was restored.',
+      })
+      return
     }
-  } finally { pendingDeletes.delete(id) }
+
+    if (isTransientCustomerError(error) && attempt < DELETE_MAX_ATTEMPTS) {
+      const delay = 750 * (2 ** (attempt - 1))
+      const timer = setTimeout(() => {
+        deleteRetryTimers.delete(id)
+        void flushDelete(id, expected)
+      }, delay)
+      deleteRetryTimers.set(id, timer)
+      return
+    }
+
+    restoreCustomer(id, remote)
+    clearDeleteRetry(id)
+    toast({
+      title: 'Customer not deleted',
+      description: error instanceof Error
+        ? error.message
+        : 'The customer could not be deleted. The profile was restored.',
+    })
+  } finally {
+    pendingDeletes.delete(id)
+  }
 }
 
 /** Merges one Realtime customer row without replacing unrelated dirty forms. */

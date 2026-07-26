@@ -300,7 +300,10 @@ export const flushBusinessOsStoreSync = async (): Promise<boolean> => {
       snapshot,
     })
     remoteRevision = result.revision
-    lastSyncedHash = currentHash
+    // A data-URL logo may have been replaced in the local store with its
+    // canonical Storage URL above. Baseline the state that actually exists
+    // after the successful save, not the pre-upload hash.
+    lastSyncedHash = snapshotHash()
     succeeded = true
     setBridgeStatus({
       phase: 'remote',
