@@ -3,15 +3,13 @@ import {
   getCatalogProductImageUrls,
   getCatalogProductPrimaryImageUrl,
 } from '../../domain/catalogImageDomain'
-import { getStorefrontDummyGallery, getStorefrontDummyThumbnail } from './storefrontDummyImages'
-
-/** Canonical product media wins; bundled photography is only a visual fallback. */
+/** Storefront media comes only from the canonical product-image records. */
 export const getStorefrontProductThumbnail = (product: CatalogProduct): string =>
-  getCatalogProductPrimaryImageUrl(product) ?? getStorefrontDummyThumbnail(product.id)
+  getCatalogProductPrimaryImageUrl(product) ?? ''
 
 export const getStorefrontProductGallery = (product: CatalogProduct): string[] => {
   const canonical = getCatalogProductImageUrls(product)
-  return canonical.length > 0 ? canonical : getStorefrontDummyGallery(product.id)
+  return canonical
 }
 
 export const getStorefrontProductThumbnailById = (
@@ -19,5 +17,5 @@ export const getStorefrontProductThumbnailById = (
   productId: string,
 ): string => {
   const product = products.find((item) => item.id === productId)
-  return product ? getStorefrontProductThumbnail(product) : getStorefrontDummyThumbnail(productId)
+  return product ? getStorefrontProductThumbnail(product) : ''
 }

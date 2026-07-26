@@ -250,7 +250,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
     />
 
     <div className="flex flex-col gap-5 md:gap-4">
-      <div className="order-1 no-scrollbar -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 lg:grid-cols-6 md:order-2">
+      <div className="order-1 no-scrollbar -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 lg:grid-cols-6 md:order-2">
         <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Staff" value={staff.length} />
         <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="OFF" value={totalOff} />
         <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Unassigned" value={totalUnassigned} tone={totalUnassigned ? 'warning' : 'default'} />
@@ -311,7 +311,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
 
     <section className="space-y-4 md:hidden">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-        <div ref={dayScrollRef} className="no-scrollbar flex min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto">
+        <div ref={dayScrollRef} className="no-scrollbar flex min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-1">
           {weekDates.map((date)=><button key={date} type="button" onClick={(event)=>{setSelectedDate(date);event.currentTarget.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'})}} className={`inline-flex h-10 w-[104px] shrink-0 snap-start items-center justify-center whitespace-nowrap rounded-full px-3 text-xs font-semibold ${selectedDate===date?'bg-foreground text-background':'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{formatDay(date)}</button>)}
         </div>
         <button
@@ -328,7 +328,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
     </section>
 
     <div className={`${mobileMode === 'week' ? 'block' : 'hidden'} relative w-full min-w-0 overflow-hidden rounded-xl bg-card ring-1 ring-border/60 md:block`}>
-      <div className="no-scrollbar w-full overscroll-x-contain overflow-x-auto pb-3">
+      <div className="no-scrollbar w-full overscroll-x-contain overflow-x-auto px-1 pb-3 pt-1">
         <table className="w-[1042px] min-w-[1042px] table-fixed border-separate border-spacing-0 text-[10px] xl:w-full xl:min-w-0">
           <colgroup>
             <col className="w-[148px]" />

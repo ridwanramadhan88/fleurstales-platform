@@ -64,7 +64,7 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
     <nav
       ref={navRef}
       aria-label="Finance modules"
-      className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scroll-px-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:p-0"
+      className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 scroll-px-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:p-0"
     >
       {modules.map((module) => {
         const item = ITEMS[module];

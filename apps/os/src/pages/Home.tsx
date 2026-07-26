@@ -73,6 +73,7 @@ import {
   type AppNavigationRequest,
   type AppTabId,
 } from '../config/appNavigation'
+import { PersistenceHealthNotice } from '../components/system/PersistenceHealthNotice'
 
 export type { AppTabId } from '../config/appNavigation'
 
@@ -663,6 +664,7 @@ const HomePage: FC<HomePageProps> = ({
             onOpenNewOrder={() => { if (activeBranch === 'All') return; setEditingOrderDraftId(null); setIsNewOrderOpen(true) }}
           />
         </div>
+        <PersistenceHealthNotice />
       </div>
 
       {/* New Order sheet overlay, opened from the main button or bottom tab bar */}

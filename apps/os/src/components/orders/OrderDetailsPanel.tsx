@@ -30,7 +30,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       <OrderDetailsHeader viewModel={viewModel} />
       <OrderDetailsFinanceSection viewModel={viewModel} />
 
-      <div className="mt-3 min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-6 pt-1 text-sm text-foreground/90">
+      <div className="mt-3 min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-1 pb-6 pt-1 text-sm text-foreground/90">
         <div className="space-y-7 sm:grid sm:grid-cols-5 sm:items-start sm:gap-7 sm:space-y-0">
           <div className="space-y-6 sm:col-span-3">
             <div className="space-y-3">

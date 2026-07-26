@@ -73,7 +73,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
 
       <section aria-label="Employee filters" className="flex flex-col gap-3 border-y border-border/60 py-3 md:flex-row md:items-center">
         <select aria-label="Filter employees by role" value={employeeRoleFilter} onChange={(event) => vm.onEmployeeRoleFilterChange(event.target.value as typeof employeeRoleFilter)} className={`${inputClass} md:w-56`}><option value="all">All roles</option>{assignableRoles.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}</select>
-        <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto md:flex-wrap md:overflow-visible">
+        <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto px-1 py-1 md:flex-wrap md:overflow-visible md:px-0">
           {(['all', 'active', 'inactive'] as EmployeeStatusFilter[]).map((option) => <FilterChip key={option} active={option === statusFilter} onClick={() => vm.onStatusFilterChange(option)} className="capitalize">{option}</FilterChip>)}
         </div>
         <span className="shrink-0 text-sm text-muted-foreground md:ml-auto">{employeeRows.length} results</span>
@@ -163,7 +163,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
     </AlertDialog>
 
     <Dialog open={Boolean(detailsEmployee)} onOpenChange={(open) => { if (!open) vm.onCloseEmployeeDetails() }}>
-      <DialogContent className="mobile-focus-workflow max-w-5xl overflow-hidden p-0"><div className="border-b border-border px-5 py-4"><DialogHeader><DialogTitle>Employee details</DialogTitle><DialogDescription>Review one employee area at a time.</DialogDescription></DialogHeader><div className="mt-3 flex gap-2 overflow-x-auto">{(['profile','access'] as const).map((section)=><button key={section} type="button" onClick={()=>setDetailsSection(section)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${detailsSection===section?'bg-foreground text-background':'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{section==='access'?'Access & Work':'Profile'}</button>)}</div></div>
+      <DialogContent className="mobile-focus-workflow max-w-5xl overflow-hidden p-0"><div className="border-b border-border px-5 py-4"><DialogHeader><DialogTitle>Employee details</DialogTitle><DialogDescription>Review one employee area at a time.</DialogDescription></DialogHeader><div className="no-scrollbar -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 py-1">{(['profile','access'] as const).map((section)=><button key={section} type="button" onClick={()=>setDetailsSection(section)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${detailsSection===section?'bg-foreground text-background':'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{section==='access'?'Access & Work':'Profile'}</button>)}</div></div>
         {detailsEmployee && detailsForm && <div className="max-h-[70dvh] space-y-4 overflow-y-auto px-5 py-4">
           <section className={`${detailsSection==='profile'?'block':'hidden'} rounded-xl bg-muted/35 p-4 ring-1 ring-border/60`}>
             <div className="mb-3"><h3 className="text-sm font-semibold leading-5">Profile</h3><p className="text-xs text-muted-foreground">Personal and employment information. This does not change login access.</p></div>

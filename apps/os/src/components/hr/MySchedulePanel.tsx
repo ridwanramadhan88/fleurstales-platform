@@ -46,7 +46,7 @@ export const MySchedulePanel:FC = () => {
       </div>
     </div>
 
-    <div className="no-scrollbar -mx-4 mt-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 scroll-px-4 sm:-mx-5 sm:px-5 md:mx-0 md:grid md:grid-cols-7 md:gap-2 md:overflow-visible md:px-0">
+    <div className="no-scrollbar -mx-4 mt-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 py-1 scroll-px-4 sm:-mx-5 sm:px-5 md:mx-0 md:grid md:grid-cols-7 md:gap-2 md:overflow-visible md:px-0">
       {week.map(({date,assignment})=><div key={date} className={`w-[5.25rem] shrink-0 snap-start rounded-xl px-2 py-3 text-center ring-1 md:w-auto ${date===today?'bg-primary/10 ring-primary/30':'bg-background ring-border/60'}`}>
         <p className="text-2xs font-semibold text-muted-foreground">{formatDay(date).split(' ')[0]}</p>
         <p className="mt-0.5 text-xs font-semibold">{new Date(`${date}T00:00:00`).getDate()}</p>

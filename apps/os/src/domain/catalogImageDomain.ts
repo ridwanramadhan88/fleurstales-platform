@@ -2,7 +2,7 @@ import type { CatalogImageMimeType, CatalogProduct, CatalogProductImage } from '
 
 export const CATALOG_IMAGE_SIZE_PX = 800
 export const CATALOG_IMAGE_MAX_BYTES = 100 * 1024
-export const CATALOG_IMAGE_MAX_COUNT = 6
+export const CATALOG_IMAGE_MAX_COUNT = 5
 export const CATALOG_IMAGE_BUCKET = 'product-images'
 export const CATALOG_IMAGE_MIME_TYPE: CatalogImageMimeType = 'image/jpeg'
 

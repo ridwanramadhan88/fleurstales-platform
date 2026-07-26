@@ -79,7 +79,7 @@ export const CatalogFiltersBar: FC<CatalogFiltersBarProps> = ({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="mb-1 text-sm font-semibold text-muted-foreground">{label}</p>
-          <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto border-b border-border px-0.5 md:flex-wrap md:overflow-visible">
+          <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto border-b border-border px-0.5 pt-1 md:flex-wrap md:overflow-visible md:pt-0">
             {categories.map((category) => {
               const active = categoryFilter === category
               return (

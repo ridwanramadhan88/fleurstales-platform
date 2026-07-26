@@ -75,7 +75,7 @@ export const CatalogPromoFeatureDialog: FC<CatalogPromoFeatureDialogViewModel> =
           />
         </div>
 
-        <div className="max-h-[50vh] space-y-2 overflow-y-auto">
+        <div className="max-h-[50vh] space-y-2 overflow-y-auto px-1 py-1">
           {activeProducts.length === 0 && (
             <p className="py-4 text-center text-xs text-muted-foreground">
               No active products match your search.

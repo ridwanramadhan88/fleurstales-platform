@@ -524,7 +524,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
         )}
 
         {compareMode !== 'single' && (
-        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
+        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto py-1 sm:grid sm:grid-cols-3 sm:overflow-visible sm:py-0">
           {(() => {
             const firstLabel = compareMode === 'period_vs_period'
               ? `${trendMetric === 'revenue' ? 'Revenue' : 'Expense'} · selected period`

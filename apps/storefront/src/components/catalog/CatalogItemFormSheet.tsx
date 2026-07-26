@@ -24,7 +24,7 @@ import { AppSheet } from '../ui/app-sheet'
 import { ActionFooter } from '../ui/action-footer'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { FormSection, ValidationSummary } from '../ui/form-patterns'
-import { getCatalogProductImageAliases, normalizeCatalogProductImages } from '../../domain/catalogImageDomain'
+import { CATALOG_IMAGE_MAX_COUNT, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../../domain/catalogImageDomain'
 
 export interface CatalogItemFormSheetProps {
   open: boolean
@@ -225,7 +225,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     const customerFacingName = collection ? `${collection} - ${unprefixedName}` : typedName
 
     const normalizedImages = form.images
-      .slice(0, 6)
+      .slice(0, CATALOG_IMAGE_MAX_COUNT)
       .map((image, index) => ({ ...image, altText: customerFacingName, sortOrder: index, isPrimary: index === 0 }))
     const imageAliases = getCatalogProductImageAliases(normalizedImages)
 

@@ -112,7 +112,7 @@ export const settingsTabTrackClass = ({
     "no-scrollbar flex w-full min-w-0 items-center overflow-x-auto overscroll-x-contain scroll-smooth",
     "touch-pan-x snap-x snap-proximity",
     level === "primary"
-      ? "gap-7 border-b border-border/70 bg-transparent px-0 py-0 sm:gap-9 md:overflow-visible md:overscroll-auto md:snap-none"
+      ? "gap-7 border-b border-border/70 bg-transparent px-1 pt-1 sm:gap-9 md:overflow-visible md:overscroll-auto md:px-0 md:pt-0 md:snap-none"
       : "gap-1.5 rounded-[1.25rem] bg-muted/55 p-1.5 sm:gap-2 md:flex-wrap md:overflow-visible md:overscroll-auto md:snap-none",
     className,
   );

@@ -91,7 +91,7 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
         aria-modal="true"
         aria-label={`Order ${order.orderNumber} details (read-only)`}
         onClick={(event) => event.stopPropagation()}
-        className="animate-sheet-up relative flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-2xl bg-card p-4 shadow-ios-lg ring-1 ring-border/60 sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl sm:p-5 md:max-w-6xl md:p-6"
+        className="animate-sheet-up relative flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-2xl border border-border/60 bg-card p-4 shadow-ios-lg sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl sm:p-5 md:max-w-6xl md:p-6"
       >
         <OrderFinanceReviewSheetHeader
           order={order}
@@ -108,7 +108,7 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
           horizontalCurrentIndex={horizontalCurrentIndex}
         />
 
-        <div className="mt-1 min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-4 pt-0.5 text-sm text-foreground/90">
+        <div className="mt-1 min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-1 pb-4 pt-1 text-sm text-foreground/90">
           <div className="space-y-6 sm:grid sm:grid-cols-5 sm:items-start sm:gap-6 sm:space-y-0">
             <OrderFinanceReviewSheetDetails
               order={order}

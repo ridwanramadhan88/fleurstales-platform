@@ -113,11 +113,16 @@ const mapVariant = (
   ...(costByVariantId.has(row.id) ? { costIdr: costByVariantId.get(row.id) ?? null } : {}),
 })
 
+const productImagePublicUrl = (client: SupabaseHttpClient, storagePath: string): string =>
+  storagePath.startsWith('demo/')
+    ? `/catalog-demo/${storagePath.split('/').pop() ?? ''}`
+    : client.storagePublicUrl('product-images', storagePath)
+
 const mapImage = (client: SupabaseHttpClient, row: ProductImageRow): SharedProductImage => ({
   id: row.id,
   productId: row.product_id,
   storagePath: row.storage_path,
-  publicUrl: client.storagePublicUrl('product-images', row.storage_path),
+  publicUrl: productImagePublicUrl(client, row.storage_path),
   altText: optional(row.alt_text),
   sortOrder: row.sort_order,
   isPrimary: row.is_primary,

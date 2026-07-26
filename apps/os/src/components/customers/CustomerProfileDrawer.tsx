@@ -147,7 +147,7 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
             region (min-h-0 so it actually shrinks within the flex column)
             rather than three separately-scrolling boxes, and the footer
             lives outside it entirely so it can never overlap content. */}
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden pb-4 pt-0.5 md:grid md:grid-cols-[minmax(18rem,0.9fr)_minmax(24rem,1.1fr)] md:items-start md:gap-4 md:space-y-0">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-1 pb-4 pt-1 md:grid md:grid-cols-[minmax(18rem,0.9fr)_minmax(24rem,1.1fr)] md:items-start md:gap-4 md:space-y-0">
           <div className="space-y-3">
           <section className="grid grid-cols-2 gap-3 rounded-xl bg-card px-4 py-4 ring-1 ring-border/70">
             <div className="flex items-start gap-2">

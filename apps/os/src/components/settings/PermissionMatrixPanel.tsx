@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useMemo, useState, type FC } from 'react'
-import { CheckCircle2, ChevronDown, Lock, RotateCcw, Settings2, ShieldCheck, Users } from 'lucide-react'
+import { CheckCircle2, Lock, RotateCcw, Settings2, ShieldCheck, Users } from 'lucide-react'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion'
 import { Switch } from '../ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
@@ -365,10 +365,9 @@ export const PermissionMatrixPanel: FC<Props> = ({
             <label className="space-y-1.5">
               <span className="text-xs font-semibold">Configure role</span>
               <div className="relative">
-                <select value={role} onChange={(event) => setSelectedRole(event.target.value as UserRole)} className="h-10 w-full appearance-none rounded-full border border-border bg-background px-3 pr-9 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20">
+                <select value={role} onChange={(event) => setSelectedRole(event.target.value as UserRole)} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20">
                   {roles.map((item) => <option key={item} value={item}>{ROLE_LABELS[item]}</option>)}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               </div>
             </label>
             <div className="flex flex-wrap items-center gap-3">
@@ -430,7 +429,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
 
         {showAdvanced && (
         <Tabs value={activeSector} onValueChange={(value) => setActiveSector(value as Sector | 'summary')}>
-          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-border/70 bg-surface-panel p-1">
+          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-border/70 bg-surface-panel p-1.5">
             {SECTORS.map((sector) => <TabsTrigger key={sector.id} value={sector.id} className="whitespace-nowrap text-xs">{sector.id}</TabsTrigger>)}
             <TabsTrigger value="summary" className="whitespace-nowrap text-xs">Summary</TabsTrigger>
           </TabsList>

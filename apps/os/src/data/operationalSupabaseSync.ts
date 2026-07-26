@@ -17,6 +17,7 @@ import {
   readOrderDraftRecords,
   writeOrderDraftRecords,
 } from '../store/orderDraftPersistence'
+import { createHydrationCoordinator } from './hydrationCoordinator'
 
 type Slice = Record<string, unknown>
 type OperationalDomain = 'hr' | 'payroll' | 'finance' | 'stock' | 'vouchers' | 'order_drafts'
@@ -41,7 +42,7 @@ const dirty = new Set<OperationalDomain>()
 const conflicted = new Set<OperationalDomain>()
 let unsubscribers: Array<() => void> = []
 let stopDraftListener: (() => void) | undefined
-let syncing = false
+const hydrationCoordinator = createHydrationCoordinator()
 
 const client = () => bootstrapSharedData(browserSupabaseTokenProvider)
 const canRead = (domain: OperationalDomain): boolean => {
@@ -108,41 +109,36 @@ const snapshotForDomain = (domain: OperationalDomain): Json => {
 }
 
 const applyDomainSnapshot = (domain: OperationalDomain, snapshot: Json): void => {
-  syncing = true
-  try {
-    switch (domain) {
-      case 'hr': {
-        if (!isRecord(snapshot)) return
-        const localEmployees = useHrStore.getState().employees
-        const remoteHr = { ...snapshot }
-        if (Array.isArray(remoteHr.employees)) {
-          remoteHr.employees = remoteHr.employees.map((employee) => {
-            if (!isRecord(employee)) return employee
-            const local = localEmployees.find((candidate) => candidate.id === employee.id)
-            return local ? { ...employee, pin: local.pin } : employee
-          })
-        }
-        useHrStore.setState(remoteHr as never, false)
-        return
+  switch (domain) {
+    case 'hr': {
+      if (!isRecord(snapshot)) return
+      const localEmployees = useHrStore.getState().employees
+      const remoteHr = { ...snapshot }
+      if (Array.isArray(remoteHr.employees)) {
+        remoteHr.employees = remoteHr.employees.map((employee) => {
+          if (!isRecord(employee)) return employee
+          const local = localEmployees.find((candidate) => candidate.id === employee.id)
+          return local ? { ...employee, pin: local.pin } : employee
+        })
       }
-      case 'payroll':
-        if (isRecord(snapshot)) usePayrollStore.setState(snapshot as never, false)
-        return
-      case 'finance':
-        if (isRecord(snapshot)) useFinanceStore.setState(snapshot as never, false)
-        return
-      case 'stock':
-        if (isRecord(snapshot)) useStockStore.setState(snapshot as never, false)
-        return
-      case 'vouchers':
-        if (isRecord(snapshot)) useVoucherStore.setState(snapshot as never, false)
-        return
-      case 'order_drafts':
-        if (Array.isArray(snapshot)) writeOrderDraftRecords(snapshot)
-        return
+      useHrStore.setState(remoteHr as never, false)
+      return
     }
-  } finally {
-    syncing = false
+    case 'payroll':
+      if (isRecord(snapshot)) usePayrollStore.setState(snapshot as never, false)
+      return
+    case 'finance':
+      if (isRecord(snapshot)) useFinanceStore.setState(snapshot as never, false)
+      return
+    case 'stock':
+      if (isRecord(snapshot)) useStockStore.setState(snapshot as never, false)
+      return
+    case 'vouchers':
+      if (isRecord(snapshot)) useVoucherStore.setState(snapshot as never, false)
+      return
+    case 'order_drafts':
+      if (Array.isArray(snapshot)) writeOrderDraftRecords(snapshot)
+      return
   }
 }
 
@@ -168,7 +164,7 @@ const loadDomain = async (domain: OperationalDomain, apply = true): Promise<Oper
 }
 
 const persistDomain = async (domain: OperationalDomain): Promise<void> => {
-  if (syncing || !getSupabaseBrowserSession() || !canWrite(domain) || conflicted.has(domain)) return
+  if (hydrationCoordinator.isHydrating || !getSupabaseBrowserSession() || !canWrite(domain) || conflicted.has(domain)) return
   if (saving.has(domain)) {
     dirty.add(domain)
     return
@@ -240,7 +236,7 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
 }
 
 const schedule = (domain: OperationalDomain): void => {
-  if (syncing || !getSupabaseBrowserSession() || !canWrite(domain) || conflicted.has(domain)) return
+  if (hydrationCoordinator.isHydrating || !getSupabaseBrowserSession() || !canWrite(domain) || conflicted.has(domain)) return
   dirty.add(domain)
   const existing = timers.get(domain)
   if (existing) clearTimeout(existing)
@@ -250,7 +246,7 @@ const schedule = (domain: OperationalDomain): void => {
   }, 350))
 }
 
-export const hydrateOperationalStateFromSupabase = async (): Promise<boolean> => {
+const hydrateOperationalState = async (): Promise<boolean> => {
   if (!getSupabaseBrowserSession()) return false
   const boot = client()
   if (!boot.enabled) return false
@@ -271,6 +267,9 @@ export const hydrateOperationalStateFromSupabase = async (): Promise<boolean> =>
   }
   return allSucceeded
 }
+
+export const hydrateOperationalStateFromSupabase = (): Promise<boolean> =>
+  hydrationCoordinator.run(hydrateOperationalState)
 
 export const startOperationalSupabaseSync = (): void => {
   if (unsubscribers.length || stopDraftListener) return

@@ -39,7 +39,7 @@ export const SEED_CATEGORIES: CatalogCategoryConfig[] = [
   }
 ]
 
-/** Final catalog rebuilt only from the approved CSV. Dummy images remain UI fallbacks and are not stored as products. */
+/** Final catalog rebuilt only from the approved CSV. Product images are hydrated from canonical product-image records. */
 export const SEED_PRODUCTS: CatalogProduct[] = [
   {
     "id": "catalog_petite_rainbow_001",

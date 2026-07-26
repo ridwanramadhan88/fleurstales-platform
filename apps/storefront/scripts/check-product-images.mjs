@@ -38,7 +38,7 @@ for (const token of [
 }
 
 for (const token of [
-  'CATALOG_IMAGE_MAX_COUNT = 6',
+  'CATALOG_IMAGE_MAX_COUNT = 5',
   'CATALOG_IMAGE_MAX_BYTES = 100 * 1024',
   'normalizeCatalogProductImages',
   'prepareCatalogImageUpload',

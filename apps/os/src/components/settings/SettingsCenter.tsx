@@ -240,7 +240,7 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
 
   return (
     <section
-      className={`min-w-0 overflow-x-clip pb-2 flex flex-col gap-3 ${isEditing ? "mobile-focus-workflow" : ""}`}
+      className={`min-w-0 pb-2 flex flex-col gap-3 ${isEditing ? "mobile-focus-workflow" : ""}`}
     >
       <header className="mb-2 flex items-center gap-3">
         <span className="inline-flex size-9 items-center justify-center rounded-lg bg-card ring-1 ring-border/70">

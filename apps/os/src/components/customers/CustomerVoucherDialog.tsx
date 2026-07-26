@@ -73,7 +73,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
 
         {!formOpen ? (
           <>
-            <div className="max-h-[58vh] space-y-2 overflow-y-auto md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
+            <div className="max-h-[58vh] space-y-2 overflow-y-auto px-1 py-1 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
               {sortedVouchers.length === 0 && (
                 <p className="py-4 text-center text-xs text-muted-foreground">
                   No vouchers yet. Create one below.

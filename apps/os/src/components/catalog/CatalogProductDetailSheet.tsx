@@ -44,7 +44,7 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="animate-sheet-up max-h-[94vh] w-full overflow-y-auto rounded-t-2xl bg-card shadow-ios-lg ring-1 ring-border/60 sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl md:max-w-5xl"
+        className="animate-sheet-up max-h-[94vh] w-full overflow-y-auto rounded-t-2xl border border-border/60 bg-card shadow-ios-lg sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl md:max-w-5xl"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-2 border-b border-border/70 px-5 py-3.5 md:px-6 md:py-4">
