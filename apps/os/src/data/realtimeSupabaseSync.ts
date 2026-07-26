@@ -175,6 +175,26 @@ const queueOrderRefresh = (): void => {
   })
 }
 
+// employee_point_events and the operational-domain business_activities rows
+// can each fire many times in quick succession (e.g. one HR save can touch
+// several point-event rows). Without coalescing, every single row change
+// triggered its own hydrateOperationalStateFromSupabase() call, and each
+// hydrate re-applies the HR snapshot into the store, which can itself
+// schedule another save - a feedback loop with no natural rate limit.
+// Debounce so a burst of table changes results in exactly one re-hydrate.
+let operationalHydrateQueued = false
+let operationalHydrateTimer: ReturnType<typeof setTimeout> | undefined
+const queueOperationalHydrate = (): void => {
+  if (operationalHydrateQueued) return
+  operationalHydrateQueued = true
+  if (operationalHydrateTimer) clearTimeout(operationalHydrateTimer)
+  operationalHydrateTimer = setTimeout(() => {
+    operationalHydrateQueued = false
+    operationalHydrateTimer = undefined
+    void hydrateOperationalStateFromSupabase().catch(() => undefined)
+  }, 250)
+}
+
 const refreshAuthorizationRuntime = async (): Promise<void> => {
   await hydrateAuthorizationFromSupabase()
   await hydrateInternalSettingsFromSupabase().catch(() => undefined)
@@ -199,10 +219,10 @@ export const startRealtimeSupabaseSync = (): void => {
       const row = payload.new as { entity_type?: string }
       if (row.entity_type === 'payroll') {
         void hydratePayrollFromSupabase().catch(() => undefined)
-        void hydrateOperationalStateFromSupabase().catch(() => undefined)
+        queueOperationalHydrate()
       }
       if (row.entity_type === 'finance' || row.entity_type === 'hr' || row.entity_type === 'stock') {
-        void hydrateOperationalStateFromSupabase().catch(() => undefined)
+        queueOperationalHydrate()
       }
       if (row.entity_type === 'authorization') void refreshAuthorizationRuntime().catch(() => undefined)
       if (row.entity_type === 'internal_settings') void hydrateInternalSettingsFromSupabase().catch(() => undefined)
@@ -217,7 +237,7 @@ export const startRealtimeSupabaseSync = (): void => {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_attendance_records' }, queueRosterRefresh)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_roster_refresh_events' }, queueRosterRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_point_events' }, () => {
-      void hydrateOperationalStateFromSupabase().catch(() => undefined)
+      queueOperationalHydrate()
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
       queueOrderRefresh()

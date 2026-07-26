@@ -42,6 +42,34 @@ const saving = new Set<OperationalDomain>()
 const dirty = new Set<OperationalDomain>()
 const conflicted = new Set<OperationalDomain>()
 const syncedSnapshots = new Map<OperationalDomain, string>()
+// Circuit breaker: if a domain racks up repeated conflicts in a short
+// window, something is retrying without making progress (a stale client,
+// or a feedback loop between realtime hydrates and auto-save). Once open,
+// only an explicit user-triggered reload (reloadConflictedDomain) can clear
+// it - passive re-hydration from realtime/auth events can no longer reset
+// the conflict flag and silently let the retry loop resume.
+const CONFLICT_STREAK_LIMIT = 3
+const CONFLICT_STREAK_WINDOW_MS = 5_000
+const conflictStreaks = new Map<OperationalDomain, { count: number; windowStart: number }>()
+const circuitOpen = new Set<OperationalDomain>()
+
+const registerConflict = (domain: OperationalDomain): void => {
+  const now = Date.now()
+  const streak = conflictStreaks.get(domain)
+  if (!streak || now - streak.windowStart > CONFLICT_STREAK_WINDOW_MS) {
+    conflictStreaks.set(domain, { count: 1, windowStart: now })
+    return
+  }
+  streak.count += 1
+  if (streak.count >= CONFLICT_STREAK_LIMIT) {
+    circuitOpen.add(domain)
+  }
+}
+
+const clearConflictStreak = (domain: OperationalDomain): void => {
+  conflictStreaks.delete(domain)
+  circuitOpen.delete(domain)
+}
 let unsubscribers: Array<() => void> = []
 let stopDraftListener: (() => void) | undefined
 const hydrationCoordinator = createHydrationCoordinator()
@@ -113,10 +141,14 @@ const snapshotForDomain = (domain: OperationalDomain): Json => {
 const snapshotFingerprint = (snapshot: Json): string =>
   stableStringifySharedData(snapshot)
 
-const applyDomainSnapshot = (domain: OperationalDomain, snapshot: Json): void => {
+// Returns the shape that was actually written into the store, so callers can
+// fingerprint what will be read back later instead of the raw server payload.
+// For domains where the applied state is identical to the input snapshot,
+// returning null tells the caller to fall back to fingerprinting the input.
+const applyDomainSnapshot = (domain: OperationalDomain, snapshot: Json): Json | null => {
   switch (domain) {
     case 'hr': {
-      if (!isRecord(snapshot)) return
+      if (!isRecord(snapshot)) return null
       const localEmployees = useHrStore.getState().employees
       const remoteHr = { ...snapshot }
       if (Array.isArray(remoteHr.employees)) {
@@ -127,23 +159,27 @@ const applyDomainSnapshot = (domain: OperationalDomain, snapshot: Json): void =>
         })
       }
       useHrStore.setState(remoteHr as never, false)
-      return
+      // safeHrSnapshot() strips pin before every save, so the fingerprint
+      // baseline must also be taken post-strip - otherwise the very first
+      // debounced save after this hydrate will "detect" a change (the
+      // reintroduced pins disappearing) that was never a real edit.
+      return safeHrSnapshot() as Json
     }
     case 'payroll':
       if (isRecord(snapshot)) usePayrollStore.setState(snapshot as never, false)
-      return
+      return null
     case 'finance':
       if (isRecord(snapshot)) useFinanceStore.setState(snapshot as never, false)
-      return
+      return null
     case 'stock':
       if (isRecord(snapshot)) useStockStore.setState(snapshot as never, false)
-      return
+      return null
     case 'vouchers':
       if (isRecord(snapshot)) useVoucherStore.setState(snapshot as never, false)
-      return
+      return null
     case 'order_drafts':
       if (Array.isArray(snapshot)) writeOrderDraftRecords(snapshot)
-      return
+      return null
   }
 }
 
@@ -153,7 +189,11 @@ const isRevisionConflict = (error: unknown): boolean =>
     (typeof error.payload === 'object' && error.payload !== null &&
       'code' in error.payload && error.payload.code === '40001'))
 
-const loadDomain = async (domain: OperationalDomain, apply = true): Promise<OperationalDomainResponse | null> => {
+const loadDomain = async (
+  domain: OperationalDomain,
+  apply = true,
+  force = false,
+): Promise<OperationalDomainResponse | null> => {
   const boot = client()
   if (!boot.enabled || !canRead(domain)) return null
   const response = await boot.repositories.client.rpc<OperationalDomainResponse>(
@@ -161,13 +201,29 @@ const loadDomain = async (domain: OperationalDomain, apply = true): Promise<Oper
     { p_domain: domain },
   )
   revisions.set(domain, response.revision)
+  // Once the circuit is open, only an explicit manual reload (apply=true is
+  // also used for that) may pass through - but a manual reload is expected
+  // to reset the streak. Passive callers (realtime/auth-refresh hydrates)
+  // pass apply=true too today, so gate specifically on the breaker instead
+  // of trusting the caller's intent.
+  if (apply && circuitOpen.has(domain) && !force) {
+    return response
+  }
   if (apply) {
     if (response.snapshot !== null) {
       // Record the server value before updating Zustand. Store subscriptions
       // fire for remote hydration too; without this baseline every Realtime
       // refresh is mistaken for a local edit and written back to Supabase.
-      syncedSnapshots.set(domain, snapshotFingerprint(response.snapshot))
-      applyDomainSnapshot(domain, response.snapshot)
+      //
+      // IMPORTANT: applyDomainSnapshot can rewrite the snapshot before it
+      // reaches the store (e.g. the 'hr' case re-merges local-only PIN
+      // fields that are intentionally stripped from the server copy). The
+      // fingerprint recorded here must reflect what actually lands in the
+      // store, not the raw server payload, or persistDomain will see a
+      // perpetual "local edit" that doesn't exist and re-save on every
+      // hydrate - which is exactly what was hammering Supabase.
+      const appliedSnapshot = applyDomainSnapshot(domain, response.snapshot)
+      syncedSnapshots.set(domain, snapshotFingerprint(appliedSnapshot ?? response.snapshot))
     }
     conflicted.delete(domain)
   }
@@ -220,6 +276,7 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
         })
       } catch (error) {
         if (isRevisionConflict(error)) {
+          registerConflict(domain)
           const remote = await loadDomain(domain, false).catch(() => null)
           void boot.repositories.client.rpc('record_mutation_conflict', {
             p_action: 'operational.save',
@@ -230,10 +287,13 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
           }).catch(() => undefined)
           conflicted.add(domain)
           dirty.delete(domain)
+          const locked = circuitOpen.has(domain)
           updateHealth({
             status: 'conflict',
             revision: remote?.revision ?? expectedRevision,
-            message: `${domain} changed in another session. Your local changes were not overwritten; reload before saving this section again.`,
+            message: locked
+              ? `${domain} kept conflicting and auto-recovery has been paused to protect the database. Use "Reload ${domain}" to fetch the latest version before editing again.`
+              : `${domain} changed in another session. Your local changes were not overwritten; reload before saving this section again.`,
           })
           return
         }
@@ -285,6 +345,19 @@ const hydrateOperationalState = async (): Promise<boolean> => {
 export const hydrateOperationalStateFromSupabase = (): Promise<boolean> =>
   hydrationCoordinator.run(hydrateOperationalState)
 
+// Explicit, user-initiated recovery for a domain whose circuit breaker has
+// opened after repeated conflicts. Unlike the passive hydrate path, this
+// always fetches the latest snapshot, applies it, and resets both the
+// conflict flag and the streak - re-enabling auto-save for the domain.
+export const reloadConflictedDomain = async (domain: OperationalDomain): Promise<boolean> => {
+  const response = await loadDomain(domain, true, true).catch(() => null)
+  if (!response) return false
+  clearConflictStreak(domain)
+  conflicted.delete(domain)
+  updateHealth({ status: 'saved', revision: response.revision, lastSavedAt: response.updatedAt ?? new Date().toISOString(), message: undefined })
+  return true
+}
+
 export const startOperationalSupabaseSync = (): void => {
   if (unsubscribers.length || stopDraftListener) return
 
@@ -311,6 +384,8 @@ export const stopOperationalSupabaseSync = (): void => {
   timers.clear()
   dirty.clear()
   conflicted.clear()
+  conflictStreaks.clear()
+  circuitOpen.clear()
   syncedSnapshots.clear()
   saving.clear()
   unsubscribers.forEach((unsubscribe) => unsubscribe())
