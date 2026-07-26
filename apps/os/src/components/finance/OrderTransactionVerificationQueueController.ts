@@ -10,7 +10,7 @@ import {
   isPendingFinanceVerification,
   isRejectedByFinance,
 } from '../../domain/orderBusinessRules'
-import { getLocalDateString, nowInJakarta } from '../orders/orderTableFormatters'
+import { getLocalDateString, nowInJakarta, toJakarta } from '../orders/orderTableFormatters'
 import type {
   OrderTransactionVerificationQueueProps,
 } from './OrderTransactionVerificationQueue'
@@ -25,7 +25,7 @@ const isWithinCompletionRange = (
   if (!range || (!range.from && !range.to)) return true
   if (!order.completedAt) return false
 
-  const completedAt = new Date(order.completedAt)
+  const completedAt = toJakarta(new Date(order.completedAt))
 
   if (range.from) {
     const from = new Date(range.from)
@@ -59,7 +59,7 @@ const isWithinCompletionScope = (
   if (scope === 'custom') return isWithinCompletionRange(order, dateRange)
   if (!order.completedAt) return false
 
-  const completedAt = new Date(order.completedAt)
+  const completedAt = toJakarta(new Date(order.completedAt))
   const completedDateStr = getLocalDateString(completedAt)
   const now = nowInJakarta()
   const todayStr = getLocalDateString(now)
