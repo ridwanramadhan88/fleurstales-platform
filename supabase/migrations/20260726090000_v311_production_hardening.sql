@@ -147,8 +147,8 @@ begin
   if v_username !~ '^[a-z][a-z0-9._-]*$' or v_ip_hash !~ '^[0-9a-f]{64}$' then
     return jsonb_build_object('allowed',false,'retryAfterSeconds',900);
   end if;
-  v_username_key:=encode(digest(v_username,'sha256'),'hex');
-  v_ip_key:=encode(digest(v_ip_hash,'sha256'),'hex');
+  v_username_key:=encode(extensions.digest(v_username,'sha256'::text),'hex');
+  v_ip_key:=encode(extensions.digest(v_ip_hash,'sha256'::text),'hex');
   v_username_lock:=private.consume_staff_login_scope('username',v_username_key,5);
   v_ip_lock:=private.consume_staff_login_scope('ip',v_ip_key,20);
   if v_username_lock is null then v_lock:=v_ip_lock;
@@ -173,8 +173,8 @@ set search_path=''
 as $$
 begin
   delete from private.staff_login_rate_limits
-  where (scope='username' and key_hash=encode(digest(lower(trim(coalesce(p_username,''))),'sha256'),'hex'))
-     or (scope='ip' and key_hash=encode(digest(lower(trim(coalesce(p_ip_hash,''))),'sha256'),'hex'));
+  where (scope='username' and key_hash=encode(extensions.digest(lower(trim(coalesce(p_username,''))),'sha256'::text),'hex'))
+     or (scope='ip' and key_hash=encode(extensions.digest(lower(trim(coalesce(p_ip_hash,''))),'sha256'::text),'hex'));
 end;
 $$;
 revoke execute on function public.service_clear_staff_login_attempts(text,text) from public,anon,authenticated;

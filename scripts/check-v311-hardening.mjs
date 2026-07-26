@@ -35,6 +35,8 @@ const migration = requireText('supabase/migrations/20260726090000_v311_productio
   'current_staff_branch_id()',
   "private.has_action_permission('hr.review_attendance')",
   'service_consume_staff_login_attempt',
+  'extensions.digest(v_username',
+  "extensions.digest(lower(trim(coalesce(p_username,'')))",
 ])
 if (!migration.includes("grant execute on function public.service_create_staff_access_profile") || !migration.includes('to service_role')) {
   throw new Error('V3.11 migration does not keep staff profile service RPCs service-role-only.')
