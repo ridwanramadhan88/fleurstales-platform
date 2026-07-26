@@ -201,11 +201,15 @@ begin
   end if;
 
   if not exists (
-    select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.proname='save_order_operational_state'
-      and pg_get_functiondef(p.oid) ilike '%FLORIST_REQUIRED_BEFORE_PROCESSING%'
-      and pg_get_functiondef(p.oid) ilike '%ORDER_UNDO_EVIDENCE_REQUIRED%'
-      and pg_get_functiondef(p.oid) ilike '%finance_verified_by%v_actor_name%'
+    select 1
+    from (
+      select string_agg(pg_get_functiondef(p.oid), E'\n') as function_defs
+      from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname='public' and p.proname in ('save_order_operational_state','save_order_operational_state_v31_internal','save_order_operational_state_v34_internal','save_order_operational_state_v37_internal')
+    ) defs
+    where defs.function_defs ilike '%FLORIST_REQUIRED_BEFORE_PROCESSING%'
+      and defs.function_defs ilike '%ORDER_UNDO_EVIDENCE_REQUIRED%'
+      and defs.function_defs ilike '%finance_verified_by%v_actor_name%'
   ) then
     raise exception 'Orders server workflow/actor authority incomplete';
   end if;
