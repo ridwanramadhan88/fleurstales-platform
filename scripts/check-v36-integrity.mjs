@@ -5,8 +5,9 @@ import path from 'node:path'
 const root = path.resolve(import.meta.dirname, '..')
 const read = (p) => readFile(path.join(root, p), 'utf8')
 const assert = (value, message) => { if (!value) throw new Error(message) }
-const [sql, submit, pricing, structure, attendance, customer, images, repos, app, user, realtime] = await Promise.all([
+const [sql, authority, submit, pricing, structure, attendance, customer, images, repos, app, user, realtime] = await Promise.all([
   read('supabase/migrations/20260725233000_integrity_concurrency_completion.sql'),
+  read('supabase/migrations/20260725234500_authority_consistency_completion.sql'),
   read('apps/os/src/components/orders/useNewOrderSubmit.ts'),
   read('apps/os/src/components/orders/useNewOrderPricing.ts'),
   read('apps/os/src/components/orders/NewOrderStructureSection.tsx'),
@@ -33,6 +34,7 @@ assert(sql.includes("v_canonical_snapshot:=jsonb_set(v_canonical_snapshot,'{empl
 assert(sql.includes("'id','att-'||replace(gen_random_uuid()::text"), 'Attendance IDs are still browser-controlled.')
 assert(sql.includes('select * into v_branch'), 'Attendance branch lookup must assign the branch row separately from its calculated distance.')
 assert(!sql.includes('select b,private.geo_distance_meters(v_lat,v_lng,b.latitude,b.longitude) into v_branch,v_distance'), 'Attendance branch lookup mixes a row variable with a scalar INTO target.')
+assert(!authority.includes('select b,private.geo_distance_meters(v_lat,v_lng,b.latitude,b.longitude) into v_branch,v_distance'), 'Authority attendance branch lookup mixes a row variable with a scalar INTO target.')
 assert(sql.includes('partition by recipient_user_id,kind,entity_id,title'), 'Notification deduplication does not use the staff_notifications recipient column.')
 assert(!sql.includes('partition by user_id,kind,entity_id,title'), 'Notification deduplication references the nonexistent staff_notifications.user_id column.')
 assert(submit.includes('authoritativeDeliveryFeeIdr'), 'Internal Order submission does not use authoritative branch fee.')

@@ -1263,10 +1263,11 @@ begin
   v_lat:=(v_location->>'latitude')::double precision; v_lng:=(v_location->>'longitude')::double precision; v_accuracy:=greatest(0,coalesce((v_location->>'accuracyMeters')::double precision,0));
   if v_lat not between -90 and 90 or v_lng not between -180 and 180 then raise exception 'INVALID_LOCATION' using errcode='22023'; end if;
   select coalesce((attendance->>'locationRadiusMeters')::integer,100),coalesce((attendance->>'lateGraceMinutes')::integer,10) into v_radius,v_grace from private.internal_settings_state where id='primary';
-  select b,private.geo_distance_meters(v_lat,v_lng,b.latitude,b.longitude) into v_branch,v_distance
+  select * into v_branch
   from public.branches b where b.is_active=true and b.latitude is not null and b.longitude is not null
   order by private.geo_distance_meters(v_lat,v_lng,b.latitude,b.longitude) limit 1;
   if not found then raise exception 'NO_BRANCH_LOCATION_CONFIGURED' using errcode='55000'; end if;
+  v_distance:=private.geo_distance_meters(v_lat,v_lng,v_branch.latitude,v_branch.longitude);
   if v_distance>v_radius then raise exception 'OUTSIDE_ATTENDANCE_RADIUS' using errcode='22023'; end if;
 
   select shift into v_override from public.staff_schedule_overrides where employee_id=v_profile.employee_id and schedule_date=v_date;
