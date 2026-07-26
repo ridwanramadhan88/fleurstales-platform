@@ -66,7 +66,7 @@ import type {
   StorefrontCheckoutRepository,
   StaffAccessRepository,
 } from './repositoryContracts'
-import { SupabaseHttpClient } from './supabaseHttpClient'
+import { SupabaseHttpClient, SupabaseHttpError } from './supabaseHttpClient'
 import { normalizeCustomerWhatsappNumber } from './customerIdentityDomain'
 
 const optional = <T>(value: T | null): T | undefined => value ?? undefined
@@ -215,10 +215,15 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
     return rows.map(mapOccasion)
   },
   async listArrangementTypes() {
-    const rows: ArrangementTypeRow[] = await client.select('arrangement_types', {
-      order: [{ column: 'sort_order' }, { column: 'name' }],
-    })
-    return rows.map((row): SharedArrangementType => ({ name: row.name, sortOrder: row.sort_order }))
+    try {
+      const rows: ArrangementTypeRow[] = await client.select('arrangement_types', {
+        order: [{ column: 'sort_order' }, { column: 'name' }],
+      })
+      return rows.map((row): SharedArrangementType => ({ name: row.name, sortOrder: row.sort_order }))
+    } catch (error) {
+      if (error instanceof SupabaseHttpError && error.status === 404) return []
+      throw error
+    }
   },
 
   async listProducts(options) {
