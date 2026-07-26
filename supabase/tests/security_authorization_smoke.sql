@@ -163,11 +163,15 @@ begin
   end if;
 
   if not exists (
-    select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='public' and p.proname='save_hr_operational_state'
-      and pg_get_functiondef(p.oid) ilike '%HR_PIN_MUST_NOT_BE_PERSISTED%'
-      and pg_get_functiondef(p.oid) ilike '%hr.create_employee%'
-      and pg_get_functiondef(p.oid) ilike '%hr.correct_attendance%'
+    select 1
+    from (
+      select string_agg(pg_get_functiondef(p.oid), E'\n') as function_defs
+      from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname='public' and p.proname in ('save_hr_operational_state','save_hr_operational_state_v36_internal')
+    ) defs
+    where defs.function_defs ilike '%HR_PIN_MUST_NOT_BE_PERSISTED%'
+      and defs.function_defs ilike '%hr.create_employee%'
+      and defs.function_defs ilike '%hr.correct_attendance%'
   ) then
     raise exception 'HR operational writer is not action-aware';
   end if;
