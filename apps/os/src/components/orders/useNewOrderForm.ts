@@ -11,6 +11,7 @@ export interface NewOrderFormValues {
   promoCode: string
   orderItemMode: 'catalog' | 'custom'
   orderItemCatalogId: string
+  orderItemVariantId: string
   orderItemCustomName: string
   orderItemCustomPrice: string
   orderType: '' | 'walk_in' | 'admin_created'
@@ -41,6 +42,7 @@ export const initialNewOrderValues: NewOrderFormValues = {
   promoCode: '',
   orderItemMode: 'catalog',
   orderItemCatalogId: '',
+  orderItemVariantId: '',
   orderItemCustomName: '',
   orderItemCustomPrice: '',
   orderType: '',

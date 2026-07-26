@@ -28,6 +28,7 @@ interface UserState extends SessionAccount {
   setRole: (role: UserRole) => void
   signIn: (account: SessionAccount) => void
   setOperationalBranch: (branchId: string, date: string) => void
+  clearSession: () => void
 }
 
 const ROLE_NAMES: Record<UserRole, string> = {
@@ -67,6 +68,16 @@ export const useUserStore = create<UserState>((set) => ({
       lastBranchOverride: undefined,
     }
   }),
+  clearSession: () => set(() => ({
+    employeeId: '',
+    name: '',
+    username: '',
+    role: 'admin',
+    branchId: undefined,
+    scheduledBranchId: undefined,
+    branchOverrideActive: false,
+    lastBranchOverride: undefined,
+  })),
   setOperationalBranch: (branchId, date) => set((state) => {
     const isOverride = Boolean(state.scheduledBranchId) && state.scheduledBranchId !== branchId
     const noScheduledBranchOverride = !state.scheduledBranchId

@@ -186,7 +186,7 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
         setEditorOpen(open)
         if (!open) resetEditor()
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Crop className="size-4" /> {editorTitle}</DialogTitle>
           </DialogHeader>

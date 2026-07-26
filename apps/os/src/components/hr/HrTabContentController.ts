@@ -15,6 +15,7 @@ import { isHrManagedEmployee } from '../../domain/hrManagedEmployeeDomain'
 import { canCreateStaffAccount, getCreatableAccountRoles } from '../../domain/staffAccountDomain'
 import { provisionStaffAccountSupabase, syncStaffAccessProfileSupabase } from '../../data/staffLifecycleSupabase'
 import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
+import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from '../../domain/staffCredentialDomain'
 
 export type HrSection = 'employees' | 'attendance' | 'scheduling' | 'reports' | 'points' | 'payroll'
 
@@ -59,6 +60,7 @@ export interface HrTabContentViewModel {
   canManageEmployeeDetails: boolean
   canEditCredentials: boolean
   canCreateAccounts: boolean
+  usesProductionPassword: boolean
   pendingStatusEmployee: Employee | null
   statusActionError: string | null
   attendanceEditor: AttendanceEditorState | null
@@ -123,6 +125,7 @@ export interface HrTabContentViewModel {
 export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQuery, onSearchQueryChange, onActiveSectionChange }: HrTabContentProps): HrTabContentViewModel => {
   const role = useUserStore((state) => state.role)
   const actorName = useUserStore((state) => state.name)
+  const usesProductionPassword = isSupabaseConfigured()
   const permissions = useSettingsStore((state) => state.permissions)
   const actionPermissions = useSettingsStore((state) => state.actionPermissions)
   const staffRoles = useSettingsStore((state) => state.staffRoles)
@@ -267,20 +270,20 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     const common = { name: form.name, position: form.systemRole, systemRole: form.systemRole, phone: form.phone, hireDate, actor }
     let result: HrEmployeeCommandResult
     if (canCreateAccounts && isSupabaseConfigured()) {
-      const eligibility = canCreateStaffAccount({ employees, email: form.email, username: form.username, pin: form.pin, systemRole: form.systemRole, actor, hrManagedRoles })
+      const eligibility = canCreateStaffAccount({ employees, email: form.email, username: form.username, pin: form.pin, systemRole: form.systemRole, actor, hrManagedRoles, usesProductionPassword })
       if (!eligibility.ok) {
         const lower = eligibility.reason.toLowerCase()
-        setFormErrors({ [lower.includes('email') ? 'email' : lower.includes('username') ? 'username' : lower.includes('pin') ? 'pin' : 'systemRole']: eligibility.reason })
+        setFormErrors({ [lower.includes('email') ? 'email' : lower.includes('username') ? 'username' : (lower.includes('pin') || lower.includes('password')) ? 'pin' : 'systemRole']: eligibility.reason })
         return
       }
       const employeeId = `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
       try {
-        await provisionStaffAccountSupabase({ employeeId, email: form.email, username: form.username, pin: form.pin, displayName: form.name, role: form.systemRole as Exclude<UserRole, 'owner'> })
+        await provisionStaffAccountSupabase({ employeeId, email: form.email, username: form.username, password: form.pin, displayName: form.name, role: form.systemRole as Exclude<UserRole, 'owner'> })
       } catch (cause) {
         setDetailsError(cause instanceof Error ? cause.message : 'Unable to create the staff login invitation.')
         return
       }
-      result = createStaffAccount({ ...common, employeeId, email: form.email, username: form.username, pin: form.pin })
+      result = createStaffAccount({ ...common, employeeId, email: form.email, username: form.username, pin: form.pin, productionAuth: true })
     } else {
       result = canCreateAccounts
         ? createStaffAccount({ ...common, email: form.email, username: form.username, pin: form.pin })
@@ -291,7 +294,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   }
 
   return {
-    activeBranch, onOpenOrder, activeSection, availableSections, canEdit, canCreateEmployee, canManageEmployeeStatus, canManageEmployeeDetails, canEditCredentials, canCreateAccounts,
+    activeBranch, onOpenOrder, activeSection, availableSections, canEdit, canCreateEmployee, canManageEmployeeStatus, canManageEmployeeDetails, canEditCredentials, canCreateAccounts, usesProductionPassword,
     pendingStatusEmployee, statusActionError, attendanceEditor, attendanceActionError, attendanceHistory,
     statusFilter, employeeSearch, employeeRoleFilter, isAddOpen, form, formErrors, detailsEmployee, detailsForm, profileErrors, accessErrors, detailsError, detailsMessage, pendingAccessConfirmation, pendingDetailsCloseConfirmation, pendingAddCloseConfirmation, hasUnsavedEmployeeDetails, hasUnsavedNewEmployee, today, summary,
     branchEmployees, employeeRows, assignableRoles, branches,
@@ -382,7 +385,8 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       if (canEditCredentials) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(detailsForm.email.trim())) errors.email = 'Enter a valid recovery email address.'
         if (!/^[a-z][a-z0-9._-]*$/.test(detailsForm.username.trim())) errors.username = 'Use lowercase letters, numbers, dots, underscores, or hyphens.'
-        if (detailsForm.pin && !/^\d{6}$/.test(detailsForm.pin)) errors.pin = 'PIN must contain exactly 6 numbers.'
+        if (detailsForm.pin && usesProductionPassword && !isStrongStaffPassword(detailsForm.pin)) errors.pin = STAFF_PASSWORD_HELP
+        if (detailsForm.pin && !usesProductionPassword && !/^\d{6}$/.test(detailsForm.pin)) errors.pin = 'PIN must contain exactly 6 numbers.'
       }
       setAccessErrors(errors)
       if (Object.keys(errors).length) return
@@ -393,7 +397,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       if (detailsForm.pin) changes.push('Login credential updated')
       if (changes.length) { setPendingAccessConfirmation({ changes }); return }
       if (isSupabaseConfigured()) { setDetailsError(null); setDetailsMessage('Access settings already match Supabase Auth.'); return }
-      const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, email: detailsForm.email, username: detailsForm.username, pin: detailsForm.pin, actor: { name: actorName, role } })
+      const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, email: detailsForm.email, username: detailsForm.username, pin: detailsForm.pin, productionAuth: usesProductionPassword, actor: { name: actorName, role } })
       if (!result.ok) { applyEmployeeCommandError(result, 'access'); return }
       setDetailsError(null); setDetailsMessage('Access settings updated.')
     },
@@ -409,7 +413,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
         setPendingAccessConfirmation(null)
         return
       }
-      const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, email: detailsForm.email, username: detailsForm.username, pin: detailsForm.pin, actor: { name: actorName, role } })
+      const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, email: detailsForm.email, username: detailsForm.username, pin: detailsForm.pin, productionAuth: usesProductionPassword, actor: { name: actorName, role } })
       if (!result.ok) { applyEmployeeCommandError(result, 'access'); setPendingAccessConfirmation(null); return }
       const updated = useHrStore.getState().employees.find((item) => item.id === detailsEmployee.id) ?? null
       setDetailsEmployee(updated); setPendingAccessConfirmation(null); setDetailsError(null); setDetailsMessage('Role change confirmed.')

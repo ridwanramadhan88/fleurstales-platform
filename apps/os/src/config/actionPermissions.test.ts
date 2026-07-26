@@ -13,6 +13,15 @@ describe('action permissions', () => {
     expect(hasActionPermission('florist','finance.view_collect_orders',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
   })
 
+  it('never allows Florist to advance Order status', () => {
+    const matrix=structuredClone(DEFAULT_ACTION_PERMISSIONS)
+    matrix.florist['orders.advance_status']=true
+    const guarded=guardActionPermissions(matrix,DEFAULT_ROLE_SECTION_ACCESS)
+    expect(DEFAULT_ACTION_PERMISSIONS.florist['orders.advance_status']).toBe(false)
+    expect(guarded.florist['orders.advance_status']).toBe(false)
+    expect(hasActionPermission('florist','orders.advance_status',matrix,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+  })
+
   it('blocks actions when parent section access is removed', () => {
     const sections=structuredClone(DEFAULT_ROLE_SECTION_ACCESS)
     sections.finance.finance='none'

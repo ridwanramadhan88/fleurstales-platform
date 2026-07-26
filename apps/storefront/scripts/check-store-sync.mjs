@@ -40,8 +40,11 @@ if (!startup.includes(expectedInitializer)) throw new Error(`Store bridge is not
 
 if (isBusinessOs) {
   const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8')
-  if (!app.includes("if (role === 'owner') void refreshBusinessOsStoreFromRemote()")) {
-    throw new Error('Business OS must only refresh writable Store data for Owner sign-in.')
+  if (!app.includes('refreshBusinessOsStoreFromRemote()')) {
+    throw new Error('Every signed-in OS role must hydrate safe remote Store/branch data.')
+  }
+  if (!bridge.includes("const writable = useUserStore.getState().role === 'owner'")) {
+    throw new Error('Only Owner may hydrate the writable Store administration projection.')
   }
   if (!app.includes('stopBusinessOsStoreBridge()')) throw new Error('Business OS sign-out must stop the Store bridge.')
 }

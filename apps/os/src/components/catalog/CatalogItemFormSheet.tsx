@@ -258,13 +258,14 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         onOpenChange={(nextOpen) => {
           if (!nextOpen) handleClose()
         }}
+        size="workspace"
         title={isEditMode ? 'Edit product' : 'New product'}
         description={
           isEditMode
             ? 'Update the essential product information customers and staff use.'
             : 'Add product information and at least one sellable size.'
         }
-        contentClassName="h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[88vh] sm:max-w-5xl"
+        contentClassName="h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[92vh]"
         headerClassName="shrink-0 border-b border-border/70 pb-4"
       >
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">

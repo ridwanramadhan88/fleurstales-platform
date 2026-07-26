@@ -8,6 +8,7 @@ import { ThemeToggle } from '../components/ui/theme-toggle'
 import { LanguageToggle } from '../components/ui/language-toggle'
 import { InfoDisclosure } from '../components/ui/info-disclosure'
 import { normalizeUsername } from '../domain/staffAccountDomain'
+import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from '../domain/staffCredentialDomain'
 import { isSharedBackendConfigured, signInSharedBackend } from '../api/remoteSession'
 import { isSupabaseConfigured } from '../data/shared/supabaseConfig'
 import {
@@ -97,12 +98,13 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           return
         }
         if (mode === 'set-password') {
-          if (!/^\d{6}$/.test(password) && password.length < 8) throw new Error('Use a 6-digit PIN or a password with at least 8 characters.')
-          if (password !== confirmPassword) throw new Error('Password / PIN entries do not match.')
+          if (!isStrongStaffPassword(password)) throw new Error(STAFF_PASSWORD_HELP)
+          if (password !== confirmPassword) throw new Error('Password entries do not match.')
           await updateSupabasePassword(password)
           await finishSupabaseSignIn()
           return
         }
+        if (!isStrongStaffPassword(password)) throw new Error(STAFF_PASSWORD_HELP)
         await signInSupabaseWithUsername(username, password)
         await finishSupabaseSignIn()
         return
@@ -124,12 +126,12 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     }
   }
 
-  const authTitle = mode === 'forgot' ? 'Reset password / PIN' : mode === 'set-password' ? 'Create password / PIN' : 'Sign in'
+  const authTitle = mode === 'forgot' ? 'Reset password' : mode === 'set-password' ? 'Create password' : 'Sign in'
   const authHelp = mode === 'forgot'
     ? 'We’ll email you a secure reset link.'
     : mode === 'set-password'
-      ? 'Choose a 6-digit PIN or a password with at least 8 characters.'
-      : usesSupabase ? 'Use your staff username or email and password/PIN.' : 'Use your staff username and six-digit PIN.'
+      ? STAFF_PASSWORD_HELP
+      : usesSupabase ? 'Use your staff username or email and password.' : 'Use your staff username and six-digit PIN.'
 
   return (
     <div className="min-h-screen bg-background px-4 pb-6 pt-[max(1rem,env(safe-area-inset-top))] text-foreground sm:flex sm:items-center sm:justify-center sm:py-8">
@@ -139,7 +141,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           {onToggleTheme && <ThemeToggle theme={theme} onToggle={onToggleTheme} />}
         </div>
 
-        <header className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3.5 shadow-ios-sm ring-1 ring-border/60">
+        <header className="apple-material flex items-center gap-3 rounded-2xl bg-card/90 px-4 py-3.5 shadow-ios ring-1 ring-border/70">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-ios-sm">
             <Flower2 className="size-5" />
           </div>
@@ -149,7 +151,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           </div>
         </header>
 
-        <form onSubmit={submit} className="space-y-4 rounded-2xl bg-card p-5 shadow-ios-sm ring-1 ring-border/60">
+        <form onSubmit={submit} className="apple-material space-y-4 rounded-2xl bg-card/92 p-5 shadow-ios ring-1 ring-border/70">
           <div className="space-y-1">
             <h2 className="font-display text-lg font-semibold text-foreground">{authTitle}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">{authHelp}</p>
@@ -164,31 +166,31 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
             <input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder={usesSupabase ? 'username or email' : 'username'} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {(!usesSupabase || mode !== 'forgot') ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">{usesSupabase ? (mode === 'set-password' ? 'New password / PIN' : 'Password / PIN') : 'PIN'}</span>
+            <span className="text-xs font-medium">{usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password') : 'PIN'}</span>
             <input
-              aria-label={usesSupabase ? (mode === 'set-password' ? 'New password / PIN' : 'Password') : 'PIN'}
+              aria-label={usesSupabase ? (mode === 'set-password' ? 'New password' : 'Password') : 'PIN'}
               autoComplete={mode === 'set-password' ? 'new-password' : 'current-password'}
               inputMode={usesSupabase ? undefined : 'numeric'}
               type="password"
               maxLength={usesSupabase ? undefined : 6}
               value={usesSupabase ? password : pin}
               onChange={(e) => usesSupabase ? setPassword(e.target.value) : setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder={usesSupabase ? (mode === 'set-password' ? '6-digit PIN or 8+ character password' : 'Password or 6-digit PIN') : '6-digit PIN'}
+              placeholder={usesSupabase ? (mode === 'set-password' ? '12+ characters' : 'Password') : '6-digit PIN'}
               className="h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
             />
           </label> : null}
           {usesSupabase && mode === 'set-password' ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">Confirm password / PIN</span>
-            <input aria-label="Confirm password / PIN" autoComplete="new-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repeat password or PIN" className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
+            <span className="text-xs font-medium">Confirm password</span>
+            <input aria-label="Confirm password" autoComplete="new-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repeat password" className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {error && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive ring-1 ring-destructive/30">{error}</p>}
           {notice && <p role="status" className="rounded-lg bg-primary/10 px-3 py-2 text-xs text-foreground ring-1 ring-primary/25">{notice}</p>}
           <button type="submit" disabled={isSigningIn || (usesSupabase ? (mode === 'forgot' ? !email : mode === 'set-password' ? !password || !confirmPassword : !username || !password) : !username || pin.length !== 6)} className="tap-scale flex w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 disabled:bg-primary/45 disabled:text-primary-foreground/90 disabled:opacity-100 px-[18px] whitespace-nowrap h-11 gap-2">
             {mode === 'forgot' ? <Mail className="size-4" /> : mode === 'set-password' ? <KeyRound className="size-4" /> : <LogIn className="size-4" />}
-            {isSigningIn ? 'Please wait…' : mode === 'forgot' ? 'Send reset link' : mode === 'set-password' ? 'Save password / PIN' : 'Sign in'}
+            {isSigningIn ? 'Please wait…' : mode === 'forgot' ? 'Send reset link' : mode === 'set-password' ? 'Save password' : 'Sign in'}
           </button>
           {usesSupabase && mode !== 'set-password' ? <button type="button" onClick={() => { setMode(mode === 'forgot' ? 'signin' : 'forgot'); setError(null); setNotice(null) }} className="w-full text-center text-xs font-medium text-muted-foreground hover:text-foreground">
-            {mode === 'forgot' ? 'Back to sign in' : 'Forgot password / PIN?'}
+            {mode === 'forgot' ? 'Back to sign in' : 'Forgot password?'}
           </button> : null}
         </form>
 

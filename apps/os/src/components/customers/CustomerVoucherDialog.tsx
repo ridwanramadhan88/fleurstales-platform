@@ -62,7 +62,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
       open={open}
       onOpenChange={onDialogOpenChange}
     >
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Manage vouchers</DialogTitle>
           <DialogDescription>
@@ -73,7 +73,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
 
         {!formOpen ? (
           <>
-            <div className="max-h-[50vh] space-y-2 overflow-y-auto">
+            <div className="max-h-[58vh] space-y-2 overflow-y-auto md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
               {sortedVouchers.length === 0 && (
                 <p className="py-4 text-center text-xs text-muted-foreground">
                   No vouchers yet. Create one below.
@@ -149,7 +149,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
             </button>
           </>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 md:grid md:grid-cols-2 md:items-start md:gap-x-5 md:gap-y-4 md:space-y-0">
             <div className="space-y-1">
               <label className={labelClass}>Voucher code</label>
               <input
@@ -216,7 +216,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
             </div>
 
             {/* Eligibility rule */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 md:col-span-2">
               <label className={labelClass}>Who can use this voucher</label>
               <div className="grid grid-cols-3 gap-1.5">
                 {(
@@ -289,7 +289,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
               )}
             </div>
 
-            <div className="-mx-6 -mb-6 flex justify-end gap-2 border-t border-border bg-surface-footer px-6 py-4">
+            <div className="-mx-6 -mb-6 flex justify-end gap-2 border-t border-border bg-surface-footer px-6 py-4 md:col-span-2">
               <button
                 type="button"
                 onClick={onCancelForm}

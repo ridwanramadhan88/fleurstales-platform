@@ -1,6 +1,10 @@
 import type {
+  CreateInternalOrderInput,
+  CustomerBusinessMetric,
+  CreateInternalOrderResult,
   CreateStorefrontOrderInput,
   CreateStorefrontOrderResult,
+  StorefrontCheckoutQuoteResult,
   SharedBranch,
   SharedCatalogAdminState,
   SharedCatalogReplaceResult,
@@ -81,6 +85,7 @@ export interface StoreAdminRepository extends StoreReadRepository {
 
 export interface CustomerAdminRepository {
   listCustomers(): Promise<SharedCustomer[]>
+  listBusinessMetrics(customerId?: string): Promise<CustomerBusinessMetric[]>
   getCustomer(customerId: string): Promise<SharedCustomer | null>
   listCustomerAddresses(customerId: string): Promise<SharedCustomerAddress[]>
   findCustomerByWhatsapp(whatsappNumber: string): Promise<SharedCustomer | null>
@@ -93,8 +98,12 @@ export interface OrdersReadRepository {
   getOrder(orderId: string): Promise<SharedOrder | null>
 }
 
-export interface OrdersAdminRepository extends OrdersReadRepository {}
+export interface OrdersAdminRepository extends OrdersReadRepository {
+  quoteInternalOrder(input: CreateInternalOrderInput): Promise<StorefrontCheckoutQuoteResult>
+  createInternalOrder(input: CreateInternalOrderInput): Promise<CreateInternalOrderResult>
+}
 
 export interface StorefrontCheckoutRepository {
+  quoteOrder(input: CreateStorefrontOrderInput): Promise<StorefrontCheckoutQuoteResult>
   createOrder(input: CreateStorefrontOrderInput): Promise<CreateStorefrontOrderResult>
 }

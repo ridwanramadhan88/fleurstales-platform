@@ -131,7 +131,7 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
         aria-modal="true"
         aria-label="New order"
         onClick={(event) => event.stopPropagation()}
-        className="animate-sheet-up mobile-focus-workflow flex max-h-[94vh] w-full max-w-2xl flex-col rounded-t-2xl bg-card shadow-lg ring-1 ring-border/60 sm:max-h-[90vh] sm:rounded-xl"
+        className="animate-sheet-up mobile-focus-workflow flex max-h-[94vh] w-full flex-col rounded-t-2xl bg-card shadow-ios-lg ring-1 ring-border/60 sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl md:max-w-6xl xl:max-w-7xl"
       >
         <div className="flex items-center justify-between border-b border-border/70 px-4 py-3 sm:px-5 sm:py-3.5">
           <div className="space-y-0.5">

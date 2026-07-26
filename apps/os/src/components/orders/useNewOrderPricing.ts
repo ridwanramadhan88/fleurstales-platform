@@ -5,8 +5,14 @@ import type { NewOrderFormValues } from './useNewOrderForm'
 import type { Voucher } from '../../store/voucherStore'
 import type { CustomerProfile } from '../../store/customerStoreTypes'
 import { calculateOrderTotal, validateVoucherCode } from '../../domain/voucherDomain'
+import type { StorefrontCheckoutQuoteResult } from '../../data/shared/contracts'
 
 export interface CatalogProductOption {
+  id: string
+  label: string
+}
+
+export interface CatalogVariantOption {
   id: string
   label: string
 }
@@ -16,11 +22,15 @@ export const useNewOrderPricing = ({
   catalogProducts,
   vouchers = [],
   voucherCustomer = null,
+  authoritativeDeliveryFeeIdr = 0,
+  serverQuote = null,
 }: {
   values: NewOrderFormValues
   catalogProducts: CatalogProduct[]
   vouchers?: Voucher[]
   voucherCustomer?: Pick<CustomerProfile, 'id' | 'tags'> | null
+  authoritativeDeliveryFeeIdr?: number
+  serverQuote?: StorefrontCheckoutQuoteResult | null
 }) => {
   const catalogPriceFormatter = new Intl.NumberFormat('id-ID')
   const selectedCatalogProduct =
@@ -30,14 +40,18 @@ export const useNewOrderPricing = ({
         ) ?? null
       : null
 
+  const selectedCatalogVariant = selectedCatalogProduct?.variants.find(
+    (variant) => variant.id === values.orderItemVariantId && variant.status === 'active',
+  ) ?? null
+
   const primaryItemPriceIdr =
     values.orderItemMode === 'catalog'
-      ? (selectedCatalogProduct ? getDisplayPriceIdr(selectedCatalogProduct) : 0)
+      ? (selectedCatalogVariant?.price ?? (selectedCatalogProduct ? getDisplayPriceIdr(selectedCatalogProduct) : 0))
       : sanitizeCurrency(values.orderItemCustomPrice)
 
   const deliveryFeeValueForReview =
     values.fulfillmentType === 'delivery'
-      ? sanitizeCurrency(values.deliveryFee)
+      ? Math.max(0, Math.round(authoritativeDeliveryFeeIdr))
       : 0
 
   const voucherValidation = values.promoCode.trim()
@@ -46,15 +60,16 @@ export const useNewOrderPricing = ({
         customer: voucherCustomer,
       })
     : null
-  const voucherDiscountIdr =
+  const voucherDiscountIdr = serverQuote?.discountIdr ?? (
     voucherValidation?.ok && voucherValidation.discountIdr
       ? voucherValidation.discountIdr
       : 0
+  )
 
-  const estimatedOrderTotalIdr = calculateOrderTotal({
+  const estimatedOrderTotalIdr = serverQuote?.totalIdr ?? calculateOrderTotal({
     itemsTotalIdr: primaryItemPriceIdr,
     discountIdr: voucherDiscountIdr,
-    deliveryFeeIdr: deliveryFeeValueForReview,
+    deliveryFeeIdr: serverQuote?.deliveryFeeIdr ?? deliveryFeeValueForReview,
   }).grandTotalIdr
 
   const depositValueForReview =
@@ -66,15 +81,23 @@ export const useNewOrderPricing = ({
     id: product.id,
     label: `${product.name} · Rp ${catalogPriceFormatter.format(getDisplayPriceIdr(product))}`,
   }))
+  const catalogVariantOptions: CatalogVariantOption[] = (selectedCatalogProduct?.variants ?? [])
+    .filter((variant) => variant.status === 'active')
+    .map((variant) => ({
+      id: variant.id,
+      label: `${variant.size || variant.sku} · Rp ${catalogPriceFormatter.format(variant.price)}`,
+    }))
 
   return {
     catalogPriceFormatter,
     selectedCatalogProduct,
+    selectedCatalogVariant,
     estimatedOrderTotalIdr,
     primaryItemPriceIdr,
     voucherDiscountIdr,
     voucherValidation,
     depositValueForReview,
     catalogProductOptions,
+    catalogVariantOptions,
   }
 }

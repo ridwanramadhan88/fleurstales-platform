@@ -29,6 +29,7 @@ import {
 } from './useNewOrderForm'
 import {
   type CatalogProductOption,
+  type CatalogVariantOption,
   useNewOrderPricing,
 } from './useNewOrderPricing'
 import { useNewOrderSubmit } from './useNewOrderSubmit'
@@ -38,13 +39,15 @@ import { deleteOrderDraft, getOrderDraft, saveOrderDraft } from './orderDraftSto
 import { describeBranchHoursForDate, getBranchHoursForDate, getOpeningHourTimeSlots } from '../../domain/branchOpeningHoursDomain'
 import { useVoucherStore } from '../../store/voucherStore'
 import { validateVoucherCode } from '../../domain/voucherDomain'
+import { sanitizeCurrency } from '../../lib/formatters'
+import type { StorefrontCheckoutQuoteResult } from '../../data/shared/contracts'
 
 export type {
   FormStep,
   NewOrderFormErrors,
   NewOrderFormValues,
 } from './useNewOrderForm'
-export type { CatalogProductOption } from './useNewOrderPricing'
+export type { CatalogProductOption, CatalogVariantOption } from './useNewOrderPricing'
 
 export interface NewOrderSheetViewModel {
   open: boolean
@@ -75,8 +78,11 @@ export interface NewOrderSheetViewModel {
   onGuideFieldFocus: (field: string) => void
   onGuideFieldBlur: () => void
   catalogProductOptions: CatalogProductOption[]
+  catalogVariantOptions: CatalogVariantOption[]
   selectedCatalogProduct: CatalogProduct | null
+  selectedCatalogVariant: CatalogProduct['variants'][number] | null
   estimatedOrderTotalIdr: number
+  authoritativeDeliveryFeeIdr: number
   voucherDiscountIdr: number
   depositValueForReview: number
   paymentStatusLabelForReview: string
@@ -96,6 +102,7 @@ export interface NewOrderSheetViewModel {
   onFulfillmentChange: ReturnType<typeof useNewOrderForm>['onFulfillmentChange']
   onOrderItemModeChange: (mode: 'catalog' | 'custom') => void
   onCatalogProductChange: (value: string) => void
+  onCatalogVariantChange: (value: string) => void
   onOrderTypeChange: (value: NewOrderFormValues['orderType']) => void
   onPaymentMethodChange: (value: NewOrderFormValues['paymentMethod']) => void
   onPaymentStatusChange: (value: NewOrderFormValues['paymentStatus']) => void
@@ -116,6 +123,9 @@ export const useNewOrderSheetController = ({
   const [closeConfirmationOpen, setCloseConfirmationOpen] = useState(false)
   const configuredBranches = useSettingsStore((state) => state.branches)
   const branchForForm: BranchFilter = activeBranch?.trim() ? activeBranch : 'All'
+  const authoritativeDeliveryFeeIdr = branchForForm === 'All'
+    ? 0
+    : Math.max(0, Math.round(configuredBranches.find((branch) => branch.id === branchForForm)?.deliveryFeeIdr ?? 0))
   const createOrder = useOrdersStore((state) => state.createOrder)
   const allProducts = useCatalogStore((state) => state.products)
   const catalogProducts = useMemo(
@@ -133,6 +143,7 @@ export const useNewOrderSheetController = ({
   const [acceptedProfileSuggestions, setAcceptedProfileSuggestions] = useState<
     Partial<CustomerProfileSuggestions>
   >({})
+  const [serverQuote, setServerQuote] = useState<StorefrontCheckoutQuoteResult | null>(null)
 
   const matchedCustomer: CustomerProfile | null = useMemo(() => {
     return findCustomerByWhatsapp(customers, form.values.customerWhatsappNumber)
@@ -163,6 +174,7 @@ export const useNewOrderSheetController = ({
 
   const matchedCustomerSegment = useMemo(() => {
     if (!matchedCustomer) return null
+    if (matchedCustomer.authoritativeSegment) return matchedCustomer.authoritativeSegment
     const ordersForCustomer = getOrdersForCustomer(matchedCustomer, allOrders)
     return buildCustomerMetrics(ordersForCustomer).segment
   }, [matchedCustomer, allOrders])
@@ -214,7 +226,16 @@ export const useNewOrderSheetController = ({
     catalogProducts,
     vouchers,
     voucherCustomer,
+    authoritativeDeliveryFeeIdr,
+    serverQuote,
   })
+
+  useEffect(() => {
+    const formatted = form.values.fulfillmentType === 'delivery'
+      ? new Intl.NumberFormat('id-ID').format(authoritativeDeliveryFeeIdr)
+      : ''
+    if (form.values.deliveryFee !== formatted) form.onFieldValueChange('deliveryFee', formatted)
+  }, [authoritativeDeliveryFeeIdr, form.values.fulfillmentType])
 
   useEffect(() => {
     if (!matchedCustomer || matchedCustomerSegment !== 'vip') {
@@ -257,7 +278,12 @@ export const useNewOrderSheetController = ({
     form.values.promoCode,
   ])
 
+
+  useEffect(() => {
+    if (form.step === 'edit') setServerQuote(null)
+  }, [form.step, form.values, acceptedProfileSuggestions])
   const submit = useNewOrderSubmit({
+    open,
     values: form.values,
     activeBranch: branchForForm,
     catalogProducts,
@@ -270,6 +296,8 @@ export const useNewOrderSheetController = ({
     onClose,
     setStep: form.setStep,
     voucherDiscountIdr: pricing.voucherDiscountIdr,
+    authoritativeDeliveryFeeIdr,
+    serverQuote,
   })
 
   const hasUnsavedChanges = () =>
@@ -293,20 +321,61 @@ export const useNewOrderSheetController = ({
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
+    void (async () => {
+      const nextErrors = validateNewOrderForm(form.values, selectedBranch)
+      const depositIdr = sanitizeCurrency(form.values.depositAmount)
+      if (form.values.paymentStatus === 'partial' && depositIdr <= 0) {
+        nextErrors.depositAmount = 'Deposit must be greater than Rp0.'
+      }
+      if (Object.keys(nextErrors).length > 0) {
+        form.setErrors(nextErrors)
+        form.setStep('edit')
+        return
+      }
 
-    const nextErrors = validateNewOrderForm(form.values, selectedBranch)
-    if (Object.keys(nextErrors).length > 0) {
-      form.setErrors(nextErrors)
-      form.setStep('edit')
-      return
-    }
+      if (form.step === 'edit') {
+        try {
+          const quote = await submit.quoteOrderFromForm()
+          if (quote) {
+            if (form.values.promoCode.trim() && !quote.promoAccepted) {
+              form.setInfoMessage(quote.promoMessage ?? 'This voucher is not available for this order.')
+              form.setStep('edit')
+              return
+            }
+            if (form.values.paymentStatus === 'partial' && depositIdr >= quote.totalIdr) {
+              form.setErrors({ depositAmount: 'Deposit must be lower than the order total.' })
+              form.setStep('edit')
+              return
+            }
+            setServerQuote(quote)
+          } else if (form.values.paymentStatus === 'partial' && depositIdr >= pricing.estimatedOrderTotalIdr) {
+            form.setErrors({ depositAmount: 'Deposit must be lower than the order total.' })
+            form.setStep('edit')
+            return
+          }
+          form.setInfoMessage(null)
+          form.setStep('review')
+        } catch (error) {
+          form.setInfoMessage(error instanceof Error ? error.message : 'Unable to quote this order.')
+          form.setStep('edit')
+        }
+        return
+      }
 
-    if (form.step === 'edit') {
-      form.setStep('review')
-      return
-    }
-
-    submit.createOrderFromForm()
+      try {
+        await submit.createOrderFromForm()
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to create order.'
+        if (message.includes('ORDER_QUOTE_CHANGED')) {
+          setServerQuote(null)
+          form.setInfoMessage('Order pricing changed. Recheck the authoritative quote before confirming.')
+          form.setStep('edit')
+        } else {
+          form.setInfoMessage(message)
+          form.setStep('review')
+        }
+      }
+    })()
   }
 
   const branchLabel =
@@ -419,8 +488,11 @@ export const useNewOrderSheetController = ({
     },
     onGuideFieldBlur: () => form.setFocusedField(null),
     catalogProductOptions: pricing.catalogProductOptions,
+    catalogVariantOptions: pricing.catalogVariantOptions,
     selectedCatalogProduct: pricing.selectedCatalogProduct,
+    selectedCatalogVariant: pricing.selectedCatalogVariant,
     estimatedOrderTotalIdr: pricing.estimatedOrderTotalIdr,
+    authoritativeDeliveryFeeIdr: serverQuote?.deliveryFeeIdr ?? authoritativeDeliveryFeeIdr,
     voucherDiscountIdr: pricing.voucherDiscountIdr,
     depositValueForReview: pricing.depositValueForReview,
     paymentStatusLabelForReview,
@@ -468,12 +540,24 @@ export const useNewOrderSheetController = ({
       form.setErrors((prev) => ({
         ...prev,
         orderItemCatalogId: mode === 'catalog' ? undefined : prev.orderItemCatalogId,
+        orderItemVariantId: mode === 'catalog' ? undefined : prev.orderItemVariantId,
         orderItemCustomName: mode === 'custom' ? undefined : prev.orderItemCustomName,
         orderItemCustomPrice: mode === 'custom' ? undefined : prev.orderItemCustomPrice,
       }))
     },
     onCatalogProductChange: (value) => {
-      form.onFieldValueChange('orderItemCatalogId', value)
+      const product = catalogProducts.find((item) => item.id === value)
+      const activeVariants = product?.variants.filter((variant) => variant.status === 'active') ?? []
+      form.setValues((prev) => ({
+        ...prev,
+        orderItemCatalogId: value,
+        orderItemVariantId: activeVariants.length === 1 ? activeVariants[0].id : '',
+      }))
+      form.setErrors((prev) => ({ ...prev, orderItemCatalogId: undefined, orderItemVariantId: undefined }))
+      advanceAfterDiscreteSelection()
+    },
+    onCatalogVariantChange: (value) => {
+      form.onFieldValueChange('orderItemVariantId', value)
       advanceAfterDiscreteSelection()
     },
     onOrderTypeChange: (value) => {

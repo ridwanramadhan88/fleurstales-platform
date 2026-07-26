@@ -1,5 +1,7 @@
 import { usePayrollStore } from '../store/payrollStore'
 import { useUserStore } from '../store/userStore'
+import { useSettingsStore } from '../store/settingsStore'
+import { hasActionPermission } from '../config/actionPermissions'
 import { bootstrapSharedData } from './shared/bootstrap'
 import type { Json } from './shared/databaseTypes'
 import { browserSupabaseTokenProvider, getSupabaseBrowserSession } from './shared/supabaseSession'
@@ -32,6 +34,16 @@ let stopListener: (() => void) | undefined
 let queue: Promise<void> = Promise.resolve()
 
 const client = () => bootstrapSharedData(browserSupabaseTokenProvider)
+
+const canReadPayroll = (): boolean => {
+  const role = useUserStore.getState().role
+  const settings = useSettingsStore.getState()
+  return role === 'owner'
+    || hasActionPermission(role, 'finance.view_payroll', settings.actionPermissions, settings.permissions)
+    || hasActionPermission(role, 'hr.create_payroll_proposal', settings.actionPermissions, settings.permissions)
+    || hasActionPermission(role, 'hr.edit_payroll_proposal', settings.actionPermissions, settings.permissions)
+    || hasActionPermission(role, 'hr.resolve_rejected_employee', settings.actionPermissions, settings.permissions)
+}
 const dataOnly = (state: Record<string, unknown>): Record<string, unknown> =>
   Object.fromEntries(Object.entries(state).filter(([, value]) => typeof value !== 'function'))
 
@@ -110,12 +122,15 @@ export const stopPayrollSupabaseSync = (): void => {
   queue = Promise.resolve()
 }
 
-export const connectPayrollSupabase = async (): Promise<void> => {
-  await hydratePayrollFromSupabase().catch((error) => {
-    // A role with no Payroll visibility legitimately cannot hydrate this domain.
-    if (useUserStore.getState().role === 'owner' || useUserStore.getState().role === 'hr' || useUserStore.getState().role === 'finance') {
-      console.error('Unable to hydrate Fleurstales payroll state.', error)
-    }
-  })
-  startPayrollSupabaseSync()
+export const connectPayrollSupabase = async (): Promise<boolean> => {
+  if (!canReadPayroll()) return true
+  try {
+    const hydrated = await hydratePayrollFromSupabase()
+    if (!hydrated) return false
+    startPayrollSupabaseSync()
+    return true
+  } catch (error) {
+    console.error('Unable to hydrate Fleurstales payroll state.', error)
+    return false
+  }
 }

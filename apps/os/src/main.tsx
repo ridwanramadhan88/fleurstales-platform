@@ -5,6 +5,7 @@ import { removeLocalOperationalBackup } from './data/operationalStateRepository'
 import { UiLanguageBridge } from './i18n/UiLanguageBridge'
 import { initializeBusinessOsCatalogBridge } from './data/shared/catalogBridge'
 import { initializeBusinessOsStoreBridge } from './data/shared/storeBridge'
+import { isSharedBackendConfigured } from './api/remoteSession'
 
 const root = createRoot(document.getElementById('app')!)
 
@@ -33,8 +34,10 @@ const start = async () => {
   // Supabase is the durable operational source. Remove the retired aggregate
   // browser backup before production data bridges hydrate the application.
   removeLocalOperationalBackup()
-  await initializeBusinessOsStoreBridge()
-  await initializeBusinessOsCatalogBridge()
+  if (!isSharedBackendConfigured()) {
+    await initializeBusinessOsStoreBridge()
+    await initializeBusinessOsCatalogBridge()
+  }
   root.render(<>
     <UiLanguageBridge />
     <App />

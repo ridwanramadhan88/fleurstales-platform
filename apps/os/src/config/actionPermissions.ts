@@ -111,7 +111,7 @@ export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
   'orders.create': ['owner','admin'],
   'orders.edit': ['owner','admin'],
   'orders.assign': ['owner','admin'],
-  'orders.advance_status': ['owner','admin','florist'],
+  'orders.advance_status': ['owner','admin'],
   'orders.submit_change_request': ['owner','admin'],
   'orders.resolve_change_request': ['owner','finance'],
   'finance.view_collect_orders': ['owner','finance'],

@@ -65,9 +65,9 @@ export const applyCatalogImageStoragePlanLocally = (product: CatalogProduct): Ca
 }
 
 /**
- * Future live adapter. The UI does not call this automatically while the
- * project has no Supabase credentials, but the upload/metadata transaction
- * boundary is ready and matches the local storage plan above.
+ * Live Storage adapter invoked by the authenticated Catalog bridge before
+ * Catalog metadata is committed. Offline/demo mode continues to use the
+ * local storage plan without contacting Supabase.
  */
 export const syncCatalogProductImagesToRemote = async (
   product: CatalogProduct,
@@ -90,6 +90,7 @@ export const syncCatalogProductImagesToRemote = async (
 
   try {
     for (const upload of plan.pendingUploads) {
+      if (previousPaths.has(upload.storagePath)) continue
       const metadata = plan.metadata.find((image) => image.id === upload.imageId)
       if (!metadata) throw new Error(`Image metadata is missing for ${upload.imageId}.`)
       await shared.repositories.catalogAdmin.uploadProductImage({

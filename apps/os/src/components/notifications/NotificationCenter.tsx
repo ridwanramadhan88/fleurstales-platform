@@ -46,7 +46,7 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
       headerClassName="sr-only"
       hideCloseButton
       side="top"
-      contentClassName="inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] h-[min(62vh,34rem)] w-auto max-w-md gap-0 rounded-2xl border p-0 sm:h-[min(82vh,40rem)]"
+      contentClassName="inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] h-[min(62vh,34rem)] w-auto max-w-xl gap-0 rounded-2xl border p-0 sm:h-[min(82vh,44rem)] md:max-w-2xl"
     >
       <header className="shrink-0 border-b border-border/70 px-4 py-4 sm:px-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">

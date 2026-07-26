@@ -1,4 +1,7 @@
 import { useCatalogStore } from '../../store/catalogStore'
+import { useUserStore } from '../../store/userStore'
+import { useSettingsStore } from '../../store/settingsStore'
+import { canEditSection } from '../../config/permissions'
 import type {
   CatalogCategoryConfig,
   CatalogProduct,
@@ -8,6 +11,7 @@ import type {
 import type { SharedOccasion, SharedProduct } from './contracts'
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from './supabaseSession'
+import { buildCatalogImageStoragePlan, syncCatalogProductImagesToRemote } from './catalogImageBridge'
 import { applyRemoteSizeGuideLibrary, syncLocalSizeGuideLibrary } from './sizeGuideBridge'
 
 export type CatalogBridgeMode = 'business_os' | 'storefront'
@@ -181,6 +185,21 @@ const snapshotHash = (state: CatalogStoreState): string => JSON.stringify({
   sizeGuideTargets: state.sizeGuideTargets,
 })
 
+const productImageHash = (product: CatalogProduct): string => JSON.stringify(
+  buildCatalogImageStoragePlan(product).images.map((image) => ({
+    id: image.id,
+    storagePath: image.storagePath,
+    url: image.url,
+    altText: image.altText,
+    sortOrder: image.sortOrder,
+    isPrimary: image.isPrimary,
+    mimeType: image.mimeType,
+    byteSize: image.byteSize,
+    width: image.width,
+    height: image.height,
+  })),
+)
+
 let suppressLocalSync = false
 let catalogUnsubscribe: (() => void) | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
@@ -190,6 +209,7 @@ let businessFocusAttached = false
 let storefrontFocusAttached = false
 let saveInFlight = false
 let saveRequestedWhileSaving = false
+const remoteImageHashes = new Map<string, string>()
 
 const applyRemoteCatalog = (
   occasions: SharedOccasion[],
@@ -234,10 +254,10 @@ export const refreshStorefrontCatalogFromRemote = async (): Promise<boolean> => 
     const sellableProducts = products.filter((product) => product.variants.length > 0)
     if (occasions.length === 0 || sellableProducts.length === 0) {
       setBridgeStatus({
-        phase: 'local_fallback',
+        phase: 'error',
         remoteConfigured: true,
         writable: false,
-        message: 'Supabase catalog is empty; keeping the bundled catalog fallback.',
+        message: 'Supabase catalog is empty. Production Storefront cannot use the bundled prototype catalog.',
       })
       return false
     }
@@ -254,10 +274,10 @@ export const refreshStorefrontCatalogFromRemote = async (): Promise<boolean> => 
     return true
   } catch (error) {
     setBridgeStatus({
-      phase: 'local_fallback',
+      phase: 'error',
       remoteConfigured: true,
       writable: false,
-      message: `${explainError(error)} Using the bundled catalog fallback.`,
+      message: explainError(error),
     })
     return false
   }
@@ -316,13 +336,23 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
 
   setBridgeStatus({ mode: 'business_os', phase: 'loading', remoteConfigured: true, writable: false, message: undefined })
   try {
-    const [occasions, products, adminState, sizeGuideTemplates, sizeGuideTargets] = await Promise.all([
-      shared.repositories.catalogAdmin.listOccasions({ includeInactive: true }),
-      shared.repositories.catalogAdmin.listProducts({ includeInactive: true, includeCosts: true }),
-      shared.repositories.catalogAdmin.getAdminState(),
-      shared.repositories.catalogAdmin.listSizeGuideTemplates(),
-      shared.repositories.catalogAdmin.listSizeGuideTargets(),
-    ])
+    const role = useUserStore.getState().role
+    const canManageCatalog = canEditSection(role, 'catalog', useSettingsStore.getState().permissions)
+    const [occasions, products, adminState, sizeGuideTemplates, sizeGuideTargets] = canManageCatalog
+      ? await Promise.all([
+          shared.repositories.catalogAdmin.listOccasions({ includeInactive: true }),
+          shared.repositories.catalogAdmin.listProducts({ includeInactive: true, includeCosts: true }),
+          shared.repositories.catalogAdmin.getAdminState(),
+          shared.repositories.catalogAdmin.listSizeGuideTemplates(),
+          shared.repositories.catalogAdmin.listSizeGuideTargets(),
+        ])
+      : await Promise.all([
+          shared.repositories.catalog.listOccasions(),
+          shared.repositories.catalog.listProducts(),
+          Promise.resolve({ revision: 0, deletedProductCodes: [] }),
+          shared.repositories.catalog.listSizeGuideTemplates(),
+          shared.repositories.catalog.listSizeGuideTargets(),
+        ])
     if (occasions.length === 0 || products.length === 0) {
       setBridgeStatus({
         phase: 'error',
@@ -336,13 +366,15 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
     applyRemoteCatalog(occasions, products, adminState.deletedProductCodes)
     suppressLocalSync = true
     try { applyRemoteSizeGuideLibrary(sizeGuideTemplates, sizeGuideTargets) } finally { suppressLocalSync = false }
-    remoteRevision = adminState.revision
+    remoteRevision = canManageCatalog ? adminState.revision : undefined
     lastSyncedHash = snapshotHash(useCatalogStore.getState())
-    ensureBusinessSubscription()
+    remoteImageHashes.clear()
+    for (const product of useCatalogStore.getState().products) remoteImageHashes.set(product.id, productImageHash(product))
+    if (canManageCatalog) ensureBusinessSubscription()
     setBridgeStatus({
       phase: 'remote',
       remoteConfigured: true,
-      writable: true,
+      writable: canManageCatalog,
       remoteRevision,
       lastLoadedAt: new Date().toISOString(),
       message: undefined,
@@ -382,9 +414,25 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
   let succeeded = false
   setBridgeStatus({ phase: 'saving', writable: true, message: undefined })
   try {
-    const snapshot = buildRemoteSnapshot(currentState)
+    let workingRevision = remoteRevision
+    for (const product of currentState.products) {
+      const imageHash = productImageHash(product)
+      if (remoteImageHashes.get(product.id) === imageHash) continue
+      const synced = await syncCatalogProductImagesToRemote(product, workingRevision)
+      workingRevision = synced.revision
+      suppressLocalSync = true
+      try {
+        useCatalogStore.setState((state) => ({
+          products: state.products.map((item) => item.id === synced.product.id ? synced.product : item),
+        }))
+      } finally {
+        suppressLocalSync = false
+      }
+      remoteImageHashes.set(synced.product.id, productImageHash(synced.product))
+    }
+    const snapshot = buildRemoteSnapshot(useCatalogStore.getState())
     const result = await shared.repositories.catalogAdmin.replaceSnapshot({
-      baseRevision: remoteRevision,
+      baseRevision: workingRevision,
       occasions: snapshot.occasions,
       products: snapshot.products,
     })
@@ -420,7 +468,10 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
 }
 
 export const initializeStorefrontCatalogBridge = async (): Promise<void> => {
-  await refreshStorefrontCatalogFromRemote()
+  const loaded = await refreshStorefrontCatalogFromRemote()
+  if (bootstrapSharedData().enabled && !loaded) {
+    throw new Error(getCatalogBridgeStatus().message ?? 'Remote Catalog is unavailable.')
+  }
   if (!storefrontFocusAttached && typeof window !== 'undefined') {
     storefrontFocusAttached = true
     window.addEventListener('focus', () => { void refreshStorefrontCatalogFromRemote() })
@@ -451,4 +502,5 @@ export const stopBusinessOsCatalogBridge = (): void => {
   lastSyncedHash = undefined
   saveInFlight = false
   saveRequestedWhileSaving = false
+  remoteImageHashes.clear()
 }

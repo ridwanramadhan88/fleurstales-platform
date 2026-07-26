@@ -45,7 +45,7 @@ export const CatalogPromoFeatureDialog: FC<CatalogPromoFeatureDialogViewModel> =
         if (!next) onClose()
       }}
     >
-      <DialogContent className="max-w-lg gap-3">
+      <DialogContent className="max-w-3xl gap-4">
         <DialogHeader>
           <DialogTitle>Promo & feature list</DialogTitle>
           <DialogDescription>

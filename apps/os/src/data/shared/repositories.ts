@@ -1,6 +1,10 @@
 import type {
+  CreateInternalOrderInput,
+  CustomerBusinessMetric,
+  CreateInternalOrderResult,
   CreateStorefrontOrderInput,
   CreateStorefrontOrderResult,
+  StorefrontCheckoutQuoteResult,
   SharedBranch,
   SharedCatalogAdminState,
   SharedCatalogReplaceResult,
@@ -257,7 +261,7 @@ export const createCatalogAdminRepository = (client: SupabaseHttpClient): Catalo
     },
     async uploadProductImage(input) {
       await client.uploadStorageObject('product-images', input.image.storagePath, input.blob, {
-        upsert: true,
+        upsert: false,
         cacheControl: '31536000',
       })
       return {
@@ -468,6 +472,10 @@ export const createCustomerAdminRepository = (client: SupabaseHttpClient): Custo
     return rows.map(mapCustomer)
   },
 
+  async listBusinessMetrics(customerId) {
+    return client.rpc<CustomerBusinessMetric[]>('get_customer_business_metrics', { p_customer_id: customerId ?? null })
+  },
+
   async getCustomer(customerId) {
     const rows: CustomerRow[] = await client.select('customers', {
       filters: { id: customerId },
@@ -653,9 +661,41 @@ export const createOrdersAdminRepository = (client: SupabaseHttpClient): OrdersA
     }) as unknown as OrderWithItemsRow[]
     return rows[0] ? mapOrder(rows[0]) : null
   },
+
+  async quoteInternalOrder(input: CreateInternalOrderInput) {
+    return client.rpc<StorefrontCheckoutQuoteResult>('quote_internal_order', {
+      p_payload: asJson(input),
+    })
+  },
+
+  async createInternalOrder(input: CreateInternalOrderInput) {
+    return client.rpc<CreateInternalOrderResult>('create_internal_order', {
+      p_payload: asJson(input),
+    })
+  },
 })
 
 export const createStorefrontCheckoutRepository = (client: SupabaseHttpClient): StorefrontCheckoutRepository => ({
+  async quoteOrder(input: CreateStorefrontOrderInput) {
+    const args: CreateStorefrontOrderRpcArgs = {
+      p_idempotency_key: input.idempotencyKey,
+      p_customer: asJson(input.customer),
+      p_branch_id: input.branchId,
+      p_fulfillment: input.fulfillment,
+      p_schedule_date: input.scheduleDate,
+      p_schedule_time: input.scheduleTime,
+      p_items: asJson(input.items),
+      p_delivery_address: input.deliveryAddress ?? null,
+      p_delivery_instructions: input.deliveryInstructions ?? null,
+      p_order_note: input.orderNote ?? null,
+      p_greeting_message: input.greetingMessage ?? null,
+      p_greeting_card_name: input.greetingCardName ?? null,
+      p_payment_method: input.paymentMethod ?? 'transfer',
+      p_promo_code: input.promoCode ?? null,
+    }
+    return client.rpc<StorefrontCheckoutQuoteResult>('quote_storefront_checkout', args as unknown as Record<string, Json>)
+  },
+
   async createOrder(input: CreateStorefrontOrderInput) {
     const args: CreateStorefrontOrderRpcArgs = {
       p_idempotency_key: input.idempotencyKey,

@@ -14,6 +14,7 @@ import {
 } from '../domain/orderBusinessRules'
 import { finalizeOrderMutation, validateOrderCommand } from './orderCommandSupport'
 import { useFinanceStore } from './financeStore'
+import { isSharedBackendConfigured } from '../api/remoteSession'
 
 type FinanceActions = Pick<
   OrdersStoreState,
@@ -97,11 +98,13 @@ export const createOrderFinanceActions = (
         order.orderNumber === orderNumber ? updatedOrder : order,
       ),
     }))
-    useFinanceStore.getState().verifyOrderTransactions({
-      orderNumber,
-      actor: { name: actor.name, role: actor.role },
-      completedAt: updatedOrder.completedAt,
-    })
+    if (!isSharedBackendConfigured()) {
+      useFinanceStore.getState().verifyOrderTransactions({
+        orderNumber,
+        actor: { name: actor.name, role: actor.role },
+        completedAt: updatedOrder.completedAt,
+      })
+    }
     emitOrderUpdated(updatedOrder, `Verified by Finance · ${actor.name}`)
     useHrStore.getState().syncOrderContributionPoints({
       orders: get().orders,

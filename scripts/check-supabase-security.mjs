@@ -240,4 +240,38 @@ assert(releaseWorkflow.includes('functions deploy staff-login'), 'Production rel
 assert(staffSettingsRuntime.includes('PAYROLL_PAYMENT_REQUIRES_EXACTLY_ONE_PROPOSAL'), 'Payroll payment does not enforce one proposal per payment command.')
 assert(staffSettingsRuntime.includes("return private.apply_payroll_workflow_state('record_payment'"), 'Exact payroll payment wrapper does not delegate to the authoritative workflow transaction.')
 
-console.log('Fleurstales V3.3 Supabase staff identity, Settings, runtime-branch, authorization, workflow, audit, notification, and concurrency contract passes.')
+const wiringCompletion = await read('supabase/migrations/20260725230000_backend_wiring_completion.sql')
+const storefrontMain = await read('apps/storefront/src/main.tsx')
+const storefrontPersistence = await read('apps/storefront/src/store/persistApiStorage.ts')
+const internalOrderSubmit = await read('apps/os/src/components/orders/useNewOrderSubmit.ts')
+const storefrontCheckout = await read('apps/storefront/src/components/storefront/CartDrawerController.ts')
+const catalogBridgeV35 = await read('apps/os/src/data/shared/catalogBridge.ts')
+const customerBridgeV35 = await read('apps/os/src/data/shared/customerBridge.ts')
+const staffOperationsV35 = await read('apps/os/src/data/staffOperationsSupabaseSync.ts')
+const auditSyncV35 = await read('apps/os/src/data/auditSupabaseSync.ts')
+
+for (const rpc of ['quote_storefront_checkout','create_internal_order','get_my_staff_operations','get_operational_roster','save_my_attendance_record']) {
+  assert(wiringCompletion.includes(`public.${rpc}`), `V3.5 RPC ${rpc} is missing.`)
+}
+for (const table of ['staff_schedule_defaults','staff_schedule_overrides','staff_attendance_records','employee_point_events']) {
+  assert(wiringCompletion.includes(`public.${table}`), `V3.5 table ${table} is missing.`)
+}
+assert(wiringCompletion.includes('private.sync_order_finance_transactions'), 'Atomic Order→Finance synchronization is missing.')
+assert(wiringCompletion.includes('private.sync_order_contribution_points'), 'Server Order→points synchronization is missing.')
+assert(wiringCompletion.includes("SERVER_OWNED_FINANCE_ENTRY"), 'Browser Finance projections are not blocked.')
+assert(wiringCompletion.includes("SELF_ATTENDANCE_ROLE_REQUIRED"), 'Self-attendance role boundary is missing.')
+assert(wiringCompletion.includes("alter publication supabase_realtime add table public.customers"), 'CRM Realtime publication is missing.')
+assert(storefrontMain.includes('if (!isSupabaseConfigured()) await initializeOperationalPersistence()'), 'Production Storefront still hydrates prototype business persistence.')
+assert(storefrontPersistence.includes("PRODUCTION_LOCAL_ONLY_KEYS"), 'Storefront production persistence allow-list is missing.')
+assert(internalOrderSubmit.includes("createInternalOrder"), 'OS manual Orders do not call the authenticated server transaction.')
+assert(storefrontCheckout.includes('quoteOrder'), 'Storefront voucher totals do not use the server quote.')
+assert(catalogBridgeV35.includes('syncCatalogProductImagesToRemote'), 'Catalog save does not invoke Storage synchronization.')
+assert(/(?:const|let) confirmed = new Map/.test(customerBridgeV35), 'CRM bridge still marks unconfirmed revisions as saved.')
+assert(realtimeSync.includes("table: 'customers'"), 'CRM Realtime subscription is missing.')
+assert(staffOperationsV35.includes("get_operational_roster"), 'Admin operational roster hydration is missing.')
+assert(staffOperationsV35.includes("save_my_attendance_record"), 'Staff self-attendance persistence is missing.')
+assert(auditSyncV35.includes("list_security_audit_events"), 'Audit UI does not hydrate authoritative server events.')
+assert(appSource.includes('!authorizationReady || !internalSettingsReady || !operationalReady || !staffOperationsReady'), 'OS production startup does not fail closed on authority/settings/operational hydration.')
+assert(appSource.includes('!payrollReady'), 'OS production startup does not fail closed on authorized Payroll hydration.')
+
+console.log('Fleurstales V3.5 Supabase wiring-completion, authority, workflow, audit, notification, and concurrency contract passes.')

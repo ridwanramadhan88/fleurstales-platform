@@ -76,10 +76,10 @@ export const signInSupabaseWithUsername = async (identifier: string, credential:
       try {
         const failure = await context.clone().json() as { error?: string }
         if (failure.error === 'INVALID_LOGIN') {
-          throw new Error('Incorrect username or password/PIN.')
+          throw new Error('Incorrect username or password.')
         }
       } catch (cause) {
-        if (cause instanceof Error && cause.message === 'Incorrect username or password/PIN.') throw cause
+        if (cause instanceof Error && cause.message === 'Incorrect username or password.') throw cause
       }
     }
     throw new Error('Unable to reach the staff sign-in service. Please try again.')

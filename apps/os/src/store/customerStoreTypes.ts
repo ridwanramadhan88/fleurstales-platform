@@ -51,6 +51,10 @@ export interface CustomerProfile {
   promoCode?: string
   /** Intake source that first created the CRM profile. */
   createdSource?: CustomerCreatedSource
+  /** Server-derived verified-business CRM metrics. */
+  authoritativeLifetimeSpendIdr?: number
+  authoritativeOrderCount?: number
+  authoritativeSegment?: 'new' | 'regular' | 'vip'
 }
 
 export interface CustomerCreateInput {

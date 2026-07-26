@@ -1,4 +1,5 @@
 import { useSettingsStore } from '../../store/settingsStore'
+import { useUserStore } from '../../store/userStore'
 import type { SharedStoreSnapshot } from './contracts'
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from './supabaseSession'
@@ -47,6 +48,26 @@ export const subscribeStoreBridgeStatus = (listener: (status: StoreBridgeStatus)
 const explainError = (error: unknown): string =>
   error instanceof Error ? error.message : 'Store settings synchronization failed.'
 
+
+const uploadStoreLogoIfNeeded = async (
+  logoUrl: string | undefined,
+): Promise<string | undefined> => {
+  if (!logoUrl?.startsWith('data:image/')) return logoUrl
+  const match = /^data:(image\/(?:jpeg|png|webp|svg\+xml));base64,/.exec(logoUrl)
+  if (!match) throw new Error('Store logo must be a supported image.')
+  const shared = bootstrapSharedData(browserSupabaseTokenProvider)
+  if (!shared.enabled) return logoUrl
+  const blob = await fetch(logoUrl).then((response) => response.blob())
+  if (blob.size > 1_048_576) throw new Error('Store logo must be 1 MB or less.')
+  const extension = match[1] === 'image/jpeg' ? 'jpg' : match[1] === 'image/svg+xml' ? 'svg' : match[1].split('/')[1]
+  const storagePath = `branding/primary-logo.${extension}`
+  await shared.repositories.client.uploadStorageObject('store-assets', storagePath, blob, {
+    upsert: true,
+    cacheControl: '3600',
+  })
+  return shared.repositories.client.storagePublicUrl('store-assets', storagePath)
+}
+
 const snapshotHash = (): string => JSON.stringify(buildSharedStoreSnapshot(useSettingsStore.getState()))
 
 let suppressLocalSync = false
@@ -86,9 +107,19 @@ const readStorefrontSnapshot = async (): Promise<SharedStoreSnapshot | null> => 
   return { profile, branches, paymentAccounts, paymentInstructions }
 }
 
-const readBusinessSnapshot = async (): Promise<{ snapshot: SharedStoreSnapshot; revision: number }> => {
+const readBusinessSnapshot = async (writable: boolean): Promise<{ snapshot: SharedStoreSnapshot; revision?: number }> => {
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
   if (!shared.enabled) throw new Error('Supabase is not configured.')
+  if (!writable) {
+    const [profile, branches, paymentAccounts, paymentInstructions] = await Promise.all([
+      shared.repositories.store.getStoreProfile(),
+      shared.repositories.store.listBranches(),
+      shared.repositories.store.listPublicPaymentAccounts(),
+      shared.repositories.store.getPaymentInstructions(),
+    ])
+    if (!profile || branches.length === 0) throw new Error('Shared Store data is empty.')
+    return { snapshot: { profile, branches, paymentAccounts, paymentInstructions } }
+  }
   const [profile, branches, paymentAccounts, paymentInstructions, adminState] = await Promise.all([
     shared.repositories.storeAdmin.getStoreProfile(),
     shared.repositories.storeAdmin.listBranches({ includeInactive: true }),
@@ -123,12 +154,11 @@ export const refreshStorefrontStoreFromRemote = async (): Promise<boolean> => {
   try {
     const snapshot = await readStorefrontSnapshot()
     if (!snapshot) {
-      normalizeLocalFallback()
       setBridgeStatus({
-        phase: 'local_fallback',
+        phase: 'error',
         remoteConfigured: true,
         writable: false,
-        message: 'Remote Store details are empty; keeping the normalized local fallback.',
+        message: 'Remote Store details are empty. Production Storefront cannot use prototype Store data.',
       })
       return false
     }
@@ -142,12 +172,11 @@ export const refreshStorefrontStoreFromRemote = async (): Promise<boolean> => {
     })
     return true
   } catch (error) {
-    normalizeLocalFallback()
     setBridgeStatus({
-      phase: 'local_fallback',
+      phase: 'error',
       remoteConfigured: true,
       writable: false,
-      message: `${explainError(error)} Using normalized local Store details.`,
+      message: explainError(error),
     })
     return false
   }
@@ -187,7 +216,7 @@ export const refreshBusinessOsStoreFromRemote = async (options?: { discardLocalC
       phase: 'auth_required',
       remoteConfigured: true,
       writable: false,
-      message: 'A Supabase Owner session is required before remote Store details can replace the local fallback.',
+      message: 'A Supabase staff session is required before remote Store details can replace the local fallback.',
     })
     return false
   }
@@ -207,15 +236,16 @@ export const refreshBusinessOsStoreFromRemote = async (options?: { discardLocalC
 
   setBridgeStatus({ mode: 'business_os', phase: 'loading', remoteConfigured: true, writable: false, message: undefined })
   try {
-    const remote = await readBusinessSnapshot()
+    const writable = useUserStore.getState().role === 'owner'
+    const remote = await readBusinessSnapshot(writable)
     applySnapshot(remote.snapshot)
-    remoteRevision = remote.revision
+    remoteRevision = writable ? remote.revision : undefined
     lastSyncedHash = snapshotHash()
-    ensureBusinessSubscription()
+    if (writable) ensureBusinessSubscription()
     setBridgeStatus({
       phase: 'remote',
       remoteConfigured: true,
-      writable: true,
+      writable: useUserStore.getState().role === 'owner',
       remoteRevision,
       lastLoadedAt: new Date().toISOString(),
       message: undefined,
@@ -253,6 +283,18 @@ export const flushBusinessOsStoreSync = async (): Promise<boolean> => {
   setBridgeStatus({ phase: 'saving', writable: true, message: undefined })
   try {
     const snapshot = buildSharedStoreSnapshot(useSettingsStore.getState())
+    const storedLogoUrl = await uploadStoreLogoIfNeeded(snapshot.profile.logoUrl)
+    if (storedLogoUrl !== snapshot.profile.logoUrl) {
+      snapshot.profile.logoUrl = storedLogoUrl
+      suppressLocalSync = true
+      try {
+        useSettingsStore.setState((state) => ({
+          storeProfile: { ...state.storeProfile, logoUrl: storedLogoUrl ?? '' },
+        }))
+      } finally {
+        suppressLocalSync = false
+      }
+    }
     const result = await shared.repositories.storeAdmin.replaceSnapshot({
       baseRevision: remoteRevision,
       snapshot,
@@ -262,7 +304,7 @@ export const flushBusinessOsStoreSync = async (): Promise<boolean> => {
     succeeded = true
     setBridgeStatus({
       phase: 'remote',
-      writable: true,
+      writable: useUserStore.getState().role === 'owner',
       remoteRevision,
       lastSavedAt: new Date().toISOString(),
       message: undefined,
@@ -288,7 +330,10 @@ export const flushBusinessOsStoreSync = async (): Promise<boolean> => {
 }
 
 export const initializeStorefrontStoreBridge = async (): Promise<void> => {
-  await refreshStorefrontStoreFromRemote()
+  const loaded = await refreshStorefrontStoreFromRemote()
+  if (bootstrapSharedData().enabled && !loaded) {
+    throw new Error(getStoreBridgeStatus().message ?? 'Remote Store details are unavailable.')
+  }
   if (!storefrontFocusAttached && typeof window !== 'undefined') {
     storefrontFocusAttached = true
     window.addEventListener('focus', () => { void refreshStorefrontStoreFromRemote() })

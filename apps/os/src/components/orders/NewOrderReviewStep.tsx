@@ -43,6 +43,7 @@ export interface NewOrderReviewStepProps {
   values: NewOrderReviewValues
   /** Catalog product selected in catalog mode, if any (null in custom mode or no selection yet). */
   selectedCatalogProduct: CatalogProduct | null
+  selectedCatalogVariant: CatalogProduct['variants'][number] | null
   estimatedOrderTotalIdr: number
   voucherDiscountIdr: number
   depositValueForReview: number
@@ -58,6 +59,7 @@ export interface NewOrderReviewStepProps {
 export const NewOrderReviewStep: FC<NewOrderReviewStepProps> = ({
   values,
   selectedCatalogProduct,
+  selectedCatalogVariant,
   estimatedOrderTotalIdr,
   voucherDiscountIdr,
   depositValueForReview,
@@ -166,7 +168,8 @@ export const NewOrderReviewStep: FC<NewOrderReviewStepProps> = ({
                   {selectedCatalogProduct.name}
                 </p>
                 <p className="text-muted-foreground">
-                  Rp {formatter.format(getDisplayPriceIdr(selectedCatalogProduct))}
+                  {selectedCatalogVariant ? `${selectedCatalogVariant.size || selectedCatalogVariant.sku} · ` : ''}
+                  Rp {formatter.format(selectedCatalogVariant?.price ?? getDisplayPriceIdr(selectedCatalogProduct))}
                 </p>
               </>
             ) : (

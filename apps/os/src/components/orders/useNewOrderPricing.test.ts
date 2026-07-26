@@ -40,6 +40,7 @@ describe('useNewOrderPricing', () => {
         deliveryFee: '25.000',
       },
       catalogProducts: [product],
+      authoritativeDeliveryFeeIdr: 25_000,
     })
 
     expect(result.estimatedOrderTotalIdr).toBe(225_000)

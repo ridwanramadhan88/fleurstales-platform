@@ -143,17 +143,17 @@ const safeObjectSegment = (value: string): string => {
   return safe || 'image'
 }
 
-export const buildCatalogImageStoragePath = (productId: string, imageId: string): string =>
-  `${safeObjectSegment(productId)}/${safeObjectSegment(imageId)}.jpg`
+export const buildCatalogImageStoragePath = (productId: string, imageId: string, contentVersion?: string): string =>
+  `${safeObjectSegment(productId)}/${safeObjectSegment(imageId)}${contentVersion ? `-${safeObjectSegment(contentVersion)}` : ''}.jpg`
 
 export const assignCatalogImageStoragePaths = (
   productId: string,
   images: CatalogProductImage[],
 ): CatalogProductImage[] => images.map((image) => ({
   ...image,
-  ...(image.storagePath || !image.url.startsWith('data:image/')
-    ? {}
-    : { storagePath: buildCatalogImageStoragePath(productId, image.id) }),
+  ...(image.url.startsWith('data:image/')
+    ? { storagePath: buildCatalogImageStoragePath(productId, image.id, hashText(image.url)) }
+    : {}),
 }))
 
 export const dataUrlToBlob = (dataUrl: string): Blob => {
@@ -184,7 +184,7 @@ export const prepareCatalogImageUpload = (
   return {
     imageId: image.id,
     productId,
-    storagePath: image.storagePath ?? buildCatalogImageStoragePath(productId, image.id),
+    storagePath: image.storagePath ?? buildCatalogImageStoragePath(productId, image.id, hashText(image.url)),
     blob,
     mimeType: CATALOG_IMAGE_MIME_TYPE,
     byteSize: blob.size,

@@ -13,6 +13,7 @@ import type { StaffRoleSettings } from '../../types/settings'
 import type { SettingsValidationErrors } from '../../domain/settings/settingsValidation'
 import { compactValueRowClass, SettingsSectionHeader } from './SettingsPrimitives'
 import type { StaffAccountDraft } from './settingsDraftTypes'
+import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 
 interface Props {
   isEditing: boolean
@@ -65,6 +66,7 @@ export const StaffRoleSettingsPanel: FC<Props> = ({
   }
 
   const nonOwnerEmployees = employees.filter((employee) => employee.systemRole !== 'owner')
+  const usesProductionPassword = isSupabaseConfigured()
 
   return (
     <section className="space-y-5">
@@ -98,7 +100,7 @@ export const StaffRoleSettingsPanel: FC<Props> = ({
                   <Field label="Role" error={validationErrors['staff.account.systemRole']}><select value={staffAccountDraft.systemRole} onChange={(event) => onUpdateStaffAccountDraft({ systemRole: event.target.value as UserRole })} className={FIELD_CLASS}>{staffRoles.roles.filter((role) => role !== 'owner').map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></Field>
                   <Field label="Username" error={validationErrors['staff.account.username']}><input value={staffAccountDraft.username} onChange={(event) => onUpdateStaffAccountDraft({ username: event.target.value.toLowerCase() })} className={FIELD_CLASS} /></Field>
                   <Field label="Recovery email" error={validationErrors['staff.account.email']}><input type="email" autoComplete="email" value={staffAccountDraft.email} onChange={(event) => onUpdateStaffAccountDraft({ email: event.target.value.toLowerCase() })} className={FIELD_CLASS} /></Field>
-                  <Field label="PIN" error={validationErrors['staff.account.pin']}><input inputMode="numeric" maxLength={6} value={staffAccountDraft.pin} onChange={(event) => onUpdateStaffAccountDraft({ pin: event.target.value.replace(/\D/g, '').slice(0, 6) })} className={FIELD_CLASS} /></Field>
+                  <Field label={usesProductionPassword ? "Password" : "PIN"} error={validationErrors['staff.account.pin']}><input type="password" inputMode={usesProductionPassword ? undefined : "numeric"} maxLength={usesProductionPassword ? undefined : 6} autoComplete="new-password" value={staffAccountDraft.pin} onChange={(event) => onUpdateStaffAccountDraft({ pin: usesProductionPassword ? event.target.value : event.target.value.replace(/\D/g, '').slice(0, 6) })} placeholder={usesProductionPassword ? "12+ chars, mixed case, number, symbol" : "6 numbers"} className={FIELD_CLASS} /></Field>
                   <Field label="Hire date" error={validationErrors['staff.account.hireDate']}><input type="date" value={staffAccountDraft.hireDate} onChange={(event) => onUpdateStaffAccountDraft({ hireDate: event.target.value })} className={FIELD_CLASS} /></Field>
                   <Field label="Monthly base salary" error={validationErrors['staff.account.baseSalaryIdr']}><div className="flex h-10 overflow-hidden rounded-lg border border-border bg-background"><span className="flex items-center border-r border-border px-2 text-xs text-muted-foreground">Rp</span><input type="number" min={1} step={100000} value={staffAccountDraft.baseSalaryIdr} onChange={(event) => onUpdateStaffAccountDraft({ baseSalaryIdr: Number(event.target.value) })} className="min-w-0 flex-1 px-2 text-sm outline-none" /></div></Field>
                 </div>

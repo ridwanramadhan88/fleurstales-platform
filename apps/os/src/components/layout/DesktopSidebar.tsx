@@ -93,7 +93,7 @@ const SidebarNavButton: FC<{
       type="button"
       className={`group flex h-11 w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium transition-colors ${
         active
-          ? 'bg-sidebar-accent text-foreground shadow-sm ring-1 ring-sidebar-border'
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-none'
           : disabled
             ? 'cursor-not-allowed text-muted-foreground/40'
             : 'text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-foreground'
@@ -138,7 +138,7 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
   onSelectBranch,
 }) => {
   return (
-    <aside className="sticky top-0 hidden min-h-screen w-[208px] shrink-0 self-start flex-col overflow-visible border-r border-sidebar-border bg-sidebar-background px-3 py-4 text-sidebar-foreground md:flex lg:w-[224px] xl:w-[236px]">
+    <aside className="apple-material sticky top-0 hidden min-h-screen w-[208px] shrink-0 self-start flex-col overflow-visible border-r border-sidebar-border/80 bg-sidebar-background/90 px-3 py-4 text-sidebar-foreground md:flex lg:w-[224px] xl:w-[236px]">
       {/* Brand block */}
       <header className="mb-4 flex items-center gap-2 px-1">
         <StoreBrandMark logoUrl={storeLogoUrl} alt={`${storeName} logo`} className="size-8 rounded-lg" />

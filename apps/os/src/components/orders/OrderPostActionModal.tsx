@@ -40,7 +40,7 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4"
       onClick={(event) => {
         event.stopPropagation()
         onClose()
@@ -50,7 +50,7 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
         role="dialog"
         aria-modal="true"
         onClick={(event) => event.stopPropagation()}
-        className="animate-sheet-up w-full max-w-md rounded-t-2xl bg-card p-5 shadow-lg ring-1 ring-border/60 sm:rounded-xl"
+        className="animate-sheet-up w-full rounded-t-2xl bg-card p-5 shadow-ios-lg ring-1 ring-border/60 sm:w-[calc(100vw-2rem)] sm:max-w-2xl sm:rounded-2xl sm:p-6"
       >
         {kind === 'ready' ? (
           <>

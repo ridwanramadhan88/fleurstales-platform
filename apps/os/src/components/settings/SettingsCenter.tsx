@@ -440,6 +440,7 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
                   onSetBranchActive={onSetBranchActive}
                   branchImpacts={branchImpacts}
                   validationErrors={validationErrors}
+                  attendanceRadiusMeters={attendance.locationRadiusMeters}
                 />
               )}
               {activeSection === "attendance" && (

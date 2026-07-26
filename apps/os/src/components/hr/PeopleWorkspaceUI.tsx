@@ -172,7 +172,7 @@ export const CreateStaffSheet = ({
   footer: ReactNode
 }) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="mobile-focus-workflow bottom-0 left-0 top-auto flex max-h-[96dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-b-none rounded-t-2xl p-0 sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[90vh] sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
+    <DialogContent className="mobile-focus-workflow bottom-0 left-0 top-auto flex max-h-[96dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-b-none rounded-t-2xl p-0 sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[90vh] sm:max-w-4xl md:max-w-5xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl">
       <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
         <div className="shrink-0 border-b border-border px-4 py-4 sm:px-5">
           <DialogHeader>

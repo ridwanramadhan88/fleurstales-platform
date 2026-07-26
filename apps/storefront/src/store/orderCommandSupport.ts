@@ -57,6 +57,7 @@ export const validateOrderCommand = ({
   kind,
   permissions,
   action,
+  nextStatus,
 }: {
   order: OrderTableRow | undefined
   actor: OrderActor
@@ -64,6 +65,7 @@ export const validateOrderCommand = ({
   kind: OrderMutationKind
   permissions: PermissionMatrix
   action: string
+  nextStatus?: import('../types/orders').OrderStatus
 }): OrderCommandFailure | null => {
   if (!order) {
     return {
@@ -73,7 +75,7 @@ export const validateOrderCommand = ({
     }
   }
 
-  const authorization = authorizeOrderMutation({ order, actor, permissions, kind })
+  const authorization = authorizeOrderMutation({ order, actor, permissions, kind, nextStatus })
   if (!authorization.allowed) {
     auditOrderCommand({
       order,

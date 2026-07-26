@@ -12,6 +12,9 @@ import { hydratePayrollFromSupabase } from './payrollSupabaseSync'
 import { hydrateInternalSettingsFromSupabase } from './internalSettingsSupabaseSync'
 import { connectOperationalSupabase, hydrateOperationalStateFromSupabase, stopOperationalSupabaseSync } from './operationalSupabaseSync'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
+import { mergeBusinessOsCustomerFromRemote, refreshBusinessOsCustomerMetricsFromRemote } from './shared/customerBridge'
+import { hydrateMyStaffOperations } from './staffOperationsSupabaseSync'
+import { hydrateSecurityAuditFromSupabase } from './auditSupabaseSync'
 
 interface StaffNotificationRow {
   id: string
@@ -75,6 +78,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 
 let realtimeChannel: RealtimeChannel | undefined
 let orderRefreshQueued = false
+let rosterRefreshQueued = false
 
 const notificationFromRow = (row: StaffNotificationRow): NotificationRecord | null => {
   if (!DISPLAY_KINDS.has(row.kind as AlertKind)) return null
@@ -153,6 +157,15 @@ export const hydrateServerOrderActivities = async (): Promise<void> => {
   useOrderRuntimeStore.getState().upsertServerActivities(grouped)
 }
 
+const queueRosterRefresh = (): void => {
+  if (rosterRefreshQueued) return
+  rosterRefreshQueued = true
+  queueMicrotask(() => {
+    rosterRefreshQueued = false
+    void hydrateMyStaffOperations().catch(() => undefined)
+  })
+}
+
 const queueOrderRefresh = (): void => {
   if (orderRefreshQueued) return
   orderRefreshQueued = true
@@ -176,7 +189,7 @@ export const startRealtimeSupabaseSync = (): void => {
   if (!client) return
 
   realtimeChannel = client
-    .channel('fleurstales-os-v3-3')
+    .channel('fleurstales-os-v3-5')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_notifications' }, (payload) => {
       const row = payload.new as Partial<StaffNotificationRow>
       if (row.kind === 'authorization_changed') void refreshAuthorizationRuntime().catch(() => undefined)
@@ -193,8 +206,24 @@ export const startRealtimeSupabaseSync = (): void => {
       }
       if (row.entity_type === 'authorization') void refreshAuthorizationRuntime().catch(() => undefined)
       if (row.entity_type === 'internal_settings') void hydrateInternalSettingsFromSupabase().catch(() => undefined)
+      void hydrateSecurityAuditFromSupabase().catch(() => undefined)
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => queueOrderRefresh())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, (payload) => {
+      const row = ((payload.new && Object.keys(payload.new).length ? payload.new : payload.old) ?? {}) as { id?: string }
+      if (row.id) void mergeBusinessOsCustomerFromRemote(row.id).catch(() => undefined)
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_schedule_defaults' }, queueRosterRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_schedule_overrides' }, queueRosterRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_attendance_records' }, queueRosterRefresh)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_roster_refresh_events' }, queueRosterRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_point_events' }, () => {
+      void hydrateOperationalStateFromSupabase().catch(() => undefined)
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+      queueOrderRefresh()
+      const row = ((payload.new && Object.keys(payload.new).length ? payload.new : payload.old) ?? {}) as { customer_id?: string | null }
+      if (row.customer_id) void refreshBusinessOsCustomerMetricsFromRemote(row.customer_id).catch(() => undefined)
+    })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'order_activities' }, () => {
       void hydrateServerOrderActivities().catch(() => undefined)
     })

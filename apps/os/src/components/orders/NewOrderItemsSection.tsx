@@ -23,12 +23,14 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
     values,
     errors,
     catalogProductOptions,
+    catalogVariantOptions,
     activeGuideField,
     activeGuideSection,
     onFieldChange,
     onCurrencyFieldChange,
     onOrderItemModeChange,
     onCatalogProductChange,
+    onCatalogVariantChange,
     onSectionFocus,
   } = viewModel
 
@@ -104,6 +106,24 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                           <p className="text-xs text-destructive">
                             {errors.orderItemCatalogId}
                           </p>
+                        )}
+                        {values.orderItemCatalogId && catalogVariantOptions.length > 0 && (
+                          <div className="space-y-1.5 pt-1">
+                            <label htmlFor="orderItemVariantId" className="text-xs text-muted-foreground">
+                              Choose size or variant
+                            </label>
+                            <Select value={values.orderItemVariantId} onValueChange={onCatalogVariantChange}>
+                              <SelectTrigger id="orderItemVariantId" className={fieldClass(activeGuideField === 'orderItemVariantId')}>
+                                <SelectValue placeholder="Select size or variant" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {catalogVariantOptions.map((variant) => (
+                                  <SelectItem key={variant.id} value={variant.id}>{variant.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {errors.orderItemVariantId && <p className="text-xs text-destructive">{errors.orderItemVariantId}</p>}
+                          </div>
                         )}
                       </div>
                     ) : (

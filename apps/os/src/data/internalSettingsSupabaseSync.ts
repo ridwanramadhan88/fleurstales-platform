@@ -2,6 +2,8 @@ import type { PayrollSettingsRevision, SchedulingSettingsRevision } from '../dom
 import { DEFAULT_OWNER_SETTINGS } from '../domain/settings/defaultOwnerSettings'
 import { useSettingsStore } from '../store/settingsStore'
 import { useUserStore } from '../store/userStore'
+import { useCustomerStore } from '../store/customerStore'
+import type { CustomerSegmentRules } from '../store/customerStoreTypes'
 import type { AttendanceSettings, PayrollDefaultSettings, SchedulingSettings, StaffRoleSettings } from '../types/settings'
 import { bootstrapSharedData } from './shared/bootstrap'
 import type { Json } from './shared/databaseTypes'
@@ -16,6 +18,7 @@ type InternalSettingsResponse = {
   payroll: PayrollDefaultSettings | null
   schedulingRevisions: SchedulingSettingsRevision[] | null
   payrollRevisions: PayrollSettingsRevision[] | null
+  customerSegments: CustomerSegmentRules | null
   updatedAt?: string | null
 }
 
@@ -26,6 +29,7 @@ type InternalSettingsPayload = {
   payroll: PayrollDefaultSettings
   schedulingRevisions: SchedulingSettingsRevision[]
   payrollRevisions: PayrollSettingsRevision[]
+  customerSegments: CustomerSegmentRules
 }
 
 let revision = 1
@@ -38,6 +42,7 @@ const client = () => bootstrapSharedData(browserSupabaseTokenProvider)
 
 const localPayload = (): InternalSettingsPayload => {
   const state = useSettingsStore.getState()
+  const customerState = useCustomerStore.getState()
   return {
     staffRoles: state.staffRoles,
     attendance: state.attendance,
@@ -45,6 +50,7 @@ const localPayload = (): InternalSettingsPayload => {
     payroll: state.payroll,
     schedulingRevisions: state.schedulingConfigRevisions,
     payrollRevisions: state.payrollConfigRevisions,
+    customerSegments: customerState.segmentRules,
   }
 }
 
@@ -61,6 +67,7 @@ const applyRemote = (remote: InternalSettingsResponse): void => {
       schedulingConfigRevisions: remote.schedulingRevisions?.length ? remote.schedulingRevisions : state.schedulingConfigRevisions,
       payrollConfigRevisions: remote.payrollRevisions?.length ? remote.payrollRevisions : state.payrollConfigRevisions,
     }))
+    if (remote.customerSegments) useCustomerStore.setState({ segmentRules: remote.customerSegments })
     revision = Math.max(1, Number(remote.revision) || 1)
     lastSerialized = serialize(localPayload())
   } finally {
@@ -97,6 +104,7 @@ const persistInternalSettings = async (): Promise<void> => {
       p_attendance: payload.attendance as unknown as Json,
       p_scheduling: payload.scheduling as unknown as Json,
       p_payroll: payload.payroll as unknown as Json,
+      p_customer_segments: payload.customerSegments as unknown as Json,
       p_scheduling_revisions: payload.schedulingRevisions as unknown as Json,
       p_payroll_revisions: payload.payrollRevisions as unknown as Json,
     })
@@ -129,7 +137,9 @@ const scheduleSave = (): void => {
 export const startInternalSettingsSupabaseSync = (): void => {
   if (stopSubscription || useUserStore.getState().role !== 'owner') return
   lastSerialized = serialize(localPayload())
-  stopSubscription = useSettingsStore.subscribe(scheduleSave)
+  const stopSettings = useSettingsStore.subscribe(scheduleSave)
+  const stopCustomer = useCustomerStore.subscribe(scheduleSave)
+  stopSubscription = () => { stopSettings(); stopCustomer() }
 }
 
 export const stopInternalSettingsSupabaseSync = (): void => {
@@ -139,9 +149,14 @@ export const stopInternalSettingsSupabaseSync = (): void => {
   stopSubscription = undefined
 }
 
-export const connectInternalSettingsSupabase = async (): Promise<void> => {
-  await hydrateInternalSettingsFromSupabase().catch((error) => {
+export const connectInternalSettingsSupabase = async (): Promise<boolean> => {
+  try {
+    const hydrated = await hydrateInternalSettingsFromSupabase()
+    if (!hydrated) return false
+    startInternalSettingsSupabaseSync()
+    return true
+  } catch (error) {
     console.error('Unable to hydrate Fleurstales internal settings.', error)
-  })
-  startInternalSettingsSupabaseSync()
+    return false
+  }
 }

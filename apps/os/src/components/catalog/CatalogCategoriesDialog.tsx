@@ -64,7 +64,7 @@ export const CatalogCategoriesDialog: FC<CatalogCategoriesDialogViewModel> = ({
   onDelete,
 }) => (
   <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
-    <DialogContent className="flex max-h-[88vh] max-w-3xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0">
+    <DialogContent className="flex max-h-[92vh] max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0">
       <DialogHeader className="border-b border-border/70 px-6 py-5">
         <DialogTitle>Manage occasions</DialogTitle>
         <DialogDescription>

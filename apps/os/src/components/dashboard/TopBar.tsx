@@ -96,7 +96,7 @@ export const TopBar: FC<TopBarViewModel> = ({
   onToggleProfileMenu,
   onSignOutFromProfile,
 }) => (
-  <header className="sticky top-0 z-30 border-b border-border/50 bg-background/95 px-4 backdrop-blur-xl sm:px-6 lg:px-6 xl:px-8">
+  <header className="apple-material sticky top-0 z-30 border-b border-border/70 bg-surface-card/80 px-4 shadow-[0_1px_0_hsl(var(--border)/0.35)] sm:px-6 lg:px-6 xl:px-8">
     <div className="grid min-h-16 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 md:grid-cols-[minmax(8.5rem,auto)_minmax(12rem,24rem)_auto] md:gap-2 lg:grid-cols-[minmax(9.5rem,auto)_minmax(14rem,28rem)_auto] xl:grid-cols-[minmax(0,1fr)_minmax(20rem,42rem)_minmax(0,1fr)] xl:gap-3">
       <div ref={branchMenuRef} className="flex min-w-0 items-center">
         <div className="flex min-w-0 items-center gap-2.5 md:hidden">

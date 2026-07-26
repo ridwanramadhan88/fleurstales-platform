@@ -7,7 +7,7 @@
  */
 
 import type { PermissionMatrix } from '../types/settings'
-import type { OrderTableRow } from '../types/orders'
+import type { OrderStatus, OrderTableRow } from '../types/orders'
 import type { UserRole } from '../store/userStore'
 import { canEditSection } from '../config/permissions'
 import { DEFAULT_ACTION_PERMISSIONS, hasActionPermission, type ActionPermissionMatrix } from '../config/actionPermissions'
@@ -82,13 +82,17 @@ export const authorizeOrderMutation = ({
   permissions,
   kind,
   actionPermissions = DEFAULT_ACTION_PERMISSIONS,
+  nextStatus,
 }: {
   order: OrderTableRow
   actor: OrderActor
   permissions: PermissionMatrix
   kind: OrderMutationKind
   actionPermissions?: ActionPermissionMatrix
+  nextStatus?: OrderStatus
 }): OrderAuthorizationResult => {
+  void nextStatus
+
   if (!canViewOrder(order, actor, permissions, actionPermissions)) {
     return { allowed: false, reason: 'This order is outside your permitted scope.' }
   }
@@ -134,6 +138,9 @@ export const authorizeOrderMutation = ({
     actor.role === 'finance' && isOrderLocked(order) && canDirectlyEditOrder(order, actor.role)
 
   if (kind === 'status') {
+    if (actor.role === 'florist') {
+      return { allowed: false, reason: 'Florists can view assigned work but cannot change order status.' }
+    }
     const canOperateStatus = actor.role === 'owner' || actor.role === 'admin' || financeLockedOverride
     if (!canOperateStatus || (!hasSectionEdit && !financeLockedOverride)) {
       return { allowed: false, reason: 'Only Owner or Admin can advance active order statuses.' }

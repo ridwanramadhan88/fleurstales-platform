@@ -65,6 +65,12 @@ const GUIDE_STEPS: GuideStep[] = [
     isApplicable: (v) => v.orderItemMode === 'catalog',
     isFilled: (v) => hasText(v.orderItemCatalogId),
   },
+  {
+    key: 'orderItemVariantId',
+    section: 'items',
+    isApplicable: (v) => v.orderItemMode === 'catalog' && hasText(v.orderItemCatalogId),
+    isFilled: (v) => hasText(v.orderItemVariantId),
+  },
 
   {
     key: 'orderType',

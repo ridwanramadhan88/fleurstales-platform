@@ -248,8 +248,8 @@ export const FinancePayrollReview = () => {
       )}
 
       {selected && (
-        <div role="dialog" aria-modal="true" aria-label="Payroll proposal review" className="mobile-focus-workflow fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-          <div className="flex max-h-[96dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-card sm:max-h-[92vh] sm:rounded-2xl">
+        <div role="dialog" aria-modal="true" aria-label="Payroll proposal review" className="mobile-focus-workflow fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4">
+          <div className="flex max-h-[96dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-card shadow-ios-lg ring-1 ring-border/60 sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl md:max-w-6xl">
             <div className="shrink-0 border-b border-border bg-card px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

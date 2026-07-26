@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { CatalogProduct } from '../../store/catalogStoreTypes'
 import type {
   CustomerIntakeInput,
@@ -13,6 +14,11 @@ import type { BranchFilter, BranchId } from '../../types/orders'
 import { generateId } from '../../lib/id'
 import type { NewOrderFormValues } from './useNewOrderForm'
 import { useUserStore } from '../../store/userStore'
+import { bootstrapSharedData } from '../../data/shared/bootstrap'
+import type { CreateInternalOrderInput, StorefrontCheckoutQuoteResult } from '../../data/shared/contracts'
+import { browserSupabaseTokenProvider, getSupabaseAccessToken } from '../../data/shared/supabaseSession'
+import { refreshBusinessOsOrdersFromRemote } from '../../data/shared/orderBridge'
+import { refreshBusinessOsCustomersFromRemote } from '../../data/shared/customerBridge'
 
 interface CustomerDraft {
   id: string | null
@@ -69,6 +75,7 @@ const formatScheduleLabel = (dateStr: string, timeStr: string): string => {
 }
 
 export const useNewOrderSubmit = ({
+  open,
   values,
   activeBranch,
   catalogProducts,
@@ -81,7 +88,10 @@ export const useNewOrderSubmit = ({
   onClose,
   setStep,
   voucherDiscountIdr,
+  authoritativeDeliveryFeeIdr,
+  serverQuote,
 }: {
+  open: boolean
   values: NewOrderFormValues
   activeBranch: BranchFilter
   catalogProducts: CatalogProduct[]
@@ -94,6 +104,8 @@ export const useNewOrderSubmit = ({
   onClose: () => void
   setStep: (step: 'edit' | 'review') => void
   voucherDiscountIdr: number
+  authoritativeDeliveryFeeIdr: number
+  serverQuote: StorefrontCheckoutQuoteResult | null
 }) => {
   const employeeId = useUserStore((state) => state.employeeId)
   const actorName = useUserStore((state) => state.name)
@@ -106,6 +118,11 @@ export const useNewOrderSubmit = ({
     branchId: actorBranchId,
   }
 
+  const internalOrderIdempotencyKey = useRef(`internal:${generateId('order-attempt')}:${Date.now()}`)
+  useEffect(() => {
+    if (open) internalOrderIdempotencyKey.current = `internal:${generateId('order-attempt')}:${Date.now()}`
+  }, [open])
+
   const buildPrimaryOrderItemPayload = () => {
     if (values.orderItemMode === 'catalog') {
       const product =
@@ -114,7 +131,8 @@ export const useNewOrderSubmit = ({
         ) ?? null
 
       const activeVariants = product?.variants.filter((variant) => variant.status === 'active') ?? []
-      const exactVariant = activeVariants.length === 1 ? activeVariants[0] : undefined
+      const exactVariant = activeVariants.find((variant) => variant.id === values.orderItemVariantId)
+      if (!exactVariant) throw new Error('Select the product size or variant before creating the order.')
       return {
         mode: 'catalog' as const,
         catalog_product_id: product?.id ?? values.orderItemCatalogId,
@@ -136,13 +154,73 @@ export const useNewOrderSubmit = ({
     }
   }
 
-  const createOrderFromForm = () => {
+  const buildRemoteOrderInput = (expectedQuote?: StorefrontCheckoutQuoteResult | null): CreateInternalOrderInput => {
+    if (activeBranch === 'All') throw new Error('Select a branch before creating an order.')
+    const branchForOrder: BranchId = activeBranch
+    const customerDraft = buildCustomerDraftFromForm(values)
+    const primaryOrderItem = buildPrimaryOrderItemPayload()
+    const trimmedEmail = values.customerEmail.trim()
+    const trimmedBirthday = values.customerBirthday.trim()
+    const trimmedPromoCode = values.promoCode.trim()
+    return {
+      idempotencyKey: internalOrderIdempotencyKey.current,
+      customer: {
+        id: matchedCustomer?.id,
+        name: customerDraft.name,
+        whatsappNumber: customerDraft.whatsappNumber,
+        email: trimmedEmail || undefined,
+        birthday: trimmedBirthday || undefined,
+        acceptedProfileUpdates: matchedCustomer ? {
+          email: acceptedProfileSuggestions.email,
+          birthday: acceptedProfileSuggestions.birthday,
+          preferredBranchId: acceptedProfileSuggestions.preferredBranchId,
+        } : undefined,
+      },
+      branchId: branchForOrder,
+      source: values.orderType === 'walk_in' ? 'walk_in' : 'whatsapp',
+      fulfillment: values.fulfillmentType as 'delivery' | 'pickup',
+      scheduleDate: values.fulfillmentType === 'delivery' ? values.deliveryDate : values.pickupDate,
+      scheduleTime: values.fulfillmentType === 'delivery' ? values.deliveryTime : values.pickupTime,
+      items: [{
+        mode: primaryOrderItem.mode,
+        productId: primaryOrderItem.mode === 'catalog' ? primaryOrderItem.catalog_product_id : undefined,
+        variantId: primaryOrderItem.mode === 'catalog' ? primaryOrderItem.catalog_variant_id : undefined,
+        productName: primaryOrderItem.name,
+        quantity: 1,
+        unitPriceIdr: primaryOrderItem.unit_price_idr,
+      }],
+      deliveryAddress: values.fulfillmentType === 'delivery' ? values.deliveryAddress.trim() || undefined : undefined,
+      deliveryInstructions: values.fulfillmentType === 'delivery' ? values.deliveryInstructions.trim() || undefined : undefined,
+      orderNote: values.orderNote.trim() || undefined,
+      greetingMessage: values.greetingMessage.trim() || undefined,
+      greetingCardName: values.greetingCardName.trim() || undefined,
+      paymentMethod: values.paymentMethod || undefined,
+      paymentStatus: values.paymentStatus || 'unpaid',
+      depositAmountIdr: sanitizeCurrency(values.depositAmount),
+      promoCode: trimmedPromoCode || undefined,
+      expectedQuote: expectedQuote ? {
+        itemsSubtotalIdr: expectedQuote.itemsSubtotalIdr,
+        deliveryFeeIdr: expectedQuote.deliveryFeeIdr,
+        discountIdr: expectedQuote.discountIdr,
+        totalIdr: expectedQuote.totalIdr,
+        promoAccepted: expectedQuote.promoAccepted,
+      } : undefined,
+    }
+  }
+
+  const quoteOrderFromForm = async (): Promise<StorefrontCheckoutQuoteResult | null> => {
+    const shared = bootstrapSharedData(browserSupabaseTokenProvider)
+    if (!shared.enabled || !getSupabaseAccessToken()) return null
+    return shared.repositories.ordersAdmin.quoteInternalOrder(buildRemoteOrderInput())
+  }
+
+  const createOrderFromForm = async () => {
     if (activeBranch === 'All') throw new Error('Select a branch before creating an order.')
     const branchForOrder: BranchId = activeBranch
 
     const deliveryFeeValue =
       values.fulfillmentType === 'delivery'
-        ? sanitizeCurrency(values.deliveryFee)
+        ? Math.max(0, Math.round(authoritativeDeliveryFeeIdr))
         : 0
     const depositValue = sanitizeCurrency(values.depositAmount)
 
@@ -153,30 +231,16 @@ export const useNewOrderSubmit = ({
     const trimmedBirthday = values.customerBirthday.trim()
     const trimmedPromoCode = values.promoCode.trim()
 
-    const intake = createOrUpdateCustomerFromAdmin({
-      name: customerDraft.name,
-      whatsappNumber: customerDraft.whatsappNumber,
-      email: trimmedEmail || undefined,
-      birthday: trimmedBirthday || undefined,
-      preferredBranch: branchForOrder,
-      promoCode: trimmedPromoCode || undefined,
-      createdSource: 'admin',
-      acceptedSuggestions: matchedCustomer
-        ? acceptedProfileSuggestions
-        : undefined,
-    })
-    const savedCustomer: CustomerProfile = intake.customer
-
     const itemTotalIdr = primaryOrderItem.unit_price_idr
     const totalOrderIdr = Math.max(0, itemTotalIdr - voucherDiscountIdr + deliveryFeeValue)
 
     const payload = {
-      customer_id: savedCustomer.id,
+      customer_id: matchedCustomer?.id ?? null,
       customer_lookup_key: customerDraft.lookupKey,
       customer: {
-        id: savedCustomer.id,
-        name: savedCustomer.name,
-        whatsappNumber: savedCustomer.whatsappNumber,
+        id: matchedCustomer?.id ?? null,
+        name: customerDraft.name,
+        whatsappNumber: customerDraft.whatsappNumber,
       },
       branch: branchForOrder,
       order_type: values.orderType,
@@ -231,6 +295,32 @@ export const useNewOrderSubmit = ({
         ? values.deliveryTime
         : values.pickupTime
     const calculatedScheduleLabel = formatScheduleLabel(dateToUse, timeToUse)
+
+    const shared = bootstrapSharedData(browserSupabaseTokenProvider)
+    if (shared.enabled && getSupabaseAccessToken()) {
+      const result = await shared.repositories.ordersAdmin.createInternalOrder(buildRemoteOrderInput(serverQuote))
+      await Promise.all([
+        refreshBusinessOsOrdersFromRemote(),
+        refreshBusinessOsCustomersFromRemote(),
+      ])
+      clearDraft()
+      setInfoMessage(`Order ${result.orderNumber} created and synchronized.`)
+      onClose()
+      setStep('edit')
+      return result
+    }
+
+    const intake = createOrUpdateCustomerFromAdmin({
+      name: customerDraft.name,
+      whatsappNumber: customerDraft.whatsappNumber,
+      email: trimmedEmail || undefined,
+      birthday: trimmedBirthday || undefined,
+      preferredBranch: branchForOrder,
+      promoCode: trimmedPromoCode || undefined,
+      createdSource: 'admin',
+      acceptedSuggestions: matchedCustomer ? acceptedProfileSuggestions : undefined,
+    })
+    const savedCustomer: CustomerProfile = intake.customer
 
     createOrder({
       branch: branchForOrder,
@@ -309,11 +399,11 @@ export const useNewOrderSubmit = ({
 
     clearDraft()
     setInfoMessage(
-      'Order created locally and added to the Orders list. Connect backend to persist it.',
+      'Order created in offline/demo mode.',
     )
     onClose()
     setStep('edit')
   }
 
-  return { createOrderFromForm }
+  return { createOrderFromForm, quoteOrderFromForm }
 }

@@ -75,6 +75,19 @@ describe('order row-level authorization', () => {
   })
 
 
+
+  it('keeps assigned Florists read-only for Order status', () => {
+    expect(
+      authorizeOrderMutation({
+        order: kedamaianOrder,
+        actor: { employeeId: 'florist-a', name: 'Florist A', role: 'florist', branchId: 'Kedamaian' },
+        permissions: DEFAULT_ROLE_SECTION_ACCESS,
+        kind: 'status',
+        nextStatus: 'processing',
+      }),
+    ).toMatchObject({ allowed: false })
+  })
+
   it('denies direct mutations outside the actor row scope', () => {
     expect(
       authorizeOrderMutation({

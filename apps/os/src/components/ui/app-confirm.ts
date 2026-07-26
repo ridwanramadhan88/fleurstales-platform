@@ -23,7 +23,7 @@ export const requestAppConfirmation = (options: AppConfirmOptions): Promise<bool
     overlay.setAttribute('role', 'presentation')
 
     const dialog = document.createElement('div')
-    dialog.className = 'w-full max-w-lg rounded-xl border border-border/60 bg-surface-card p-4 text-foreground shadow-lg sm:p-5'
+    dialog.className = 'w-full max-w-lg rounded-2xl border border-border/60 bg-surface-card p-5 text-foreground shadow-ios-lg sm:p-6'
     dialog.setAttribute('role', 'alertdialog')
     dialog.setAttribute('aria-modal', 'true')
 

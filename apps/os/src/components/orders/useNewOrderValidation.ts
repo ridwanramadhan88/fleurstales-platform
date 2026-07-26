@@ -19,6 +19,8 @@ export const validateNewOrderForm = (
   if (values.orderItemMode === 'catalog') {
     if (!values.orderItemCatalogId) {
       nextErrors.orderItemCatalogId = 'Select a product from the catalog.'
+    } else if (!values.orderItemVariantId) {
+      nextErrors.orderItemVariantId = 'Select the product size or variant.'
     }
   } else {
     if (!values.orderItemCustomName.trim()) {

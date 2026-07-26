@@ -151,10 +151,11 @@ export const AssignFloristDialog: FC<{
         onOpenChange={(open) => {
           if (!open) onCancel();
         }}
+        size="wide"
         title={mode === "reassign" ? "Change assigned florist" : "Assign florist"}
         description={mode === "reassign" ? "Choose who should continue handling this order. The current status will not change." : "Scheduled florists are recommended first. Use Show all florists only when an operational exception is necessary."}
         className="shrink-0 border-b border-border/70 px-5 pb-4 pt-5 sm:px-6 sm:pt-6"
-        contentClassName="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-h-[calc(100dvh-3rem)] sm:max-w-lg sm:p-0"
+        contentClassName="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-h-[calc(100dvh-3rem)] sm:p-0 md:min-h-[38rem]"
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="shrink-0 space-y-4 px-5 py-4 sm:px-6">

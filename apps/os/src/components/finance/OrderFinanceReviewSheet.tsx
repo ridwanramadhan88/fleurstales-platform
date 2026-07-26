@@ -83,7 +83,7 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
     (order.paymentStatus === "unpaid" && paidAmount > 0);
   return (
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/32 backdrop-blur-[2px] sm:items-center"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/32 backdrop-blur-[2px] sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
@@ -91,7 +91,7 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
         aria-modal="true"
         aria-label={`Order ${order.orderNumber} details (read-only)`}
         onClick={(event) => event.stopPropagation()}
-        className="animate-sheet-up relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-card p-4 shadow-lg ring-1 ring-border/60 sm:max-h-[90vh] sm:rounded-xl sm:p-5"
+        className="animate-sheet-up relative flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-2xl bg-card p-4 shadow-ios-lg ring-1 ring-border/60 sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl sm:p-5 md:max-w-6xl md:p-6"
       >
         <OrderFinanceReviewSheetHeader
           order={order}

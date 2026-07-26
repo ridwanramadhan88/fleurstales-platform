@@ -4,13 +4,14 @@
  */
 
 import { useEffect, useMemo, useState, type FC } from 'react'
-import { Building2, CalendarDays, Clock3, Plus, MapPin, LocateFixed, ExternalLink, AlertTriangle, LockKeyhole, ChevronDown, Pencil } from 'lucide-react'
+import { Building2, CalendarDays, Clock3, Plus, MapPin, AlertTriangle, LockKeyhole, ChevronDown, Pencil } from 'lucide-react'
 import type { BranchOpeningHours, BranchSettings, DayOpeningHours, WeekdayKey } from '../../types/settings'
 import type { SettingsValidationErrors } from '../../domain/settings/settingsValidation'
 import { DEFAULT_BRANCH_OPENING_HOURS, WEEKDAY_KEYS, WEEKDAY_LABELS } from '../../domain/branchOpeningHoursDomain'
 import { TimeSelectField } from '../ui/date-time-field'
 import type { BranchDependencyImpact } from '../../domain/settings/branchSafetyDomain'
 import { SettingsSectionHeader } from './SettingsPrimitives'
+import { OpenStreetMapPicker } from './OpenStreetMapPicker'
 
 interface Props {
   isEditing: boolean
@@ -20,46 +21,91 @@ interface Props {
   onSetBranchActive: (branchId: string, isActive: boolean) => void
   branchImpacts?: Record<string, BranchDependencyImpact>
   validationErrors?: SettingsValidationErrors
+  attendanceRadiusMeters?: number
 }
 
 
-const BranchLocationEditor: FC<{ branch: BranchSettings; onUpdateBranch: Props['onUpdateBranch']; isEditing: boolean }> = ({ branch, onUpdateBranch, isEditing }) => {
+const BranchLocationEditor: FC<{
+  branch: BranchSettings
+  onUpdateBranch: Props['onUpdateBranch']
+  isEditing: boolean
+  radiusMeters: number
+}> = ({ branch, onUpdateBranch, isEditing, radiusMeters }) => {
   const location = branch.location ?? { latitude: -5.3971, longitude: 105.2668 }
-  const [locating, setLocating] = useState(false)
-  const useCurrentLocation = () => {
-    if (!navigator.geolocation) return
-    setLocating(true)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        onUpdateBranch(branch.id, { location: { latitude: position.coords.latitude, longitude: position.coords.longitude } })
-        setLocating(false)
-      },
-      () => setLocating(false),
-      { enableHighAccuracy: true, timeout: 15000 },
-    )
+
+  const updateLocation = (next: { latitude: number; longitude: number }) => {
+    onUpdateBranch(branch.id, { location: next })
   }
-  const mapUrl = `https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=18/${location.latitude}/${location.longitude}`
+
   return (
-    <div className="space-y-3 rounded-lg border border-border/70 bg-card p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2"><MapPin className="size-4 text-primary"/><div><p className="text-xs font-semibold">Branch map location</p><p className="text-xs text-muted-foreground">Used to validate selfie attendance distance.</p></div></div>
-        {isEditing && (
-          <button type="button" onClick={useCurrentLocation} className="inline-flex items-center rounded-full border border-border text-xs font-medium hover:bg-muted rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"><LocateFixed className="size-3.5"/>{locating ? 'Locating…' : 'Use current location'}</button>
-        )}
-      </div>
-      {isEditing ? (
-        <div className="grid grid-cols-2 gap-2">
-          <label className="space-y-1"><span className="text-2xs font-semibold text-muted-foreground">Latitude</span><input aria-label={`${branch.name || 'Branch'} latitude`} type="number" step="0.000001" value={location.latitude} onChange={(e)=>onUpdateBranch(branch.id,{location:{...location,latitude:Number(e.target.value)}})} className={FIELD_CLASS}/></label>
-          <label className="space-y-1"><span className="text-2xs font-semibold text-muted-foreground">Longitude</span><input aria-label={`${branch.name || 'Branch'} longitude`} type="number" step="0.000001" value={location.longitude} onChange={(e)=>onUpdateBranch(branch.id,{location:{...location,longitude:Number(e.target.value)}})} className={FIELD_CLASS}/></label>
+    <div className="space-y-3 rounded-xl border border-border/70 bg-card p-3 sm:p-4">
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <MapPin className="size-4" />
+        </span>
+        <div>
+          <p className="text-xs font-semibold text-foreground">Attendance location</p>
+          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+            Set the exact branch check-in point. Attendance is validated against this pin and the configured radius.
+          </p>
         </div>
+      </div>
+
+      <OpenStreetMapPicker
+        branchName={branch.name}
+        location={location}
+        radiusMeters={radiusMeters}
+        isEditing={isEditing}
+        onLocationChange={updateLocation}
+      />
+
+      {isEditing ? (
+        <details className="group rounded-lg bg-muted/35 ring-1 ring-border/50">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+            Exact coordinates
+            <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="grid grid-cols-1 gap-2 border-t border-border/50 p-3 sm:grid-cols-2">
+            <label className="space-y-1">
+              <span className="text-2xs font-semibold text-muted-foreground">Latitude</span>
+              <input
+                aria-label={`${branch.name || 'Branch'} latitude`}
+                type="number"
+                min={-90}
+                max={90}
+                step="0.000001"
+                value={location.latitude}
+                onChange={(event) => updateLocation({ ...location, latitude: Number(event.target.value) })}
+                className={FIELD_CLASS}
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-2xs font-semibold text-muted-foreground">Longitude</span>
+              <input
+                aria-label={`${branch.name || 'Branch'} longitude`}
+                type="number"
+                min={-180}
+                max={180}
+                step="0.000001"
+                value={location.longitude}
+                onChange={(event) => updateLocation({ ...location, longitude: Number(event.target.value) })}
+                className={FIELD_CLASS}
+              />
+            </label>
+          </div>
+        </details>
       ) : (
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div><p className="text-2xs font-semibold text-muted-foreground">Latitude</p><p className="mt-0.5 font-medium text-foreground">{location.latitude.toFixed(6)}</p></div>
-          <div><p className="text-2xs font-semibold text-muted-foreground">Longitude</p><p className="mt-0.5 font-medium text-foreground">{location.longitude.toFixed(6)}</p></div>
+        <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/30 px-3 py-2.5 text-xs ring-1 ring-border/50">
+          <div>
+            <p className="text-2xs font-semibold text-muted-foreground">Latitude</p>
+            <p className="mt-0.5 font-medium text-foreground">{location.latitude.toFixed(6)}</p>
+          </div>
+          <div>
+            <p className="text-2xs font-semibold text-muted-foreground">Longitude</p>
+            <p className="mt-0.5 font-medium text-foreground">{location.longitude.toFixed(6)}</p>
+          </div>
         </div>
       )}
-      <div className="overflow-hidden rounded-lg border border-border/70 bg-muted"><iframe title={`${branch.name || 'Branch'} map preview`} loading="lazy" className="h-44 w-full" src={`https://www.openstreetmap.org/export/embed.html?bbox=${location.longitude-0.003}%2C${location.latitude-0.003}%2C${location.longitude+0.003}%2C${location.latitude+0.003}&layer=mapnik&marker=${location.latitude}%2C${location.longitude}`} /></div>
-      <a href={mapUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"><ExternalLink className="size-3.5"/>Open map and confirm pin</a>
     </div>
   )
 }
@@ -324,6 +370,7 @@ export const BranchSettingsPanel: FC<Props> = ({
   branchImpacts = {},
   isEditing,
   validationErrors = {},
+  attendanceRadiusMeters = 100,
 }) => {
   const [expandedBranchId, setExpandedBranchId] = useState<string | null>(null)
 
@@ -457,7 +504,7 @@ export const BranchSettingsPanel: FC<Props> = ({
                       )}
                     </div>
 
-                    <BranchLocationEditor branch={branch} onUpdateBranch={onUpdateBranch} isEditing={isEditing} />
+                    <BranchLocationEditor branch={branch} onUpdateBranch={onUpdateBranch} isEditing={isEditing} radiusMeters={attendanceRadiusMeters} />
                     {validationErrors[`branch.${branchIndex}.location`] && <p className="text-2xs font-medium text-destructive">{validationErrors[`branch.${branchIndex}.location`]}</p>}
                     {Object.entries(validationErrors).filter(([key]) => key.startsWith(`branch.${branchIndex}.openingHours.`)).map(([key, message]) => <p key={key} className="text-2xs font-medium text-destructive">{message}</p>)}
 

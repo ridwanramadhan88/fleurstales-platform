@@ -35,13 +35,13 @@ export const OrderRefundDialog: FC<OrderRefundDialogProps> = ({
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onCancel()
       }}
+      size="compact"
       title={initiating ? 'Initiate full refund?' : cancelling ? 'Cancel this Refund?' : 'Complete this refund?'}
       description={
         initiating
           ? `This places ${formatter.format(amount)} into refund pending. No money is marked returned until Finance completes it.`
           : cancelling ? `This stops the pending Refund and returns the payment status to Paid.` : `Confirm that ${formatter.format(amount)} has been returned. This marks the refund completed and sets the paid amount to zero.`
       }
-      contentClassName="max-w-sm"
     >
       {initiating || cancelling ? (
         <div className="space-y-1.5">

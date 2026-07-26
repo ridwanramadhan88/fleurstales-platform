@@ -346,7 +346,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
 }
 
 const Modal = ({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) => (
-  <AppDialog open onOpenChange={(open) => { if (!open) onClose() }} title={title} contentClassName="sm:max-w-lg">
+  <AppDialog open onOpenChange={(open) => { if (!open) onClose() }} title={title} size="standard">
     <div className="space-y-4">{children}</div>
   </AppDialog>
 )

@@ -31,7 +31,6 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
     activeGuideSection,
     onFieldChange,
     onFieldValueChange,
-    onCurrencyFieldChange,
     onFulfillmentChange,
     onOrderTypeChange,
     onSectionFocus,
@@ -211,12 +210,12 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
                 type="text"
                 inputMode="numeric"
                 value={values.deliveryFee}
-                onChange={(event) =>
-                  onCurrencyFieldChange('deliveryFee', event.target.value)
-                }
-                className={fieldClass(activeGuideField === 'deliveryFee')}
-                placeholder="e.g. 15000"
+                readOnly
+                aria-readonly="true"
+                className={`${fieldClass(false)} cursor-not-allowed bg-muted/40`}
+                placeholder="Configured branch fee"
               />
+              <p className="text-2xs text-muted-foreground">Set in Store Settings for this branch.</p>
             </div>
             <div className="space-y-1.5">
               <label

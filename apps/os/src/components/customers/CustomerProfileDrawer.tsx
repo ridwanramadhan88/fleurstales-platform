@@ -85,9 +85,11 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
     <AppSheet
       open
       onOpenChange={(open) => { if (!open) onClose() }}
+      side="responsiveRight"
+      size="wide"
       title={<span className="sr-only">Customer {customer.name} profile</span>}
       headerClassName="sr-only"
-      contentClassName="max-w-md p-4 text-foreground/90 sm:max-h-[90vh] sm:p-5"
+      contentClassName="gap-0 p-4 text-foreground/90 sm:p-5 md:p-6"
     >
         {/* Header: avatar + identity on the left, activity/close on the
             right — mirrors the customer list row treatment (initial avatar)
@@ -145,8 +147,9 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
             region (min-h-0 so it actually shrinks within the flex column)
             rather than three separately-scrolling boxes, and the footer
             lives outside it entirely so it can never overlap content. */}
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden pb-4 pt-0.5">
-          <section className="grid grid-cols-2 gap-3 rounded-lg bg-card px-3 py-3 ring-1 ring-border/70">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden pb-4 pt-0.5 md:grid md:grid-cols-[minmax(18rem,0.9fr)_minmax(24rem,1.1fr)] md:items-start md:gap-4 md:space-y-0">
+          <div className="space-y-3">
+          <section className="grid grid-cols-2 gap-3 rounded-xl bg-card px-4 py-4 ring-1 ring-border/70">
             <div className="flex items-start gap-2">
               <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
                 <Wallet className="size-3.5" />
@@ -225,8 +228,9 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
               </p>
             </div>
           </section>
+          </div>
 
-          <section className={`space-y-1.5 rounded-lg px-3 py-2.5 ${orders.length > 0 ? 'bg-muted' : 'bg-muted/20 ring-1 ring-border/30'}`}>
+          <section className={`space-y-2 rounded-xl px-4 py-3.5 ${orders.length > 0 ? 'bg-muted' : 'bg-muted/20 ring-1 ring-border/30'}`}>
             <p className={`text-2xs font-semibold ${orders.length > 0 ? 'text-muted-foreground' : 'text-muted-foreground/40'}`}>
               Order history
             </p>
@@ -270,7 +274,7 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
         {/* Actions: outside the scrollable body so it always sits below all
             content as a fixed dialog footer, never overlapping the last
             scrolled row. */}
-        <footer className="shrink-0 isolate -mx-4 -mb-4 mt-0 flex flex-row flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-footer px-4 py-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:rounded-b-3xl sm:px-5">
+        <footer className="shrink-0 isolate -mx-4 -mb-4 mt-0 flex flex-row flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-footer px-4 py-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:px-5 md:-mx-6 md:-mb-6 md:px-6">
           <div className="flex items-center gap-2" />
           <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
             <button

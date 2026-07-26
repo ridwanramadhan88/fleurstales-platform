@@ -8,6 +8,7 @@ const validCatalogOrder: NewOrderFormValues = {
   customerWhatsappNumber: '081234567890',
   orderItemMode: 'catalog',
   orderItemCatalogId: 'cat_1',
+  orderItemVariantId: 'variant_1',
   fulfillmentType: 'pickup',
   orderType: 'walk_in',
   paymentMethod: 'cash',

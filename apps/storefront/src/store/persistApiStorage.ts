@@ -16,16 +16,27 @@
 import type { StateStorage } from 'zustand/middleware'
 import type { StoreApi } from 'zustand'
 import { getItem, setItem, removeItem, subscribe } from '../api/localApi'
+import { isSupabaseConfigured } from '../data/shared/supabaseConfig'
 
 /**
  * @description Zustand `persist` storage adapter backed by the local API.
  * `persist` already serializes to/from JSON itself, so this just forwards
  * strings through.
  */
+const PRODUCTION_LOCAL_ONLY_KEYS = new Set([
+  'cart',
+  'checkout-draft',
+  'storefront-checkout-draft',
+  'ui-language',
+])
+
+const mayUseBrowserPersistence = (name: string): boolean =>
+  !isSupabaseConfigured() || PRODUCTION_LOCAL_ONLY_KEYS.has(name)
+
 export const apiStorage: StateStorage = {
-  getItem,
-  setItem,
-  removeItem,
+  getItem: (name) => mayUseBrowserPersistence(name) ? getItem(name) : null,
+  setItem: (name, value) => mayUseBrowserPersistence(name) ? setItem(name, value) : undefined,
+  removeItem: (name) => mayUseBrowserPersistence(name) ? removeItem(name) : undefined,
 }
 
 /**
@@ -44,6 +55,7 @@ export const subscribeToExternalUpdates = <T>(
     persist: { rehydrate: () => Promise<void> | void }
   },
 ): (() => void) => {
+  if (!mayUseBrowserPersistence(persistName)) return () => undefined
   return subscribe(persistName, () => {
     void store.persist.rehydrate()
   })

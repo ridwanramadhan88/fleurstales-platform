@@ -12,6 +12,7 @@ export const NewOrderSummarySection: FC<NewOrderSummarySectionProps> = ({
   const {
     values,
     selectedCatalogProduct,
+    selectedCatalogVariant,
     estimatedOrderTotalIdr,
     voucherDiscountIdr,
     depositValueForReview,
@@ -26,6 +27,7 @@ export const NewOrderSummarySection: FC<NewOrderSummarySectionProps> = ({
     <NewOrderReviewStep
       values={values}
       selectedCatalogProduct={selectedCatalogProduct}
+      selectedCatalogVariant={selectedCatalogVariant}
       estimatedOrderTotalIdr={estimatedOrderTotalIdr}
       voucherDiscountIdr={voucherDiscountIdr}
       depositValueForReview={depositValueForReview}

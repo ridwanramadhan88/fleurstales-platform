@@ -381,6 +381,75 @@ export interface CreateStorefrontOrderInput {
   promoCode?: string
 }
 
+export interface StorefrontCheckoutQuoteResult {
+  itemsSubtotalIdr: number
+  deliveryFeeIdr: number
+  discountIdr: number
+  totalIdr: number
+  promoCode?: string
+  promoAccepted: boolean
+  promoMessage?: string
+}
+
+export interface CreateInternalOrderItemInput {
+  mode: 'catalog' | 'custom'
+  productId?: string
+  variantId?: string
+  productName: string
+  quantity: number
+  unitPriceIdr?: number
+}
+
+export interface CreateInternalOrderInput {
+  idempotencyKey: string
+  customer: {
+    id?: string
+    name: string
+    whatsappNumber: string
+    email?: string
+    birthday?: string
+    acceptedProfileUpdates?: {
+      email?: string
+      birthday?: string
+      preferredBranchId?: string
+    }
+  }
+  branchId: string
+  source: 'whatsapp' | 'walk_in'
+  fulfillment: 'delivery' | 'pickup'
+  scheduleDate: string
+  scheduleTime: string
+  items: CreateInternalOrderItemInput[]
+  deliveryAddress?: string
+  deliveryInstructions?: string
+  orderNote?: string
+  greetingMessage?: string
+  greetingCardName?: string
+  paymentMethod?: 'cash' | 'transfer'
+  paymentStatus: 'unpaid' | 'partial' | 'paid'
+  depositAmountIdr: number
+  promoCode?: string
+  expectedQuote?: {
+    itemsSubtotalIdr: number
+    deliveryFeeIdr: number
+    discountIdr: number
+    totalIdr: number
+    promoAccepted: boolean
+  }
+}
+
+export interface CreateInternalOrderResult {
+  orderId: string
+  orderNumber: string
+  customerId: string
+  itemsSubtotalIdr: number
+  deliveryFeeIdr: number
+  discountIdr: number
+  totalIdr: number
+  paidAmountIdr: number
+  deduplicated: boolean
+}
+
 export interface CreateStorefrontOrderResult {
   orderId: string
   orderNumber: string
@@ -390,6 +459,14 @@ export interface CreateStorefrontOrderResult {
   discountIdr: number
   totalIdr: number
   deduplicated: boolean
+}
+
+
+export interface CustomerBusinessMetric {
+  customerId: string
+  lifetimeSpendIdr: number
+  orderCount: number
+  segment: 'new' | 'regular' | 'vip'
 }
 
 export interface SharedStaffAccessProfile {

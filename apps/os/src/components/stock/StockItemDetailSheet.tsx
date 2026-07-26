@@ -110,10 +110,10 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="animate-sheet-up max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-card shadow-lg ring-1 ring-border/60 sm:max-h-[90vh] sm:rounded-xl"
+        className="animate-sheet-up max-h-[94vh] w-full overflow-y-auto rounded-t-2xl bg-card shadow-ios-lg ring-1 ring-border/60 sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-3xl sm:rounded-2xl md:max-w-4xl"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-5 py-3.5">
+        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-5 py-3.5 md:px-6 md:py-4">
           <div className="space-y-0.5">
             <h2 className="text-lg font-semibold leading-6 text-foreground">
               {item.name}
@@ -135,45 +135,39 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
           </button>
         </div>
 
-        <div className="space-y-3 px-5 py-4">
-          {/* Status */}
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-2xs font-medium ${riskBadgeClass} ring-1`}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              {statusLabelMap[statusGroup]}
-            </span>
-            <span className="text-2xs text-muted-foreground">
-              Freshness: {freshnessLabelMap[freshness]}
-            </span>
-          </div>
+        <div className="space-y-3 px-5 py-4 md:grid md:grid-cols-[minmax(16rem,0.8fr)_minmax(22rem,1.2fr)] md:items-start md:gap-5 md:space-y-0 md:px-6 md:py-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-2xs font-medium ${riskBadgeClass} ring-1`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {statusLabelMap[statusGroup]}
+              </span>
+              <span className="text-2xs text-muted-foreground">
+                Freshness: {freshnessLabelMap[freshness]}
+              </span>
+            </div>
 
-          {/* Quantities */}
-          <section className="grid grid-cols-2 gap-2">
-            <div className="rounded-xs bg-muted px-3 py-2">
-              <p className="text-2xs font-semibold text-muted-foreground">
-                Available
-              </p>
-              <p className="text-sm font-semibold leading-5 text-foreground">
-                {availableLabel}
-              </p>
-              <p className={item.reservedQty > 0 ? 'text-2xs text-muted-foreground' : 'text-2xs text-muted-foreground/40'}>{reservedLabel}</p>
-            </div>
-            <div className="rounded-xs bg-muted px-3 py-2">
-              <p className="text-2xs font-semibold text-muted-foreground">
-                Threshold
-              </p>
-              <p className="text-sm font-semibold leading-5 text-foreground">
-                {item.lowStockThreshold} {item.unit}
-              </p>
-              {item.isPerishable && item.expiryDate && (
-                <p className="text-2xs text-muted-foreground">
-                  Expiry: {item.expiryDate}
-                </p>
-              )}
-            </div>
-          </section>
+            <section className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl bg-muted px-3 py-3">
+                <p className="text-2xs font-semibold text-muted-foreground">Available</p>
+                <p className="text-sm font-semibold leading-5 text-foreground">{availableLabel}</p>
+                <p className={item.reservedQty > 0 ? 'text-2xs text-muted-foreground' : 'text-2xs text-muted-foreground/40'}>{reservedLabel}</p>
+              </div>
+              <div className="rounded-xl bg-muted px-3 py-3">
+                <p className="text-2xs font-semibold text-muted-foreground">Threshold</p>
+                <p className="text-sm font-semibold leading-5 text-foreground">{item.lowStockThreshold} {item.unit}</p>
+                {item.isPerishable && item.expiryDate && (
+                  <p className="text-2xs text-muted-foreground">Expiry: {item.expiryDate}</p>
+                )}
+              </div>
+            </section>
+
+            <p className="rounded-xl bg-surface-panel px-3 py-2.5 text-2xs text-muted-foreground ring-1 ring-border/60">
+              {events.length} audit event{events.length === 1 ? '' : 's'} on record.
+            </p>
+          </div>
 
           <StockTransferLossSection
             item={item}
@@ -183,14 +177,10 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
             onAdvanceTransferStatus={onAdvanceTransferStatus}
             onRecordLoss={onRecordLoss}
           />
-
-          <p className="text-2xs text-muted-foreground">
-            {events.length} audit event{events.length === 1 ? '' : 's'} on record.
-          </p>
         </div>
 
         {/* Footer actions */}
-        <div className="sticky bottom-0 z-10 flex flex-row flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-footer px-5 pb-3 pt-2 sm:pb-3">
+        <div className="sticky bottom-0 z-10 flex flex-row flex-wrap items-center justify-between gap-2 border-t border-border bg-surface-footer px-5 pb-3 pt-2 md:px-6 md:py-4 sm:pb-3">
           <div className="flex items-center gap-2">
             {canEdit && (
               <button

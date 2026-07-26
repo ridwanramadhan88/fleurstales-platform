@@ -2,6 +2,7 @@ import type { Employee } from '../store/hrStoreTypes'
 import type { UserRole } from '../store/userStore'
 import type { HrManagedRolesByArea } from '../types/settings'
 import { getHrManagedRoles } from './hrManagedEmployeeDomain'
+import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from './staffCredentialDomain'
 
 export interface StaffAccountActor { name: string; role: UserRole }
 export type StaffAccountResult = { ok: true } | { ok: false; reason: string }
@@ -40,6 +41,7 @@ export const canCreateStaffAccount = (params: {
   systemRole: UserRole
   actor: StaffAccountActor
   hrManagedRoles?: Partial<HrManagedRolesByArea>
+  usesProductionPassword?: boolean
 }): StaffAccountResult => {
   if (!canCreateAccountForRole(params.actor.role, params.systemRole, params.hrManagedRoles)) {
     const reason = params.actor.role === 'hr'
@@ -54,7 +56,9 @@ export const canCreateStaffAccount = (params: {
   if (params.employees.some((employee) => employee.email?.trim().toLowerCase() === email)) return { ok: false, reason: 'Email is already in use.' }
   const username = normalizeUsername(params.username ?? '')
   if (!isValidUsername(username)) return { ok: false, reason: 'Username must be lowercase and start with a letter. Use only letters, numbers, dots, underscores, or hyphens.' }
-  if (!isValidPin(params.pin ?? '')) return { ok: false, reason: 'PIN must contain exactly 6 numbers.' }
+  if (params.usesProductionPassword) {
+    if (!isStrongStaffPassword(params.pin ?? '')) return { ok: false, reason: STAFF_PASSWORD_HELP }
+  } else if (!isValidPin(params.pin ?? '')) return { ok: false, reason: 'PIN must contain exactly 6 numbers.' }
   if (params.employees.some((employee) => employee.username === username)) return { ok: false, reason: 'Username is already in use.' }
   return { ok: true }
 }

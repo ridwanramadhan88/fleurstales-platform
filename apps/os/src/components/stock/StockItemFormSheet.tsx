@@ -77,9 +77,9 @@ export const StockItemFormSheet: FC<StockItemFormSheetProps> = ({ open, onClose,
     <AppSheet
       open={open}
       onOpenChange={(nextOpen) => { if (!nextOpen) requestClose() }}
+      size="standard"
       title={isEditMode ? 'Edit stock item' : 'New stock item'}
       description={`${activeBranch} · Required fields are marked with *.`}
-      contentClassName="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-1 pb-4">

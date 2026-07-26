@@ -48,7 +48,7 @@ export const FinancePayrollScheduleAdjustment = () => {
     {period.lastAdjustedAt && <p className="mt-3 text-xs text-muted-foreground">Last updated by {period.lastAdjustedBy} · {new Date(period.lastAdjustedAt).toLocaleString('id-ID')}</p>}
     {message && <p className="mt-4 rounded-lg bg-success/10 p-3 text-sm text-success">{message}</p>}
     <Sheet open={editing} onOpenChange={setEditing}>
-      <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+      <SheetContent side="right" className="flex w-full flex-col sm:w-[min(40rem,88vw)] sm:max-w-none md:w-[min(44rem,72vw)]">
         <SheetHeader><SheetTitle>Edit payroll schedule</SheetTitle><SheetDescription>Changes apply immediately after validation.</SheetDescription></SheetHeader>
         {proposed && <div className="mt-5 flex-1 space-y-4 overflow-y-auto pr-1">{fields.map(({ key,label }) => <label key={key} className="block space-y-1.5"><span className="text-sm font-medium">{label}</span><DatePickerField value={proposed[key]} onChange={(value) => setProposed((current) => current ? { ...current, [key]:value } : current)} />{fieldErrors[key] && <p className="text-xs text-destructive">{fieldErrors[key]}</p>}</label>)}</div>}
         {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}

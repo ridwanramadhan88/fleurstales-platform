@@ -10,8 +10,8 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({ order,
   const remainingIdr = getRemainingOrderPaymentIdr(order)
   const finishingPickup = nextStatus === 'picked_up'
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center" onClick={onCancel}>
-      <div role="dialog" aria-modal="true" aria-label="Payment required" onClick={(event) => event.stopPropagation()} className="animate-sheet-up w-full max-w-md rounded-t-2xl bg-card p-5 shadow-lg ring-1 ring-border/60 sm:rounded-xl">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4" onClick={onCancel}>
+      <div role="dialog" aria-modal="true" aria-label="Payment required" onClick={(event) => event.stopPropagation()} className="animate-sheet-up w-full rounded-t-2xl bg-card p-5 shadow-ios-lg ring-1 ring-border/60 sm:w-[calc(100vw-2rem)] sm:max-w-2xl sm:rounded-2xl sm:p-6">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning"><AlertTriangle className="size-5" /></span>
           <div className="min-w-0">

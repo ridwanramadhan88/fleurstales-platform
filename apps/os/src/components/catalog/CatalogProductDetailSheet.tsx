@@ -44,10 +44,10 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="animate-sheet-up max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-card shadow-lg ring-1 ring-border/60 sm:max-h-[90vh] sm:rounded-xl"
+        className="animate-sheet-up max-h-[94vh] w-full overflow-y-auto rounded-t-2xl bg-card shadow-ios-lg ring-1 ring-border/60 sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-4xl sm:rounded-2xl md:max-w-5xl"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-5 py-3.5">
+        <div className="flex items-start justify-between gap-2 border-b border-border/70 px-5 py-3.5 md:px-6 md:py-4">
           <div className="space-y-0.5">
             <h2 className="text-lg font-semibold leading-6 text-foreground">
               {product.name}
@@ -67,7 +67,7 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
           </button>
         </div>
 
-        <div className="space-y-3 px-5 py-4">
+        <div className="space-y-3 px-5 py-4 md:grid md:grid-cols-[minmax(18rem,0.9fr)_minmax(24rem,1.1fr)] md:items-start md:gap-5 md:space-y-0 md:px-6 md:py-5">
           <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-muted">
             {product.thumbnail ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -83,6 +83,7 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
             )}
           </div>
 
+          <div className="space-y-3">
           {product.description && (
             <p className="text-sm text-muted-foreground">
               {product.description}
@@ -173,11 +174,12 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
               </span>
             )}
           </div>
+          </div>
         </div>
 
         {/* Footer actions */}
         {canEdit && (
-          <div className="flex items-center justify-between gap-2 border-t border-border bg-card px-5 py-3">
+          <div className="flex items-center justify-between gap-2 border-t border-border bg-card px-5 py-3 md:px-6 md:py-4">
             <button
               type="button"
               onClick={() => onToggleActive(!product.isActive)}

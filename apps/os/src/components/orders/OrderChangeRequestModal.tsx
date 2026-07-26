@@ -31,13 +31,13 @@ export const OrderChangeRequestModal: FC<OrderChangeRequestModalProps> = ({
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onCancel()
       }}
+      size="compact"
       title={mode === 'cancel' ? 'Request cancellation' : 'Request edit'}
       description={
         mode === 'cancel'
           ? 'This finished order is locked. Finance or Owner must approve the cancellation request before the order changes.'
           : 'This finished order is locked. Finance or Owner must approve the request before you can edit and save changes.'
       }
-      contentClassName="max-w-sm"
     >
       <div className="space-y-1.5">
         <label htmlFor="order-change-request-reason" className="text-xs font-medium text-foreground/90">

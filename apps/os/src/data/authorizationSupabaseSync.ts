@@ -164,9 +164,14 @@ export const stopAuthorizationSupabaseSync = (): void => {
   stopSubscription = undefined
 }
 
-export const connectAuthorizationSupabase = async (): Promise<void> => {
-  await hydrateAuthorizationFromSupabase().catch((error) => {
+export const connectAuthorizationSupabase = async (): Promise<boolean> => {
+  try {
+    const hydrated = await hydrateAuthorizationFromSupabase()
+    if (!hydrated) return false
+    startAuthorizationSupabaseSync()
+    return true
+  } catch (error) {
     console.error('Unable to hydrate Fleurstales authorization configuration.', error)
-  })
-  startAuthorizationSupabaseSync()
+    return false
+  }
 }

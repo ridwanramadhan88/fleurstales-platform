@@ -521,6 +521,7 @@ export const useOrdersStore = create<OrdersStoreState>()(
           kind: 'status',
           permissions: useSettingsStore.getState().permissions,
           action: 'order.status.update',
+          nextStatus: input.status,
         })
         if (denied) {
           return denied.code === 'REVISION_CONFLICT'

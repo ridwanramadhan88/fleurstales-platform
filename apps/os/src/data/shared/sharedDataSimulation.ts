@@ -178,6 +178,28 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
 
   const customersAdmin: CustomerAdminRepository = {
     async listCustomers() { return clone(bundle.customers.customers) },
+    async listBusinessMetrics(customerId) {
+      const customers = customerId
+        ? bundle.customers.customers.filter((row) => row.id === customerId)
+        : bundle.customers.customers
+      return clone(customers.map((customer) => {
+        const verified = bundle.orders.orders.filter((order) =>
+          order.customerId === customer.id
+          && order.financeVerified === true
+          && (order.paymentStatus === 'paid' || order.paymentStatus === 'partial')
+          && order.status !== 'cancelled'
+          && order.status !== 'failed'
+        )
+        const lifetimeSpendIdr = verified.reduce((sum, order) => sum + (order.paidAmountIdr ?? order.totalIdr), 0)
+        const orderCount = verified.filter((order) => order.status === 'delivered' || order.status === 'picked_up').length
+        return {
+          customerId: customer.id,
+          lifetimeSpendIdr,
+          orderCount,
+          segment: orderCount === 0 ? 'new' : lifetimeSpendIdr >= 1_000_000 || orderCount >= 5 ? 'vip' : 'regular',
+        }
+      }))
+    },
     async getCustomer(customerId) { return clone(bundle.customers.customers.find((row) => row.id === customerId) ?? null) },
     async listCustomerAddresses(customerId) { return clone(bundle.customers.addresses.filter((row) => row.customerId === customerId)) },
     async findCustomerByWhatsapp(whatsappNumber) {
@@ -215,6 +237,8 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
     },
   }
 
+  let storefrontCheckout: StorefrontCheckoutRepository
+
   const ordersAdmin: OrdersAdminRepository = {
     async listOrders(options) {
       return clone(bundle.orders.orders.filter((order) =>
@@ -224,6 +248,61 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
     },
     async getOrder(orderId) {
       return clone(bundle.orders.orders.find((row) => row.id === orderId) ?? null)
+    },
+    async quoteInternalOrder(input) {
+      const branch = bundle.store.snapshot.branches.find((row) => row.id === input.branchId && row.isActive)
+      if (!branch) throw new Error('Selected branch is unavailable.')
+      const itemsSubtotalIdr = input.items.reduce((sum, item) => {
+        if (item.mode === 'catalog') {
+          const product = bundle.catalog.products.find((row) => row.id === item.productId && row.isActive)
+          const variant = product?.variants.find((row) => row.id === item.variantId && row.status === 'active')
+          if (!product || !variant) throw new Error('A selected product or variant is unavailable.')
+          return sum + variant.priceIdr * item.quantity
+        }
+        if (!(item.unitPriceIdr && item.unitPriceIdr > 0)) throw new Error('Custom item price is required.')
+        return sum + item.unitPriceIdr * item.quantity
+      }, 0)
+      const deliveryFeeIdr = input.fulfillment === 'delivery' ? branch.deliveryFeeIdr : 0
+      return {
+        itemsSubtotalIdr,
+        deliveryFeeIdr,
+        discountIdr: 0,
+        totalIdr: itemsSubtotalIdr + deliveryFeeIdr,
+        promoCode: input.promoCode?.trim().toUpperCase() || undefined,
+        promoAccepted: false,
+        ...(input.promoCode ? { promoMessage: 'Voucher validation requires Supabase.' } : {}),
+      }
+    },
+    async createInternalOrder(input) {
+      if (input.items.some((item) => item.mode !== 'catalog' || !item.productId || !item.variantId)) {
+        throw new Error('The dependency-free simulator supports catalog-backed internal items only.')
+      }
+      const created = await storefrontCheckout.createOrder({
+        idempotencyKey: input.idempotencyKey,
+        customer: input.customer,
+        branchId: input.branchId,
+        fulfillment: input.fulfillment,
+        scheduleDate: input.scheduleDate,
+        scheduleTime: input.scheduleTime,
+        items: input.items.map((item) => ({ productId: item.productId!, variantId: item.variantId!, quantity: item.quantity })),
+        deliveryAddress: input.deliveryAddress,
+        deliveryInstructions: input.deliveryInstructions,
+        orderNote: input.orderNote,
+        greetingMessage: input.greetingMessage,
+        greetingCardName: input.greetingCardName,
+        paymentMethod: input.paymentMethod,
+        promoCode: input.promoCode,
+      })
+      const order = bundle.orders.orders.find((row) => row.id === created.orderId)
+      const paidAmountIdr = Math.max(0, Math.min(input.depositAmountIdr, created.totalIdr))
+      if (order) {
+        order.source = input.source
+        order.paidAmountIdr = paidAmountIdr
+        order.paymentStatus = paidAmountIdr >= order.totalIdr ? 'paid' : paidAmountIdr > 0 ? 'partial' : 'unpaid'
+        order.updatedAt = now()
+        emit()
+      }
+      return { ...created, paidAmountIdr }
     },
   }
 
@@ -268,7 +347,28 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
     deduplicated: true,
   })
 
-  const storefrontCheckout: StorefrontCheckoutRepository = {
+  storefrontCheckout = {
+    async quoteOrder(input) {
+      assertValidCustomerIntake(input.customer)
+      const branch = bundle.store.snapshot.branches.find((row) => row.id === input.branchId && row.isActive)
+      if (!branch) throw new Error('Selected branch is unavailable.')
+      const resolved = input.items.map((requested) => {
+        const product = bundle.catalog.products.find((row) => row.id === requested.productId && row.isActive)
+        const variant = product?.variants.find((row) => row.id === requested.variantId && row.status === 'active')
+        if (!product || !variant) throw new Error('A selected product or variant is unavailable.')
+        return variant.priceIdr * requested.quantity
+      })
+      const itemsSubtotalIdr = resolved.reduce((sum, amount) => sum + amount, 0)
+      const deliveryFeeIdr = input.fulfillment === 'delivery' ? branch.deliveryFeeIdr : 0
+      const promoCode = input.promoCode?.trim().toUpperCase()
+      return {
+        itemsSubtotalIdr,
+        deliveryFeeIdr,
+        discountIdr: 0,
+        totalIdr: itemsSubtotalIdr + deliveryFeeIdr,
+        ...(promoCode ? { promoCode, promoAccepted: false, promoMessage: 'Voucher validation requires Supabase.' } : { promoAccepted: false }),
+      }
+    },
     async createOrder(input: CreateStorefrontOrderInput) {
       const idempotencyKey = input.idempotencyKey.trim()
       if (idempotencyKey.length < 16 || idempotencyKey.length > 128) {

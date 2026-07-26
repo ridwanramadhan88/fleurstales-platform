@@ -195,9 +195,15 @@ export const buildCustomerMetrics = (
   orders: OrderTableRow[],
   rules: CustomerSegmentRules = DEFAULT_SEGMENT_RULES,
 ): CustomerMetrics => {
-  const orderCount = orders.length
-  const lifetimeSpend = orders.reduce(
-    (sum, order) => sum + order.totalIdr,
+  const verifiedOrders = orders.filter((order) =>
+    order.financeVerified === true
+    && ['paid', 'partial'].includes(order.paymentStatus)
+    && !['cancelled', 'failed'].includes(order.status),
+  )
+  const completedVerifiedOrders = verifiedOrders.filter((order) => ['delivered', 'picked_up'].includes(order.status))
+  const orderCount = completedVerifiedOrders.length
+  const lifetimeSpend = verifiedOrders.reduce(
+    (sum, order) => sum + Math.max(0, order.paidAmountIdr ?? order.totalIdr),
     0,
   )
 
@@ -247,7 +253,18 @@ export const buildEnrichedCustomers = (
 ): EnrichedCustomer[] =>
   customers.map((profile) => {
     const orders = getOrdersForCustomer(profile, allOrders)
-    const metrics = buildCustomerMetrics(orders, rules)
+    const localMetrics = buildCustomerMetrics(orders, rules)
+    const metrics = profile.authoritativeSegment
+      ? {
+          ...localMetrics,
+          lifetimeSpend: profile.authoritativeLifetimeSpendIdr ?? localMetrics.lifetimeSpend,
+          orderCount: profile.authoritativeOrderCount ?? localMetrics.orderCount,
+          averageOrderValue: (profile.authoritativeOrderCount ?? 0) > 0
+            ? Math.round((profile.authoritativeLifetimeSpendIdr ?? 0) / Math.max(1, profile.authoritativeOrderCount ?? 0))
+            : localMetrics.averageOrderValue,
+          segment: profile.authoritativeSegment,
+        }
+      : localMetrics
     const haystack = `${profile.name} ${profile.whatsappNumber} ${profile.email ?? ''}`
       .toLowerCase()
       .trim()

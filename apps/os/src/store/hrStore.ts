@@ -21,6 +21,7 @@ import type { UserRole } from './userStore'
 import { getLocalDateString, nowInJakarta } from '../domain/orderTimingDomain'
 import { canRecordAttendance, canRecordSelfieAttendance, canRecordSelfieCheckOut, canSetEmployeeActiveState, type HrActor } from '../domain/hrStatusDomain'
 import { canChangeEmployeeRole, canCreateStaffAccount, normalizeUsername } from '../domain/staffAccountDomain'
+import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from '../domain/staffCredentialDomain'
 import { useSettingsStore } from './settingsStore'
 import { getBranchHoursForDate } from '../domain/branchOpeningHoursDomain'
 import { canEditScheduling, getEffectiveScheduleForDate, getMondayForDate, getWeekdayKey, materializeScheduleShift, toIsoDate, validateScheduleShift } from '../domain/hrSchedulingDomain'
@@ -31,6 +32,7 @@ import { buildExpectedOrderContributions, DEFAULT_ORDER_CONTRIBUTION_RULES, vali
 import { getPayrollPeriodIdForActivityDate } from '../domain/payrollScheduleDomain'
 import { canActorManageEmployee, isHrManagedEmployee, isHrManagedEmployeeRole, HR_PROTECTED_ROLE_MESSAGE } from '../domain/hrManagedEmployeeDomain'
 import { isActionAuthorized } from '../config/authorization'
+import { isSharedBackendConfigured } from '../api/remoteSession'
 import type {
   Employee,
   EmployeeStatus,
@@ -98,6 +100,7 @@ interface HrStoreState {
     email?: string
     username?: string
     pin?: string
+    productionAuth?: boolean
     baseSalaryIdr?: number
     actor: HrActor
   }) => HrEmployeeCommandResult
@@ -117,6 +120,7 @@ interface HrStoreState {
     email?: string
     username?: string
     pin?: string
+    productionAuth?: boolean
     actor: HrActor
   }) => HrEmployeeCommandResult
   activateEmployee: (employeeId: string, actor: HrActor) => boolean
@@ -291,12 +295,12 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     return result
   },
 
-  createStaffAccount: ({ employeeId, name, systemRole, phone, hireDate, email, username, pin, baseSalaryIdr, actor }) => {
+  createStaffAccount: ({ employeeId, name, systemRole, phone, hireDate, email, username, pin, productionAuth = false, baseSalaryIdr, actor }) => {
     if (!isActionAuthorized(actor.role, 'hr.create_employee')) return employeeCommandError('forbidden', 'This role cannot create employees.')
     let result: HrEmployeeCommandResult = employeeCommandError('unknown', 'Account could not be created.')
     set((state) => {
-      const eligibility = canCreateStaffAccount({ employees: state.employees, username, pin, email, systemRole, actor, hrManagedRoles: useSettingsStore.getState().staffRoles.hrManagedRoles })
-      if (!eligibility.ok) { const lower = eligibility.reason.toLowerCase(); const field = lower.includes('email') ? 'email' : lower.includes('username') ? 'username' : lower.includes('pin') ? 'pin' : undefined; result = employeeCommandError(lower.includes('email') ? (lower.includes('already') ? 'duplicate_email' : 'invalid_email') : lower.includes('username') ? 'invalid_username' : lower.includes('pin') ? 'invalid_pin' : 'forbidden', eligibility.reason, field); return state }
+      const eligibility = canCreateStaffAccount({ employees: state.employees, username, pin, email, systemRole, actor, hrManagedRoles: useSettingsStore.getState().staffRoles.hrManagedRoles, usesProductionPassword: productionAuth })
+      if (!eligibility.ok) { const lower = eligibility.reason.toLowerCase(); const field = lower.includes('email') ? 'email' : lower.includes('username') ? 'username' : (lower.includes('pin') || lower.includes('password')) ? 'pin' : undefined; result = employeeCommandError(lower.includes('email') ? (lower.includes('already') ? 'duplicate_email' : 'invalid_email') : lower.includes('username') ? 'invalid_username' : (lower.includes('pin') || lower.includes('password')) ? 'invalid_pin' : 'forbidden', eligibility.reason, field); return state }
       const settings = useSettingsStore.getState()
       if (!settings.staffRoles.roles.includes(systemRole)) { result = employeeCommandError('disabled_role', 'The selected role is disabled in Owner Settings.', 'systemRole'); return state }
       const cleanName = name.trim(); const cleanPhone = phone.trim()
@@ -308,7 +312,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       const normalized = username ? normalizeUsername(username) : undefined
       if (normalized && state.employees.some((item) => item.username === normalized)) { result = employeeCommandError('duplicate_username', 'Username is already in use.', 'username'); return state }
       const normalizedEmail = email?.trim().toLowerCase()
-      const employee: Employee = { id: employeeId ?? `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: cleanName, position: getEmployeeRoleLabel(systemRole), branch: '' as BranchId, systemRole, status: 'active', phone: cleanPhone, hireDate, email: normalizedEmail, username: normalized, pin, baseSalaryIdr }
+      const employee: Employee = { id: employeeId ?? `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: cleanName, position: getEmployeeRoleLabel(systemRole), branch: '' as BranchId, systemRole, status: 'active', phone: cleanPhone, hireDate, email: normalizedEmail, username: normalized, pin: productionAuth ? undefined : pin, baseSalaryIdr }
       result = { ok: true, employeeId: employee.id }
       return { employees: [employee, ...state.employees] }
     })
@@ -361,7 +365,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     return result
   },
 
-  updateEmployeeAccess: ({ employeeId, systemRole, email, username, pin, actor }) => {
+  updateEmployeeAccess: ({ employeeId, systemRole, email, username, pin, productionAuth = false, actor }) => {
     if (!isActionAuthorized(actor.role, 'hr.edit_employee')) return employeeCommandError('forbidden', 'This role cannot edit employees.')
     let result: HrEmployeeCommandResult = employeeCommandError('unknown', 'Employee access could not be updated.')
     set((state) => {
@@ -380,10 +384,11 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
         if (nextEmail && state.employees.some((item) => item.id !== employeeId && item.email?.trim().toLowerCase() === nextEmail)) { result = employeeCommandError('duplicate_email', 'Email is already in use.', 'email'); return state }
         if (!nextUsername || !/^[a-z][a-z0-9._-]*$/.test(nextUsername)) { result = employeeCommandError('invalid_username', 'Username must be lowercase and start with a letter.', 'username'); return state }
         if (state.employees.some((item) => item.id !== employeeId && item.username === nextUsername)) { result = employeeCommandError('duplicate_username', 'Username is already in use.', 'username'); return state }
-        if (pin && !/^\d{6}$/.test(pin)) { result = employeeCommandError('invalid_pin', 'PIN must contain exactly 6 numbers.', 'pin'); return state }
+        if (pin && productionAuth && !isStrongStaffPassword(pin)) { result = employeeCommandError('invalid_pin', STAFF_PASSWORD_HELP, 'pin'); return state }
+        if (pin && !productionAuth && !/^\d{6}$/.test(pin)) { result = employeeCommandError('invalid_pin', 'PIN must contain exactly 6 numbers.', 'pin'); return state }
       }
       result = { ok: true, employeeId }
-      return { employees: state.employees.map((item) => item.id === employeeId ? { ...item, systemRole, position: getEmployeeRoleLabel(systemRole), email: actor.role === 'owner' && nextEmail !== undefined ? nextEmail : item.email, username: actor.role === 'owner' ? nextUsername : item.username, pin: actor.role === 'owner' && pin ? pin : item.pin } : item) }
+      return { employees: state.employees.map((item) => item.id === employeeId ? { ...item, systemRole, position: getEmployeeRoleLabel(systemRole), email: actor.role === 'owner' && nextEmail !== undefined ? nextEmail : item.email, username: actor.role === 'owner' ? nextUsername : item.username, pin: actor.role === 'owner' && pin && !productionAuth ? pin : item.pin } : item) }
     })
     return result
   },
@@ -933,6 +938,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
   },
 
   syncOrderContributionPoints: ({ orders, actor }) => {
+    if (isSharedBackendConfigured()) return { ok:true, created:0, reversed:0 }
     let result:{ok:true;created:number;reversed:number}|{ok:false;reason:string}={ok:false,reason:'Order contribution points could not be synchronized.'}
     set((state)=>{
       if (!['owner','hr','finance'].includes(actor.role)) { result={ok:false,reason:'Only Owner, HR, or Finance can synchronize order points.'}; return state }

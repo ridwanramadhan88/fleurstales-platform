@@ -57,9 +57,10 @@ const canRead = (domain: OperationalDomain): boolean => {
     case 'finance': return hasActionPermission(role, 'finance.view_ledger', settings.actionPermissions, settings.permissions)
     case 'stock': return settings.storeProfile.inventoryEnabled && canAccessSection(role, 'stock', settings.permissions)
     case 'vouchers': return canAccessSection(role, 'finance', settings.permissions) || canEditSection(role, 'orders', settings.permissions)
-    case 'order_drafts':
-      return hasActionPermission(role, 'orders.create', settings.actionPermissions, settings.permissions)
-        || hasActionPermission(role, 'orders.edit', settings.actionPermissions, settings.permissions)
+    case 'order_drafts': return !client().enabled && (
+      hasActionPermission(role, 'orders.create', settings.actionPermissions, settings.permissions)
+      || hasActionPermission(role, 'orders.edit', settings.actionPermissions, settings.permissions)
+    )
   }
 }
 const canWrite = (domain: OperationalDomain): boolean => {
@@ -71,9 +72,10 @@ const canWrite = (domain: OperationalDomain): boolean => {
     case 'finance': return canEditSection(role, 'finance', settings.permissions)
     case 'stock': return settings.storeProfile.inventoryEnabled && canEditSection(role, 'stock', settings.permissions)
     case 'vouchers': return canEditSection(role, 'finance', settings.permissions) || canEditSection(role, 'orders', settings.permissions)
-    case 'order_drafts':
-      return hasActionPermission(role, 'orders.create', settings.actionPermissions, settings.permissions)
-        || hasActionPermission(role, 'orders.edit', settings.actionPermissions, settings.permissions)
+    case 'order_drafts': return !client().enabled && (
+      hasActionPermission(role, 'orders.create', settings.actionPermissions, settings.permissions)
+      || hasActionPermission(role, 'orders.edit', settings.actionPermissions, settings.permissions)
+    )
   }
 }
 
@@ -255,19 +257,19 @@ export const hydrateOperationalStateFromSupabase = async (): Promise<boolean> =>
 
   const domains: OperationalDomain[] = ['hr','payroll','finance','stock','vouchers','order_drafts']
   const readableDomains = domains.filter(canRead)
-  let hydrated = false
+  let allSucceeded = true
   for (const domain of readableDomains) {
     try {
-      const response = await loadDomain(domain, true)
-      hydrated = hydrated || response?.snapshot !== null
+      await loadDomain(domain, true)
     } catch (error) {
+      allSucceeded = false
       updateHealth({
         status: 'error',
         message: error instanceof Error ? error.message : `Unable to load ${domain}.`,
       })
     }
   }
-  return hydrated
+  return allSucceeded
 }
 
 export const startOperationalSupabaseSync = (): void => {
@@ -303,7 +305,9 @@ export const stopOperationalSupabaseSync = (): void => {
   stopDraftListener = undefined
 }
 
-export const connectOperationalSupabase = async (): Promise<void> => {
-  await hydrateOperationalStateFromSupabase()
+export const connectOperationalSupabase = async (): Promise<boolean> => {
+  const hydrated = await hydrateOperationalStateFromSupabase()
+  if (!hydrated) return false
   startOperationalSupabaseSync()
+  return true
 }

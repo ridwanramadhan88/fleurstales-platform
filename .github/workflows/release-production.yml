@@ -23,26 +23,52 @@ jobs:
       - run: npm ci
       - run: npm run check
 
-  migrate:
+  database-preflight:
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Replay all migrations and smoke tests on disposable Supabase
+        run: ./scripts/run-local-supabase-database-gate.sh
+
+  migrate:
+    needs: database-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: npx -y supabase@2.109.1 link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
-      - run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
+      - name: Preview production migration plan
+        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --dry-run
+      - name: Apply production migrations
+        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
+      - name: Lint live Supabase schema
+        run: npx -y supabase@2.109.1 db lint --linked --schema public --level error --fail-on error
+      - name: Run every live Fleurstales database smoke test
+        run: ./scripts/run-supabase-smoke-tests.sh "$SUPABASE_DB_URL"
 
   deploy-functions:
     needs: migrate
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
@@ -58,6 +84,7 @@ jobs:
     needs: deploy-functions
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: production
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STOREFRONT_PROJECT_ID }}
@@ -78,6 +105,7 @@ jobs:
     needs: deploy-functions
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: production
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OS_PROJECT_ID }}

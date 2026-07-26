@@ -484,10 +484,11 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
           systemRole: staffAccountDraft.systemRole,
           actor: { name: actorName, role },
           hrManagedRoles: editValue.staffRoles.hrManagedRoles,
+          usesProductionPassword: isSupabaseConfigured(),
         })
         if (!eligibility.ok) {
           const lower = eligibility.reason.toLowerCase()
-          errors[lower.includes('email') ? 'staff.account.email' : lower.includes('pin') ? 'staff.account.pin' : 'staff.account.username'] = eligibility.reason
+          errors[lower.includes('email') ? 'staff.account.email' : (lower.includes('pin') || lower.includes('password')) ? 'staff.account.pin' : 'staff.account.username'] = eligibility.reason
         }
       }
     }
@@ -539,7 +540,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
                 employeeId,
                 email: staffAccountDraft.email,
                 username: staffAccountDraft.username,
-                pin: staffAccountDraft.pin,
+                password: staffAccountDraft.pin,
                 displayName: staffAccountDraft.name,
                 role: staffAccountDraft.systemRole as Exclude<UserRole, 'owner'>,
               })
@@ -550,6 +551,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
               email: staffAccountDraft.email,
               username: staffAccountDraft.username,
               pin: staffAccountDraft.pin,
+              productionAuth: isSupabaseConfigured(),
               position: staffAccountDraft.systemRole,
               actor: { name: actorName, role: 'owner' },
             })
@@ -730,7 +732,7 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
       const defaultRole = editValue.staffRoles.roles.includes(editValue.staffRoles.defaultRole) && editValue.staffRoles.defaultRole !== 'owner'
         ? editValue.staffRoles.defaultRole
         : (editValue.staffRoles.roles.find((roleValue) => roleValue !== 'owner') ?? 'florist')
-      setStaffAccountDraft({ name: '', email: '', username: '', pin: '123456', systemRole: defaultRole, phone: '', hireDate: today, baseSalaryIdr: 3_000_000 })
+      setStaffAccountDraft({ name: '', email: '', username: '', pin: isSupabaseConfigured() ? '' : '123456', systemRole: defaultRole, phone: '', hireDate: today, baseSalaryIdr: 3_000_000 })
       setSaveFeedback(null)
     },
     onCancelStaffAccountDraft: () => setStaffAccountDraft(null),

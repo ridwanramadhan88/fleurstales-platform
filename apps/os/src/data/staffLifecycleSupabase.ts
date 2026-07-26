@@ -7,7 +7,7 @@ export interface ProvisionStaffInput {
   employeeId: string
   email: string
   username: string
-  pin: string
+  password: string
   displayName: string
   role: Exclude<UserRole, 'owner'>
   branchId?: string
@@ -25,7 +25,7 @@ const staffFunctionError = async (error: unknown, fallback: string): Promise<Err
         if (body.error === 'INVALID_STAFF_EMAIL') return new Error('Enter a valid staff email address.')
         if (body.error === 'EMPLOYEE_ALREADY_HAS_LOGIN') return new Error('This employee already has a login account.')
         if (body.error === 'STAFF_LOGIN_NOT_FOUND') return new Error('This employee has no Supabase login account yet.')
-        if (body.error === 'STAFF_CREDENTIAL_UPDATE_FAILED') return new Error('The role was restored because the new PIN could not be saved.')
+        if (body.error === 'STAFF_CREDENTIAL_UPDATE_FAILED') return new Error('The role was restored because the new password could not be saved.')
       } catch {
         // Use the clear workflow fallback below.
       }
@@ -46,7 +46,7 @@ export const provisionStaffAccountSupabase = async (input: ProvisionStaffInput):
   if (data?.error) throw new Error(data.message ?? data.error)
 }
 
-export const syncStaffAccessProfileSupabase = async (employee: Employee, pin?: string): Promise<void> => {
+export const syncStaffAccessProfileSupabase = async (employee: Employee, password?: string): Promise<void> => {
   if (!isSupabaseConfigured()) return
   const client = getSupabaseAuthClient()
   if (!client) return
@@ -60,7 +60,7 @@ export const syncStaffAccessProfileSupabase = async (employee: Employee, pin?: s
       username: employee.username ?? '',
       isActive: employee.status === 'active',
       branchId: employee.branch || null,
-      pin: pin || undefined,
+      password: password || undefined,
     },
   })
   if (error) throw await staffFunctionError(error, 'Unable to synchronize the staff login account.')

@@ -44,8 +44,9 @@ describe('catalog image processing', () => {
     }])
     const upload = prepareCatalogImageUpload('catalog_product_1', images[0]!)
 
-    expect(images[0]?.storagePath).toBe(buildCatalogImageStoragePath('catalog_product_1', 'img_1'))
-    expect(upload?.storagePath).toBe('catalog_product_1/img_1.jpg')
+    expect(images[0]?.storagePath).toMatch(/^catalog_product_1\/img_1-[a-z0-9-]+\.jpg$/)
+    expect(upload?.storagePath).toBe(images[0]?.storagePath)
+    expect(images[0]?.storagePath).not.toBe(buildCatalogImageStoragePath('catalog_product_1', 'img_1'))
     expect(upload?.byteSize).toBe(4)
   })
 

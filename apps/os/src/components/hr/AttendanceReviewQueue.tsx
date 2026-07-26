@@ -169,9 +169,9 @@ export const AttendanceReviewQueue = ({ onOpenOrder, searchQuery = '' }: Attenda
     <AppDialog
       open={Boolean(selected)}
       onOpenChange={(open) => { if (!open) setSelected(null) }}
+      size="standard"
       title={selected?.status === 'problem' ? 'Solve employee Problem' : 'Review employee warning'}
       description={selected ? `${LABELS[selected.warningType]} · ${selected.reason}` : undefined}
-      contentClassName="max-w-md"
     >
       {selected && <div className="space-y-4">
         <label className="space-y-1">

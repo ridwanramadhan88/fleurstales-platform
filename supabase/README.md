@@ -104,9 +104,9 @@ production employee/session foundation on top of V3.2:
 
 New non-Owner Auth accounts are created by `functions/staff-admin`, never by a
 browser-held secret. The function verifies the signed-in staff user against the
-database permission model, creates the Supabase Auth user with the staff PIN,
+database permission model, creates the Supabase Auth user with a strong staff password,
 and links the Auth user and OS username to `staff_access_profiles`. The public
-`staff-login` function resolves username + password/PIN to a normal Supabase
+`staff-login` function resolves username + password to a normal Supabase
 session while keeping the internal Auth email private.
 
 After applying all migrations, also run:
@@ -114,3 +114,52 @@ After applying all migrations, also run:
 ```text
 supabase/tests/v33_staff_settings_runtime_smoke.sql
 ```
+
+## V3.5 backend wiring completion
+
+Migration `20260725230000_backend_wiring_completion.sql` completes the remaining prototype-to-production paths:
+
+- authoritative Storefront checkout quotes and voucher application;
+- authenticated WhatsApp/walk-in Order creation;
+- atomic Order payment/refund projection into Finance;
+- normalized staff schedules and self-attendance APIs;
+- server-generated Order contribution points;
+- CRM Realtime publication;
+- server-backed customer-segmentation settings.
+
+After applying migrations in staging, run `tests/v35_backend_wiring_smoke.sql` in addition to the earlier security smoke tests. Verify the Storefront and Business OS with separate Owner, Admin, Finance, HR, and Florist sessions before deploying production data.
+
+## V3.6 integrity/concurrency completion
+
+Migration `20260725233000_integrity_concurrency_completion.sql` serializes Storefront and internal-Order idempotency keys, binds each key to a request hash, makes attendance geography/status server-derived, projects Order payment/refund activity into Finance in the same transaction, and normalizes Order contribution-point events. Run `tests/v36_integrity_concurrency_smoke.sql` after migration.
+
+## V3.7 authority consistency
+
+Migration `20260725234500_authority_consistency_completion.sql` aligns the remaining Business OS rules with the authoritative backend:
+
+- Admin Order mutations honor the per-session runtime branch through the complete validator chain;
+- internal Order review uses `quote_internal_order` before confirmation;
+- CRM/VIP metrics use the same verified-business rules as voucher pricing;
+- accepted internal-Order customer mutations advance CRM revisions;
+- Florist access remains assigned-work read-only and cannot mutate Order status;
+- normalized employee points are changed through dedicated command RPCs;
+- Finance verification/rejection actors are server-stamped; and
+- attendance selfies live in the private `attendance-selfies` Storage bucket.
+
+Run `tests/v37_authority_consistency_smoke.sql` after all earlier smoke tests. The production workflow also runs `supabase db lint --linked --schema public --level error --fail-on error` and every Fleurstales smoke SQL before web deployment. It therefore requires the GitHub Actions secret `SUPABASE_DB_URL` for a trusted direct Postgres connection used only inside the migration job.
+
+
+## V3.8 Florist Order read-only
+
+Migration `20260725235500_florist_order_read_only.sql` removes Florist from the
+`orders.advance_status` capability family, disables any previously persisted
+Florist status permission, and places a final authenticated role boundary in
+front of the Order writer. Florists retain assigned-Order read access only.
+Run `tests/v38_florist_order_read_only_smoke.sql` after all earlier tests.
+
+
+### V3.11 staff authentication
+
+Production Supabase staff accounts use strong passwords: at least 12 characters with lowercase, uppercase, a number, and a symbol. Local/demo OS mode may still use the six-digit `123456` PIN and does not copy that PIN into Supabase Auth. The `staff-login` Edge Function enforces username/IP throttling through service-only RPCs and returns generic failures to avoid account enumeration.
+
+Hosted Supabase Auth settings must mirror `supabase/config.toml` before production staff accounts are enabled. Existing hosted accounts that used a six-digit credential must be reset to a strong password.

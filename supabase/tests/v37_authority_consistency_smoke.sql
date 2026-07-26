@@ -1,0 +1,82 @@
+-- Fleurstales V3.7 authority-consistency live database smoke checks.
+-- Run after all migrations through 20260725234500.
+
+do $$
+declare
+  v_source text;
+begin
+  if to_regprocedure('public.quote_internal_order(jsonb)') is null then
+    raise exception 'Internal Order quote RPC is missing';
+  end if;
+  if to_regprocedure('public.get_customer_business_metrics(text)') is null then
+    raise exception 'Authoritative CRM metrics RPC is missing';
+  end if;
+  if to_regprocedure('public.create_employee_point(jsonb)') is null
+     or to_regprocedure('public.review_employee_point(text,text,text)') is null
+     or to_regprocedure('public.reverse_employee_point(text,text)') is null then
+    raise exception 'Employee-point command RPCs are incomplete';
+  end if;
+
+  if has_function_privilege('anon','public.quote_internal_order(jsonb)','execute') then
+    raise exception 'anon must not execute internal Order quotes';
+  end if;
+  if has_function_privilege('anon','public.get_customer_business_metrics(text)','execute') then
+    raise exception 'anon must not read CRM business metrics';
+  end if;
+  if has_function_privilege('anon','public.create_employee_point(jsonb)','execute')
+     or has_function_privilege('anon','public.review_employee_point(text,text,text)','execute')
+     or has_function_privilege('anon','public.reverse_employee_point(text,text)','execute') then
+    raise exception 'anon must not execute employee-point commands';
+  end if;
+
+  select pg_get_functiondef('public.save_order_operational_state_v31_internal(text,integer,integer,jsonb,jsonb,jsonb)'::regprocedure)
+  into v_source;
+  if position('current_staff_branch_id' in v_source) = 0 then
+    raise exception 'Legacy Order writer still lacks runtime-session branch authority';
+  end if;
+  if position('FLORIST_PRODUCTION_STATUS_ONLY' in v_source) = 0 then
+    raise exception 'Florist Order mutations are not restricted to production status changes';
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from storage.buckets
+    where id='attendance-selfies'
+      and public=false
+      and file_size_limit=102400
+  ) then
+    raise exception 'Private attendance-selfies bucket is missing or misconfigured';
+  end if;
+
+  if not exists(select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='attendance_selfies_select')
+     or not exists(select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='attendance_selfies_insert') then
+    raise exception 'Attendance selfie Storage policies are incomplete';
+  end if;
+  if exists(select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='attendance_selfies_delete') then
+    raise exception 'Attendance selfie evidence must be immutable to authenticated staff';
+  end if;
+end $$;
+
+do $$
+declare
+  v_hr_source text;
+begin
+  select pg_get_functiondef('public.save_hr_operational_state(bigint,jsonb)'::regprocedure) into v_hr_source;
+  if position('employeePointEntries' in v_hr_source)=0
+     or position('employee_point_events' in v_hr_source)=0 then
+    raise exception 'Generic HR save does not project normalized employee-point authority';
+  end if;
+end $$;
+
+do $$
+declare
+  v_finance_source text;
+begin
+  select pg_get_functiondef('public.save_finance_operational_state(bigint,jsonb)'::regprocedure) into v_finance_source;
+  if position('display_name' in v_finance_source)=0
+     or position('updatedAt' in v_finance_source)=0 then
+    raise exception 'Finance verification actor is not server-stamped';
+  end if;
+end $$;

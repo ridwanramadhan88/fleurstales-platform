@@ -14,7 +14,7 @@ import { describeBranchHoursForDate } from '../../domain/branchOpeningHoursDomai
 import { getStorefrontAvailableTimeSlots, isStorefrontDateUnavailable, validateStorefrontCheckoutDetails } from '../../domain/storefrontCheckoutDomain'
 import type { CartDrawerProps } from './CartDrawer'
 import { generateId } from '../../lib/id'
-import type { CreateStorefrontOrderInput } from '../../data/shared/contracts'
+import type { CreateStorefrontOrderInput, StorefrontCheckoutQuoteResult } from '../../data/shared/contracts'
 import { bootstrapSharedData } from '../../data/shared/bootstrap'
 import { resolveStorefrontOrderPricing } from '../../data/shared/orderDomain'
 import { resolvedPricingToOrderLineItems } from '../../data/shared/orderLocalAdapter'
@@ -115,6 +115,9 @@ export const useCartDrawerController = (
   const [voucherMessage, setVoucherMessage] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
   const [placedOrderNumber, setPlacedOrderNumber] = useState<string | null>(null)
+  const sharedData = useMemo(() => bootstrapSharedData(), [])
+  const remoteCheckoutEnabled = sharedData.enabled
+  const [remoteQuote, setRemoteQuote] = useState<StorefrontCheckoutQuoteResult | null>(null)
   const [checkoutIdempotencyKey, setCheckoutIdempotencyKey] = useState(() => generateId('checkout-attempt'))
   const [placedOrderTotals, setPlacedOrderTotals] = useState<{
     itemsTotalIdr: number
@@ -155,10 +158,13 @@ export const useCartDrawerController = (
   const deliveryFeeIdr = fulfillment === 'delivery' ? (selectedBranch?.deliveryFeeIdr ?? 15_000) : 0
 
   const matchedCustomer = useMemo<CustomerProfile | null>(() => {
+    // Public Storefront must never expose CRM lookup by phone number. Existing
+    // customer matching happens privately inside the checkout RPC.
+    if (remoteCheckoutEnabled) return null
     const normalizedInput = normalizeWhatsappNumber(whatsappNumber)
     if (normalizedInput.length < 8) return null
     return findCustomerByWhatsapp(customers, whatsappNumber)
-  }, [customers, whatsappNumber])
+  }, [customers, remoteCheckoutEnabled, whatsappNumber])
 
   const matchedCustomerSegment = useMemo(() => {
     if (!matchedCustomer) return null
@@ -169,7 +175,7 @@ export const useCartDrawerController = (
   }, [allOrders, matchedCustomer, segmentRules])
 
   useEffect(() => {
-    if (!matchedCustomer) return
+    if (remoteCheckoutEnabled || !matchedCustomer) return
     setCustomerName((current) => current.trim() || matchedCustomer.name)
     setEmail((current) => current.trim() || matchedCustomer.email || '')
     setBirthday((current) => current || matchedCustomer.birthday || '')
@@ -177,7 +183,7 @@ export const useCartDrawerController = (
     if (matchedCustomer.preferredBranch && activeBranches.some((item) => item.id === matchedCustomer.preferredBranch)) {
       setBranch(matchedCustomer.preferredBranch)
     }
-  }, [activeBranches, matchedCustomer])
+  }, [activeBranches, matchedCustomer, remoteCheckoutEnabled])
 
   useEffect(() => {
     if (!activeBranches.some((item) => item.id === branch)) {
@@ -191,25 +197,48 @@ export const useCartDrawerController = (
     if (deliveryTime && !availableTimeSlots.includes(deliveryTime)) setDeliveryTime('')
   }, [availableTimeSlots, deliveryTime])
 
+
+  // A server quote is valid only for the exact customer/cart/branch/schedule/payment
+  // inputs that produced it. Any change clears the quote and applied promo so stale
+  // totals can never be shown or submitted.
+  useEffect(() => {
+    if (!remoteCheckoutEnabled) return
+    setRemoteQuote(null)
+    setAppliedVoucherCode(null)
+    setVoucherMessage(null)
+  }, [
+    remoteCheckoutEnabled,
+    customerName,
+    whatsappNumber,
+    email,
+    birthday,
+    branch,
+    fulfillment,
+    deliveryDate,
+    deliveryTime,
+    deliveryAddress,
+    paymentMethod,
+    lines,
+  ])
+
   const eligibleVouchers = useMemo(
-    () =>
-      vouchers.filter(
-        (voucher) =>
-          validateVoucherCode(voucher.code, vouchers, {
-            orderSubtotalIdr: itemsTotalIdr,
-            customer: matchedCustomer,
-          }).ok,
-      ),
-    [itemsTotalIdr, matchedCustomer, vouchers],
+    () => remoteCheckoutEnabled ? [] : vouchers.filter(
+      (voucher) => validateVoucherCode(voucher.code, vouchers, {
+        orderSubtotalIdr: itemsTotalIdr,
+        customer: matchedCustomer,
+      }).ok,
+    ),
+    [itemsTotalIdr, matchedCustomer, remoteCheckoutEnabled, vouchers],
   )
-  const voucherValidation = appliedVoucherCode
+  const voucherValidation = !remoteCheckoutEnabled && appliedVoucherCode
     ? validateVoucherCode(appliedVoucherCode, vouchers, {
         orderSubtotalIdr: itemsTotalIdr,
         customer: matchedCustomer,
       })
     : null
-  const discountIdr =
-    voucherValidation?.ok && voucherValidation.discountIdr
+  const discountIdr = remoteCheckoutEnabled
+    ? (remoteQuote?.discountIdr ?? 0)
+    : voucherValidation?.ok && voucherValidation.discountIdr
       ? voucherValidation.discountIdr
       : 0
 
@@ -240,6 +269,7 @@ export const useCartDrawerController = (
     setPaymentMethod('transfer')
     setPlacedOrderNumber(null)
     setPlacedOrderTotals(null)
+    setRemoteQuote(null)
     setCheckoutIdempotencyKey(generateId('checkout-attempt'))
   }
 
@@ -253,33 +283,55 @@ export const useCartDrawerController = (
     }
   }
 
-  const applyVoucherCode = (code: string) => {
-    const result = validateVoucherCode(code, vouchers, {
-      orderSubtotalIdr: itemsTotalIdr,
-      customer: matchedCustomer,
-    })
-    if (!result.ok || !result.voucher) {
-      setAppliedVoucherCode(null)
-      setVoucherMessage(result.reason ?? 'This voucher code is not valid.')
+  const buildQuoteRequest = (promoCode?: string): CreateStorefrontOrderInput => ({
+    idempotencyKey: checkoutIdempotencyKey,
+    customer: { name: customerName.trim(), whatsappNumber: whatsappNumber.trim(), email: email.trim() || undefined, birthday: birthday.trim() || undefined },
+    branchId: branch, fulfillment, scheduleDate: deliveryDate, scheduleTime: deliveryTime,
+    items: lines.map((line) => {
+      const product = catalogProducts.find((item) => item.id === line.productId)
+      const activeVariants = product?.variants.filter((variant) => variant.status === 'active') ?? []
+      const variantId = line.variantId ?? (activeVariants.length === 1 ? activeVariants[0]?.id : undefined) ?? ''
+      return { productId: line.productId, variantId, quantity: line.quantity }
+    }),
+    deliveryAddress: fulfillment === 'delivery' ? deliveryAddress.trim() || undefined : undefined,
+    orderNote: orderNote.trim() || undefined, greetingMessage: greetingMessage.trim() || undefined,
+    greetingCardName: greetingCardName.trim() || undefined, paymentMethod, promoCode,
+  })
+
+  const applyVoucherCode = async (code: string) => {
+    if (remoteCheckoutEnabled && sharedData.enabled) {
+      const error = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
+      if (error) { setVoucherMessage(`Complete checkout details first. ${error}`); return }
+      try {
+        const quote = await sharedData.repositories.checkout.quoteOrder(buildQuoteRequest(code.trim()))
+        setRemoteQuote(quote)
+        if (!quote.promoAccepted) { setAppliedVoucherCode(null); setVoucherMessage(quote.promoMessage ?? 'This voucher code is not valid.'); return }
+        setAppliedVoucherCode(quote.promoCode ?? code.trim().toUpperCase())
+        setVoucherMessage(quote.promoMessage ?? 'Voucher applied.')
+      } catch (error) {
+        setAppliedVoucherCode(null)
+        setVoucherMessage(error instanceof Error ? error.message : 'Unable to validate voucher.')
+      }
       return
     }
+    const result = validateVoucherCode(code, vouchers, { orderSubtotalIdr: itemsTotalIdr, customer: matchedCustomer })
+    if (!result.ok || !result.voucher) { setAppliedVoucherCode(null); setVoucherMessage(result.reason ?? 'This voucher code is not valid.'); return }
     setAppliedVoucherCode(result.voucher.code)
-    setVoucherMessage(
-      `Voucher "${result.voucher.code}" applied — -${result.voucher.percentOff}% off.`,
-    )
+    setVoucherMessage(`Voucher "${result.voucher.code}" applied — -${result.voucher.percentOff}% off.`)
   }
 
-  const handleApplyVoucher = () => applyVoucherCode(voucherCode)
+  const handleApplyVoucher = () => { void applyVoucherCode(voucherCode) }
 
   const handleApplySuggestedVoucher = (code: string) => {
     setVoucherCode(code)
-    applyVoucherCode(code)
+    void applyVoucherCode(code)
   }
 
   const handleRemoveVoucher = () => {
     setAppliedVoucherCode(null)
     setVoucherCode('')
     setVoucherMessage(null)
+    setRemoteQuote(null)
   }
 
   const handleContinueFromDetails = () => {
@@ -338,23 +390,19 @@ export const useCartDrawerController = (
       promoCode: appliedVoucherCode ?? undefined,
     }
 
-    let resolved
-    try {
-      resolved = resolveStorefrontOrderPricing({
-        request: checkoutRequest,
-        products: catalogProducts,
-        branches,
-        trustedDiscountIdr: discountIdr,
-      })
-    } catch (error) {
-      setDetailsError(error instanceof Error ? error.message : 'The order could not be validated.')
-      setStep('details')
-      return
-    }
-
-    const shared = bootstrapSharedData()
+    const shared = sharedData
     if (shared.enabled) {
       try {
+        const quote = await shared.repositories.checkout.quoteOrder(checkoutRequest)
+        if (appliedVoucherCode && !quote.promoAccepted) {
+          setAppliedVoucherCode(null)
+          setRemoteQuote(quote)
+          setVoucherMessage(quote.promoMessage ?? 'The voucher is no longer valid.')
+          setDetailsError(quote.promoMessage ?? 'The voucher is no longer valid.')
+          setStep('details')
+          return
+        }
+        setRemoteQuote(quote)
         const order = await shared.repositories.checkout.createOrder(checkoutRequest)
         setPlacedOrderTotals({
           itemsTotalIdr: order.itemsSubtotalIdr,
@@ -373,6 +421,20 @@ export const useCartDrawerController = (
             : 'We could not place your order. Please check your connection and try again.',
         )
       }
+      return
+    }
+
+    let resolved
+    try {
+      resolved = resolveStorefrontOrderPricing({
+        request: checkoutRequest,
+        products: catalogProducts,
+        branches,
+        trustedDiscountIdr: discountIdr,
+      })
+    } catch (error) {
+      setDetailsError(error instanceof Error ? error.message : 'The order could not be validated.')
+      setStep('details')
       return
     }
 
@@ -483,11 +545,11 @@ export const useCartDrawerController = (
     placedOrderNumber,
     bankAccounts,
     paymentInstructions,
-    itemsTotalIdr: placedOrderTotals?.itemsTotalIdr ?? itemsTotalIdr,
+    itemsTotalIdr: placedOrderTotals?.itemsTotalIdr ?? (remoteCheckoutEnabled ? remoteQuote?.itemsSubtotalIdr ?? itemsTotalIdr : itemsTotalIdr),
     itemCount,
-    deliveryFeeIdr: placedOrderTotals?.deliveryFeeIdr ?? deliveryFeeIdr,
+    deliveryFeeIdr: placedOrderTotals?.deliveryFeeIdr ?? (remoteCheckoutEnabled ? remoteQuote?.deliveryFeeIdr ?? deliveryFeeIdr : deliveryFeeIdr),
     discountIdr: placedOrderTotals?.discountIdr ?? discountIdr,
-    grandTotalIdr: placedOrderTotals?.grandTotalIdr ?? grandTotalIdr,
+    grandTotalIdr: placedOrderTotals?.grandTotalIdr ?? (remoteCheckoutEnabled ? remoteQuote?.totalIdr ?? grandTotalIdr : grandTotalIdr),
     setStep,
     setCustomerName,
     setWhatsappNumber,

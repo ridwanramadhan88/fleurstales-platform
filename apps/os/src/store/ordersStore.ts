@@ -58,6 +58,7 @@ import { useAuditLogStore } from './auditLogStore'
 import { useFinanceStore } from './financeStore'
 import { appendPaymentEvent, buildOrderPaymentEvent } from '../domain/orderPaymentDomain'
 import { getFloristAssignmentOptionById, resolveFloristAssignmentMoment } from '../domain/floristAssignmentDomain'
+import { isSharedBackendConfigured } from '../api/remoteSession'
 
 export type { AddOrderFromDraftInput, CreateOrderInput, OrdersStoreState } from './ordersStoreTypes'
 
@@ -97,7 +98,7 @@ const postPaymentEventToLedger = ({
   order: OrderTableRow
   event: OrderPaymentEvent
 }): { allowed: true; event: OrderPaymentEvent } | { allowed: false; reason: string } => {
-  if (event.amountIdr <= 0) return { allowed: true, event }
+  if (event.amountIdr <= 0 || isSharedBackendConfigured()) return { allowed: true, event }
   const finance = useFinanceStore.getState()
   const result = event.type === 'payment_received'
     ? finance.recordOrderPayment({
@@ -521,6 +522,7 @@ export const useOrdersStore = create<OrdersStoreState>()(
           kind: 'status',
           permissions: useSettingsStore.getState().permissions,
           action: 'order.status.update',
+          nextStatus: input.status,
         })
         if (denied) {
           return denied.code === 'REVISION_CONFLICT'

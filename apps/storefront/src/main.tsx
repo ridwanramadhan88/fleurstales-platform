@@ -5,6 +5,7 @@ import { initializeOperationalPersistence } from './store/operationalPersistence
 import { UiLanguageBridge } from './i18n/UiLanguageBridge'
 import { initializeStorefrontCatalogBridge } from './data/shared/catalogBridge'
 import { initializeStorefrontStoreBridge } from './data/shared/storeBridge'
+import { isSupabaseConfigured } from './data/shared/supabaseConfig'
 
 const documentRoot = window.document.documentElement
 documentRoot.classList.remove('dark')
@@ -36,9 +37,12 @@ const renderStartupFailure = (error: unknown) => {
 }
 
 const start = async () => {
-  // Hydrate linked operational stores before mounting components so the first
-  // render never mixes persisted orders with reset branches/employees/catalog.
-  await initializeOperationalPersistence()
+  // The aggregate browser database exists only for offline/demo mode. Once
+  // Supabase is configured, global business data (Orders, CRM, vouchers, HR,
+  // Finance, etc.) must come from the backend and must never be hydrated from
+  // a customer's browser cache. Cart/checkout stores retain their own local
+  // persistence independently.
+  if (!isSupabaseConfigured()) await initializeOperationalPersistence()
   await initializeStorefrontStoreBridge()
   await initializeStorefrontCatalogBridge()
   root.render(<>

@@ -7,7 +7,7 @@ type InviteRequest = {
   employeeId: string
   email: string
   username: string
-  pin: string
+  password: string
   displayName: string
   role: StaffRole
   branchId?: string | null
@@ -19,7 +19,7 @@ type UpdateRequest = {
   employeeId: string
   email?: string
   username: string
-  pin?: string
+  password?: string
   displayName: string
   role: StaffRole
   branchId?: string | null
@@ -79,6 +79,12 @@ const parseSecretKey = (): string => {
 const isEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 const validRoles = new Set<StaffRole>(['admin', 'finance', 'hr', 'florist'])
 const usernamePattern = /^[a-z][a-z0-9._-]*$/
+const isStrongPassword = (value: string): boolean =>
+  value.length >= 12
+  && /[a-z]/.test(value)
+  && /[A-Z]/.test(value)
+  && /\d/.test(value)
+  && /[^A-Za-z0-9]/.test(value)
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return json({ ok: true })
@@ -110,7 +116,7 @@ Deno.serve(async (request) => {
     if (action !== 'invite' && action !== 'update') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
     const employeeId = body.employeeId?.trim()
     const username = body.username?.trim().toLowerCase()
-    const pin = body.pin?.trim()
+    const password = body.password
     const email = body.email?.trim().toLowerCase()
     const displayName = body.displayName?.trim()
     const role = body.role
@@ -121,7 +127,7 @@ Deno.serve(async (request) => {
     if (action === 'update') {
       const update = body as UpdateRequest
       if (email && !isEmail(email)) return json({ error: 'INVALID_STAFF_EMAIL' }, 400)
-      if (pin && !/^\d{6}$/.test(pin)) return json({ error: 'INVALID_STAFF_PIN' }, 400)
+      if (password && !isStrongPassword(password)) return json({ error: 'WEAK_STAFF_PASSWORD' }, 400)
       const { data: target, error: targetError } = await admin
         .from('staff_access_profiles')
         .select('user_id,employee_id,display_name,role,username,email,branch_id,is_active')
@@ -153,10 +159,10 @@ Deno.serve(async (request) => {
       if (!synced) return json({ error: 'STAFF_LOGIN_NOT_FOUND' }, 404)
 
       if (email && email !== target.email) {
-        const { error: profileEmailError } = await admin
-          .from('staff_access_profiles')
-          .update({ email })
-          .eq('user_id', target.user_id)
+        const { error: profileEmailError } = await admin.rpc('service_update_staff_access_email', {
+          p_user_id: target.user_id,
+          p_email: email,
+        })
         if (profileEmailError) {
           await userClient.rpc('sync_staff_access_profile', {
             p_employee_id: target.employee_id,
@@ -170,15 +176,15 @@ Deno.serve(async (request) => {
         }
       }
 
-      if (pin || (email && email !== target.email)) {
+      if (password || (email && email !== target.email)) {
         const credentials = {
-          ...(pin ? { password: pin } : {}),
+          ...(password ? { password } : {}),
           ...(email && email !== target.email ? { email, email_confirm: true } : {}),
         }
         const { error: credentialError } = await admin.auth.admin.updateUserById(target.user_id, credentials)
         if (credentialError) {
           if (email && email !== target.email) {
-            await admin.from('staff_access_profiles').update({ email: target.email }).eq('user_id', target.user_id)
+            await admin.rpc('service_update_staff_access_email', { p_user_id: target.user_id, p_email: target.email })
           }
           await userClient.rpc('sync_staff_access_profile', {
             p_employee_id: target.employee_id,
@@ -198,7 +204,7 @@ Deno.serve(async (request) => {
 
     const invite = body as InviteRequest
     if (!email || !isEmail(email)) return json({ error: 'INVALID_STAFF_EMAIL' }, 400)
-    if (!pin || !/^\d{6}$/.test(pin)) return json({ error: 'INVALID_STAFF_INVITE' }, 400)
+    if (!password || !isStrongPassword(password)) return json({ error: 'WEAK_STAFF_PASSWORD' }, 400)
     const { data: mayInvite, error: invitePermissionError } = await userClient.rpc('can_invite_staff_role', { p_role: role })
     if (invitePermissionError) throw invitePermissionError
     if (!mayInvite) return json({ error: 'STAFF_INVITE_FORBIDDEN' }, 403)
@@ -239,7 +245,7 @@ Deno.serve(async (request) => {
 
     const { data: invitedUser, error: inviteError } = await admin.auth.admin.createUser({
       email,
-      password: pin,
+      password,
       email_confirm: true,
       user_metadata: { fleurstales_employee_id: employeeId, fleurstales_display_name: displayName },
     })
@@ -252,16 +258,15 @@ Deno.serve(async (request) => {
       })
       if (metadataError) throw metadataError
 
-      const { error: accessError } = await admin.from('staff_access_profiles').upsert({
-        user_id: userId,
-        employee_id: employeeId,
-        email,
-        username,
-        display_name: displayName,
-        role,
-        branch_id: invite.branchId ?? null,
-        is_active: true,
-      }, { onConflict: 'user_id' })
+      const { error: accessError } = await admin.rpc('service_create_staff_access_profile', {
+        p_user_id: userId,
+        p_employee_id: employeeId,
+        p_email: email,
+        p_username: username,
+        p_display_name: displayName,
+        p_role: role,
+        p_branch_id: invite.branchId ?? null,
+      })
       if (accessError) throw accessError
     } catch (cause) {
       await admin.auth.admin.deleteUser(userId).catch(() => undefined)
