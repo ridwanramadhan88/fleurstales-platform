@@ -38,7 +38,7 @@ const migration = requireText('supabase/migrations/20260726090000_v311_productio
   'extensions.digest(v_username',
   "extensions.digest(lower(trim(coalesce(p_username,'')))",
 ])
-requireText('supabase/migrations/20260802023939_repair_authenticated_policy_helpers.sql', [
+requireText('supabase/migrations/20260802030505_repair_authenticated_policy_helpers.sql', [
   'grant execute on function private.current_staff_employee_id() to authenticated',
   'grant execute on function private.has_action_permission(text) to authenticated',
 ])
