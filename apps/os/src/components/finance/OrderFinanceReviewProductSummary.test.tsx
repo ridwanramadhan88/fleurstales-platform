@@ -44,4 +44,36 @@ describe('OrderFinanceReviewProductSummary', () => {
     expect(screen.getByText('Delivery fee')).toBeInTheDocument()
     expect(screen.getAllByText('Rp 125.000')).toHaveLength(2)
   })
+
+  it('does not repeat a subtotal and total when there are no adjustments', () => {
+    const order = makeOrder({
+      totalIdr: 110_000,
+      itemsSubtotalIdr: 110_000,
+      discountIdr: 0,
+      deliveryFeeIdr: 0,
+      items: [{
+        id: 'line-pink-lily',
+        productName: 'Pink Lily',
+        quantity: 1,
+        unitPriceIdr: 110_000,
+      }],
+    })
+    const display = {
+      name: 'Pink Lily',
+      imageUrl: '/images/pink-lily.jpg',
+      isLinkedToCatalog: true,
+    }
+
+    render(
+      <OrderFinanceReviewProductSummary
+        order={order}
+        productDisplay={display}
+        itemDisplays={{ 'line-pink-lily': display }}
+      />,
+    )
+
+    expect(screen.queryByText('Items subtotal')).not.toBeInTheDocument()
+    expect(screen.queryByText('Total')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Rp 110.000')).toHaveLength(2)
+  })
 })

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, type FC } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type FC } from "react";
 import type { OrderStatus } from "../../types/orders";
 import { cn } from "../../lib/utils";
 import { STATUS_ICONS, STATUS_STAGE_STYLE } from "./orderTableLabels";
@@ -17,46 +17,58 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
   className,
 }) => {
   const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const stageRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [trackOffset, setTrackOffset] = useState(0);
 
   const centerCurrentStage = useCallback(() => {
     const viewport = viewportRef.current;
+    const track = trackRef.current;
     const currentStage = stageRefs.current[currentIndex];
-    if (!viewport || !currentStage) return;
+    if (!viewport || !track || !currentStage) return;
 
     const targetCenter = currentStage.offsetLeft + currentStage.offsetWidth / 2;
-    const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
-    viewport.scrollLeft = Math.min(
-      maxScrollLeft,
+    const maxOffset = Math.max(0, track.offsetWidth - viewport.clientWidth);
+    setTrackOffset(Math.min(
+      maxOffset,
       Math.max(0, Math.round(targetCenter - viewport.clientWidth / 2)),
-    );
+    ));
   }, [currentIndex]);
 
   useLayoutEffect(() => {
-    centerCurrentStage();
     const viewport = viewportRef.current;
-    if (!viewport) return undefined;
+    const track = trackRef.current;
+    if (!viewport || !track) return undefined;
 
+    const frame = window.requestAnimationFrame(centerCurrentStage);
     const observer = new ResizeObserver(centerCurrentStage);
     observer.observe(viewport);
-    return () => observer.disconnect();
+    observer.observe(track);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, [centerCurrentStage, options.length]);
 
   return (
     <div
       ref={viewportRef}
       className={cn(
-        "no-scrollbar relative touch-pan-y overflow-x-hidden rounded-xl border border-border bg-card shadow-ios-sm sm:overflow-visible",
+        "relative touch-pan-y rounded-xl border border-border bg-card shadow-ios-sm",
         className,
       )}
       aria-label={ariaLabel}
     >
-      <div
-        className="grid min-w-[30rem] items-start px-5 py-3.5 sm:min-w-0 sm:px-6"
-        style={{
-          gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
-        }}
-      >
+      <div className="overflow-visible [clip-path:inset(-0.75rem_0_-2rem_0)]">
+        <div
+          ref={trackRef}
+          data-progress-track
+          className="grid min-w-[30rem] items-start px-5 py-3.5 will-change-transform sm:min-w-0 sm:px-6"
+          style={{
+            gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+            transform: `translate3d(-${trackOffset}px, 0, 0)`,
+          }}
+        >
         {options.map((option, index) => {
           const style = STATUS_STAGE_STYLE[option.id];
           const state =
@@ -99,7 +111,8 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
               <span className={labelClass}>{option.label}</span>
             </div>
           );
-        })}
+          })}
+        </div>
       </div>
     </div>
   );

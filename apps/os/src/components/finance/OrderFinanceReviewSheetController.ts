@@ -18,7 +18,7 @@ import type { OrderStatus, OrderTableRow } from '../../types/orders'
 import { useDismissableModal } from '../../hooks/useDismissableModal'
 import { toast } from '../../hooks/use-toast'
 import type { OrderFinanceReviewSheetProps } from './OrderFinanceReviewSheet'
-import { STATUS_ICONS, STATUS_LABELS, getOrderStatusOptionsForFulfillment } from '../orders/orderTableLabels'
+import { STATUS_LABELS, getOrderStatusOptionsForFulfillment } from '../orders/orderTableLabels'
 import { EMPTY_ACTIVITIES } from '../orders/orderTableSharedConstants'
 import { getDisplayScheduleLabel, getOrderUrgency, isFutureOrder } from '../orders/orderTableFormatters'
 
@@ -33,7 +33,6 @@ export interface OrderFinanceReviewSheetViewModel {
   order: OrderTableRow
   onClose: () => void
   canVerify: boolean
-  productName: string
   productDisplay: ReturnType<typeof resolveOrderProductDisplay>
   itemDisplays: Record<string, ReturnType<typeof resolveOrderProductDisplay>>
   activities: OrderActivityEvent[]
@@ -41,7 +40,6 @@ export interface OrderFinanceReviewSheetViewModel {
   actionNote: string
   isOrderFuture: boolean
   urgency: ReturnType<typeof getOrderUrgency>
-  StatusIcon: (typeof STATUS_ICONS)[OrderStatus]
   wasRejected: boolean
   isMarkedForReview: boolean
   isPending: boolean
@@ -88,7 +86,6 @@ export const useOrderFinanceReviewSheetController = ({
     ? itemDisplays[order.items[0].id]
     : undefined
   const productDisplay = firstItemDisplay ?? resolveOrderProductDisplay(catalogProducts, order)
-  const productName = productDisplay.name
   const activities = useOrderRuntimeStore(
     (state) => state.activities[order.orderNumber] ?? EMPTY_ACTIVITIES,
   )
@@ -112,7 +109,6 @@ export const useOrderFinanceReviewSheetController = ({
 
   const isOrderFuture = isFutureOrder(order)
   const urgency = getOrderUrgency(order)
-  const StatusIcon = STATUS_ICONS[order.status]
   const wasRejected = isRejectedByFinance(order)
   const isMarkedForReview = isMarkedForFinanceReview(order)
   const isPending = isPendingFinanceVerification(order)
@@ -175,7 +171,6 @@ export const useOrderFinanceReviewSheetController = ({
     order,
     onClose,
     canVerify,
-    productName,
     productDisplay,
     itemDisplays,
     activities,
@@ -183,7 +178,6 @@ export const useOrderFinanceReviewSheetController = ({
     actionNote,
     isOrderFuture,
     urgency,
-    StatusIcon,
     wasRejected,
     isMarkedForReview,
     isPending,

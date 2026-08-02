@@ -1,7 +1,6 @@
 import type { FC } from 'react'
 import { CreditCard, Package2, User } from 'lucide-react'
 import type { OrderStatus, PaymentMethod, PaymentStatus } from '../../types/orders'
-import { StatusChip } from '../ui/chip'
 import {
   Select,
   SelectContent,
@@ -10,15 +9,12 @@ import {
   SelectValue,
 } from '../ui/select'
 import {
-  PAYMENT_CHIP_TONE,
   PAYMENT_STATUS_LABELS,
   PAYMENT_STATUS_OPTIONS,
-  STATUS_LABELS,
   getOrderStatusOptionsForFulfillment,
 } from './orderTableLabels'
 import { formatIdrText } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
-import { shouldHighlightReadyPayment } from '../../domain/orderPaymentGateDomain'
 
 interface OrderDetailsItemsSectionProps {
   viewModel: OrderDetailsViewModel
@@ -38,7 +34,6 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
     productDisplay,
     itemDisplays,
     isOrderFuture,
-    StatusIcon,
     isEditing,
     draft,
     onDraftChange,
@@ -63,30 +58,12 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
     items.reduce((sum, item) => sum + item.unitPriceIdr * item.quantity, 0)
   const discountIdr = order.discountIdr ?? 0
   const deliveryFeeIdr = order.deliveryFeeIdr ?? 0
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const showTotalsBreakdown = isEditing || discountIdr > 0 || deliveryFeeIdr > 0
 
   return (
     <>
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/10 bg-card px-4 py-3.5 shadow-ios-sm">
-        {!isEditing ? (
-          <>
-            <span className="inline-flex items-center gap-2">
-              <span className="inline-flex size-9 items-center justify-center rounded-full bg-primary/12 text-primary ring-1 ring-primary/15">
-                <StatusIcon className="size-4 shrink-0" />
-              </span>
-              <span><span className="block text-2xs font-semibold uppercase tracking-wide text-muted-foreground">Current status</span><span className="text-sm font-semibold text-foreground">{STATUS_LABELS[order.status]}</span></span>
-            </span>
-            <StatusChip
-              tone={
-                shouldHighlightReadyPayment(order)
-                  ? 'warning'
-                  : PAYMENT_CHIP_TONE[order.paymentStatus]
-              }
-            >
-              {PAYMENT_STATUS_LABELS[order.paymentStatus]}
-            </StatusChip>
-          </>
-        ) : (
+      {isEditing ? (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/10 bg-card px-4 py-3.5 shadow-ios-sm">
           <div className="grid w-full gap-2 sm:grid-cols-3">
             <label className="space-y-1 text-2xs font-medium text-muted-foreground/80">
               Status
@@ -150,19 +127,14 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
               </Select>
             </label>
           </div>
-        )}
-      </section>
+        </section>
+      ) : null}
 
       {!isEditing && Boolean(order.paymentHistory?.length) && (
         <section className="space-y-2 border-b border-border/70 bg-transparent pb-4 pt-1 sm:rounded-xl sm:bg-card sm:px-3 sm:py-3 sm:ring-1 sm:ring-border/70">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground/80">
-              Payment history
-            </p>
-            <span className="text-2xs text-muted-foreground">
-              {order.paymentHistory?.length} event{order.paymentHistory?.length === 1 ? '' : 's'}
-            </span>
-          </div>
+          <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground/80">
+            Payment history
+          </p>
           <div className="space-y-2">
             {[...(order.paymentHistory ?? [])].reverse().map((event) => (
               <div
@@ -208,12 +180,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <Package2 className="size-3.5" />
             </span>
-            <div>
-              <p className="text-sm font-semibold leading-5 text-foreground">Order summary</p>
-              <p className="text-2xs text-muted-foreground">
-                {itemCount} item{itemCount === 1 ? '' : 's'} · {items.length} line{items.length === 1 ? '' : 's'}
-              </p>
-            </div>
+            <p className="text-sm font-semibold leading-5 text-foreground">Order summary</p>
           </div>
           {!isEditing && (
             <p className="text-sm font-semibold leading-5 text-foreground">Rp {formatter.format(order.totalIdr)}</p>
@@ -274,7 +241,8 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
           })}
         </div>
 
-        <div className="ml-auto w-full max-w-xs space-y-1.5 text-xs">
+        {showTotalsBreakdown ? (
+          <div className="ml-auto w-full max-w-xs space-y-1.5 text-xs">
           <div className="flex justify-between gap-3 text-muted-foreground">
             <span>Items subtotal</span>
             <span>Rp {formatter.format(itemsSubtotalIdr)}</span>
@@ -310,7 +278,8 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
               <span>Rp {formatter.format(order.totalIdr)}</span>
             )}
           </div>
-        </div>
+          </div>
+        ) : null}
 
         <div className="grid gap-3 border-t border-border/60 pt-3 sm:grid-cols-2">
           <div className="flex items-center gap-2">

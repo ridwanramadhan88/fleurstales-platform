@@ -1,9 +1,6 @@
 import type { FC } from 'react'
 import { AlertTriangle, Clock, CreditCard, MapPin, MessageCircle, Smartphone, Truck, User } from 'lucide-react'
-import {
-  SOURCE_LABELS,
-  STATUS_LABELS,
-} from '../orders/orderTableLabels'
+import { SOURCE_LABELS } from '../orders/orderTableLabels'
 import { getActualPickupLabel, getDisplayScheduleLabel, getRequestedPickupLabel } from '../orders/orderTableFormatters'
 import { formatIdrCurrency } from '../../lib/formatters'
 import type { OrderFinanceReviewSheetViewModel } from './OrderFinanceReviewSheetController'
@@ -17,14 +14,13 @@ import { OrderFinanceReviewProductSummary } from './OrderFinanceReviewProductSum
 
 type OrderFinanceReviewSheetDetailsProps = Pick<
   OrderFinanceReviewSheetViewModel,
-  'order' | 'productDisplay' | 'itemDisplays' | 'StatusIcon'
+  'order' | 'productDisplay' | 'itemDisplays'
 >
 
 export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsProps> = ({
   order,
   productDisplay,
   itemDisplays,
-  StatusIcon,
 }) => {
   const paidAmount = order.paidAmountIdr ?? (order.paymentStatus === 'paid' ? order.totalIdr : 0)
   const remainingBalance = Math.max(0, order.totalIdr - paidAmount)
@@ -39,16 +35,6 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
 
   return (
     <div className="space-y-3 sm:col-span-3">
-      {/* Fulfillment status is shown once here; payment status already lives in the Finance banner. */}
-      <section className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-3 shadow-ios-sm">
-        <span className="inline-flex items-center gap-1.5 text-foreground/90">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <StatusIcon className="size-3.5" />
-          </span>
-          <span className="text-sm font-medium">{STATUS_LABELS[order.status]}</span>
-        </span>
-      </section>
-
       {/* Keep the decision-critical payment data together. */}
       <section className="space-y-3 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
         <div className="flex items-center gap-2">

@@ -30,7 +30,7 @@ export const OrderFinanceReviewProductSummary: FC<
     items.reduce((sum, item) => sum + item.unitPriceIdr * item.quantity, 0)
   const discountIdr = order.discountIdr ?? 0
   const deliveryFeeIdr = order.deliveryFeeIdr ?? 0
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const showTotalsBreakdown = discountIdr > 0 || deliveryFeeIdr > 0
 
   return (
     <section
@@ -42,12 +42,7 @@ export const OrderFinanceReviewProductSummary: FC<
           <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <Package2 className="size-3.5" />
           </span>
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold leading-5 text-foreground">Order summary</h3>
-            <p className="text-2xs text-muted-foreground">
-              {itemCount} item{itemCount === 1 ? '' : 's'} · {items.length} line{items.length === 1 ? '' : 's'}
-            </p>
-          </div>
+          <h3 className="min-w-0 text-sm font-semibold leading-5 text-foreground">Order summary</h3>
         </div>
         <p className="shrink-0 text-sm font-semibold text-foreground">
           {formatIdrCurrency(order.totalIdr)}
@@ -96,7 +91,8 @@ export const OrderFinanceReviewProductSummary: FC<
         })}
       </div>
 
-      <div className="ml-auto w-full max-w-xs space-y-1.5 text-xs">
+      {showTotalsBreakdown ? (
+        <div className="ml-auto w-full max-w-xs space-y-1.5 text-xs">
         <div className="flex justify-between gap-3 text-muted-foreground">
           <span>Items subtotal</span>
           <span>{formatIdrCurrency(itemsSubtotalIdr)}</span>
@@ -117,7 +113,8 @@ export const OrderFinanceReviewProductSummary: FC<
           <span>Total</span>
           <span>{formatIdrCurrency(order.totalIdr)}</span>
         </div>
-      </div>
+        </div>
+      ) : null}
     </section>
   )
 }

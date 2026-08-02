@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { ShieldCheck, X } from 'lucide-react'
 import { StatusChip } from '../ui/chip'
 import { PAYMENT_CHIP_TONE, PAYMENT_STATUS_LABELS, URGENCY_CHIP } from '../orders/orderTableLabels'
-import { getDisplayScheduleLabel, isPaymentOverdue } from '../orders/orderTableFormatters'
+import { formatOrderCreatedAtLabel, getDisplayScheduleLabel, isPaymentOverdue } from '../orders/orderTableFormatters'
 import type { OrderFinanceReviewSheetViewModel } from './OrderFinanceReviewSheetController'
 
 /**
@@ -14,13 +14,12 @@ import type { OrderFinanceReviewSheetViewModel } from './OrderFinanceReviewSheet
 
 type OrderFinanceReviewSheetHeaderProps = Pick<
   OrderFinanceReviewSheetViewModel,
-  'order' | 'onClose' | 'productName' | 'urgency' | 'wasRejected' | 'isMarkedForReview'
+  'order' | 'onClose' | 'urgency' | 'wasRejected' | 'isMarkedForReview'
 >
 
 export const OrderFinanceReviewSheetHeader: FC<OrderFinanceReviewSheetHeaderProps> = ({
   order,
   onClose,
-  productName,
   urgency,
   wasRejected,
   isMarkedForReview,
@@ -30,15 +29,14 @@ export const OrderFinanceReviewSheetHeader: FC<OrderFinanceReviewSheetHeaderProp
       <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <p className="flex items-center gap-1.5 text-2xs font-semibold text-muted-foreground">
-            Order · view only
+            Finance verification
           </p>
           <h2 className="text-lg font-semibold leading-6 text-foreground">
             {order.customerName}
           </h2>
-          <p className="text-sm font-semibold text-foreground sm:text-base">{productName}</p>
           <p className="text-2xs text-muted-foreground">{order.orderNumber}</p>
           <p className="text-xs text-muted-foreground sm:text-sm">
-            {order.branch} · {order.createdAtLabel}
+            {order.branch} · {formatOrderCreatedAtLabel(order.createdAtLabel)}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">

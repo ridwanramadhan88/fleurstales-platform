@@ -39,7 +39,6 @@ import {
   isTerminalIssueOrder,
 } from '../../domain/orderBusinessRules'
 import { useDismissableModal } from '../../hooks/useDismissableModal'
-import { STATUS_ICONS } from './orderTableLabels'
 import {
   getOrderUrgency,
   isFutureOrder,
@@ -73,7 +72,6 @@ export interface OrderDetailsViewModel {
   nextStatus: OrderStatus | null
   isOrderFuture: boolean
   urgency: ReturnType<typeof getOrderUrgency>
-  StatusIcon: (typeof STATUS_ICONS)[OrderStatus]
   currentUserRole: ReturnType<typeof useUserStore.getState>['role']
   isCancellable: boolean
   isTerminalIssue: boolean
@@ -223,7 +221,6 @@ export const useOrderDetailsController = ({
   const nextStatus = getNextStatus(order)
   const isOrderFuture = isFutureOrder(order)
   const urgency = getOrderUrgency(order)
-  const StatusIcon = STATUS_ICONS[order.status]
 
   // This panel is only mounted while an order is selected, so it's always
   // "open" for as long as it exists — Escape should close it right away.
@@ -291,7 +288,6 @@ export const useOrderDetailsController = ({
     nextStatus,
     isOrderFuture,
     urgency,
-    StatusIcon,
     currentUserRole: userRole,
     isCancellable: actions.isCancellable,
     isTerminalIssue,

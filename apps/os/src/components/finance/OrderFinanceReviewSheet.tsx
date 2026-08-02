@@ -54,14 +54,12 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
   order,
   onClose,
   canVerify,
-  productName,
   productDisplay,
   itemDisplays,
   actionType,
   actionNote,
   isOrderFuture,
   urgency,
-  StatusIcon,
   wasRejected,
   isMarkedForReview,
   isPending,
@@ -99,7 +97,6 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
         <OrderFinanceReviewSheetHeader
           order={order}
           onClose={onClose}
-          productName={productName}
           urgency={urgency}
           wasRejected={wasRejected}
           isMarkedForReview={isMarkedForReview}
@@ -117,7 +114,6 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
               order={order}
               productDisplay={productDisplay}
               itemDisplays={itemDisplays}
-              StatusIcon={StatusIcon}
             />
             <details className="sm:col-span-2 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
               <summary className="cursor-pointer text-sm font-semibold h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap">Status timeline and activity</summary>
