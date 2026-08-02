@@ -1,79 +1,45 @@
 import { ID_EXACT_TRANSLATIONS, ID_PATTERN_TRANSLATIONS } from './idTranslations'
-import { ID_REVIEWED_TRANSLATIONS } from './reviewedTranslations'
+import {
+  ID_NATURAL_PATTERN_TRANSLATIONS,
+  ID_NATURAL_TRANSLATIONS,
+  normalizeIndonesianUiCopy,
+} from './naturalTranslations'
 import type { UiLanguage } from './uiLanguage'
 
 const normalize = (value: string): string => value.replace(/\s+/g, ' ').trim()
 
-/**
- * Common UI actions stay in English in the Indonesian experience.
- * Exact reviewed descriptions are resolved before this check, allowing short
- * mixed-language sentences such as "Pilih Branch sebelum Create Order."
- */
-const PRESERVED_ACTIONS = [
-  'Save',
-  'Edit',
-  'Delete',
-  'Cancel',
-  'Close',
-  'Create',
-  'Update',
-  'View',
-  'Search',
-  'Filter',
-  'Download',
-  'Upload',
-  'Export',
-  'Import',
-  'Generate',
-  'Publish',
-  'Submit',
-  'Resubmit',
-  'Approve',
-  'Reject',
-  'Verify',
-  'Confirm',
-  'Assign',
-  'Unassign',
-  'Archive',
-  'Restore',
-  'Reset',
-  'Sign in',
-  'Sign out',
-  'Back',
-  'Next',
-  'Previous',
-  'Continue',
-  'Mark ready',
-  'Start work',
-  'Propose ready',
-  'Complete refund',
-] as const
-
-const beginsWithPreservedAction = (value: string): boolean => {
-  const lower = value.toLocaleLowerCase('en-US')
-  return PRESERVED_ACTIONS.some((action) => {
-    const candidate = action.toLocaleLowerCase('en-US')
-    return lower === candidate || lower.startsWith(`${candidate} `) || lower.startsWith(`${candidate}:`)
-  })
+const applyPatterns = (
+  value: string,
+  patterns: Array<[RegExp, (...matches: string[]) => string]>,
+): string | undefined => {
+  for (const [pattern, replacement] of patterns) {
+    const match = value.match(pattern)
+    if (match) return replacement(...match)
+  }
+  return undefined
 }
 
+/**
+ * Indonesian is treated as a complete product language rather than an English
+ * UI with selected words replaced after rendering. Product names, customer
+ * data, branch names, SKUs, and other unmatched business values stay intact.
+ */
 export const translateUiText = (value: string, language: UiLanguage): string => {
   if (language === 'en') return value
   const normalized = normalize(value)
   if (!normalized || !/[A-Za-z]/.test(normalized)) return value
 
-  const reviewed = ID_REVIEWED_TRANSLATIONS[normalized]
+  const reviewed = ID_NATURAL_TRANSLATIONS[normalized]
   if (reviewed !== undefined) return reviewed
 
-  if (beginsWithPreservedAction(normalized)) return value
+  const reviewedPattern = applyPatterns(normalized, ID_NATURAL_PATTERN_TRANSLATIONS)
+  if (reviewedPattern !== undefined) return reviewedPattern
 
   const exact = ID_EXACT_TRANSLATIONS[normalized]
-  if (exact) return exact
+  if (exact) return normalizeIndonesianUiCopy(exact, normalized)
 
-  for (const [pattern, replacement] of ID_PATTERN_TRANSLATIONS) {
-    const match = normalized.match(pattern)
-    if (match) return replacement(...match)
-  }
+  const legacyPattern = applyPatterns(normalized, ID_PATTERN_TRANSLATIONS)
+  if (legacyPattern !== undefined) return normalizeIndonesianUiCopy(legacyPattern, normalized)
 
   return value
 }
