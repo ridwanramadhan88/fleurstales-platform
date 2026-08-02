@@ -104,7 +104,7 @@ production employee/session foundation on top of V3.2:
 
 New non-Owner Auth accounts are created by `functions/staff-admin`, never by a
 browser-held secret. The function verifies the signed-in staff user against the
-database permission model, creates the Supabase Auth user with a strong staff password,
+database permission model, creates the Supabase Auth user with a password that follows the shared six-character minimum,
 and links the Auth user and OS username to `staff_access_profiles`. The public
 `staff-login` function resolves username + password to a normal Supabase
 session while keeping the internal Auth email private.
@@ -160,6 +160,6 @@ Run `tests/v38_florist_order_read_only_smoke.sql` after all earlier tests.
 
 ### V3.11 staff authentication
 
-Production Supabase staff accounts use strong passwords: at least 12 characters with lowercase, uppercase, a number, and a symbol. Local/demo OS mode may still use the six-digit `123456` PIN and does not copy that PIN into Supabase Auth. The `staff-login` Edge Function enforces username/IP throttling through service-only RPCs and returns generic failures to avoid account enumeration.
+All Fleurstales staff credential paths use the same rule: any password of at least six characters. The `staff-login` Edge Function still enforces username/IP throttling through service-only RPCs and returns generic failures to avoid account enumeration.
 
-Hosted Supabase Auth settings must mirror `supabase/config.toml` before production staff accounts are enabled. Existing hosted accounts that used a six-digit credential must be reset to a strong password.
+Hosted Supabase Auth settings must mirror `supabase/config.toml`: minimum length six with no required character classes.

@@ -6,9 +6,10 @@ const owner: Employee = { id:'o', name:'Owner', position:'Owner', branch:'Kedama
 const admin: Employee = { id:'a', name:'Admin', position:'Admin', branch:'Kedamaian', systemRole:'admin', status:'active', phone:'', hireDate:'2024-01-01', username:'admin', pin:'Fleur1' }
 
 describe('staff account rules', () => {
-  it('requires lowercase usernames and passwords with upper/lowercase letters and a number', () => {
+  it('requires lowercase usernames and passwords of at least six characters', () => {
     expect(canCreateStaffAccount({ employees:[owner], email:'staff@example.com', username:'1staff', pin:'Staff1', systemRole:'admin', actor:{name:'Owner',role:'owner'} }).ok).toBe(false)
-    expect(canCreateStaffAccount({ employees:[owner], email:'staff@example.com', username:'staff.one', pin:'staff1', systemRole:'admin', actor:{name:'Owner',role:'owner'} }).ok).toBe(false)
+    expect(canCreateStaffAccount({ employees:[owner], email:'staff@example.com', username:'staff.one', pin:'12345', systemRole:'admin', actor:{name:'Owner',role:'owner'} }).ok).toBe(false)
+    expect(canCreateStaffAccount({ employees:[owner], email:'staff@example.com', username:'staff.one', pin:'staff1', systemRole:'admin', actor:{name:'Owner',role:'owner'} }).ok).toBe(true)
     expect(canCreateStaffAccount({ employees:[owner], email:'staff@example.com', username:'staff.one', pin:'Staff1', systemRole:'admin', actor:{name:'Owner',role:'owner'} }).ok).toBe(true)
     expect(canCreateStaffAccount({ employees:[owner], email:'', username:'staff.one', pin:'Staff1', systemRole:'admin', actor:{name:'Owner',role:'owner'} }).ok).toBe(false)
   })

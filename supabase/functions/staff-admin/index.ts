@@ -79,12 +79,8 @@ const parseSecretKey = (): string => {
 const isEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 const validRoles = new Set<StaffRole>(['admin', 'finance', 'hr', 'florist'])
 const usernamePattern = /^[a-z][a-z0-9._-]*$/
-const isStrongPassword = (value: string): boolean =>
-  value.length >= 12
-  && /[a-z]/.test(value)
-  && /[A-Z]/.test(value)
-  && /\d/.test(value)
-  && /[^A-Za-z0-9]/.test(value)
+const MIN_STAFF_PASSWORD_LENGTH = 6
+const isStrongPassword = (value: string): boolean => value.length >= MIN_STAFF_PASSWORD_LENGTH
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return json({ ok: true })

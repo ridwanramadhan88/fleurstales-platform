@@ -22,7 +22,8 @@ requireText('apps/os/src/components/ui/app-confirm.ts', ['max-w-lg'])
 forbidText('apps/os/src/components/ui/app-confirm.ts', ['max-w-2xl'])
 
 requireText('apps/os/src/domain/staffCredentialDomain.ts', ['STAFF_PASSWORD_MIN_LENGTH = 6', 'isStrongStaffPassword'])
-requireText('supabase/config.toml', ['minimum_password_length = 6', 'password_requirements = "lower_upper_letters_digits"'])
+requireText('supabase/config.toml', ['minimum_password_length = 6', 'password_requirements = ""'])
+requireText('supabase/functions/staff-admin/index.ts', ['MIN_STAFF_PASSWORD_LENGTH = 6', 'value.length >= MIN_STAFF_PASSWORD_LENGTH'])
 requireText('supabase/functions/staff-login/index.ts', ['service_consume_staff_login_attempt', 'MIN_PRODUCTION_PASSWORD_LENGTH = 6', 'MAX_BODY_BYTES = 4096'])
 requireText('supabase/functions/staff-admin/index.ts', ['service_create_staff_access_profile', 'service_update_staff_access_email', 'isStrongPassword'])
 forbidText('supabase/functions/staff-admin/index.ts', [".from('staff_access_profiles').update(", ".from('staff_access_profiles').upsert(", ".from('staff_access_profiles').insert(", ".from('staff_access_profiles').delete("])
@@ -66,6 +67,19 @@ forbidText('apps/os/src/data/realtimeSupabaseSync.ts', [
 requireText('supabase/tests/v311_production_hardening_smoke.sql', ['Attendance selfie evidence is still deletable', 'current_staff_branch_id', 'hr.review_attendance'])
 requireText('scripts/run-supabase-smoke-tests.sh', ["find supabase/tests", "-name '*.sql'"])
 requireText('.github/workflows/release-production.yml', ['database-preflight', 'run-supabase-smoke-tests.sh'])
+requireText('.github/workflows/release-production.yml', ['push:', 'branches: [main]', 'deploy-functions:'])
+requireText('supabase/migrations/20260802034249_prune_unused_realtime_publication.sql', [
+  'alter publication supabase_realtime drop table',
+  'staff_roster_refresh_events',
+])
+requireText('supabase/migrations/20260802034256_tighten_retired_table_grants.sql', [
+  'revoke all privileges on table public.operational_state from anon, authenticated',
+  'revoke references, trigger, truncate on table public.arrangement_types from anon, authenticated',
+])
+requireText('supabase/tests/v313_release_cleanup_smoke.sql', [
+  "v_expected constant text[]",
+  "has_table_privilege('anon', 'public.operational_state', 'SELECT')",
+])
 requireText('.github/workflows/release-staging.yml', ['Release staging', 'run-supabase-smoke-tests.sh'])
 
 console.log('V3.11 focused hardening static checks passed.')
