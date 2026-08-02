@@ -63,12 +63,12 @@ begin
   if bad is not null then raise exception 'Unexpected anon grants: %', bad; end if;
 end $$;
 
--- Tables expected by the OS live layer are published for Postgres Changes.
+-- Current lightweight OS invalidation tables are published for Postgres Changes.
 do $$
 declare missing text;
 begin
   select string_agg(name, ', ' order by name) into missing
-  from (values ('customers'),('staff_schedule_defaults'),('staff_schedule_overrides'),('staff_attendance_records'),('employee_point_events')) expected(name)
+  from (values ('customers'),('employee_point_events'),('staff_roster_refresh_events')) expected(name)
   where not exists (
     select 1 from pg_publication_tables
     where pubname='supabase_realtime' and schemaname='public' and tablename=expected.name
