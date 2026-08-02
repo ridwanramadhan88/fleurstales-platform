@@ -2,9 +2,13 @@ name: Release production
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: read
+  checks: write
+  statuses: write
 
 concurrency:
   group: fleurstales-production
@@ -79,3 +83,11 @@ jobs:
           node-version: 22
       - run: npx -y supabase@2.109.1 functions deploy staff-admin --project-ref "$SUPABASE_PROJECT_ID"
       - run: npx -y supabase@2.109.1 functions deploy staff-login --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Notify Vercel OS production release
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - fleurstales-os: production-release"
+      - name: Notify Vercel Storefront production release
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - fleurstales-storefront: production-release"
