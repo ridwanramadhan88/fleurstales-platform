@@ -38,11 +38,31 @@ const migration = requireText('supabase/migrations/20260726090000_v311_productio
   'extensions.digest(v_username',
   "extensions.digest(lower(trim(coalesce(p_username,'')))",
 ])
+requireText('supabase/migrations/20260802023939_repair_authenticated_policy_helpers.sql', [
+  'grant execute on function private.current_staff_employee_id() to authenticated',
+  'grant execute on function private.has_action_permission(text) to authenticated',
+])
+requireText('supabase/tests/v312_policy_helper_execution_smoke.sql', [
+  "set local role authenticated",
+  "insert into storage.objects",
+  "reset role",
+  "rollback",
+])
 if (!migration.includes("grant execute on function public.service_create_staff_access_profile") || !migration.includes('to service_role')) {
   throw new Error('V3.11 migration does not keep staff profile service RPCs service-role-only.')
 }
 
-requireText('apps/os/src/data/realtimeSupabaseSync.ts', ["table: 'staff_roster_refresh_events'", 'queueRosterRefresh'])
+requireText('apps/os/src/data/realtimeSupabaseSync.ts', [
+  "table: 'staff_roster_refresh_events'",
+  "table: 'employee_point_events'",
+  'queueRosterRefresh',
+  'queuePointRefresh',
+])
+forbidText('apps/os/src/data/realtimeSupabaseSync.ts', [
+  "table: 'staff_schedule_defaults'",
+  "table: 'staff_schedule_overrides'",
+  "table: 'staff_attendance_records'",
+])
 requireText('supabase/tests/v311_production_hardening_smoke.sql', ['Attendance selfie evidence is still deletable', 'current_staff_branch_id', 'hr.review_attendance'])
 requireText('scripts/run-supabase-smoke-tests.sh', ["find supabase/tests", "-name '*.sql'"])
 requireText('.github/workflows/release-production.yml', ['database-preflight', 'run-supabase-smoke-tests.sh'])

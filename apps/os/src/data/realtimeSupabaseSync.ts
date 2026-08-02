@@ -80,6 +80,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 let realtimeChannel: RealtimeChannel | undefined
 let orderRefreshQueued = false
 let rosterRefreshQueued = false
+let notificationRefreshQueued = false
+let notificationRefreshTimer: ReturnType<typeof setTimeout> | undefined
 
 const notificationFromRow = (row: StaffNotificationRow): NotificationRecord | null => {
   if (!DISPLAY_KINDS.has(row.kind as AlertKind)) return null
@@ -127,6 +129,16 @@ export const markServerNotificationsRead = async (ids: string[]): Promise<void> 
   if (!client) return
   const { error } = await client.rpc('mark_notifications_read', { p_ids: serverIds })
   if (error) throw error
+}
+
+const queueNotificationRefresh = (): void => {
+  if (notificationRefreshQueued) return
+  notificationRefreshQueued = true
+  notificationRefreshTimer = setTimeout(() => {
+    notificationRefreshQueued = false
+    notificationRefreshTimer = undefined
+    void hydrateServerNotifications().catch(() => undefined)
+  }, 100)
 }
 
 export const hydrateServerOrderActivities = async (): Promise<void> => {
@@ -227,7 +239,7 @@ export const startRealtimeSupabaseSync = (): void => {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_notifications' }, (payload) => {
       const row = payload.new as Partial<StaffNotificationRow>
       if (row.kind === 'authorization_changed') void refreshAuthorizationRuntime().catch(() => undefined)
-      void hydrateServerNotifications().catch(() => undefined)
+      queueNotificationRefresh()
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'business_activities' }, (payload) => {
       const row = payload.new as { entity_type?: string; kind?: string }
@@ -251,9 +263,6 @@ export const startRealtimeSupabaseSync = (): void => {
       const row = ((payload.new && Object.keys(payload.new).length ? payload.new : payload.old) ?? {}) as { id?: string }
       if (row.id) void mergeBusinessOsCustomerFromRemote(row.id).catch(() => undefined)
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_schedule_defaults' }, queueRosterRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_schedule_overrides' }, queueRosterRefresh)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_attendance_records' }, queueRosterRefresh)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_roster_refresh_events' }, queueRosterRefresh)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_point_events' }, () => {
       queuePointRefresh()
@@ -266,13 +275,23 @@ export const startRealtimeSupabaseSync = (): void => {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'order_activities' }, () => {
       void hydrateServerOrderActivities().catch(() => undefined)
     })
-    .subscribe()
+    .subscribe((status) => {
+      if (status !== 'SUBSCRIBED') return
+      // Reconcile once after initial subscribe and after transport reconnects,
+      // covering events that arrived while the browser was offline without
+      // adding polling or another persistent connection.
+      queueNotificationRefresh()
+      queueOrderRefresh()
+    })
 }
 
 export const stopRealtimeSupabaseSync = (): void => {
   const client = getSupabaseAuthClient()
   const channel = realtimeChannel
   realtimeChannel = undefined
+  if (notificationRefreshTimer) clearTimeout(notificationRefreshTimer)
+  notificationRefreshTimer = undefined
+  notificationRefreshQueued = false
   if (operationalHydrateTimer) clearTimeout(operationalHydrateTimer)
   operationalHydrateTimer = undefined
   operationalHydrateQueued = false

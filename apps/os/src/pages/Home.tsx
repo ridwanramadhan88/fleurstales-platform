@@ -168,6 +168,10 @@ const HomePage: FC<HomePageProps> = ({
     string | null
   >(null)
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [activeTab, activeOrdersSubTab, financeModule, peopleSection])
+
   // Home can manage its own theme instance if the caller (App.tsx) didn't
   // pass one down, so this component still works standalone.
   const ownTheme = useTheme()

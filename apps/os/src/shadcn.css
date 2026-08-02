@@ -672,3 +672,13 @@ input:-webkit-autofill:active {
     transition: none !important;
   }
 }
+
+/* iOS Safari zooms the viewport when a focused form control is below 16px.
+   Keep mobile forms stable without disabling user pinch zoom. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

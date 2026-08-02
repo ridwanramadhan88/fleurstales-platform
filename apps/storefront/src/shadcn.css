@@ -5798,3 +5798,13 @@ html.dark .storefront-font .text-black {
     max-width: 42rem !important;
   }
 }
+
+/* Prevent iOS Safari from zooming the page when checkout/search controls gain
+   focus. Pinch zoom remains available because viewport scaling is untouched. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

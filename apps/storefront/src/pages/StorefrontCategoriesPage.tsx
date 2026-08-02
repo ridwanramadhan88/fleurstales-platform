@@ -1,4 +1,4 @@
-import { useMemo, useState, type FC } from 'react'
+import { useEffect, useMemo, useState, type FC } from 'react'
 import type { CatalogProduct } from '../store/catalogStoreTypes'
 import { StorefrontHeader } from '../components/storefront/StorefrontHeader'
 import { StorefrontContainer } from '../components/storefront/StorefrontContainer'
@@ -230,6 +230,10 @@ export const StorefrontCategoriesPage: FC<Props> = ({
   onSelectCollection,
 }) => {
   const [activeTab, setActiveTab] = useState<CategoryTab>('occasion')
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [activeTab])
 
   const activeProducts = useMemo(
     () => products.filter((product) => product.isActive),

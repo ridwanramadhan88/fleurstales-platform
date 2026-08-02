@@ -39,6 +39,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [isSigningIn, setIsSigningIn] = useState(false)
+  const [isRestoringSession, setIsRestoringSession] = useState(usesSupabase)
 
   const finishSupabaseSignIn = async (): Promise<void> => {
     const result = await refreshSupabaseStaffSession()
@@ -62,14 +63,22 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     const restore = async () => {
       try {
         const session = await initializeSupabaseAuth()
-        if (cancelled || !session) return
+        if (cancelled) return
+        if (!session) {
+          setIsRestoringSession(false)
+          return
+        }
         if (isPasswordSetupLink) {
           setMode('set-password')
+          setIsRestoringSession(false)
           return
         }
         await finishSupabaseSignIn()
       } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Unable to restore your session.')
+        if (!cancelled) {
+          setError(cause instanceof Error ? cause.message : 'Unable to restore your session.')
+          setIsRestoringSession(false)
+        }
       }
     }
     void restore()
@@ -132,6 +141,20 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     : mode === 'set-password'
       ? STAFF_PASSWORD_HELP
       : 'Use your staff username or email and password.'
+
+  if (isRestoringSession) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-6 text-center text-foreground" aria-busy="true">
+        <section className="apple-material w-full max-w-[25rem] rounded-2xl bg-card/92 p-6 shadow-ios ring-1 ring-border/70">
+          <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-ios-sm">
+            <Flower2 className="size-5" aria-hidden="true" />
+          </div>
+          <h1 className="mt-4 font-display text-lg font-semibold">Opening Fleurstales OS</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Restoring your secure session…</p>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background px-4 pb-6 pt-[max(1rem,env(safe-area-inset-top))] text-foreground sm:flex sm:items-center sm:justify-center sm:py-8">
