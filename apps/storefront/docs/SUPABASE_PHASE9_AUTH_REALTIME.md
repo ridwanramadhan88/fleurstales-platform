@@ -35,7 +35,10 @@ App code subscribes by shared domain, not raw table:
 - `store`
 - `customers`
 - `orders`
-- `staff_session`
+
+The live shared table map contains only `customers`, `orders`, and `order_activities`. Catalog and Store
+use their revision-aware bridges, while staff-session changes follow the Auth/session lifecycle rather than
+publishing `staff_access_profiles` rows.
 
 Realtime events are invalidation signals only. After an event, the relevant repository is re-read; event payloads
 never become authoritative application data by themselves.

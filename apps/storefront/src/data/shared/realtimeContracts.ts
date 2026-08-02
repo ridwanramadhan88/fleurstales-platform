@@ -1,4 +1,4 @@
-export type SharedRealtimeDomain = 'catalog' | 'store' | 'customers' | 'orders' | 'staff_session'
+export type SharedRealtimeDomain = 'catalog' | 'store' | 'customers' | 'orders'
 export type SharedRealtimeOperation = 'insert' | 'update' | 'delete' | 'snapshot' | 'invalidate'
 export type SharedRealtimeSource = 'local' | 'supabase'
 
@@ -36,26 +36,11 @@ export interface SupabaseRealtimeAdapterFactory {
 }
 
 
-/** Canonical table-to-domain map for the future Supabase Realtime adapter. */
+/** Shared-domain subset of the live Supabase Realtime publication. */
 export const SHARED_REALTIME_TABLE_DOMAIN = {
-  store_profile: 'store',
-  branches: 'store',
-  public_payment_accounts: 'store',
-  storefront_payment_settings: 'store',
-  occasions: 'catalog',
-  products: 'catalog',
-  product_occasions: 'catalog',
-  product_variants: 'catalog',
-  product_images: 'catalog',
-  size_guide_templates: 'catalog',
-  size_guide_targets: 'catalog',
   customers: 'customers',
-  customer_addresses: 'customers',
   orders: 'orders',
-  order_items: 'orders',
-  order_payment_events: 'orders',
   order_activities: 'orders',
-  staff_access_profiles: 'staff_session',
 } as const satisfies Record<string, SharedRealtimeDomain>
 
 export type SharedRealtimeTable = keyof typeof SHARED_REALTIME_TABLE_DOMAIN

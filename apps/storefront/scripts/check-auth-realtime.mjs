@@ -17,7 +17,8 @@ requireText('src/data/shared/supabaseSession.ts', [
   'SupabaseBrowserSession', 'setSupabaseBrowserSession', 'browserSupabaseTokenProvider',
 ])
 requireText('src/data/shared/realtimeContracts.ts', [
-  "'catalog'", "'store'", "'customers'", "'orders'", "'staff_session'", 'SharedRealtimeClient', 'SHARED_REALTIME_TABLE_DOMAIN',
+  "'catalog'", "'store'", "'customers'", "'orders'", 'SharedRealtimeClient', 'SHARED_REALTIME_TABLE_DOMAIN',
+  "customers: 'customers'", "orders: 'orders'", "order_activities: 'orders'",
 ])
 requireText('src/data/shared/realtimeLocalAdapter.ts', ['BroadcastChannel', 'fleurstales.shared-realtime.v1'])
 requireText('src/core/realtime/sharedBackend.ts', ['@deprecated Phase 9'])

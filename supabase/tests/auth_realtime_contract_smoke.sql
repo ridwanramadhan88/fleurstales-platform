@@ -8,9 +8,9 @@ begin
     where schemaname='public' and tablename='staff_access_profiles'
       and indexname='idx_staff_access_profiles_employee_unique'
   ) then raise exception 'employee mapping uniqueness missing'; end if;
-  if not exists (
+  if exists (
     select 1 from pg_catalog.pg_publication_tables
     where pubname='supabase_realtime' and schemaname='public' and tablename='staff_access_profiles'
-  ) then raise exception 'staff_access_profiles not in realtime publication'; end if;
+  ) then raise exception 'staff_access_profiles should not be in realtime publication'; end if;
 end;
 $$;
