@@ -44,8 +44,8 @@ const TopBarSearch: FC<{
   className?: string;
 }> = ({ value, placeholder, onChange, className = "" }) => (
   <div className={`relative min-w-0 ${className}`}>
-    <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-      <Search className="size-4 text-muted-foreground" />
+    <span className="pointer-events-none absolute left-3.5 top-1/2 flex -translate-y-1/2 items-center">
+      <Search className="block size-4 text-muted-foreground" />
     </span>
     <input
       type="search"

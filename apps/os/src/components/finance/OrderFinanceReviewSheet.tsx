@@ -10,11 +10,12 @@
  * exact same store mutators as the queue row's own buttons, so Finance can
  * inspect the full order and decide without closing the sheet first.
  *
- * Composed from five focused sub-sections (each independently readable and
+ * Composed from focused sub-sections (each independently readable and
  * testable), previously all inline in this one file:
  * - `OrderFinanceReviewSheetHeader`   — critical summary + verification banner.
  * - `OrderFinanceReviewSheetStepper`  — horizontal fulfillment-pipeline stepper.
- * - `OrderFinanceReviewSheetDetails`  — status/payment, product, source/schedule, notes.
+ * - `OrderFinanceReviewSheetDetails`  — status/payment, source/schedule, notes.
+ * - `OrderFinanceReviewProductSummary` — line-item photos, variants, SKUs, and totals.
  * - `OrderFinanceReviewSheetTimeline` — vertical activity timeline.
  * - `OrderFinanceReviewSheetFooter`   — Close / Needs correction / Verify.
  */
@@ -54,6 +55,8 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
   onClose,
   canVerify,
   productName,
+  productDisplay,
+  itemDisplays,
   actionType,
   actionNote,
   isOrderFuture,
@@ -112,7 +115,8 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
           <div className="space-y-6 sm:grid sm:grid-cols-5 sm:items-start sm:gap-6 sm:space-y-0">
             <OrderFinanceReviewSheetDetails
               order={order}
-              productName={productName}
+              productDisplay={productDisplay}
+              itemDisplays={itemDisplays}
               StatusIcon={StatusIcon}
             />
             <details className="sm:col-span-2 rounded-xl border border-border bg-card p-3 shadow-ios-sm">

@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { AlertTriangle, Clock, CreditCard, FileCheck2, MapPin, MessageCircle, Smartphone, Truck, User } from 'lucide-react'
+import { AlertTriangle, Clock, CreditCard, MapPin, MessageCircle, Smartphone, Truck, User } from 'lucide-react'
 import {
   SOURCE_LABELS,
   STATUS_LABELS,
@@ -7,21 +7,23 @@ import {
 import { getActualPickupLabel, getDisplayScheduleLabel, getRequestedPickupLabel } from '../orders/orderTableFormatters'
 import { formatIdrCurrency } from '../../lib/formatters'
 import type { OrderFinanceReviewSheetViewModel } from './OrderFinanceReviewSheetController'
+import { OrderFinanceReviewProductSummary } from './OrderFinanceReviewProductSummary'
 
 /**
- * @description Read-only order fields: status/payment strip, product +
- * price + florist, source/fulfillment/schedule, greeting card, promo code,
- * and internal note. Split out of `OrderFinanceReviewSheet.tsx`.
+ * @description Read-only order fields: status/payment strip, florist,
+ * source/fulfillment/schedule, greeting card, promo code, and internal note.
+ * Product line details are rendered by OrderFinanceReviewProductSummary.
  */
 
 type OrderFinanceReviewSheetDetailsProps = Pick<
   OrderFinanceReviewSheetViewModel,
-  'order' | 'productName' | 'StatusIcon'
+  'order' | 'productDisplay' | 'itemDisplays' | 'StatusIcon'
 >
 
 export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsProps> = ({
   order,
-  productName,
+  productDisplay,
+  itemDisplays,
   StatusIcon,
 }) => {
   const paidAmount = order.paidAmountIdr ?? (order.paymentStatus === 'paid' ? order.totalIdr : 0)
@@ -47,24 +49,20 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
         </span>
       </section>
 
-      {/* Finance evidence — keep the decision-critical payment data together. */}
+      {/* Keep the decision-critical payment data together. */}
       <section className="space-y-3 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <CreditCard className="size-3.5" />
             </span>
             <div>
-              <p className="text-2xs font-semibold text-muted-foreground">Payment evidence</p>
+              <p className="text-2xs font-semibold text-muted-foreground">Payment details</p>
               <p className="text-sm font-semibold leading-5 text-foreground">
                 {paymentMethod === 'transfer' ? 'Bank transfer' : paymentMethod === 'cash' ? 'Cash' : 'Method not recorded'}
               </p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1 text-2xs font-medium text-muted-foreground">
-            <FileCheck2 className="size-3.5" />
-            {latestPayment?.proofId ? 'Proof attached' : 'No proof attached'}
-          </span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 rounded-lg bg-surface-panel p-2.5">
@@ -110,30 +108,17 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
         )}
       </section>
 
+      <OrderFinanceReviewProductSummary
+        order={order}
+        productDisplay={productDisplay}
+        itemDisplays={itemDisplays}
+      />
+
       <details className="rounded-xl border border-border bg-card p-3 shadow-ios-sm">
         <summary className="cursor-pointer text-sm font-semibold h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap">Fulfillment and order details</summary>
         <div className="mt-3 space-y-3">
-      {/* Product + price + florist */}
+      {/* Florist */}
       <section className="space-y-2.5 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <p className="text-2xs font-semibold text-muted-foreground">Product</p>
-            <p className="truncate text-sm font-semibold text-foreground sm:text-base">
-              {productName || (
-                <span className="font-normal text-muted-foreground">Not set</span>
-              )}
-            </p>
-          </div>
-          <div className="shrink-0 space-y-0.5 text-right">
-            <p className="text-2xs font-semibold text-muted-foreground">Order total</p>
-            <p className="text-sm font-semibold text-foreground sm:text-base">
-              {formatIdrCurrency(order.totalIdr)}
-            </p>
-          </div>
-        </div>
-
-        <div className="h-px bg-border/60" />
-
         <div className="flex items-center gap-2">
           <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <User className="size-3.5" />

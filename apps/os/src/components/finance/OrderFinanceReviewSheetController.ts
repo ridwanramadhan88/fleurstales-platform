@@ -34,6 +34,8 @@ export interface OrderFinanceReviewSheetViewModel {
   onClose: () => void
   canVerify: boolean
   productName: string
+  productDisplay: ReturnType<typeof resolveOrderProductDisplay>
+  itemDisplays: Record<string, ReturnType<typeof resolveOrderProductDisplay>>
   activities: OrderActivityEvent[]
   actionType: 'correction' | null
   actionNote: string
@@ -73,7 +75,20 @@ export const useOrderFinanceReviewSheetController = ({
   userRole,
 }: OrderFinanceReviewSheetProps): OrderFinanceReviewSheetViewModel => {
   const catalogProducts = useCatalogStore((state) => state.products)
-  const productName = resolveOrderProductDisplay(catalogProducts, order).name
+  const itemDisplays = useMemo(
+    () => Object.fromEntries(
+      (order.items ?? []).map((item) => [
+        item.id,
+        resolveOrderProductDisplay(catalogProducts, item),
+      ]),
+    ),
+    [catalogProducts, order.items],
+  )
+  const firstItemDisplay = order.items?.[0]
+    ? itemDisplays[order.items[0].id]
+    : undefined
+  const productDisplay = firstItemDisplay ?? resolveOrderProductDisplay(catalogProducts, order)
+  const productName = productDisplay.name
   const activities = useOrderRuntimeStore(
     (state) => state.activities[order.orderNumber] ?? EMPTY_ACTIVITIES,
   )
@@ -161,6 +176,8 @@ export const useOrderFinanceReviewSheetController = ({
     onClose,
     canVerify,
     productName,
+    productDisplay,
+    itemDisplays,
     activities,
     actionType,
     actionNote,

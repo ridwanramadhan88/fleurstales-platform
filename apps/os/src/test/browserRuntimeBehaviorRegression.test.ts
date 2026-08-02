@@ -47,7 +47,7 @@ describe('browser runtime behavior', () => {
     expect(css).toContain('.safe-area-top')
     expect(css).toContain('.mobile-sheet-safe')
     expect(topBar).toContain('safe-area-top')
-    expect(topBar).toContain('absolute inset-y-0 left-3.5 flex items-center')
+    expect(topBar).toContain('absolute left-3.5 top-1/2 flex -translate-y-1/2 items-center')
     expect(sheet).toContain('mobile-sheet-safe')
   })
 
