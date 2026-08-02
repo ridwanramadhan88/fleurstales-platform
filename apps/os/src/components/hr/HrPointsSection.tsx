@@ -13,6 +13,7 @@ import {
 import { PeopleMonthPeriodFields } from './PeoplePeriodControls'
 import { PeoplePageHeader, PeopleSummaryCard, PeopleSummaryGrid } from './PeopleWorkspaceUI'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
+import { InfoHint } from '../ui/info-hint'
 
 const categoryLabel: Record<EmployeePointEntry['category'], string> = {
   attendance_penalty: 'Attendance penalty',
@@ -32,6 +33,15 @@ const formatCompletedDate = (value?: string) => {
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
 }
 const currentPeriodKey = () => new Date().toISOString().slice(0, 7)
+const formatPeriodLabel = (value: string) => {
+  const [year, month] = value.split('-').map(Number)
+  if (!year || !month) return value
+  return new Intl.DateTimeFormat('en-GB', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(year, month - 1, 1)))
+}
 
 type View = 'overview' | 'rules'
 
@@ -174,15 +184,15 @@ export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) 
       <PeopleMonthPeriodFields month={periodKey} onMonthChange={setPeriodKey} settings={payrollSettings} />
     </div>
 
-    <PeopleSummaryGrid className="grid-cols-3 gap-3">
-      <PeopleSummaryCard className="md:min-h-[76px]" label="Pending review" value={pendingCount} tone={pendingCount ? 'warning' : 'default'} />
+    <PeopleSummaryGrid className={pendingCount > 0 ? 'grid-cols-3 gap-3' : 'grid-cols-2 gap-3'}>
+      {pendingCount > 0 && <PeopleSummaryCard className="md:min-h-[76px]" label="Pending review" value={pendingCount} tone="warning" />}
       <PeopleSummaryCard className="md:min-h-[76px]" label="Approved points" value={approvedNet} tone="success" />
       <PeopleSummaryCard className="md:min-h-[76px]" label="Point value" value={formatIdr(payrollSettings.pointValueIdr)} helper={`Cap ${formatIdr(MONTHLY_POINT_BONUS_CAP_IDR)}`} valueClassName="text-lg font-semibold leading-none text-foreground" />
     </PeopleSummaryGrid>
 
     {view === 'overview' && <>
     <section className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-border/60">
-      <div><h2 className="text-sm font-semibold leading-5">Employee point progress</h2><p className="text-xs text-muted-foreground">Approved points and estimated bonus for {periodKey}.</p></div>
+      <div className="flex items-center gap-1.5"><h2 className="text-sm font-semibold leading-5">Employee point progress</h2><InfoHint label="About point progress">Approved points and estimated bonus for {formatPeriodLabel(periodKey)}.</InfoHint></div>
       {summaries.length === 0 ? <p className="rounded-lg bg-surface-panel p-4 text-xs text-muted-foreground">No eligible employee or point activity in this period.</p> : <div className="grid gap-3 lg:grid-cols-2">{summaries.map((summary) => <article key={summary.employeeId} className="rounded-xl border border-border/60 p-4">
         <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold leading-5">{summary.employeeName}</p><p className="text-xs capitalize text-muted-foreground">{summary.role}</p></div><div className="text-right"><p className="text-sm font-semibold leading-5">{summary.approvedNetPoints} approved</p><p className="text-xs text-muted-foreground">Est. bonus {formatIdr(summary.estimatedBonusIdr)}</p></div></div>
         {summary.role === 'admin' && <ProgressBlock label="Eligible collect orders" completed={summary.adminEligibleOrders} minimum={summary.adminMinimumIncluded} eligible={summary.adminPointEligibleOrders} pointsEach={rules.collectOrderPoints} />}
@@ -191,7 +201,7 @@ export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) 
     </section>
 
     <section className="rounded-xl bg-card p-4 ring-1 ring-border/60">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-sm font-semibold leading-5">Point reviews</h2><p className="text-xs text-muted-foreground">Review pending point entries and create manual adjustments when needed.</p></div><button onClick={() => setShowAdd(true)} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground">Manual adjustment</button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-1.5"><h2 className="text-sm font-semibold leading-5">Point reviews</h2><InfoHint label="About point reviews">Review pending point entries and create manual adjustments when needed.</InfoHint></div><button onClick={() => setShowAdd(true)} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground">Manual adjustment</button></div>
       <div className="mt-3 inline-flex rounded-full bg-surface-track p-1">{(['pending', 'approved', 'all'] as const).map((item) => <button key={item} onClick={() => setTab(item)} className={`rounded-full px-3 py-1.5 text-xs capitalize ${tab === item ? 'bg-surface-selected text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}>{item}</button>)}</div>
       <div className="mt-3 space-y-2">{visible.length === 0 ? <p className="rounded-lg bg-surface-panel p-4 text-xs text-muted-foreground">No point entries in this view.</p> : visible.map((entry) => {
         const employee = employees.find((item) => item.id === entry.employeeId)

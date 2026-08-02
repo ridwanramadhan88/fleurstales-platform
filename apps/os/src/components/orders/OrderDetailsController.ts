@@ -67,6 +67,7 @@ export interface OrderDetailsViewModel {
 
   // Derived display data
   productDisplay: ReturnType<typeof resolveOrderProductDisplay>
+  itemDisplays: Record<string, ReturnType<typeof resolveOrderProductDisplay>>
   customerWhatsappNumber: string | undefined
   activities: OrderActivityEvent[]
   nextStatus: OrderStatus | null
@@ -152,7 +153,19 @@ export const useOrderDetailsController = ({
   formatter,
 }: UseOrderDetailsControllerParams): OrderDetailsViewModel => {
   const catalogProducts = useCatalogStore((state) => state.products)
-  const productDisplay = resolveOrderProductDisplay(catalogProducts, order)
+  const itemDisplays = useMemo(
+    () => Object.fromEntries(
+      (order.items ?? []).map((item) => [
+        item.id,
+        resolveOrderProductDisplay(catalogProducts, item),
+      ]),
+    ),
+    [catalogProducts, order.items],
+  )
+  const firstItemDisplay = order.items?.[0]
+    ? itemDisplays[order.items[0].id]
+    : undefined
+  const productDisplay = firstItemDisplay ?? resolveOrderProductDisplay(catalogProducts, order)
   const customers = useCustomerStore((state) => state.customers)
   const customerWhatsappNumber = useMemo(
     () => getCustomerWhatsappNumber(getCustomerContactForOrder(customers, order)) || undefined,
@@ -272,6 +285,7 @@ export const useOrderDetailsController = ({
     onClose,
 
     productDisplay,
+    itemDisplays,
     customerWhatsappNumber,
     activities,
     nextStatus,

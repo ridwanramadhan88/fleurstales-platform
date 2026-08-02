@@ -238,6 +238,40 @@ html > body * {
   opacity: 0.92;
 }
 
+/* Respect iPhone browser/PWA safe areas without making desktop layouts taller. */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.mobile-sheet-safe {
+  max-height: calc(100dvh - env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Normalize WebKit's native search control so icons align to our 40px field. */
+input[type='search'] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type='search']::-webkit-search-decoration,
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-results-button,
+input[type='search']::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-sheet-safe {
+    max-height: 100dvh;
+    padding-bottom: 1.5rem;
+  }
+}
+
 /* iOS-style grouped list separators without using ::before hacks everywhere */
 .grouped-list > * + * {
   border-top: 1px solid hsl(var(--border));

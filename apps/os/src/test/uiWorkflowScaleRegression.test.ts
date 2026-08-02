@@ -100,7 +100,7 @@ describe('mobile workflow UI scale regressions', () => {
     const orders = read('src/components/orders/OrdersTableFilters.tsx')
 
     expect(topBar).toContain('const TopBarSearch')
-    expect(topBar).toContain('text-sm text-foreground outline-none transition')
+    expect(topBar).toContain('text-sm leading-none text-foreground outline-none transition')
     expect(topBar).not.toContain('text-sm shadow-sm outline-none')
     expect(catalog).not.toContain('<FiltersSearchInput')
     expect(orders).not.toContain('placeholder="Search orders')

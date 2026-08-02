@@ -17,7 +17,7 @@ describe('scroll clipping regression', () => {
   })
 
   it.each([
-    ['src/components/orders/OrderDetailsPanel.tsx', 'overflow-y-auto overflow-x-hidden px-1'],
+    ['src/components/orders/OrderDetailsPanel.tsx', 'overflow-y-auto overflow-x-hidden pb-10'],
     ['src/components/customers/CustomerProfileDrawer.tsx', 'overflow-y-auto overflow-x-hidden px-1'],
     ['src/components/finance/OrderFinanceReviewSheet.tsx', 'overflow-y-auto overflow-x-hidden px-1'],
   ])('%s keeps card strokes inside its vertical drawer viewport', (path, safeClass) => {

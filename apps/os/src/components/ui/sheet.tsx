@@ -33,10 +33,10 @@ const sheetVariants = cva(
     variants: {
       side: {
         top: "inset-x-0 top-0 max-h-[92dvh] overflow-y-auto border-b p-5 data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top sm:p-6",
-        bottom: "inset-x-0 bottom-0 max-h-[94dvh] rounded-t-2xl border-t p-4 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:p-6",
+        bottom: "mobile-sheet-safe inset-x-0 bottom-0 rounded-t-2xl border-t p-4 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:p-6",
         left: "inset-y-0 left-0 h-full w-full max-w-[calc(100vw-1rem)] border-r p-5 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:w-[min(40rem,88vw)] sm:max-w-none md:w-[min(44rem,72vw)] lg:w-[min(48rem,64vw)] sm:p-6",
         right: "inset-y-0 right-0 h-full w-full max-w-[calc(100vw-1rem)] border-l p-5 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:w-[min(40rem,88vw)] sm:max-w-none md:w-[min(44rem,72vw)] lg:w-[min(48rem,64vw)] sm:p-6",
-        responsiveRight: "inset-x-0 bottom-0 max-h-[94dvh] rounded-t-2xl border-t p-4 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:p-5 md:inset-y-0 md:left-auto md:right-0 md:bottom-auto md:h-full md:max-h-dvh md:max-w-none md:rounded-none md:border-l md:border-t-0 md:p-6 md:data-[state=closed]:slide-out-to-right md:data-[state=open]:slide-in-from-right",
+        responsiveRight: "mobile-sheet-safe inset-x-0 bottom-0 rounded-t-2xl border-t p-4 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:p-5 md:inset-y-0 md:left-auto md:right-0 md:bottom-auto md:h-full md:max-h-dvh md:max-w-none md:rounded-none md:border-l md:border-t-0 md:p-6 md:data-[state=closed]:slide-out-to-right md:data-[state=open]:slide-in-from-right",
       },
     },
     defaultVariants: {

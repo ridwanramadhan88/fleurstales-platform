@@ -6,6 +6,7 @@ import type { AttendanceReviewCase, AttendanceReviewDecision } from '../../store
 import { isHrManagedEmployee } from '../../domain/hrManagedEmployeeDomain'
 import { useSettingsStore } from '../../store/settingsStore'
 import { AppDialog } from '../ui/app-dialog'
+import { InfoHint } from '../ui/info-hint'
 
 const LABELS: Record<AttendanceReviewCase['warningType'], string> = {
   late_check_in: 'Late check-in',
@@ -101,15 +102,21 @@ export const AttendanceReviewQueue = ({ onOpenOrder, searchQuery = '' }: Attenda
 
   return <section aria-label="Employee warning review" className="space-y-3">
     <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-1.5">
         <h3 className="text-sm font-semibold leading-5">Employee warning review</h3>
-        <p className="mt-1 text-sm leading-5 text-muted-foreground">Review attendance warnings and escalate unresolved cases to Reports → Problem List.</p>
+        <InfoHint label="About warning review">
+          Review attendance warnings and escalate unresolved cases to Reports → Problem List.
+        </InfoHint>
       </div>
-      <span className="shrink-0 rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">{pendingCases.length} to review</span>
+      {pendingCases.length > 0 && (
+        <span className="shrink-0 rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">
+          {pendingCases.length} to review
+        </span>
+      )}
     </div>
 
     <nav className="flex gap-6 border-b border-border/60" aria-label="Warning review status">
-      <button type="button" onClick={() => setView('pending')} aria-current={view === 'pending' ? 'page' : undefined} className={`relative h-9 whitespace-nowrap px-1 text-sm font-medium after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-current ${view === 'pending' ? 'text-foreground after:scale-x-100' : 'text-muted-foreground after:scale-x-0'}`}>Needs review · {pendingCases.length}</button>
+      <button type="button" onClick={() => setView('pending')} aria-current={view === 'pending' ? 'page' : undefined} className={`relative h-9 whitespace-nowrap px-1 text-sm font-medium after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-current ${view === 'pending' ? 'text-foreground after:scale-x-100' : 'text-muted-foreground after:scale-x-0'}`}>Needs review{pendingCases.length > 0 ? ` · ${pendingCases.length}` : ''}</button>
       <button type="button" onClick={() => setView('resolved')} aria-current={view === 'resolved' ? 'page' : undefined} className={`relative h-9 whitespace-nowrap px-1 text-sm font-medium after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-current ${view === 'resolved' ? 'text-foreground after:scale-x-100' : 'text-muted-foreground after:scale-x-0'}`}>Solved</button>
     </nav>
 

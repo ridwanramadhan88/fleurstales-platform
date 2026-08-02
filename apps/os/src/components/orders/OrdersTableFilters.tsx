@@ -22,12 +22,12 @@ const SORT_OPTIONS: Array<{ id: OrdersListSortKey; label: string }> = [
 ]
 
 export const OrdersTableFilters: FC<OrdersTableFiltersProps> = ({ viewModel }) => {
-  const { statusGroupFilter, newOrderCount, draftCount, isDraftMode, scopedOrderCount, displayedOrderCount, scopeLabel, sortKey, sortDirection, canExportFinishedCsv, onStatusGroupFilterChange, onSortChange, onExportFinishedCsv } = viewModel
+  const { statusGroupFilter, newOrderCount, draftCount, isDraftMode, scopeLabel, sortKey, sortDirection, canExportFinishedCsv, onStatusGroupFilterChange, onSortChange, onExportFinishedCsv } = viewModel
   const DirectionIcon = sortDirection === 'asc' ? ArrowUp : ArrowDown
   return (
     <div className={surfaceCardClass('dense', 'space-y-3 sm:bg-transparent sm:p-0 sm:shadow-none sm:ring-0')}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-foreground"><span className="font-semibold">{scopeLabel}</span><span className="text-muted-foreground"> · Showing {displayedOrderCount} of {scopedOrderCount}</span></p>
+        <p className="text-sm font-semibold text-foreground">{scopeLabel}</p>
         {!isDraftMode && <div className="flex items-center gap-2">
           {statusGroupFilter === 'finished' && (
             <button type="button" onClick={onExportFinishedCsv} disabled={!canExportFinishedCsv} className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-medium disabled:opacity-40">

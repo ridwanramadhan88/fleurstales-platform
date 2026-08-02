@@ -23,6 +23,7 @@ describe('People workspace shared UI', () => {
   it('uses the same icon, heading and description system for each People page', () => {
     render(<PeoplePageHeader section="points" />)
     expect(screen.getByRole('heading', { name: 'Points' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'About this People section' }))
     expect(screen.getByText('Review employee points, pending activity, and rules.')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Points' }).closest('header')?.querySelector('svg')).toBeInTheDocument()
   })

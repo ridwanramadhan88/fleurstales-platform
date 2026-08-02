@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { OrdersTabHeader } from './OrdersTabHeader'
 
@@ -18,7 +18,9 @@ describe('OrdersTabHeader recovery states', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'New order' })).toBeDisabled()
+    const blockedButton = screen.getByRole('button', { name: 'New order' })
+    expect(blockedButton).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.click(blockedButton)
     expect(screen.getByText('Select a specific branch before creating an order.')).toBeInTheDocument()
   })
 
@@ -36,8 +38,8 @@ describe('OrdersTabHeader recovery states', () => {
 
     const blockedAreaClass = screen.getByTestId('new-order-action-area').className
     const blockedButton = screen.getByRole('button', { name: 'New order' })
-    expect(blockedButton).toHaveClass('h-10', 'w-full', 'sm:w-[10.25rem]')
-    expect(screen.getByTestId('new-order-helper-row')).not.toHaveClass('sm:invisible')
+    expect(blockedButton).toHaveClass('h-11', 'w-full', 'sm:w-auto')
+    expect(blockedButton).toHaveAttribute('aria-disabled', 'true')
 
     rerender(
       <OrdersTabHeader
@@ -51,12 +53,11 @@ describe('OrdersTabHeader recovery states', () => {
 
     expect(screen.getByTestId('new-order-action-area').className).toBe(blockedAreaClass)
     expect(screen.getByRole('button', { name: 'New order' })).toHaveClass(
-      'h-10',
+      'h-11',
       'w-full',
-      'sm:w-[10.25rem]',
+      'sm:w-auto',
     )
-    expect(screen.getByTestId('new-order-helper-row')).toHaveClass('sm:invisible')
-    expect(screen.getByTestId('new-order-helper-row')).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getByRole('button', { name: 'New order' })).not.toHaveAttribute('aria-disabled')
   })
 
   it('does not expose order creation to a role that cannot create orders', () => {

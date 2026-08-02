@@ -44,13 +44,13 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
         {/* Actions: kept outside the scrollable body (not sticky-within-scroll)
             so it always sits below all content as a fixed dialog footer and
             can never overlap the last row of content while scrolling. */}
-        <section className="shrink-0 z-20 isolate -mx-4 -mb-3 flex items-center justify-between gap-2 border-t border-border/45 bg-surface-footer px-4 py-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:rounded-b-3xl sm:px-5">
+        <section className="safe-area-bottom z-20 isolate -mx-5 -mb-4 flex shrink-0 items-center justify-between gap-2 border-t border-border/45 bg-surface-footer px-5 pt-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:rounded-b-3xl sm:px-5">
             <div className="flex items-center gap-2">
               {isEditing && (
                 <button
                   type="button"
                   onClick={onCancelEdit}
-                  className="inline-flex cursor-pointer items-center justify-center rounded-full whitespace-nowrap text-sm font-medium text-muted-foreground transition hover:bg-muted sm:min-h-11 sm:text-xs rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted sm:text-xs"
                 >
                   Cancel edit
                 </button>
@@ -61,7 +61,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="inline-flex cursor-pointer items-center justify-center rounded-full whitespace-nowrap text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground sm:min-h-11 sm:text-xs rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground sm:text-xs"
                 >
                   Close
                 </button>
@@ -70,7 +70,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
                 <button
                   type="button"
                   onClick={onSaveChanges}
-                  className="inline-flex cursor-pointer items-center justify-center rounded-full bg-primary whitespace-nowrap text-sm font-medium text-primary-foreground shadow-ios-sm transition hover:bg-foreground/90 sm:min-h-11 sm:text-xs rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-[18px] text-sm font-medium text-primary-foreground shadow-ios-sm transition hover:bg-foreground/90 sm:text-xs"
                 >
                   Save changes
                 </button>

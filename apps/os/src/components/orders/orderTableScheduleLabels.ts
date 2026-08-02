@@ -25,6 +25,25 @@ export const getCreatedAtTimestamp = (label: string): number => {
   return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime()
 }
 
+export const formatOrderCreatedAtLabel = (label: string): string => {
+  const timestamp = getCreatedAtTimestamp(label)
+  if (!timestamp) return label
+
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Jakarta',
+  }).formatToParts(new Date(timestamp))
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)?.value ?? ''
+
+  return `${part('day')} ${part('month')} ${part('year')} · ${part('hour')}:${part('minute')}`
+}
+
 /**
  * @description Builds the combined "(Customer Name) - (Product Name) (Order No)"
  * label used everywhere an order needs a single, human-friendly identity

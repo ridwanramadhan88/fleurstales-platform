@@ -200,6 +200,7 @@ export interface OrderProductDisplay {
   /** Resolved display name (includes variant label when applicable). */
   name: string
   sku?: string
+  variantLabel?: string
   category?: CatalogCategory
   imageUrl?: string
   /** Current Catalog selling price — may differ from the order's historical totalIdr. */
@@ -230,6 +231,7 @@ export const resolveOrderProductDisplay = (
       return {
         name: variant ? `${product.name} – ${variant.size}` : product.name,
         sku: variant?.sku ?? product.variants[0]?.sku,
+        variantLabel: variant?.size,
         category: product.category,
         imageUrl: product.thumbnail,
         currentPriceIdr: variant ? variant.price : getDisplayPriceIdr(product),

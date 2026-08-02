@@ -20,6 +20,7 @@ import { HrMonthlyReportSection } from './HrMonthlyReportSection'
 import { FieldLabel, ValidationSummary } from '../ui/form-patterns'
 import { ChevronRight, UserPlus } from 'lucide-react'
 import { FilterChip } from '../ui/chip'
+import { InfoHint } from '../ui/info-hint'
 import { CreateStaffSheet, PeopleListCard, PeoplePageHeader, PeoplePageShell, PeopleSummaryCard, PeopleSummaryGrid, PeopleTabs } from './PeopleWorkspaceUI'
 
 export interface HrTabContentProps {
@@ -76,11 +77,10 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
         <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto px-1 py-1 md:flex-wrap md:overflow-visible md:px-0">
           {(['all', 'active', 'inactive'] as EmployeeStatusFilter[]).map((option) => <FilterChip key={option} active={option === statusFilter} onClick={() => vm.onStatusFilterChange(option)} className="capitalize">{option}</FilterChip>)}
         </div>
-        <span className="shrink-0 text-sm text-muted-foreground md:ml-auto">{employeeRows.length} results</span>
       </section>
 
       <section aria-label="Employees" className="space-y-3 pb-4">
-        <header className="space-y-1"><h3 className="text-sm font-semibold leading-5 text-foreground">{signedInRole === 'owner' ? 'Staff account management' : 'Employee directory'}</h3><p className="text-xs text-muted-foreground">{signedInRole === 'owner' ? 'Manage profiles, roles, and login access.' : `Showing ${employeeRows.length} of ${branchEmployees.length}`}</p></header>
+        <header><h3 className="text-sm font-semibold leading-5 text-foreground">{signedInRole === 'owner' ? 'Staff account management' : 'Employee directory'}</h3></header>
 
         <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">No employees match the selected filters.</p> : employeeRows.map(({ employee }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); const performance = getEmployeeOrderPerformance(employee.id, orders); return <PeopleListCard key={employee.id} density="dense">
           <div className="flex items-start justify-between gap-3">
@@ -105,7 +105,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       </PeopleSummaryGrid>
       <AttendanceReviewQueue onOpenOrder={vm.onOpenOrder} searchQuery={employeeSearch} />
       <section aria-label="Employee attendance" className="space-y-3">
-        <header><h3 className="text-sm font-semibold leading-5 text-foreground">Employee attendance</h3><p className="mt-1 text-sm leading-5 text-muted-foreground">Create today&apos;s record or review previous entries.</p></header>
+        <header className="flex items-center gap-1.5"><h3 className="text-sm font-semibold leading-5 text-foreground">Employee attendance</h3><InfoHint label="About employee attendance">Create today&apos;s record or review previous entries.</InfoHint></header>
         {attendanceActionError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{attendanceActionError}</p>}
         <div className="grid gap-3 lg:grid-cols-2">{employeeRows.filter(({ employee }) => employee.status === 'active').map(({ employee, todayRecord }) => {
           const warningTypes = attendanceReviewCases

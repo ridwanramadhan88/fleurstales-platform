@@ -5,8 +5,9 @@
 
 import type { FC } from 'react'
 import { AlertTriangle, CheckCircle2, FilePenLine, Plus, Workflow } from 'lucide-react'
-import { Button } from '../ui/button'
 import type { OrdersSubTabId } from './OrdersSubTabs'
+import { GuardedAction } from '../ui/guarded-action'
+import { InfoHint } from '../ui/info-hint'
 
 const TITLE_BY_SUB_TAB: Record<OrdersSubTabId, string> = {
   today: "Today's Orders",
@@ -67,46 +68,34 @@ export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
   createOrderBlockedReason,
   onNewOrder,
 }) => (
-  <section
-    aria-label="Orders overview"
-    className="space-y-3"
-  >
-    <header className="space-y-3 sm:flex sm:min-h-20 sm:items-start sm:justify-between sm:gap-4 sm:space-y-0">
+  <section aria-label="Orders overview" className="space-y-4">
+    <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 flex-1">
-        <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
-          {TITLE_BY_SUB_TAB[activeOrdersSubTab]}
-        </h1>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Track workload, drafts, and orders that need attention.
-        </p>
+        <div className="flex items-center gap-1.5">
+          <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
+            {TITLE_BY_SUB_TAB[activeOrdersSubTab]}
+          </h1>
+          <InfoHint label="About this orders view">
+            Track workload, drafts, and orders that need attention.
+          </InfoHint>
+        </div>
       </div>
 
       {(canCreateOrder || createOrderBlockedReason) && (
-        <div
-          data-testid="new-order-action-area"
-          className="w-full space-y-1.5 sm:flex sm:min-h-20 sm:w-72 lg:w-[22rem] sm:flex-col sm:items-end"
-        >
-          <Button
-            type="button"
-            variant={canCreateOrder ? "default" : "outline"}
-            className="h-10 w-full sm:w-[10.25rem]"
-            onClick={onNewOrder}
-            disabled={!canCreateOrder}
-            aria-describedby={createOrderBlockedReason ? 'new-order-blocked-reason' : undefined}
+        <div data-testid="new-order-action-area" className="w-full sm:w-auto">
+          <GuardedAction
+            allowed={canCreateOrder}
+            reason={createOrderBlockedReason}
+            onAction={onNewOrder}
+            className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-[18px] text-sm font-semibold shadow-ios-sm transition sm:w-auto ${
+              canCreateOrder
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'border border-border bg-card text-muted-foreground'
+            }`}
           >
             <Plus className="size-4" />
             <span>New order</span>
-          </Button>
-          <p
-            id={createOrderBlockedReason ? 'new-order-blocked-reason' : undefined}
-            data-testid="new-order-helper-row"
-            aria-hidden={createOrderBlockedReason ? undefined : true}
-            className={`text-xs leading-4 text-muted-foreground sm:h-8 sm:max-w-full sm:text-right ${
-              createOrderBlockedReason ? '' : 'hidden sm:block sm:invisible'
-            }`}
-          >
-            {createOrderBlockedReason || 'Branch selection helper'}
-          </p>
+          </GuardedAction>
         </div>
       )}
     </header>

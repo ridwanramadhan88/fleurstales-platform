@@ -66,6 +66,7 @@ describe('employee warning review UI', () => {
 
     expect(useHrStore.getState().attendanceReviewCases[0].status).toBe('problem')
     expect(screen.queryByRole('button', { name: /Problem List/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'About warning review' }))
     expect(screen.getByText(/Reports → Problem List/)).toBeInTheDocument()
   })
 })

@@ -44,13 +44,15 @@ const TopBarSearch: FC<{
   className?: string;
 }> = ({ value, placeholder, onChange, className = "" }) => (
   <div className={`relative min-w-0 ${className}`}>
-    <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+    <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
+      <Search className="size-4 text-muted-foreground" />
+    </span>
     <input
       type="search"
       value={value}
       onChange={(event) => onChange?.(event.target.value)}
       placeholder={placeholder}
-      className="h-10 w-full rounded-full border border-border/80 bg-card pl-11 pr-11 text-sm text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-foreground/25 focus:ring-2 focus:ring-foreground/10"
+      className="h-10 w-full appearance-none rounded-full border border-border/80 bg-card pl-11 pr-11 text-sm leading-none text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-foreground/25 focus:ring-2 focus:ring-foreground/10"
     />
     {value.length > 0 && (
       <button
@@ -96,7 +98,7 @@ export const TopBar: FC<TopBarViewModel> = ({
   onToggleProfileMenu,
   onSignOutFromProfile,
 }) => (
-  <header className="apple-material sticky top-0 z-30 border-b border-border/70 bg-surface-card/80 px-4 shadow-[0_1px_0_hsl(var(--border)/0.35)] sm:px-6 lg:px-6 xl:px-8">
+  <header className="apple-material safe-area-top sticky top-0 z-30 border-b border-border/70 bg-surface-card/80 px-4 shadow-[0_1px_0_hsl(var(--border)/0.35)] sm:px-6 lg:px-6 xl:px-8">
     <div className="grid min-h-16 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 md:grid-cols-[minmax(8.5rem,auto)_minmax(12rem,24rem)_auto] md:gap-2 lg:grid-cols-[minmax(9.5rem,auto)_minmax(14rem,28rem)_auto] xl:grid-cols-[minmax(0,1fr)_minmax(20rem,42rem)_minmax(0,1fr)] xl:gap-3">
       <div ref={branchMenuRef} className="flex min-w-0 items-center">
         <div className="flex min-w-0 items-center gap-2.5 md:hidden">

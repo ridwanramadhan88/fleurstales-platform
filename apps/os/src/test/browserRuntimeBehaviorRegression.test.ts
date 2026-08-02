@@ -36,4 +36,36 @@ describe('browser runtime behavior', () => {
     expect(realtime).not.toContain("table: 'staff_schedule_overrides'")
     expect(realtime).not.toContain("table: 'staff_attendance_records'")
   })
+
+  it('respects mobile safe areas and normalizes the global search field', () => {
+    const html = read('index.html')
+    const css = read('src/shadcn.css')
+    const topBar = read('src/components/dashboard/TopBar.tsx')
+    const sheet = read('src/components/ui/sheet.tsx')
+
+    expect(html).toContain('viewport-fit=cover')
+    expect(css).toContain('.safe-area-top')
+    expect(css).toContain('.mobile-sheet-safe')
+    expect(topBar).toContain('safe-area-top')
+    expect(topBar).toContain('absolute inset-y-0 left-3.5 flex items-center')
+    expect(sheet).toContain('mobile-sheet-safe')
+  })
+
+  it('keeps workflow descriptions contextual and resolves line-item product photos', () => {
+    const ordersHeader = read('src/components/orders/OrdersTabHeader.tsx')
+    const ordersFilters = read('src/components/orders/OrdersTableFilters.tsx')
+    const peopleUi = read('src/components/hr/PeopleWorkspaceUI.tsx')
+    const attendance = read('src/components/hr/AttendanceReviewQueue.tsx')
+    const orderController = read('src/components/orders/OrderDetailsController.ts')
+    const orderItems = read('src/components/orders/OrderDetailsItemsSection.tsx')
+
+    expect(ordersHeader).toContain('GuardedAction')
+    expect(ordersHeader).toContain('InfoHint')
+    expect(ordersFilters).not.toContain('Showing {displayedOrderCount}')
+    expect(peopleUi).toContain('<InfoHint')
+    expect(attendance).toContain('pendingCases.length > 0')
+    expect(orderController).toContain('itemDisplays')
+    expect(orderItems).toContain('itemDisplay?.imageUrl')
+    expect(orderItems).not.toContain('Variant ${item.variantId}')
+  })
 })

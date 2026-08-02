@@ -16,6 +16,7 @@ import { OverviewStatCard, OverviewStatGrid } from '../ui/overview-card'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import type { HrSection } from './HrTabContentController'
 import { useUserStore } from '../../store/userStore'
+import { InfoHint } from '../ui/info-hint'
 
 
 export const PEOPLE_SECTION_META: Record<HrSection, { label: string; description: string; icon: LucideIcon }> = {
@@ -134,8 +135,12 @@ export const PeoplePageHeader = ({
           </span>
         )}
         <div className="min-w-0 pt-0.5">
-          <h2 className="font-display text-xl font-semibold leading-tight text-foreground">{resolvedTitle}</h2>
-          {resolvedDescription && <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">{resolvedDescription}</p>}
+          <div className="flex items-center gap-1.5">
+            <h2 className="font-display text-xl font-semibold leading-tight text-foreground">{resolvedTitle}</h2>
+            {resolvedDescription && (
+              <InfoHint label="About this People section">{resolvedDescription}</InfoHint>
+            )}
+          </div>
         </div>
       </div>
       {action && <div className="shrink-0 sm:pt-0.5">{action}</div>}

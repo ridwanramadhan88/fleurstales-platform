@@ -36,6 +36,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
     order,
     formatter,
     productDisplay,
+    itemDisplays,
     isOrderFuture,
     StatusIcon,
     isEditing,
@@ -201,7 +202,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
         </section>
       )}
 
-      <section className="space-y-4 rounded-2xl border border-border/40 bg-card p-4 shadow-ios-sm">
+      <section className="space-y-5 rounded-2xl border border-border/40 bg-card p-4 shadow-ios-sm sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -222,17 +223,22 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
         <div className="divide-y divide-border/45 rounded-xl border border-border/40">
           {items.map((item, index) => {
             const lineTotal = item.unitPriceIdr * item.quantity
+            const itemDisplay = itemDisplays[item.id] ?? (index === 0 ? productDisplay : undefined)
+            const itemMetadata = [
+              itemDisplay?.variantLabel,
+              itemDisplay?.sku ? `SKU ${itemDisplay.sku}` : undefined,
+            ].filter((value): value is string => Boolean(value))
             const isEditableCustomLine =
               isEditing && items.length === 1 && !item.productId && index === 0
 
             return (
-              <div key={item.id} className="flex items-start justify-between gap-3 px-3 py-3">
-                <div className="flex min-w-0 flex-1 items-start gap-3">
-                  <div className="size-12 shrink-0 overflow-hidden rounded-xl bg-surface-panel ring-1 ring-border/30">
-                    {productDisplay.imageUrl && index === 0 ? (
+              <div key={item.id} className="flex items-start justify-between gap-4 px-4 py-4">
+                <div className="flex min-w-0 flex-1 items-start gap-3.5">
+                  <div className="size-16 shrink-0 overflow-hidden rounded-2xl bg-surface-panel ring-1 ring-border/30">
+                    {itemDisplay?.imageUrl ? (
                       <img
-                        src={productDisplay.imageUrl}
-                        alt={item.productName || productDisplay.name || 'Product'}
+                        src={itemDisplay.imageUrl}
+                        alt={item.productName || itemDisplay.name || 'Product'}
                         className="size-full object-cover"
                       />
                     ) : (
@@ -241,7 +247,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                       </span>
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 pt-0.5">
                     {isEditableCustomLine ? (
                       <input
                         value={draft.productName}
@@ -251,12 +257,12 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                       />
                     ) : (
                       <p className="text-sm font-semibold leading-5 text-foreground">
-                        {item.productName || productDisplay.name || 'Custom order'}
+                        {item.productName || itemDisplay?.name || 'Custom order'}
                       </p>
                     )}
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
                       {item.quantity} × Rp {formatter.format(item.unitPriceIdr)}
-                      {item.variantId ? ` · Variant ${item.variantId}` : ''}
+                      {itemMetadata.length > 0 ? ` · ${itemMetadata.join(' · ')}` : ''}
                     </p>
                   </div>
                 </div>

@@ -11,8 +11,9 @@ import {
   STATUS_GROUP_FROM_STATUS,
   URGENCY_CHIP,
 } from './orderTableLabels'
-import { getDisplayScheduleLabel } from './orderTableFormatters'
+import { formatOrderCreatedAtLabel, getDisplayScheduleLabel } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
+import { InfoHint } from '../ui/info-hint'
 
 interface OrderDetailsHeaderProps {
   viewModel: OrderDetailsViewModel
@@ -167,8 +168,9 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
           {productDisplay.name}
         </p>
         <p className="text-2xs text-muted-foreground">{order.orderNumber}</p>
-        <p className="text-xs text-muted-foreground sm:text-sm">
-          {order.branch} · {order.createdAtLabel}
+        <p className="flex items-center gap-1 text-xs text-muted-foreground sm:text-sm">
+          <span>{order.branch} · {formatOrderCreatedAtLabel(order.createdAtLabel)}</span>
+          <InfoHint label="Exact order timestamp" align="end">{order.createdAtLabel}</InfoHint>
         </p>
       </div>
     </header>

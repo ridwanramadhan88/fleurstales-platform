@@ -21,6 +21,7 @@ describe('HR Scheduling UI', () => {
     render(<HrTabContentContainer activeBranch="All" />)
     openScheduling()
     expect(screen.getByRole('heading', { name:'Scheduling' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name:'About this People section' }))
     expect(screen.getByText('Create, review, and publish weekly staff schedules.')).toBeInTheDocument()
     expect(screen.queryByText('Staff defaults')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name:'Generate new pattern' })).toBeInTheDocument()

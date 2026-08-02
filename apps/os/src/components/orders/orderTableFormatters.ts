@@ -52,6 +52,7 @@ export {
 
 export {
   getCreatedAtTimestamp,
+  formatOrderCreatedAtLabel,
   getOrderDisplayLabel,
   formatCompletionLabel,
   formatOrderScheduleLabel,
