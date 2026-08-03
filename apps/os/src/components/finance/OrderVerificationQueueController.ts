@@ -12,8 +12,8 @@ import {
 } from '../../domain/orderBusinessRules'
 import { getLocalDateString, nowInJakarta, toJakarta } from '../orders/orderTableFormatters'
 import type {
-  OrderTransactionVerificationQueueProps,
-} from './OrderTransactionVerificationQueue'
+  OrderVerificationQueueProps,
+} from './OrderVerificationQueue'
 import type { FinanceOrderStatusFilter } from './FinanceOrderFilterBar'
 import type { FinanceDateScopeId } from './FinanceDateScopeTabs'
 import { toast } from '../../hooks/use-toast'
@@ -56,6 +56,7 @@ const isWithinCompletionScope = (
   scope: FinanceDateScopeId,
   dateRange?: DateRange,
 ): boolean => {
+  if (scope === 'all') return true
   if (scope === 'custom') return isWithinCompletionRange(order, dateRange)
   if (!order.completedAt) return false
 
@@ -90,7 +91,7 @@ export interface FinanceQueueStatusCounts {
   review: number
 }
 
-export interface OrderTransactionVerificationQueueViewModel {
+export interface OrderVerificationQueueViewModel {
   canVerify: boolean
   canResolveRequest: boolean
   actorName: string
@@ -138,7 +139,7 @@ export interface OrderTransactionVerificationQueueViewModel {
   ) => void
 }
 
-export const useOrderTransactionVerificationQueueController = ({
+export const useOrderVerificationQueueController = ({
   orders,
   canVerify,
   canResolveRequest,
@@ -147,7 +148,7 @@ export const useOrderTransactionVerificationQueueController = ({
   searchQuery = '',
   onSearchQueryChange,
   showHeading = true,
-}: OrderTransactionVerificationQueueProps): OrderTransactionVerificationQueueViewModel => {
+}: OrderVerificationQueueProps): OrderVerificationQueueViewModel => {
   const verifyOrderFinance = useOrdersStore((state) => state.verifyOrderFinance)
   const markOrderForFinanceReview = useOrdersStore(
     (state) => state.markOrderForFinanceReview,
@@ -165,7 +166,7 @@ export const useOrderTransactionVerificationQueueController = ({
   const [verificationActionNote, setVerificationActionNote] = useState('')
   const [reviewingOrder, setReviewingOrder] = useState<OrderTableRow | null>(null)
   const [statusFilter, setStatusFilter] = useState<FinanceOrderStatusFilter>('pending')
-  const [dateScope, setDateScope] = useState<FinanceDateScopeId>('this_week')
+  const [dateScope, setDateScope] = useState<FinanceDateScopeId>('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [selectedOrderNumbers, setSelectedOrderNumbers] = useState<Set<string>>(
     new Set(),
@@ -225,7 +226,11 @@ export const useOrderTransactionVerificationQueueController = ({
           if (statusFilter === 'rejected') return isRejectedByFinance(order)
           return isMarkedForFinanceReview(order)
         })
-        .sort((a, b) => a.orderNumber.localeCompare(b.orderNumber)),
+        .sort((a, b) => {
+          const aTime = a.completedAt ? Date.parse(a.completedAt) : 0
+          const bTime = b.completedAt ? Date.parse(b.completedAt) : 0
+          return aTime - bTime || a.orderNumber.localeCompare(b.orderNumber)
+        }),
     [searchScopedOrders, statusFilter],
   )
 

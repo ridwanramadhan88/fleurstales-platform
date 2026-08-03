@@ -59,7 +59,7 @@ const idrGroupingFormatter = new Intl.NumberFormat('id-ID')
  * re-implemented (under the same local name `formatIdr`, with the same
  * `Math.round` + grouping behavior) in TvDashboard.tsx, RevenueDashboard.tsx,
  * OverviewCardsController.ts, OrderFinanceReviewSheet.tsx, and
- * OrderTransactionVerificationQueue.tsx — all five now import this instead,
+ * OrderVerificationQueue.tsx — all five now import this instead,
  * so a future change to how currency is displayed only has one place to
  * happen.
  */

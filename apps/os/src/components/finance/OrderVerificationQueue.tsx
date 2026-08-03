@@ -1,8 +1,8 @@
 /**
- * @file OrderTransactionVerificationQueue.tsx
+ * @file OrderVerificationQueue.tsx
  * @description Finance's verification queue for customer order transactions,
  * shown inside the Finance tab. Sibling to
- * InternalTransactionVerificationQueue, which covers company/internal
+ * TransactionLedger, which covers company/internal
  * transactions (rent, inventory purchases, payroll, utilities, etc.)
  * instead. This one covers verifying individual customer orders, and
  * reviewing edit/cancellation requests Admin has submitted on orders that
@@ -57,10 +57,10 @@ import {
 } from './FinanceOrderFilterBar'
 import { BulkVerifyBar } from './BulkVerifyBar'
 import { OrderVerificationQueueRow } from './OrderVerificationQueueRow'
-import type { OrderTransactionVerificationQueueViewModel } from './OrderTransactionVerificationQueueController'
+import type { OrderVerificationQueueViewModel } from './OrderVerificationQueueController'
 import { InfoDisclosure } from '../ui/info-disclosure'
 
-export interface OrderTransactionVerificationQueueProps {
+export interface OrderVerificationQueueProps {
   /** Orders already scoped to the active branch. */
   orders: OrderTableRow[]
   /** Whether the current user can verify orders directly (Finance/Owner). */
@@ -85,8 +85,8 @@ export interface OrderTransactionVerificationQueueProps {
  * separate queue for reviewing Admin's edit/cancellation requests on
  * locked (finished) orders.
  */
-export const OrderTransactionVerificationQueue: FC<
-  OrderTransactionVerificationQueueViewModel
+export const OrderVerificationQueue: FC<
+  OrderVerificationQueueViewModel
 > = ({
   canVerify,
   canResolveRequest,
@@ -140,7 +140,7 @@ export const OrderTransactionVerificationQueue: FC<
     <section aria-label="Order verification" className="space-y-6">
       {showHeading && <header className="space-y-1">
         <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
-          Payment Verification
+          Order Verification
         </h1>
         <p className="mt-1 text-sm leading-5 text-muted-foreground">
           Review completed orders and exceptions that need attention.
@@ -253,4 +253,4 @@ export const OrderTransactionVerificationQueue: FC<
   )
 }
 
-export default OrderTransactionVerificationQueue
+export default OrderVerificationQueue

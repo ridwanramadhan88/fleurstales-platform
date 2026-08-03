@@ -57,7 +57,7 @@ export const OwnerAttentionQueue: FC<OwnerAttentionQueueProps> = ({ onNavigate }
         {pendingOrderRequests.length > 0 && (
           <button
             type="button"
-            onClick={() => onNavigate(toFinanceModule('collect_orders'))}
+            onClick={() => onNavigate(toFinanceModule('order_verification'))}
             className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-accent/50"
           >
             <FilePenLine className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

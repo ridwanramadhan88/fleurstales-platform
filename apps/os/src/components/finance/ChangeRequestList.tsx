@@ -1,7 +1,7 @@
 /**
  * @file ChangeRequestList.tsx
  * @description "Change requests awaiting review" section of
- * OrderTransactionVerificationQueue — Admin's edit/cancellation requests on
+ * OrderVerificationQueue — Admin's edit/cancellation requests on
  * locked (finished) orders, reviewed here by Finance/Owner. Surfaced above
  * the main order list since these are time-sensitive (Admin is blocked on
  * the order until Finance/Owner acts).

@@ -1,7 +1,7 @@
 /**
  * @file BulkVerifyBar.tsx
  * @description "Select all" + bulk "Verify N selected" bar shown beneath the
- * status filter chips in OrderTransactionVerificationQueue once bulk-select
+ * status filter chips in OrderVerificationQueue once bulk-select
  * mode is toggled on. Only ever targets pending rows — the parent guarantees
  * `selectableCount`/`selectedCount` only ever reflect still-pending orders,
  * since verified/rejected rows have no direct-verify action left to take.

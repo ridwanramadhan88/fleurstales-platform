@@ -31,8 +31,8 @@ import { StockTabContentContainer } from '../components/stock/StockTabContentCon
 import { CatalogTabContentContainer } from '../components/catalog/CatalogTabContentContainer'
 import { CustomersTabContentContainer } from '../components/customers/CustomersTabContentContainer'
 import { RevenueDashboardContainer } from '../components/dashboard/RevenueDashboardContainer'
-import { OrderTransactionVerificationQueueContainer } from '../components/finance/OrderTransactionVerificationQueueContainer'
-import { InternalTransactionVerificationQueueContainer } from '../components/finance/InternalTransactionVerificationQueueContainer'
+import { OrderVerificationQueueContainer } from '../components/finance/OrderVerificationQueueContainer'
+import { TransactionLedgerContainer } from '../components/finance/TransactionLedgerContainer'
 import { FinanceRefundQueue } from '../components/finance/FinanceRefundQueue'
 import { PayrollScheduleCard } from '../components/payroll/PayrollScheduleCard'
 import { FinancePayrollReview } from '../components/finance/FinancePayrollReview'
@@ -200,7 +200,7 @@ const HomePage: FC<HomePageProps> = ({
   const allTransactions = useFinanceStore((state) => state.transactions)
   const canAccessHrWorkspace = canAccessSection(userRole, 'hr', permissions) || canViewScheduling(userRole, permissions)
   const canVerifyFinance = canVerifyOrder(userRole) && hasActionPermission(userRole, 'finance.verify_order', actionPermissions, permissions)
-  const canVerifyInternalTransactions = canEditSection(userRole, 'finance', permissions) && hasActionPermission(userRole, 'finance.verify_ledger_entry', actionPermissions, permissions)
+  const canEditManualTransactions = canEditSection(userRole, 'finance', permissions) && hasActionPermission(userRole, 'finance.edit_ledger_entry', actionPermissions, permissions)
   const canResolveFinanceRequest = canResolveChangeRequest(userRole)
   const financeModules = useMemo(
     () => getFinanceWorkspaceModules(userRole, actionPermissions, permissions),
@@ -341,8 +341,8 @@ const HomePage: FC<HomePageProps> = ({
 
     const didNavigate = item.target === 'order' && item.orderNumber
       ? navigate(toOrders({ orderNumber: item.orderNumber }))
-      : item.target === 'finance_orders'
-        ? navigate(toFinanceModule('collect_orders'))
+      : item.target === 'finance_order_verification'
+        ? navigate(toFinanceModule('order_verification'))
         : item.target === 'finance_payroll'
           ? navigate(toFinanceModule('payroll'))
         : item.target === 'hr_attendance'
@@ -434,7 +434,7 @@ const HomePage: FC<HomePageProps> = ({
       ? { show: true, placeholder: 'Search orders, customer, phone, or ID…' }
       : activeTab === 'customers'
         ? { show: true, placeholder: 'Search name, phone, or email' }
-        : activeTab === 'finance' && financeModule === 'collect_orders'
+        : activeTab === 'finance' && financeModule === 'order_verification'
           ? {
               show: true,
               placeholder: 'Search collect orders, customer, or ID...',
@@ -566,8 +566,8 @@ const HomePage: FC<HomePageProps> = ({
                 onChange={(module) => { navigate(toFinanceModule(module)) }}
               />
 
-              {financeModule === 'collect_orders' && (
-                <OrderTransactionVerificationQueueContainer
+              {financeModule === 'order_verification' && (
+                <OrderVerificationQueueContainer
                   orders={branchOrders}
                   canVerify={canVerifyFinance}
                   canResolveRequest={canResolveFinanceRequest}
@@ -604,12 +604,10 @@ const HomePage: FC<HomePageProps> = ({
                     actorName={actorName}
                     actorRole={userRole}
                   />}
-                  <InternalTransactionVerificationQueueContainer
+                  <TransactionLedgerContainer
                     transactions={allTransactions}
                     defaultBranch={activeBranch}
-                    canVerify={canVerifyInternalTransactions}
-                    actorName={actorName}
-                    actorRole={userRole}
+                    canEditManual={canEditManualTransactions}
                   />
                 </>
               )}

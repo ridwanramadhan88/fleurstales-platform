@@ -11,10 +11,10 @@ describe('finance workspace privacy', () => {
 
   it('allows Finance and Owner to view all finance modules', () => {
     expect(getFinanceWorkspaceModules('finance')).toEqual([
-      'collect_orders', 'ledger', 'payroll', 'refunds',
+      'order_verification', 'ledger', 'payroll', 'refunds',
     ])
     expect(getFinanceWorkspaceModules('owner')).toEqual([
-      'collect_orders', 'ledger', 'payroll', 'refunds',
+      'order_verification', 'ledger', 'payroll', 'refunds',
     ])
   })
 })

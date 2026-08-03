@@ -81,6 +81,25 @@ export type FinancePaymentMethod = 'cash' | 'transfer' | 'card' | 'other'
 export type FinanceTransactionStatus = 'pending' | 'verified' | 'rejected'
 export type FinanceTransactionSource = 'manual' | 'order_payment' | 'order_refund' | 'payroll'
 
+export interface FinanceTransactionEditRecord {
+  revision: number
+  editedAt: string
+  editedBy: string
+  reason?: string
+  previous: {
+    type: FinanceTransactionType
+    category: FinanceCategory
+    branch: BranchId
+    scope?: FinanceTransactionScope
+    amount: number
+    method: FinancePaymentMethod
+    name?: string
+    description: string
+    transactionDate?: string
+    manualEntryReason?: string
+  }
+}
+
 export interface FinanceTransaction {
   id: string
   type: FinanceTransactionType
@@ -115,4 +134,7 @@ export interface FinanceTransaction {
   actor: string
   createdAt: string
   updatedAt: string
+  revision?: number
+  updatedBy?: string
+  editHistory?: FinanceTransactionEditRecord[]
 }

@@ -4,13 +4,13 @@ import { DEFAULT_ROLE_SECTION_ACCESS } from './permissions'
 
 describe('action permissions', () => {
   it('keeps Admin out of sensitive Finance modules', () => {
-    expect(hasActionPermission('admin','finance.view_collect_orders',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    expect(hasActionPermission('admin','finance.view_order_verification',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
     expect(hasActionPermission('admin','finance.view_payroll',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
   })
 
   it('does not grant Florist any Finance capability', () => {
-    expect(DEFAULT_ACTION_PERMISSIONS.florist['finance.view_collect_orders']).toBe(false)
-    expect(hasActionPermission('florist','finance.view_collect_orders',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    expect(DEFAULT_ACTION_PERMISSIONS.florist['finance.view_order_verification']).toBe(false)
+    expect(hasActionPermission('florist','finance.view_order_verification',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
   })
 
   it('never allows Florist to advance Order status', () => {

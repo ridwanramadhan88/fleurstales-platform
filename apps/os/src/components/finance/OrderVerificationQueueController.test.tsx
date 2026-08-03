@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { makeOrder } from '../../test/factories/order'
-import { useOrderTransactionVerificationQueueController } from './OrderTransactionVerificationQueueController'
+import { useOrderVerificationQueueController } from './OrderVerificationQueueController'
 
 const completedAt = new Date().toISOString()
 const orders = [
@@ -23,9 +23,9 @@ const orders = [
   }),
 ]
 
-describe('Payment Verification shared search', () => {
+describe('Order Verification shared search', () => {
   it('filters the queue using the query owned by the app shell', () => {
-    const { result } = renderHook(() => useOrderTransactionVerificationQueueController({
+    const { result } = renderHook(() => useOrderVerificationQueueController({
       orders,
       canVerify: true,
       canResolveRequest: true,

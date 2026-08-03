@@ -5,8 +5,8 @@ import { formatIdrCurrency } from '../../lib/formatters'
 import { parseOrderDate } from '../../domain/revenueDateDomain'
 import type {
   FinanceQueueRow,
-  OrderTransactionVerificationQueueViewModel,
-} from './OrderTransactionVerificationQueueController'
+  OrderVerificationQueueViewModel,
+} from './OrderVerificationQueueController'
 
 /**
  * @description Compact, task-focused row for Finance order verification.
@@ -15,7 +15,7 @@ import type {
  * disclosed under More actions.
  */
 type QueueRowActionProps = Pick<
-  OrderTransactionVerificationQueueViewModel,
+  OrderVerificationQueueViewModel,
   | 'canVerify'
   | 'isBulkSelectMode'
   | 'verificationActionType'

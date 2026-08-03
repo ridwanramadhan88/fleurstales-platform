@@ -12,7 +12,7 @@ describe('heading and title consistency', () => {
       'src/components/orders/OrdersTabHeader.tsx',
       'src/components/dashboard/DashboardHeader.tsx',
       'src/components/dashboard/RevenueDashboard.tsx',
-      'src/components/finance/OrderTransactionVerificationQueue.tsx',
+      'src/components/finance/OrderVerificationQueue.tsx',
       'src/components/settings/SettingsCenter.tsx',
     ]
 
@@ -38,7 +38,7 @@ describe('heading and title consistency', () => {
     expect(read('src/pages/Home.tsx')).toContain(
       'showHeading={financeModules.length > 1}',
     )
-    expect(read('src/components/finance/OrderTransactionVerificationQueue.tsx')).toContain(
+    expect(read('src/components/finance/OrderVerificationQueue.tsx')).toContain(
       '{showHeading && <header className="space-y-1">',
     )
   })

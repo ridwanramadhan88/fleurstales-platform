@@ -19,9 +19,9 @@ const ITEMS: Record<
   FinanceWorkspaceModule,
   { label: string; description: string; icon: typeof ClipboardCheck }
 > = {
-  collect_orders: {
-    label: "Payment Verification",
-    description: "Verify completed customer orders",
+  order_verification: {
+    label: "Order Verification",
+    description: "Review completed orders once",
     icon: ClipboardCheck,
   },
   payroll: {
@@ -36,7 +36,7 @@ const ITEMS: Record<
   },
   ledger: {
     label: "Transactions",
-    description: "Money In and Money Out records",
+    description: "Read-only financial history",
     icon: ReceiptText,
   },
 };
@@ -49,7 +49,7 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
   const navRef = useActiveItemScroll<HTMLElement>(activeModule, '[aria-current="page"]')
 
   if (modules.length <= 1) {
-    const item = ITEMS[modules[0] ?? "collect_orders"];
+    const item = ITEMS[modules[0] ?? "order_verification"];
     return (
       <header className="space-y-1">
         <h1 className="font-display text-2xl font-semibold leading-tight">

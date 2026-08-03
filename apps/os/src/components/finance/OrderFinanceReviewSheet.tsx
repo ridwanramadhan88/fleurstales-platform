@@ -1,7 +1,7 @@
 /**
  * @file OrderFinanceReviewSheet.tsx
  * @description Read-only order detail view opened from Finance's
- * verification queues (OrderTransactionVerificationQueue) when a queue row
+ * verification queues (OrderVerificationQueue) when a queue row
  * is clicked. Visually mirrors OrderDetailsPanel (the same critical
  * summary, status stepper, product/fulfillment info, notes, and activity
  * timeline) but every field is display-only — no edit controls, no way to

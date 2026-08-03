@@ -68,7 +68,7 @@ export interface AlertItem {
   /** Order number this alert refers to, when applicable. */
   orderNumber?: string
   /** Destination opened when the notification is selected. */
-  target?: 'order' | 'finance_orders' | 'finance_payroll' | 'hr_attendance' | 'hr_reports' | 'hr_payroll' | 'my_schedule'
+  target?: 'order' | 'finance_order_verification' | 'finance_payroll' | 'hr_attendance' | 'hr_reports' | 'hr_payroll' | 'my_schedule'
   /** Optional record identifier for the destination. */
   targetId?: string
 }
@@ -184,7 +184,7 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
         message: `${order.customerName} · Finance review pending`,
         branch: order.branch,
         orderNumber: order.orderNumber,
-        target: 'finance_orders' as const,
+        target: 'finance_order_verification' as const,
       }))
 
     const attendanceProblems = attendanceReviewCases
@@ -251,7 +251,7 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
         message: `${order.customerName} · Ready for Finance review`,
         branch: order.branch,
         orderNumber: order.orderNumber,
-        target: 'finance_orders' as const,
+        target: 'finance_order_verification' as const,
       }))
   }
 

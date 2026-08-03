@@ -25,7 +25,7 @@ export const RoleFocusNotice: FC<RoleFocusNoticeProps> = ({ userRole }) => {
       <section className={surfaceCardClass('standard')}>
         <p className="text-xs font-semibold text-muted-foreground">Finance focus</p>
         <p className="mt-1 text-2xl font-semibold text-foreground">{pendingVerification}</p>
-        <p className="text-sm text-muted-foreground">completed order{pendingVerification === 1 ? '' : 's'} waiting for payment verification.</p>
+        <p className="text-sm text-muted-foreground">completed order{pendingVerification === 1 ? '' : 's'} waiting for order verification.</p>
       </section>
     )
   }

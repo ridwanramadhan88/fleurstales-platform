@@ -50,6 +50,21 @@ export interface FinanceStoreState {
     orderNumber?: string
     actor: FinanceActor
   }) => { allowed: boolean; reason?: string; field?: string; transactionId?: string }
+  updateManualTransaction: (params: {
+    transactionId: string
+    type: FinanceTransactionType
+    category: FinanceCategory
+    branch?: BranchId | ''
+    scope?: FinanceTransactionScope
+    amount: number
+    method?: FinancePaymentMethod
+    name: string
+    note?: string
+    manualEntryReason?: string
+    transactionDate?: string
+    editReason?: string
+    actor: FinanceActor
+  }) => { allowed: boolean; reason?: string; field?: string; transactionId?: string }
   updateBuiltInCategory: (params: {
     categoryId: FinanceBuiltInCategory
     name: string
@@ -186,7 +201,7 @@ export const useFinanceStore = create<FinanceStoreState>((set, get) => ({
       scope,
       amount,
       method:normalizeFinancePaymentMethod(method),
-      status:'pending',
+      status:'verified',
       name:name.trim(),
       description:normalizedNote,
       note:normalizedNote || undefined,
@@ -200,6 +215,69 @@ export const useFinanceStore = create<FinanceStoreState>((set, get) => ({
       updatedAt:timestamp,
     }
     set((state) => ({ transactions:[newTransaction, ...state.transactions] }))
+    return { allowed:true, transactionId }
+  },
+
+  updateManualTransaction: ({
+    transactionId, type, category, branch, scope = 'company', amount, method,
+    name, note, manualEntryReason, transactionDate, editReason, actor,
+  }) => {
+    if (!isActionAuthorized(actor.role, 'finance.edit_ledger_entry')) {
+      return { allowed:false, reason:'You do not have permission to edit manual transactions.' }
+    }
+    const current = get().transactions.find((item) => item.id === transactionId)
+    if (!current) return { allowed:false, reason:'Transaction was not found.' }
+    const entryMode = current.entryMode ?? (current.isSystemGenerated ? 'automatic' : 'manual')
+    if (entryMode !== 'manual' || current.source !== 'manual' || current.isSystemGenerated) {
+      return { allowed:false, reason:'Automatic transactions can only be changed from their source workflow.' }
+    }
+    const customCategories = get().customCategories
+    const categoryOverrides = get().categoryOverrides
+    const validation = canCreateFinanceTransaction({
+      type, category, branch, scope, amount, method, name, note,
+      manualEntryReason, actor, customCategories, categoryOverrides,
+    })
+    if (!validation.allowed) return validation
+    const updatedAt = nowIso()
+    const revision = (current.revision ?? 1) + 1
+    const previous = {
+      type:current.type, category:current.category, branch:current.branch,
+      scope:current.scope, amount:current.amount, method:current.method,
+      name:current.name, description:current.description,
+      transactionDate:current.transactionDate,
+      manualEntryReason:current.manualEntryReason,
+    }
+    const normalizedNote = (note ?? '').trim()
+    set((state) => ({
+      transactions:state.transactions.map((item) => item.id === transactionId ? {
+        ...item,
+        type,
+        category,
+        branch:(scope === 'branch' ? branch : 'All') as BranchId,
+        scope,
+        amount,
+        method:normalizeFinancePaymentMethod(method),
+        status:'verified',
+        name:name.trim(),
+        description:normalizedNote,
+        note:normalizedNote || undefined,
+        manualEntryReason:manualEntryReason?.trim() || undefined,
+        transactionDate:transactionDate || item.transactionDate,
+        revision,
+        updatedBy:actor.name.trim(),
+        updatedAt,
+        editHistory:[
+          ...(item.editHistory ?? []),
+          {
+            revision,
+            editedAt:updatedAt,
+            editedBy:actor.name.trim(),
+            reason:editReason?.trim() || undefined,
+            previous,
+          },
+        ],
+      } : item),
+    }))
     return { allowed:true, transactionId }
   },
 
@@ -387,7 +465,7 @@ export const useFinanceStore = create<FinanceStoreState>((set, get) => ({
     let result: { allowed:boolean; reason?:string } = { allowed:false, reason:'Transaction not found.' }
     set((state) => {
       const transaction = state.transactions.find((item) => item.id === transactionId)
-      result = canMakeFinanceTransactionDecision({ transaction, role:actor.role, decision:'verify', capabilityAllowed:isActionAuthorized(actor.role, 'finance.verify_ledger_entry') })
+      result = canMakeFinanceTransactionDecision({ transaction, role:actor.role, decision:'verify', capabilityAllowed:isActionAuthorized(actor.role, 'finance.edit_ledger_entry') })
       if (!result.allowed) return state
       const timestamp = nowIso()
       return { transactions:state.transactions.map((item) => item.id === transactionId ? { ...item, status:'verified' as const, actor:actor.name, updatedAt:timestamp } : item) }
@@ -403,7 +481,7 @@ export const useFinanceStore = create<FinanceStoreState>((set, get) => ({
         result = { allowed:false, reason:'Automatic transactions are immutable. Correct the linked workflow instead.' }
         return state
       }
-      result = canMakeFinanceTransactionDecision({ transaction, role:actor.role, decision:'reject', capabilityAllowed:isActionAuthorized(actor.role, 'finance.verify_ledger_entry') })
+      result = canMakeFinanceTransactionDecision({ transaction, role:actor.role, decision:'reject', capabilityAllowed:isActionAuthorized(actor.role, 'finance.edit_ledger_entry') })
       if (!result.allowed) return state
       const timestamp = nowIso()
       return { transactions:state.transactions.map((item) => item.id === transactionId ? { ...item, status:'rejected' as const, actor:actor.name, updatedAt:timestamp } : item) }

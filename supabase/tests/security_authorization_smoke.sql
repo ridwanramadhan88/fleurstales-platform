@@ -184,7 +184,7 @@ begin
       where n.nspname='public' and p.proname in ('save_finance_operational_state','save_finance_operational_state_v34_internal','save_finance_operational_state_v36_internal')
     ) defs
     where defs.function_defs ilike '%finance.create_ledger_entry%'
-      and defs.function_defs ilike '%finance.verify_ledger_entry%'
+      and defs.function_defs ilike '%finance.edit_ledger_entry%'
       and defs.function_defs ilike '%FINANCE_LEDGER_ENTRY_IMMUTABLE%'
   ) then
     raise exception 'Finance operational writer is not action-aware/append-only';

@@ -5,16 +5,16 @@ import { FinanceWorkspaceTabs } from './FinanceWorkspaceTabs'
 afterEach(cleanup)
 
 describe('FinanceWorkspaceTabs', () => {
-  it('renders a single Payment Verification header without sensitive module navigation', () => {
+  it('renders a single Order Verification header without sensitive module navigation', () => {
     render(
       <FinanceWorkspaceTabs
-        modules={['collect_orders']}
-        activeModule="collect_orders"
+        modules={['order_verification']}
+        activeModule="order_verification"
         onChange={vi.fn()}
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Payment Verification' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Order Verification' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Finance modules' })).not.toBeInTheDocument()
     expect(screen.queryByText('Payroll')).not.toBeInTheDocument()
     expect(screen.queryByText('Refunds')).not.toBeInTheDocument()
@@ -25,8 +25,8 @@ describe('FinanceWorkspaceTabs', () => {
     const onChange = vi.fn()
     render(
       <FinanceWorkspaceTabs
-        modules={['collect_orders', 'payroll', 'refunds', 'ledger']}
-        activeModule="collect_orders"
+        modules={['order_verification', 'payroll', 'refunds', 'ledger']}
+        activeModule="order_verification"
         onChange={onChange}
       />,
     )

@@ -108,7 +108,7 @@ const ACCESS_DESCRIPTIONS: Record<AccessLevel, string> = {
 const capabilitySector = (capability: ActionCapability): Sector => {
   if (capability.startsWith('settings.')) return 'Store Management'
   if (capability.startsWith('orders.')) return 'Operations'
-  if (capability === 'finance.view_collect_orders' || capability === 'finance.verify_order') return 'Operations'
+  if (capability === 'finance.view_order_verification' || capability === 'finance.verify_order') return 'Operations'
   if (capability.startsWith('finance.')) return 'Sales & Finance'
   return 'People & HR'
 }
@@ -116,7 +116,7 @@ const capabilitySector = (capability: ActionCapability): Sector => {
 const capabilityWorkspaceLabel = (capability: ActionCapability): string => {
   if (capability.startsWith('settings.')) return 'Owner Settings'
   if (capability.startsWith('orders.')) return capability === 'orders.read_assigned' ? 'Assigned Work' : 'Orders'
-  if (capability === 'finance.view_collect_orders' || capability === 'finance.verify_order') return 'Order Collection'
+  if (capability === 'finance.view_order_verification' || capability === 'finance.verify_order') return 'Order Collection'
   if (capability.includes('payroll') && capability.startsWith('finance.')) return 'Payroll Review'
   if (capability.includes('refund')) return 'Refunds'
   if (capability.includes('ledger')) return 'Finance Transactions'
@@ -134,7 +134,7 @@ const SAFETY_NOTES: Partial<Record<ActionCapability, string>> = {
   'finance.reject_employee_payroll': 'Reason required; returns one item to HR.',
   'finance.record_final_payment': 'Available after all items are approved.',
   'finance.approve_refund': 'Refunds preserve order history.',
-  'finance.verify_ledger_entry': 'Verified entries are read-only.',
+  'finance.edit_ledger_entry': 'Verified entries are read-only.',
   'hr.correct_attendance': 'Original attendance evidence is preserved.',
   'hr.manage_points': 'Approved points require an adjustment.',
   'hr.edit_payroll_proposal': 'Only draft or rejected items can change.',

@@ -147,7 +147,7 @@ assert(sensitiveDomains.includes("private.has_action_permission('hr.edit_employe
 assert(sensitiveDomains.includes("private.has_action_permission('hr.correct_attendance')"), 'HR attendance mutation permission is not enforced server-side.')
 assert(sensitiveDomains.includes("private.has_action_permission('hr.manage_points')"), 'HR points mutation permission is not enforced server-side.')
 assert(sensitiveDomains.includes("private.has_action_permission('finance.create_ledger_entry')"), 'Finance ledger create permission is not enforced server-side.')
-assert(sensitiveDomains.includes("private.has_action_permission('finance.verify_ledger_entry')"), 'Finance ledger verification permission is not enforced server-side.')
+assert(sensitiveDomains.includes("private.has_action_permission('finance.edit_ledger_entry')"), 'Finance ledger verification permission is not enforced server-side.')
 assert(sensitiveDomains.includes('FINANCE_LEDGER_ENTRY_IMMUTABLE'), 'Finance existing ledger rows are not immutable outside decision fields.')
 
 // Notification delivery/read visibility must follow the same backend matrix.

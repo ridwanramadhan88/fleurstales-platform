@@ -8,6 +8,6 @@ export interface NotificationItem {
   createdAt: string
   isRead: boolean
   orderNumber?: string
-  target?: 'order' | 'finance_orders' | 'finance_payroll' | 'hr_attendance' | 'hr_reports' | 'hr_payroll' | 'my_schedule'
+  target?: 'order' | 'finance_order_verification' | 'finance_payroll' | 'hr_attendance' | 'hr_reports' | 'hr_payroll' | 'my_schedule'
   targetId?: string
 }

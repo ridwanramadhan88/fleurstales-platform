@@ -2,7 +2,7 @@ import React from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFinanceStore } from '../../store/financeStore'
-import { InternalTransactionVerificationQueueContainer } from './InternalTransactionVerificationQueueContainer'
+import { TransactionLedgerContainer } from './TransactionLedgerContainer'
 
 const actor = { name: 'Dewi', role: 'finance' as const }
 
@@ -51,7 +51,7 @@ describe('complete Transactions order flow', () => {
     expect(transaction.createdAt).not.toBe(completedAt)
 
     render(
-      <InternalTransactionVerificationQueueContainer
+      <TransactionLedgerContainer
         transactions={useFinanceStore.getState().transactions}
         canVerify
         actorName="Dewi"

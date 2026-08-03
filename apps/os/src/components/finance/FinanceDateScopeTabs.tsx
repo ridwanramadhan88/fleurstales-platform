@@ -3,9 +3,8 @@
  * @description Date range scope control for the Finance order-verification
  * queue, styled identically to Orders' OrdersSubTabs (same pill-segmented-
  * control look) but with a different option set and a different default:
- * Finance's default landing scope is "This week" (Mon–Sun of the current
- * week) rather than "Today" — Finance typically triages a batch of orders
- * that finished over the past few days, not just today's. Kept as its own
+ * Finance's default landing scope is "All" so unresolved orders are never
+ * hidden by a date preset. Today, This week, and Custom remain optional filters. Kept as its own
  * component (rather than reusing/extending OrdersSubTabs) so the Orders
  * tab's own tab meaning (Today/Future/Custom) isn't disturbed by an
  * unrelated screen's needs.
@@ -22,7 +21,7 @@ import { tabButtonClass } from '../ui/tabs'
 /**
  * @description Scope identifiers for the Finance date tabs.
  */
-export type FinanceDateScopeId = 'this_week' | 'today' | 'custom'
+export type FinanceDateScopeId = 'all' | 'this_week' | 'today' | 'custom'
 
 /**
  * @description Props for the FinanceDateScopeTabs segmented control.
@@ -59,8 +58,9 @@ export const FinanceDateScopeTabs: FC<FinanceDateScopeTabsProps> = ({
   onDateRangeChange,
 }) => {
   const tabs: { id: FinanceDateScopeId; label: string }[] = [
-    { id: 'this_week', label: 'This week' },
+    { id: 'all', label: 'All' },
     { id: 'today', label: 'Today' },
+    { id: 'this_week', label: 'This week' },
     { id: 'custom', label: 'Custom' },
   ]
 

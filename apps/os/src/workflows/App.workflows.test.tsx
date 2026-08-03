@@ -225,11 +225,11 @@ describe('critical application workflows', () => {
     })
     render(<App />)
     const user = await chooseRole('Owner')
-    const financeButtons = screen.getAllByRole('button', { name: 'Payment Verification' })
+    const financeButtons = screen.getAllByRole('button', { name: 'Order Verification' })
     await user.click(financeButtons[0])
 
     expect(
-      screen.getByRole('heading', { name: 'Payment Verification' }),
+      screen.getByRole('heading', { name: 'Order Verification' }),
     ).toBeInTheDocument()
     const result = useOrdersStore.getState().verifyOrderFinance({
       orderNumber: created.orderNumber,
@@ -248,14 +248,14 @@ describe('critical application workflows', () => {
     render(<App />)
     const user = await chooseRole('Owner')
 
-    await user.click(screen.getAllByRole('button', { name: 'Payment Verification' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'Order Verification' })[0])
     await user.click(screen.getByRole('button', { name: /^Payroll/ }))
     expect((await screen.findAllByRole('heading', { name: 'Payroll schedule' })).length).toBeGreaterThan(0)
 
     await user.click(screen.getAllByRole('button', { name: /^(Overview|Business Overview)$/ })[0])
-    await user.click(screen.getAllByRole('button', { name: 'Payment Verification' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'Order Verification' })[0])
 
-    expect(screen.getByRole('heading', { name: 'Payment Verification' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Order Verification' })).toBeInTheDocument()
   })
 
   it('advances an active order from the orders table', async () => {

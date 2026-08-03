@@ -14,9 +14,9 @@ describe('app navigation targets', () => {
   })
 
   it('creates deterministic Finance module targets', () => {
-    expect(toFinanceModule('collect_orders')).toEqual({
+    expect(toFinanceModule('order_verification')).toEqual({
       tab: 'finance',
-      financeModule: 'collect_orders',
+      financeModule: 'order_verification',
     })
     expect(toFinanceModule('payroll')).toEqual({
       tab: 'finance',

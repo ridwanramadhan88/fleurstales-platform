@@ -130,11 +130,53 @@ const safeHrSnapshot = (): Slice => {
   return hr
 }
 
+const FINANCE_SERVER_OWNED_SOURCES = new Set(['order_payment', 'order_refund', 'payroll'])
+
+const isServerOwnedFinanceTransaction = (value: unknown): value is Slice =>
+  isRecord(value) && (
+    value.isSystemGenerated === true ||
+    (typeof value.source === 'string' && FINANCE_SERVER_OWNED_SOURCES.has(value.source))
+  )
+
+const safeFinanceSnapshot = (): Json => {
+  const finance = dataOnly(useFinanceStore.getState() as unknown as Record<string, unknown>)
+  const localTransactions = Array.isArray(finance.transactions) ? finance.transactions : []
+  const baseline = syncedSnapshotValues.get('finance')
+  const baselineTransactions = isRecord(baseline) && Array.isArray(baseline.transactions)
+    ? baseline.transactions
+    : []
+  const authoritativeById = new Map<string, unknown>()
+
+  for (const transaction of baselineTransactions) {
+    if (!isServerOwnedFinanceTransaction(transaction) || typeof transaction.id !== 'string') continue
+    authoritativeById.set(transaction.id, transaction)
+  }
+
+  const seen = new Set<string>()
+  const transactions = localTransactions.flatMap((transaction) => {
+    if (!isServerOwnedFinanceTransaction(transaction)) return [transaction]
+    if (typeof transaction.id !== 'string') return []
+    const authoritative = authoritativeById.get(transaction.id)
+    if (!authoritative) return []
+    seen.add(transaction.id)
+    return [authoritative]
+  })
+
+  for (const transaction of baselineTransactions) {
+    if (!isServerOwnedFinanceTransaction(transaction) || typeof transaction.id !== 'string') continue
+    if (seen.has(transaction.id)) continue
+    transactions.push(transaction)
+  }
+
+  finance.transactions = transactions
+  return finance as Json
+}
+
 const snapshotForDomain = (domain: OperationalDomain): Json => {
   switch (domain) {
     case 'hr': return safeHrSnapshot() as Json
     case 'payroll': return dataOnly(usePayrollStore.getState() as unknown as Record<string, unknown>) as Json
-    case 'finance': return dataOnly(useFinanceStore.getState() as unknown as Record<string, unknown>) as Json
+    case 'finance': return safeFinanceSnapshot()
     case 'stock': return dataOnly(useStockStore.getState() as unknown as Record<string, unknown>) as Json
     case 'vouchers': return dataOnly(useVoucherStore.getState() as unknown as Record<string, unknown>) as Json
     case 'order_drafts': return readOrderDraftRecords<unknown>() as Json
@@ -191,6 +233,17 @@ const isRevisionConflict = (error: unknown): boolean =>
   (error.message.includes('REVISION_CONFLICT') ||
     (typeof error.payload === 'object' && error.payload !== null &&
       'code' in error.payload && error.payload.code === '40001'))
+
+const operationalSaveErrorMessage = (domain: OperationalDomain, error: unknown): string => {
+  const rawMessage = error instanceof Error ? error.message : ''
+  if (domain === 'finance' && rawMessage.includes('SERVER_OWNED_FINANCE_ENTRY')) {
+    return 'Automatic finance entries are managed from their source workflow. Reload Finance and update the related order, refund, or payroll record instead.'
+  }
+  if (domain === 'finance' && rawMessage.includes('FINANCE_ENTRY_DELETE_NOT_ALLOWED')) {
+    return 'Finance history cannot be deleted. Edit a manual transaction or correct the original workflow instead.'
+  }
+  return rawMessage || `Unable to save ${domain}.`
+}
 
 const loadDomain = async (
   domain: OperationalDomain,
@@ -313,7 +366,7 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
         }
         updateHealth({
           status: 'error',
-          message: error instanceof Error ? error.message : `Unable to save ${domain}.`,
+          message: operationalSaveErrorMessage(domain, error),
         })
         return
       }

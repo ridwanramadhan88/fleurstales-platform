@@ -1,7 +1,7 @@
 /**
  * @file FinanceOrderFilterBar.tsx
  * @description Filter controls for the "Order list (finished)" section of
- * OrderTransactionVerificationQueue: the completion-date scope tabs, the
+ * OrderVerificationQueue: the completion-date scope tabs, the
  * "Showing N of M" summary line, the status filter chip row (All / Pending
  * / Verified / Rejected / Review, with a count badge on Pending), and the
  * "Select" toggle that enters/exits bulk-verify mode. All filter state

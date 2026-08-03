@@ -57,7 +57,7 @@ const DISPLAY_KINDS = new Set<AlertKind>([
 
 const DISPLAY_TARGETS = new Set<NonNullable<NotificationItem['target']>>([
   'order',
-  'finance_orders',
+  'finance_order_verification',
   'finance_payroll',
   'hr_attendance',
   'hr_reports',

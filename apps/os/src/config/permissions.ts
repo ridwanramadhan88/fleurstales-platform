@@ -107,7 +107,7 @@ export const DEFAULT_ROLE_SECTION_ACCESS: Record<UserRole, Record<AppSection, Ac
     dashboard: 'edit',
     // Finance can now view the general Orders table read-only (decided
     // 2026-07-10) — mutating order actions still only happen through the
-    // verification queue (OrderTransactionVerificationQueue), gated by
+    // verification queue (OrderVerificationQueue), gated by
     // canVerifyOrder / canResolveChangeRequest in orderWorkflowDomain.ts,
     // not by this 'view' grade.
     orders: 'view',
