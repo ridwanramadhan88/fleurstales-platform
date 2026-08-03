@@ -13,12 +13,12 @@ const completionIso = () => {
   return date.toISOString()
 }
 
-describe('complete Transactions order flow', () => {
+describe('completed order transaction flow', () => {
   beforeEach(() => {
     useFinanceStore.setState({ transactions: [], customCategories: [], categoryOverrides: [] })
   })
 
-  it('keeps a confirmed order transaction visible and groups it by completed date', () => {
+  it('keeps a confirmed order transaction visible in the read-only Orders ledger', () => {
     const completedAt = completionIso()
     const finance = useFinanceStore.getState()
     const first = finance.recordOrderPayment({
@@ -53,18 +53,17 @@ describe('complete Transactions order flow', () => {
     render(
       <TransactionLedgerContainer
         transactions={useFinanceStore.getState().transactions}
-        canVerify
-        actorName="Dewi"
-        actorRole="finance"
+        canEditManual
       />,
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Orders' }))
-    expect(screen.getByText('Order payment · KDM-2026-9001')).toBeInTheDocument()
-    expect(screen.getByText('1 completed order')).toBeInTheDocument()
-    expect(screen.getByText(new Date(completedAt).toLocaleDateString('en-GB', {
-      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-    }))).toBeInTheDocument()
+    const row = screen.getByText('Order payment · KDM-2026-9001').closest('article')
+    expect(row).toBeInTheDocument()
+    expect(row).toHaveTextContent('Managed by Order Verification')
+    expect(row).toHaveTextContent(new Date(completedAt).toLocaleDateString('id-ID', {
+      day: '2-digit', month: 'short', year: 'numeric',
+    }))
   })
 
   it('does not duplicate an order transaction when the same command is replayed', () => {

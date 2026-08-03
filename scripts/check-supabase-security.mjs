@@ -8,6 +8,10 @@ const assert = (condition, message) => {
   if (!condition) throw new Error(message)
 }
 
+const financeSimplification = await read(
+  'supabase/migrations/20260803011000_order_verification_and_read_only_ledger.sql',
+)
+
 const [
   baseHardening,
   authority,
@@ -147,8 +151,8 @@ assert(sensitiveDomains.includes("private.has_action_permission('hr.edit_employe
 assert(sensitiveDomains.includes("private.has_action_permission('hr.correct_attendance')"), 'HR attendance mutation permission is not enforced server-side.')
 assert(sensitiveDomains.includes("private.has_action_permission('hr.manage_points')"), 'HR points mutation permission is not enforced server-side.')
 assert(sensitiveDomains.includes("private.has_action_permission('finance.create_ledger_entry')"), 'Finance ledger create permission is not enforced server-side.')
-assert(sensitiveDomains.includes("private.has_action_permission('finance.edit_ledger_entry')"), 'Finance ledger verification permission is not enforced server-side.')
-assert(sensitiveDomains.includes('FINANCE_LEDGER_ENTRY_IMMUTABLE'), 'Finance existing ledger rows are not immutable outside decision fields.')
+assert(financeSimplification.includes("private.has_action_permission('finance.edit_ledger_entry')"), 'Finance manual-ledger edit permission is not enforced server-side.')
+assert(financeSimplification.includes('SERVER_OWNED_FINANCE_ENTRY'), 'Automatic Finance ledger rows are not immutable at the current server boundary.')
 
 // Notification delivery/read visibility must follow the same backend matrix.
 assert(notificationAuthority.includes('notification_kind_allowed_for_role'), 'Notification capability filter is missing.')

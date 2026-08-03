@@ -108,7 +108,7 @@ describe('general-ledger status writers', () => {
 })
 
 describe('internal-ledger creation writer', () => {
-  it('creates only pending transactions through the guarded writer', () => {
+  it('creates final manual transactions through the guarded writer', () => {
     useFinanceStore.setState({ transactions: [] })
     const result = useFinanceStore.getState().addTransaction({
       type: 'expense',
@@ -122,7 +122,7 @@ describe('internal-ledger creation writer', () => {
     })
     expect(result.allowed).toBe(true)
     expect(useFinanceStore.getState().transactions[0]).toMatchObject({
-      status: 'pending',
+      status: 'verified',
       category: 'rent',
       actor: 'Finance',
     })

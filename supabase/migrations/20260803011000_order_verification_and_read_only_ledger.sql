@@ -106,6 +106,26 @@ begin
   from private.operational_domain_state
   where domain = 'finance';
 
+  if jsonb_typeof(v_next) <> 'object' then
+    raise exception 'FINANCE_SNAPSHOT_INVALID' using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_object_keys(v_next) as keys(key)
+    where key not in ('transactions', 'customCategories', 'categoryOverrides')
+  ) then
+    raise exception 'FINANCE_UNKNOWN_STATE_KEY' using errcode = '22023';
+  end if;
+
+  if v_next->'customCategories' is distinct from v_previous->'customCategories'
+    or v_next->'categoryOverrides' is distinct from v_previous->'categoryOverrides'
+  then
+    if not private.has_section_access('finance', 'edit') then
+      raise exception 'FINANCE_CATEGORY_EDIT_PERMISSION_REQUIRED' using errcode = '42501';
+    end if;
+  end if;
+
   -- Automatic entries may only be created by Orders, Refunds, or Payroll.
   if exists (
     select 1
@@ -154,6 +174,36 @@ begin
     raise exception 'FINANCE_ENTRY_DELETE_NOT_ALLOWED' using errcode = '42501';
   end if;
 
+  -- New manual rows use the explicit create capability.
+  if exists (
+    select 1
+    from jsonb_array_elements(coalesce(v_next->'transactions', '[]'::jsonb)) n
+    where coalesce(n->>'source', 'manual') = 'manual'
+      and coalesce(n->>'entryMode', 'manual') = 'manual'
+      and coalesce((n->>'isSystemGenerated')::boolean, false) = false
+      and not exists (
+        select 1
+        from jsonb_array_elements(coalesce(v_previous->'transactions', '[]'::jsonb)) o
+        where o->>'id' = n->>'id'
+      )
+  ) and not private.has_action_permission('finance.create_ledger_entry') then
+    raise exception 'FINANCE_LEDGER_CREATE_PERMISSION_REQUIRED' using errcode = '42501';
+  end if;
+
+  -- Existing manual rows may be corrected only through the audited edit capability.
+  if exists (
+    select 1
+    from jsonb_array_elements(coalesce(v_next->'transactions', '[]'::jsonb)) n
+    join jsonb_array_elements(coalesce(v_previous->'transactions', '[]'::jsonb)) o
+      on o->>'id' = n->>'id'
+    where coalesce(o->>'source', 'manual') = 'manual'
+      and coalesce(o->>'entryMode', 'manual') = 'manual'
+      and coalesce((o->>'isSystemGenerated')::boolean, false) = false
+      and n is distinct from o
+  ) and not private.has_action_permission('finance.edit_ledger_entry') then
+    raise exception 'FINANCE_LEDGER_EDIT_PERMISSION_REQUIRED' using errcode = '42501';
+  end if;
+
   -- Manual entries are final when created or edited; no second confirmation.
   v_next := jsonb_set(
     v_next,
@@ -173,7 +223,8 @@ begin
     true
   );
 
-  return public.save_finance_operational_state_v34_internal(
+  return private.persist_validated_operational_snapshot(
+    'finance',
     p_expected_revision,
     v_next
   );

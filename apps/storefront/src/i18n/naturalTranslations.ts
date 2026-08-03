@@ -243,7 +243,7 @@ export const ID_NATURAL_TRANSLATIONS: Record<string, string> = {
   'Verify order': 'Verifikasi Pesanan',
   'Verify payment': 'Verifikasi Pembayaran',
   'Awaiting Finance': 'Menunggu tim Keuangan',
-  'Sent to Payment Verification': 'Dikirim untuk verifikasi pembayaran',
+  'Sent to Order Verification': 'Dikirim untuk verifikasi pembayaran',
   'Waiting for Finance confirmation.': 'Menunggu konfirmasi dari tim Keuangan.',
   'Finance rejected this order.': 'Pesanan ini ditolak oleh tim Keuangan.',
   'This order was updated by another user.': 'Pesanan telah diubah oleh pengguna lain.',

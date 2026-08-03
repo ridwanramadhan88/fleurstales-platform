@@ -16,7 +16,7 @@ describe('AddInternalTransaction', () => {
     expect(screen.getByRole('button', { name:'Add transaction' })).toBeInTheDocument()
   })
 
-  it('creates a company-wide pending Money Out transaction by default', () => {
+  it('creates a final company-wide Money Out transaction by default', () => {
     render(<AddInternalTransaction branches={['Kedamaian','Pahoman']} defaultBranch="Pahoman" actorName="Finance" actorRole="finance" />)
     fireEvent.click(screen.getByRole('button', { name:'Add transaction' }))
     expect(screen.queryByLabelText('Transaction')).not.toBeInTheDocument()
@@ -24,13 +24,13 @@ describe('AddInternalTransaction', () => {
     fireEvent.change(screen.getByLabelText('Transaction category'), { target:{ value:'utilities' } })
     fireEvent.change(screen.getByLabelText('Transaction'), { target:{ value:'Electricity bill' } })
     fireEvent.change(screen.getByLabelText('Amount IDR'), { target:{ value:'250000' } })
-    fireEvent.click(screen.getByRole('button', { name:'Save as pending' }))
+    fireEvent.click(screen.getByRole('button', { name:'Save transaction' }))
 
     expect(useFinanceStore.getState().transactions[0]).toMatchObject({
       type:'expense', category:'utilities', branch:'All', scope:'company', amount:250000,
-      method:'transfer', status:'pending', name:'Electricity bill', description:'', actor:'Finance',
+      method:'transfer', status:'verified', name:'Electricity bill', description:'', actor:'Finance',
     })
-    expect(screen.getByRole('status')).toHaveTextContent('pending verification')
+    expect(screen.getByRole('status')).toHaveTextContent('Manual transaction recorded.')
   })
 
   it('reveals and requires Branch only when Specific branch is selected', () => {
@@ -39,7 +39,7 @@ describe('AddInternalTransaction', () => {
     fireEvent.click(screen.getByRole('button', { name:'Money Out' }))
     fireEvent.change(screen.getByLabelText('Transaction category'), { target:{ value:'supplies' } })
     fireEvent.click(screen.getByRole('button', { name:'Specific branch' }))
-    fireEvent.click(screen.getByRole('button', { name:'Save as pending' }))
+    fireEvent.click(screen.getByRole('button', { name:'Save transaction' }))
     expect(screen.getByText('Transaction is required.')).toBeInTheDocument()
     expect(screen.getByText('Amount must be greater than zero.')).toBeInTheDocument()
     expect(screen.getByText('Select a Branch.')).toBeInTheDocument()
@@ -53,12 +53,12 @@ describe('AddInternalTransaction', () => {
     fireEvent.change(screen.getByLabelText('Transaction category'), { target:{ value:'payroll' } })
     fireEvent.change(screen.getByLabelText('Transaction'), { target:{ value:'Historical payroll correction' } })
     fireEvent.change(screen.getByLabelText('Amount IDR'), { target:{ value:'1000000' } })
-    fireEvent.click(screen.getByRole('button', { name:'Save as pending' }))
+    fireEvent.click(screen.getByRole('button', { name:'Save transaction' }))
     expect(screen.getByText('Explain why this automatic category is being entered manually.')).toBeInTheDocument()
     fireEvent.change(screen.getByPlaceholderText('Explain why this automatic category is being entered manually.'), { target:{ value:'Historical payroll import' } })
-    fireEvent.click(screen.getByRole('button', { name:'Save as pending' }))
+    fireEvent.click(screen.getByRole('button', { name:'Save transaction' }))
     expect(useFinanceStore.getState().transactions[0]).toMatchObject({
-      category:'payroll', entryMode:'manual', status:'pending', manualEntryReason:'Historical payroll import',
+      category:'payroll', entryMode:'manual', status:'verified', manualEntryReason:'Historical payroll import',
     })
   })
 
