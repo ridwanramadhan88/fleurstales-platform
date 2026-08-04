@@ -50,7 +50,7 @@ describe('authoritative permission integrity', () => {
   it('keeps Florist inside the HR-managed staff scope', () => {
     const florist = useHrStore.getState().employees.find((item) => item.systemRole === 'florist')!
     expect(useHrStore.getState().updateEmployeeProfile({ employeeId: florist.id, name: 'Changed Florist', phone: '', hireDate: florist.hireDate, actor: hrActor })).toMatchObject({ ok: true })
-    expect(useHrStore.getState().recordAttendance({ employeeId: florist.id, date: '2026-07-10', status: 'present', actor: hrActor })).toBe(true)
+    expect(useHrStore.getState().recordAttendance({ employeeId: florist.id, date: '2026-07-10', status: 'present', note: 'Verified manually', actor: hrActor })).toBe(true)
     expect(useHrStore.getState().createManualPointAdjustment({ employeeId: florist.id, points: 5, reason: 'Approved', actor: hrActor })).toMatchObject({ ok: true })
   })
 

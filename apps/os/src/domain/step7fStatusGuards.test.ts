@@ -22,9 +22,9 @@ it('protects the last active owner and unauthorized HR writers', () => {
 })
 it('uses explicit employee status commands and blocks inactive attendance', () => {
   expect(useHrStore.getState().deactivateEmployee('staff', hr)).toBe(true)
-  expect(useHrStore.getState().recordAttendance({ employeeId: 'staff', date: '2026-07-10', status: 'present', actor: hr })).toBe(false)
+  expect(useHrStore.getState().recordAttendance({ employeeId: 'staff', date: '2026-07-10', status: 'present', note: 'Manual correction', actor: hr })).toBe(false)
   expect(useHrStore.getState().activateEmployee('staff', hr)).toBe(true)
-  expect(useHrStore.getState().recordAttendance({ employeeId: 'staff', date: '2026-07-10', status: 'present', actor: hr })).toBe(true)
+  expect(useHrStore.getState().recordAttendance({ employeeId: 'staff', date: '2026-07-10', status: 'present', note: 'Manual correction', actor: hr })).toBe(true)
 })
 it('blocks broad product patches from changing existing variant status', () => {
   useCatalogStore.getState().updateProduct('p1', { variants: [{ ...product.variants[0], status: 'inactive' }] })

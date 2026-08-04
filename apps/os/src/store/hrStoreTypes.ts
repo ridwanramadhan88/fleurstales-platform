@@ -204,6 +204,14 @@ export interface EmployeePointEntry {
   reversedByEntryId?: string
 }
 
+export interface AttendanceCorrection {
+  previousStatus: AttendanceStatus
+  nextStatus: AttendanceStatus
+  reason: string
+  correctedBy: string
+  correctedAt: string
+}
+
 export interface AttendanceRecord {
   id: string
   employeeId: string
@@ -221,4 +229,6 @@ export interface AttendanceRecord {
   source?: 'manual' | 'selfie'
   checkInLocation?: AttendanceLocationEvidence
   checkOutLocation?: AttendanceLocationEvidence
+  /** Append-only HR correction history. Original evidence and creation metadata remain unchanged. */
+  corrections?: AttendanceCorrection[]
 }

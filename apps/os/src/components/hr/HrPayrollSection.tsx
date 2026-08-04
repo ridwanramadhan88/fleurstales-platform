@@ -107,7 +107,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
     && (entry.payrollPeriodId === period.id || (!entry.payrollPeriodId
       && (entry.effectiveDate ?? entry.createdAt.slice(0, 10)) >= period.periodStart
       && (entry.effectiveDate ?? entry.createdAt.slice(0, 10)) <= period.periodEnd))) : []
-  const pendingAttendance = period ? attendanceReviews.filter((item) => item.status === 'pending'
+  const pendingAttendance = period ? attendanceReviews.filter((item) => (item.status === 'pending' || item.status === 'problem')
     && item.date >= period.periodStart && item.date <= period.periodEnd) : []
   const invalidCalculations = activeDrafts.filter((draft) => !validatePayrollForFinance(draft).ok)
   const total = activeDrafts.reduce((sum, draft) => sum + draft.finalPayrollIdr, 0)
@@ -131,9 +131,9 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
       detail: missingSalaryEmployees.length === 0 ? 'Every included employee has an effective base salary.' : `${missingSalaryEmployees.length} employee(s) need a base salary.`,
     },
     {
-      label: 'Attendance reviewed', severity:'warning',
+      label: 'Attendance reviewed', severity:'blocker',
       complete: pendingAttendance.length === 0,
-      detail: pendingAttendance.length === 0 ? 'No attendance warnings are waiting for HR.' : `${pendingAttendance.length} attendance warning(s) require review.`,
+      detail: pendingAttendance.length === 0 ? 'No attendance warnings are waiting for HR.' : `${pendingAttendance.length} attendance warning(s) must be confirmed or corrected before payroll submission.`,
     },
     {
       label: 'Points reviewed', severity:'warning',

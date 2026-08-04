@@ -23,7 +23,6 @@ import { canRecordAttendance, canRecordSelfieAttendance, canRecordSelfieCheckOut
 import { canChangeEmployeeRole, canCreateStaffAccount, normalizeUsername } from '../domain/staffAccountDomain'
 import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from '../domain/staffCredentialDomain'
 import { useSettingsStore } from './settingsStore'
-import { getBranchHoursForDate } from '../domain/branchOpeningHoursDomain'
 import { canEditScheduling, getEffectiveScheduleForDate, getMondayForDate, getWeekdayKey, materializeScheduleShift, toIsoDate, validateScheduleShift } from '../domain/hrSchedulingDomain'
 import { findNearestAttendanceBranch, type GeoPoint } from '../domain/attendanceLocationDomain'
 import { buildAttendanceWarnings, buildCheckoutWarnings, minutesFromTime, shouldCreateMissingCheckoutWarning } from '../domain/attendanceReviewDomain'
@@ -134,6 +133,7 @@ interface HrStoreState {
     date: string
     status: AttendanceStatus
     note?: string
+    reviewCaseId?: string
     actor: HrActor
   }) => boolean
 
@@ -633,41 +633,77 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     return result
   },
 
-  recordAttendance: ({ employeeId, date, status, note, actor }) => {
+  recordAttendance: ({ employeeId, date, status, note, reviewCaseId, actor }) => {
     if (!isActionAuthorized(actor.role, 'hr.correct_attendance')) return false
     let changed = false
     set((state) => {
       if (!canRecordAttendance({ employee: state.employees.find((item) => item.id === employeeId), date, status, actor }).ok) return state
+      const reason = note?.trim()
+      if (!reason) return state
+      const reviewCase = reviewCaseId
+        ? (state.attendanceReviewCases ?? []).find((item) => item.id === reviewCaseId)
+        : undefined
+      if (reviewCaseId && (
+        !reviewCase
+        || !['pending', 'problem'].includes(reviewCase.status)
+        || reviewCase.employeeId !== employeeId
+        || reviewCase.date !== date
+        || !isActionAuthorized(actor.role, 'hr.review_attendance')
+      )) return state
       changed = true
       const existingIndex = state.attendance.findIndex(
         (record) => record.employeeId === employeeId && record.date === date,
       )
 
       const existingRecord = existingIndex >= 0 ? state.attendance[existingIndex] : undefined
-      const nextRecord: AttendanceRecord = {
-        id: existingRecord?.id ?? `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        employeeId,
-        date,
-        status,
-        note,
-        actor: actor.name,
-        createdAt: nowIso(),
-        source: existingRecord?.selfieDataUrl ? 'selfie' : 'manual',
-        selfieDataUrl: existingRecord?.selfieDataUrl,
-        checkInAt: existingRecord?.checkInAt,
-        checkOutSelfieDataUrl: existingRecord?.checkOutSelfieDataUrl,
-        checkOutAt: existingRecord?.checkOutAt,
-        checkInLocation: existingRecord?.checkInLocation,
-        checkOutLocation: existingRecord?.checkOutLocation,
-      }
+      const changedAt = nowIso()
+      const nextRecord: AttendanceRecord = existingRecord
+        ? {
+            ...existingRecord,
+            status,
+            corrections: [
+              ...(existingRecord.corrections ?? []),
+              {
+                previousStatus: existingRecord.status,
+                nextStatus: status,
+                reason,
+                correctedBy: actor.name,
+                correctedAt: changedAt,
+              },
+            ],
+          }
+        : {
+            id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            employeeId,
+            date,
+            status,
+            note: reason,
+            actor: actor.name,
+            createdAt: changedAt,
+            source: 'manual',
+          }
 
       if (existingIndex >= 0) {
         const attendance = [...state.attendance]
         attendance[existingIndex] = nextRecord
-        return { attendance }
+        return {
+          attendance,
+          ...(reviewCaseId ? {
+            attendanceReviewCases: (state.attendanceReviewCases ?? []).map((item) => item.id === reviewCaseId
+              ? { ...item, status: 'corrected' as const, reviewNote: reason, reviewedBy: actor.name, reviewedAt: changedAt, proposedMinusPoints: undefined }
+              : item),
+          } : {}),
+        }
       }
 
-      return { attendance: [nextRecord, ...state.attendance] }
+      return {
+        attendance: [nextRecord, ...state.attendance],
+        ...(reviewCaseId ? {
+          attendanceReviewCases: (state.attendanceReviewCases ?? []).map((item) => item.id === reviewCaseId
+            ? { ...item, status: 'corrected' as const, reviewNote: reason, reviewedBy: actor.name, reviewedAt: changedAt, proposedMinusPoints: undefined }
+            : item),
+        } : {}),
+      }
     })
     return changed
   },
@@ -695,8 +731,16 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       })
       if (!result.ok || !employee) return state
       const effectiveSchedule = getEffectiveScheduleForDate({ employee, date, defaults: state.employeeDefaultSchedules, overrides: state.scheduleOverrides, settings })
-      const scheduledBranch = settings.branches.find((item) => item.id === effectiveSchedule.shift.branchId)
-      const wrongBranch = Boolean(scheduledBranch && scheduledBranch.id !== nearest.branch.id)
+      if (effectiveSchedule.source !== 'override' || !effectiveSchedule.shift.isWorking || !effectiveSchedule.shift.branchId) {
+        result = { ok:false, reason:'A dated working schedule is required before check-in.' }
+        return state
+      }
+      const scheduledBranch = settings.branches.find((item) => item.id === effectiveSchedule.shift.branchId && item.isActive)
+      if (!scheduledBranch) {
+        result = { ok:false, reason:'The scheduled branch is not active or has no attendance configuration.' }
+        return state
+      }
+      const wrongBranch = scheduledBranch.id !== nearest.branch.id
       const outsideScheduledTime = effectiveSchedule.shift.isWorking && (currentTime < effectiveSchedule.shift.startTime || currentTime > effectiveSchedule.shift.endTime)
       const poorLocationAccuracy = (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4
       const scheduleMismatch = !effectiveSchedule.shift.isWorking || wrongBranch || outsideScheduledTime || poorLocationAccuracy
@@ -739,12 +783,17 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       if (!location) { result = { ok:false, reason:'Location permission is required for attendance.' }; return state }
       const settingsState = useSettingsStore.getState()
       const settings = { ...settingsState, scheduling: settingsState.getSchedulingSettingsForDate(date) }
-      const checkInBranchId = attendanceRecord?.checkInLocation?.detectedBranchId
       const effectiveSchedule = employee ? getEffectiveScheduleForDate({ employee, date, defaults: state.employeeDefaultSchedules, overrides: state.scheduleOverrides, settings }) : null
-      const scheduledBranch = effectiveSchedule ? settings.branches.find((item) => item.id === effectiveSchedule.shift.branchId) : undefined
-      const workBranch = scheduledBranch ?? settings.branches.find((item) => item.id === checkInBranchId)
-      const hours = getBranchHoursForDate(workBranch, date)
-      const scheduledEnd = effectiveSchedule?.shift.isWorking ? effectiveSchedule.shift.endTime : undefined
+      if (!effectiveSchedule || effectiveSchedule.source !== 'override' || !effectiveSchedule.shift.isWorking || !effectiveSchedule.shift.branchId) {
+        result = { ok:false, reason:'A dated working schedule is required before check-out.' }
+        return state
+      }
+      const scheduledBranch = settings.branches.find((item) => item.id === effectiveSchedule.shift.branchId && item.isActive)
+      if (!scheduledBranch) {
+        result = { ok:false, reason:'The scheduled branch is not active or has no attendance configuration.' }
+        return state
+      }
+      const scheduledEnd = effectiveSchedule.shift.endTime
       const nearest = findNearestAttendanceBranch(location, settings.branches, settings.attendance.locationRadiusMeters)
       if (!nearest) { result = { ok:false, reason:'No active branch location is configured.' }; return state }
       result = canRecordSelfieCheckOut({
@@ -752,8 +801,8 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
         date,
         today: getLocalDateString(now),
         currentTime,
-        branchIsOpen: Boolean(hours?.isOpen),
-        branchClosesAt: scheduledEnd ?? hours?.closesAt,
+        scheduledEndTime: scheduledEnd,
+        checkoutWindowMinutes: settings.attendance.checkoutGraceMinutes,
         selfieDataUrl,
         actor,
         attendance: attendanceRecord,
@@ -766,7 +815,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
         checkOutSelfieDataUrl: selfieDataUrl,
         checkOutAt: nowIso(),
         actor: actor.name,
-        checkOutLocation: { ...location, branchLatitude: nearest.branch.location!.latitude, branchLongitude: nearest.branch.location!.longitude, distanceMeters: nearest.distanceMeters, withinRange: nearest.withinRange, acceptedRadiusMeters: settings.attendance.locationRadiusMeters, accuracyMeters: location.accuracyMeters ?? 0, detectedBranchId: nearest.branch.id, detectedBranchName: nearest.branch.name, scheduledBranchId: scheduledBranch?.id, scheduledBranchName: scheduledBranch?.name, scheduledStartTime: effectiveSchedule?.shift.startTime, scheduledEndTime: effectiveSchedule?.shift.endTime, scheduleMismatch: Boolean(scheduledBranch && scheduledBranch.id !== nearest.branch.id) || (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4, branchMismatch: Boolean(scheduledBranch && scheduledBranch.id !== nearest.branch.id), reviewStatus: (scheduledBranch && scheduledBranch.id !== nearest.branch.id) || (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4 ? 'pending_review' : 'not_required', reviewReason: (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4 ? 'GPS could not be verified after repeated attempts; attendance requires HR review.' : scheduledBranch && scheduledBranch.id !== nearest.branch.id ? `Checked out at ${nearest.branch.name}; scheduled branch is ${scheduledBranch.name}.` : undefined },
+        checkOutLocation: { ...location, branchLatitude: nearest.branch.location!.latitude, branchLongitude: nearest.branch.location!.longitude, distanceMeters: nearest.distanceMeters, withinRange: nearest.withinRange, acceptedRadiusMeters: settings.attendance.locationRadiusMeters, accuracyMeters: location.accuracyMeters ?? 0, detectedBranchId: nearest.branch.id, detectedBranchName: nearest.branch.name, scheduledBranchId: scheduledBranch.id, scheduledBranchName: scheduledBranch.name, scheduledStartTime: effectiveSchedule.shift.startTime, scheduledEndTime: effectiveSchedule.shift.endTime, scheduleMismatch: scheduledBranch.id !== nearest.branch.id || (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4, branchMismatch: scheduledBranch.id !== nearest.branch.id, reviewStatus: scheduledBranch.id !== nearest.branch.id || (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4 ? 'pending_review' : 'not_required', reviewReason: (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4 ? 'GPS accuracy requires HR review.' : scheduledBranch.id !== nearest.branch.id ? `Checked out at ${nearest.branch.name}; scheduled branch is ${scheduledBranch.name}.` : undefined },
       }
       return { attendance: next }
     })
@@ -831,7 +880,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     return created
   },
 
-  reviewAttendanceCase: ({ caseId, decision, note, actor, proposedMinusPoints }) => {
+  reviewAttendanceCase: ({ caseId, decision, note, actor }) => {
     if (!isActionAuthorized(actor.role, 'hr.review_attendance')) return { ok:false, reason:'This role cannot review attendance.' }
     let result:{ok:true}|{ok:false;reason:string}={ok:false,reason:'Attendance review could not be saved.'}
     set((state)=>{
@@ -840,21 +889,16 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       if (!target) { result={ok:false,reason:'Attendance warning was not found.'}; return state }
       const targetEmployee=state.employees.find((item)=>item.id===target.employeeId)
       if (!targetEmployee || !canActorManageEmployee(actor.role, targetEmployee.systemRole, 'attendance', useSettingsStore.getState().staffRoles.hrManagedRoles)) { result={ok:false,reason:HR_PROTECTED_ROLE_MESSAGE}; return state }
-      const canResolveProblem = target.status === 'problem' && decision === 'resolved'
-      if (target.status !== 'pending' && !canResolveProblem) { result={ok:false,reason:'This employee warning has already been reviewed.'}; return state }
+      if (!['pending','problem'].includes(target.status)) { result={ok:false,reason:'This attendance warning has already been reviewed.'}; return state }
+      if (!['resolved','corrected'].includes(decision)) { result={ok:false,reason:'Attendance warnings can only be confirmed or corrected.'}; return state }
       const clean=(note ?? '').trim()
-      const problemOnlyTypes = new Set(['late_check_in', 'missing_check_in', 'missing_check_out', 'delivery_late'])
-      if (decision === 'penalized' && problemOnlyTypes.has(target.warningType)) { result={ok:false,reason:'This warning is reviewed as an HR Problem and cannot create point penalties.'}; return state }
-      if (decision==='penalized' && (!Number.isInteger(proposedMinusPoints) || (proposedMinusPoints ?? 0)<=0)) { result={ok:false,reason:'Enter whole-number minus points greater than zero.'}; return state }
-      result={ok:true}
       const reviewedAt=nowIso()
-      const nextCases=(state.attendanceReviewCases ?? []).map(item=>item.id===caseId?{...item,status:decision,reviewNote:clean || undefined,reviewedBy:actor.name,reviewedAt,proposedMinusPoints:decision==='penalized'?proposedMinusPoints:undefined}:item)
-      if (decision!=='penalized') return { attendanceReviewCases:nextCases }
-      const sourceId=`attendance-review:${caseId}`
-      if ((state.employeePointEntries ?? []).some(item=>item.sourceType==='attendance_review'&&item.sourceId===sourceId&&item.status!=='reversed')) return { attendanceReviewCases:nextCases }
-      const payrollPeriodId=getPayrollPeriodIdForActivityDate(target.date,useSettingsStore.getState().getPayrollSettingsForDate(target.date))
-      const pointEntry:EmployeePointEntry={ id:`point-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, employeeId:target.employeeId, category:'attendance_penalty', points:-Math.abs(proposedMinusPoints!), sourceType:'attendance_review', sourceId, effectiveDate:target.date, payrollPeriodId, periodKey:payrollPeriodId.replace('payroll-',''), reason:clean || target.reason, status:'pending', createdBy:actor.name, createdAt:reviewedAt }
-      return { attendanceReviewCases:nextCases, employeePointEntries:[pointEntry,...(state.employeePointEntries ?? [])] }
+      result={ok:true}
+      return {
+        attendanceReviewCases:(state.attendanceReviewCases ?? []).map(item=>item.id===caseId
+          ? {...item,status:decision,reviewNote:clean || undefined,reviewedBy:actor.name,reviewedAt,proposedMinusPoints:undefined}
+          : item),
+      }
     })
     return result
   },

@@ -134,7 +134,7 @@ describe('mobile workflow UI scale regressions', () => {
     expect(warningReview).toContain('className="space-y-3"')
     expect(warningReview).not.toContain('space-y-4 rounded-xl bg-card p-4')
     expect(attendance).toContain('min-h-[68px]')
-    expect(attendance).toContain('h-11 rounded-full border border-border bg-background px-4 text-sm')
+    expect(attendance).toContain('h-11 rounded-full bg-foreground px-[18px] text-sm font-medium text-background">Add record')
     expect(dashboardHeader).toContain('w-fit items-center')
     expect(dashboardHeader).not.toContain('w-full items-center justify-center')
     expect(settings).toContain('Read-only</span>')

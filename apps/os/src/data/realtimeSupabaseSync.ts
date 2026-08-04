@@ -252,8 +252,10 @@ export const startRealtimeSupabaseSync = (): void => {
       }
       if (row.entity_type === 'hr') {
         if (row.kind === 'order_points_generated') queuePointRefresh()
-        else if (row.kind === 'attendance_recorded') queueRosterRefresh()
-        else queueOperationalHydrate()
+        else if (row.kind === 'attendance_recorded') {
+          queueRosterRefresh()
+          queueOperationalHydrate()
+        } else queueOperationalHydrate()
       }
       if (row.entity_type === 'authorization') void refreshAuthorizationRuntime().catch(() => undefined)
       if (row.entity_type === 'internal_settings') void hydrateInternalSettingsFromSupabase().catch(() => undefined)

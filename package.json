@@ -18,7 +18,7 @@
     "build": "npm run build:storefront && npm run build:os",
     "build:storefront": "npm run build --workspace=fleurstales-storefront",
     "build:os": "npm run build --workspace=fleurstales-os",
-    "check": "npm run check:i18n && npm run check:supabase-security && npm run check:v36 && npm run check:v37 && npm run check:v38 && npm run check:v311 && npm run check:shared-parity && npm run check:storefront && npm run check:os",
+    "check": "npm run check:i18n && npm run check:supabase-security && npm run check:v36 && npm run check:v37 && npm run check:v38 && npm run check:v311 && npm run check:attendance-simplification && npm run check:shared-parity && npm run check:storefront && npm run check:os",
     "check:i18n": "node scripts/check-i18n-parity.mjs",
     "check:shared-parity": "node scripts/check-shared-parity.mjs",
     "check:storefront": "npm run check --workspace=fleurstales-storefront",
@@ -27,7 +27,8 @@
     "check:v36": "node scripts/check-v36-integrity.mjs",
     "check:v37": "node scripts/check-v37-authority.mjs",
     "check:v38": "node scripts/check-v38-florist-readonly.mjs",
-    "check:v311": "node scripts/check-v311-hardening.mjs"
+    "check:v311": "node scripts/check-v311-hardening.mjs",
+    "check:attendance-simplification": "node scripts/check-attendance-simplification.mjs"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "4.1.10",

@@ -64,8 +64,8 @@ export const canRecordSelfieCheckOut = (params: {
   date: string
   today: string
   currentTime: string
-  branchIsOpen: boolean
-  branchClosesAt?: string
+  scheduledEndTime?: string
+  checkoutWindowMinutes: number
   selfieDataUrl: string
   actor: HrActor
   attendance?: { source?: 'manual' | 'selfie'; checkInAt?: string; checkOutAt?: string }
@@ -78,10 +78,28 @@ export const canRecordSelfieCheckOut = (params: {
   if (params.date !== params.today) return { ok: false, reason: 'Selfie check-out can only be recorded for today.' }
   if (!params.attendance || params.attendance.source !== 'selfie' || !params.attendance.checkInAt) return { ok: false, reason: 'A selfie check-in is required before check-out.' }
   if (params.attendance.checkOutAt) return { ok: false, reason: 'Check-out has already been recorded for today.' }
-  if (!params.branchIsOpen || !params.branchClosesAt) return { ok: false, reason: 'The branch has no working hours for today.' }
-  if (params.currentTime < params.branchClosesAt) return { ok: false, reason: `Check-out becomes available after ${params.branchClosesAt}.` }
+  if (!params.scheduledEndTime) return { ok: false, reason: 'A dated working schedule is required for check-out.' }
+  const availableAt = timeMinusMinutes(params.scheduledEndTime, Math.max(0, params.checkoutWindowMinutes))
+  if (minutesUntilShiftEnd(params.currentTime, params.scheduledEndTime) > Math.max(0, params.checkoutWindowMinutes)) return { ok: false, reason: `Check-out becomes available at ${availableAt}.` }
   if (params.locationWithinRange === false) return { ok: false, reason: 'You are outside the accepted branch attendance area.' }
   if (!isValidCompressedSelfie(params.selfieDataUrl)) return { ok: false, reason: 'A square JPEG selfie of 100 KB or less is required.' }
   if (!params.actor.name.trim()) return { ok: false, reason: 'Attendance actor is required.' }
   return { ok: true }
+}
+
+const minutesFromTime = (value: string): number => {
+  const [hour, minute] = value.split(':').map(Number)
+  return hour * 60 + minute
+}
+
+const minutesUntilShiftEnd = (current: string, end: string): number => {
+  const now = minutesFromTime(current)
+  let finish = minutesFromTime(end)
+  if (finish <= minutesFromTime('04:00') && now >= minutesFromTime('12:00')) finish += 24 * 60
+  return finish - now
+}
+
+const timeMinusMinutes = (value: string, minutes: number): string => {
+  const total = (minutesFromTime(value) - minutes + 24 * 60) % (24 * 60)
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }

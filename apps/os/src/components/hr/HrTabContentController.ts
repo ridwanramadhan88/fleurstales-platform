@@ -16,6 +16,7 @@ import { canCreateStaffAccount, getCreatableAccountRoles } from '../../domain/st
 import { provisionStaffAccountSupabase, syncStaffAccessProfileSupabase } from '../../data/staffLifecycleSupabase'
 import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from '../../domain/staffCredentialDomain'
+import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
 
 export type HrSection = 'employees' | 'attendance' | 'scheduling' | 'reports' | 'points' | 'payroll'
 
@@ -47,7 +48,7 @@ export interface EmployeeDetailsFormState {
 }
 
 export interface HrEmployeeRowViewModel { employee: Employee; todayRecord: AttendanceRecord | null }
-export interface AttendanceEditorState { employee: Employee; date: string; status: AttendanceStatus | ''; note: string }
+export interface AttendanceEditorState { employee: Employee; date: string; status: AttendanceStatus | ''; note: string; reviewCaseId?: string }
 
 export interface HrTabContentViewModel {
   activeBranch: HrTabContentProps['activeBranch']
@@ -101,12 +102,13 @@ export interface HrTabContentViewModel {
   onFormFieldChange: <K extends keyof NewEmployeeFormState>(field: K) => (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void
   onHireDateChange: (value: string) => void
   onCreateEmployee: (event: FormEvent) => void
-  onRecordAttendance: (employeeId: string, status: AttendanceStatus) => void
+  onOpenAttendanceCorrection: (caseId: string, employeeId: string, date: string) => void
   onOpenAttendanceEditor: (employee: Employee) => void
   onCloseAttendanceEditor: () => void
   onAttendanceDateChange: (value: string) => void
   onAttendanceStatusChange: (value: AttendanceStatus) => void
   onAttendanceNoteChange: (value: string) => void
+  onOpenAttendanceEvidence: (value?: string) => void
   onSaveAttendance: () => void
   onOpenEmployeeDetails: (employee: Employee) => void
   onCloseEmployeeDetails: () => void
@@ -318,28 +320,41 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     onFormFieldChange: handleFormFieldChange,
     onHireDateChange: (value) => { setForm((previous) => ({ ...previous, hireDate: value })); setFormErrors((current) => ({ ...current, hireDate: undefined })) },
     onCreateEmployee: handleCreateEmployee,
-    onRecordAttendance: (employeeId, status) => {
-      if (!canCorrectAttendance) { setAttendanceActionError('You do not have permission to correct attendance.'); return }
-      const changed = recordAttendance({ employeeId, date: today, status, actor: { name: actorName, role } })
-      setAttendanceActionError(changed ? null : 'Attendance could not be saved. Check employee status and permissions.')
-    },
     onOpenAttendanceEditor: (employee) => {
       const existing = getAttendanceForEmployeeOnDate(attendance, employee.id, today)
-      setAttendanceActionError(null); setAttendanceEditor({ employee, date: today, status: existing?.status ?? '', note: existing?.note ?? '' })
+      setAttendanceActionError(null); setAttendanceEditor({ employee, date: today, status: existing?.status ?? '', note: '' })
+    },
+    onOpenAttendanceCorrection: (caseId, employeeId, date) => {
+      const employee = employees.find((item) => item.id === employeeId)
+      if (!employee) { setAttendanceActionError('Employee was not found.'); return }
+      const existing = getAttendanceForEmployeeOnDate(attendance, employeeId, date)
+      setAttendanceActionError(null)
+      setAttendanceEditor({ employee, date, status: existing?.status ?? '', note: '', reviewCaseId: caseId })
     },
     onCloseAttendanceEditor: () => { setAttendanceEditor(null); setAttendanceActionError(null) },
     onAttendanceDateChange: (value) => {
-      setAttendanceEditor((current) => { if (!current) return current; const existing = getAttendanceForEmployeeOnDate(attendance, current.employee.id, value); return { ...current, date: value, status: existing?.status ?? '', note: existing?.note ?? '' } })
+      setAttendanceEditor((current) => {
+        if (!current || current.reviewCaseId) return current
+        const existing = getAttendanceForEmployeeOnDate(attendance, current.employee.id, value)
+        return { ...current, date: value, status: existing?.status ?? '', note: '' }
+      })
       setAttendanceActionError(null)
     },
     onAttendanceStatusChange: (value) => setAttendanceEditor((current) => current ? { ...current, status: value } : current),
     onAttendanceNoteChange: (value) => setAttendanceEditor((current) => current ? { ...current, note: value } : current),
+    onOpenAttendanceEvidence: (value) => {
+      setAttendanceActionError(null)
+      void openAttendanceEvidence(value).catch((cause) => setAttendanceActionError(cause instanceof Error ? cause.message : 'Unable to open attendance evidence.'))
+    },
     onSaveAttendance: () => {
       if (!canCorrectAttendance) { setAttendanceActionError('You do not have permission to correct attendance.'); return }
       if (!attendanceEditor?.status) { setAttendanceActionError('Select an attendance status.'); return }
-      const changed = recordAttendance({ employeeId: attendanceEditor.employee.id, date: attendanceEditor.date, status: attendanceEditor.status, note: attendanceEditor.note.trim() || undefined, actor: { name: actorName, role } })
+      const reason = attendanceEditor.note.trim()
+      if (!reason) { setAttendanceActionError('Add a reason for this manual attendance record or correction.'); return }
+      const changed = recordAttendance({ employeeId: attendanceEditor.employee.id, date: attendanceEditor.date, status: attendanceEditor.status, note: reason, reviewCaseId: attendanceEditor.reviewCaseId, actor: { name: actorName, role } })
       if (!changed) { setAttendanceActionError('Attendance could not be saved. Check employee status and permissions.'); return }
       setAttendanceActionError(null)
+      setAttendanceEditor(null)
     },
     onOpenEmployeeDetails: (employee) => {
       setDetailsEmployee(employee); setProfileErrors({}); setAccessErrors({}); setDetailsError(null); setDetailsMessage(null); setPendingAccessConfirmation(null); setPendingDetailsCloseConfirmation(false)

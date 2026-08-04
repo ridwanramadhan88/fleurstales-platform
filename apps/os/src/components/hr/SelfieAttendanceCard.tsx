@@ -4,13 +4,13 @@ import { ChevronDown, ChevronUp, Clock3 } from 'lucide-react'
 import { useHrStore, todayIsoDate } from '../../store/hrStore'
 import { useUserStore } from '../../store/userStore'
 import { useSettingsStore } from '../../store/settingsStore'
-import { getBranchHoursForDate } from '../../domain/branchOpeningHoursDomain'
 import { nowInJakarta } from '../../domain/orderTimingDomain'
 import { compressSelfieToSquareJpeg, estimateDataUrlBytes } from '../../domain/selfieImageDomain'
 import { findNearestAttendanceBranch, type GeoPoint } from '../../domain/attendanceLocationDomain'
 import { InfoDisclosure } from '../ui/info-disclosure'
 import { StatusChip } from '../ui/chip'
 import { surfaceCardClass } from '../ui/card'
+import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
 
 const stopStream = (stream: MediaStream | null) => stream?.getTracks().forEach((track) => track.stop())
 const formatTime = (iso?: string) => iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'
@@ -49,7 +49,6 @@ export const SelfieAttendanceCard: FC = () => {
   const [locationStatus, setLocationStatus] = useState<string | null>(null)
   const [verifiedLocation, setVerifiedLocation] = useState<GeoPoint | null>(null)
   const [verifiedAction, setVerifiedAction] = useState<AttendanceAction | null>(null)
-  const [reviewBranchId, setReviewBranchId] = useState<string | null>(null)
   const [locationFailures, setLocationFailures] = useState<Record<AttendanceAction, number>>({ 'check-in': 0, 'check-out': 0 })
 
   const employee = useMemo(
@@ -59,15 +58,12 @@ export const SelfieAttendanceCard: FC = () => {
   const today = todayIsoDate()
   const todayRecord = employee ? attendance.find((record) => record.employeeId === employee.id && record.date === today) : undefined
   const attendanceBranch = branches.find((item) => item.id === todayRecord?.checkInLocation?.detectedBranchId) ?? undefined
-  const todayHours = getBranchHoursForDate(attendanceBranch, today)
   const todayShift = employee ? scheduleOverrides.find((item) => item.employeeId === employee.id && item.date === today)?.shift : undefined
   const jakartaNow = useMemo(() => nowInJakarta(), [clockTick])
   const currentTime = `${String(jakartaNow.getHours()).padStart(2, '0')}:${String(jakartaNow.getMinutes()).padStart(2, '0')}`
   const shiftMinutesRemaining = todayShift?.isWorking ? minutesUntilShiftEnd(currentTime, todayShift.endTime) : null
-  const checkOutWindow = Boolean(todayRecord?.checkInAt && !todayRecord.checkOutAt && todayShift?.isWorking && shiftMinutesRemaining !== null && shiftMinutesRemaining <= 30)
-  const checkOutAvailable = Boolean(todayRecord?.checkInAt && !todayRecord.checkOutAt && (
-    checkOutWindow || (todayHours?.isOpen && currentTime >= todayHours.closesAt)
-  ))
+  const checkOutWindow = Boolean(todayRecord?.checkInAt && !todayRecord.checkOutAt && todayShift?.isWorking && shiftMinutesRemaining !== null && shiftMinutesRemaining <= attendanceSettings.checkoutGraceMinutes)
+  const checkOutAvailable = checkOutWindow
   const attendanceComplete = Boolean(todayRecord?.checkInAt && todayRecord.checkOutAt)
   const shouldForceExpanded = !todayRecord?.checkInAt || checkOutWindow
 
@@ -185,10 +181,9 @@ export const SelfieAttendanceCard: FC = () => {
       const location = await getCurrentLocation()
       const nearest = findNearestAttendanceBranch(location, branches, attendanceSettings.locationRadiusMeters)
       if (!nearest || !nearest.withinAnyBranchRange) {
-        setReviewBranchId(nearest?.branch.id ?? null)
         setLocationFailures((previous) => ({ ...previous, [captureAction]: previous[captureAction] + 1 }))
         const detail = nearest ? `Nearest branch: ${nearest.branch.name} · ${nearest.distanceMeters} m away.` : 'No branch location is available.'
-        setError(`${detail} Move within ${attendanceSettings.locationRadiusMeters} m of any active branch before taking a selfie.`)
+        setError(`${detail} Move within ${attendanceSettings.locationRadiusMeters} m of an active branch. Contact Admin or HR if GPS still cannot verify your location.`)
         setLocationStatus(null)
         return
       }
@@ -207,22 +202,7 @@ export const SelfieAttendanceCard: FC = () => {
   }
 
 
-  const continueWithLocationReview = (captureAction: AttendanceAction) => {
-    const reviewBranch = branches.find((branch) => branch.id === reviewBranchId && branch.isActive)
-    if (!reviewBranch?.location) {
-      setError('A nearby branch could not be identified. Try location verification again or ask HR for help.')
-      return
-    }
-    setAction(captureAction)
-    setVerifiedLocation({
-      latitude: reviewBranch.location.latitude,
-      longitude: reviewBranch.location.longitude,
-      accuracyMeters: 999999,
-    })
-    setVerifiedAction(captureAction)
-    setLocationStatus(`GPS could not be verified. Attendance will be recorded near ${reviewBranch.name} and sent to HR for review.`)
-    setError(null)
-  }
+
 
   const submit = () => {
     if (!employee || !photo || !verifiedLocation || verifiedAction !== action) {
@@ -263,13 +243,8 @@ export const SelfieAttendanceCard: FC = () => {
               <button type="button" onClick={() => void verifyLocation(captureAction)} disabled={!employee || processing} className="h-11 rounded-full bg-primary px-[18px] text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">
                 {processing && action === captureAction ? 'Verifying…' : locationFailures[captureAction] > 0 ? 'Try location again' : 'Verify location'}
               </button>
-              {locationFailures[captureAction] >= 2 && (
-                <button type="button" onClick={() => continueWithLocationReview(captureAction)} disabled={!employee || processing} className="h-11 rounded-full border border-warning/30 bg-warning/10 px-[18px] text-sm font-medium text-warning">
-                  Continue for HR review
-                </button>
-              )}
             </div>
-            {locationFailures[captureAction] >= 2 && <p className="mt-2 text-xs text-warning">After two failed GPS attempts, you can continue. HR will review the attendance record.</p>}
+            {locationFailures[captureAction] >= 2 && <p className="mt-2 text-xs text-warning">Location could not be verified. Contact Admin or HR to record or correct attendance.</p>}
           </div>
         )}
 
@@ -322,13 +297,13 @@ export const SelfieAttendanceCard: FC = () => {
     ? `Completed · ${formatTime(todayRecord?.checkInAt ?? todayRecord?.createdAt)}–${formatTime(todayRecord?.checkOutAt)}`
     : todayRecord?.checkInAt
       ? checkOutWindow
-        ? `Check-out due soon · ${todayShift?.endTime ?? todayHours?.closesAt ?? '—'}`
+        ? `Check-out available · ${todayShift?.endTime ?? '—'}`
         : `Checked in · ${formatTime(todayRecord.checkInAt ?? todayRecord.createdAt)} · ${todayShift?.branchId ?? attendanceBranch?.name ?? 'Branch'}`
       : todayShift?.isWorking
         ? `Ready to check in · ${todayShift.branchId} · ${todayShift.startTime}`
         : todayShift && !todayShift.isWorking
           ? 'OFF today'
-          : 'Attendance not started'
+          : 'No schedule for today'
 
   return (
     <section aria-label="My attendance" className={surfaceCardClass('standard')}>
@@ -360,14 +335,15 @@ export const SelfieAttendanceCard: FC = () => {
 
           {employee ? <p className="mt-3 text-xs text-muted-foreground">Linked employee: <span className="font-medium text-foreground">{employee.name}</span> · {employee.position}</p> : <p className="mt-3 rounded-lg bg-warning/10 p-3 text-xs text-warning">No active {role} employee record is linked to this account.</p>}
 
-          {!todayRecord && captureArea('check-in')}
+          {!todayRecord && todayShift?.isWorking && captureArea('check-in')}
+          {!todayRecord && !todayShift && <p className="mt-3 rounded-lg bg-warning/10 p-3 text-xs text-warning">A dated working schedule is required before check-in. Ask Admin or HR to schedule today.</p>}
 
           {todayRecord && (
             <div className="mt-4 space-y-4">
               <div className="rounded-xl border border-border p-3">
                 <div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold leading-5">Check-in</p><StatusChip tone="success">Completed</StatusChip></div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-[96px_1fr]">
-                  {todayRecord.selfieDataUrl && <img src={todayRecord.selfieDataUrl} alt="Check-in selfie" className="aspect-square h-24 w-24 rounded-lg object-cover ring-1 ring-border" />}
+                  {todayRecord.selfieDataUrl && <button type="button" onClick={() => void openAttendanceEvidence(todayRecord.selfieDataUrl).catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to open check-in evidence.'))} className="h-11 rounded-full border border-border px-4 text-xs font-medium text-primary">View check-in selfie</button>}
                   <div className="text-xs text-muted-foreground"><p className="font-medium text-foreground">{formatTime(todayRecord.checkInAt ?? todayRecord.createdAt)}</p><p>Recorded by {todayRecord.actor}</p></div>
                 </div>
               </div>
@@ -376,19 +352,19 @@ export const SelfieAttendanceCard: FC = () => {
                 <div className="rounded-xl border border-border p-3">
                   <div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold leading-5">Check-out</p><StatusChip tone="success">Completed</StatusChip></div>
                   <div className="mt-3 grid gap-3 sm:grid-cols-[96px_1fr]">
-                    {todayRecord.checkOutSelfieDataUrl && <img src={todayRecord.checkOutSelfieDataUrl} alt="Check-out selfie" className="aspect-square h-24 w-24 rounded-lg object-cover ring-1 ring-border" />}
+                    {todayRecord.checkOutSelfieDataUrl && <button type="button" onClick={() => void openAttendanceEvidence(todayRecord.checkOutSelfieDataUrl).catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to open check-out evidence.'))} className="h-11 rounded-full border border-border px-4 text-xs font-medium text-primary">View check-out selfie</button>}
                     <p className="text-xs font-medium">{formatTime(todayRecord.checkOutAt)}</p>
                   </div>
                 </div>
               ) : checkOutAvailable ? (
                 <div className="rounded-xl border border-warning/30 bg-warning/5 p-3">
                   <p className="text-sm font-semibold leading-5">Check-out available</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Your shift ends at {todayShift?.endTime ?? todayHours?.closesAt}. Capture a new selfie to check out.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Your shift ends at {todayShift?.endTime}. Capture a new selfie to check out.</p>
                   {captureArea('check-out')}
                 </div>
               ) : (
                 <InfoDisclosure title="Check-out availability">
-                  <p>Check-out becomes available 30 minutes before your scheduled shift ends{todayShift?.endTime ? ` at ${todayShift.endTime}` : todayHours?.isOpen ? ` at ${todayHours.closesAt}` : ''}.</p>
+                <p>Check-out becomes available {attendanceSettings.checkoutGraceMinutes} minutes before the end of today&apos;s dated shift{todayShift?.endTime ? ` at ${todayShift.endTime}` : ''}.</p>
                 </InfoDisclosure>
               )}
             </div>
@@ -397,8 +373,8 @@ export const SelfieAttendanceCard: FC = () => {
           {locationStatus && <p className="mt-3 rounded-lg bg-info/10 px-3 py-2 text-xs text-info">{locationStatus}</p>}
           {error && <p role="alert" className="mt-3 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
           {success && <p className="mt-3 rounded-lg bg-success/10 px-3 py-2 text-xs text-success">{success}</p>}
-          <InfoDisclosure title="About attendance verification" className="mt-3">
-            <p>GPS location is verified first and matched against the nearest active branch. A different branch is accepted and flagged for HR review. Every selfie is center-cropped to 1:1, compressed to a JPEG no larger than 100 KB, and saved with the attendance record.</p>
+          <InfoDisclosure title="About attendance" className="mt-3">
+            <p>A dated working schedule, verified GPS location, and a new selfie are required. Failed GPS cannot be bypassed; Admin or HR must handle exceptions. Every selfie is center-cropped to 1:1, compressed to a JPEG no larger than 100 KB, and saved with the attendance record.</p>
           </InfoDisclosure>
         </div>
       )}

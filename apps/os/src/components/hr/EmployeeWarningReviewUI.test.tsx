@@ -1,6 +1,6 @@
 import React from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AttendanceReviewQueue } from './AttendanceReviewQueue'
 import { useHrStore } from '../../store/hrStore'
 import { useUserStore } from '../../store/userStore'
@@ -52,21 +52,20 @@ describe('employee warning review UI', () => {
     expect(warningLabel.className).toContain('bg-warning/10')
 
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
-    expect(screen.getByRole('button', { name: 'Mark solved' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Record as Problem' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Confirm record' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Correct attendance' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Record as Problem' })).not.toBeInTheDocument()
     expect(screen.queryByText('Propose minus points')).not.toBeInTheDocument()
   })
 
-  it('escalates a warning for the independent Reports Problem List', () => {
-    render(<AttendanceReviewQueue />)
+  it('opens the focused attendance correction flow', () => {
+    const onCorrectAttendance = vi.fn()
+    render(<AttendanceReviewQueue onCorrectAttendance={onCorrectAttendance} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
     expect(screen.getByText('Review note · Optional')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Record as Problem' }))
-
-    expect(useHrStore.getState().attendanceReviewCases[0].status).toBe('problem')
-    expect(screen.queryByRole('button', { name: /Problem List/ })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'About warning review' }))
-    expect(screen.getByText(/Reports → Problem List/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Correct attendance' }))
+    expect(onCorrectAttendance).toHaveBeenCalledWith('warning-1', employee.id, '2026-07-14')
+    expect(useHrStore.getState().attendanceReviewCases[0].status).toBe('pending')
   })
 })

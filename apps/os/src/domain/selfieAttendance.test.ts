@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { canRecordSelfieAttendance } from './hrStatusDomain'
-import { useHrStore } from '../store/hrStore'
+import { todayIsoDate, useHrStore } from '../store/hrStore'
 import type { Employee } from '../store/hrStoreTypes'
 
 const admin: Employee = { id:'admin-1', name:'Sari', position:'Admin', branch:'Kedamaian', systemRole:'admin', status:'active', phone:'', hireDate:'2026-01-01' }
 const employee: Employee = { id:'employee-1', name:'Agus', position:'Florist', branch:'Pahoman', systemRole:'florist', status:'active', phone:'', hireDate:'2026-01-01' }
 
 describe('selfie attendance guard and store', () => {
-  beforeEach(() => useHrStore.setState({ employees:[admin, employee], attendance:[] }))
+  beforeEach(() => useHrStore.setState({ employees:[admin, employee], attendance:[], scheduleOverrides:[{ id:'today-admin', employeeId:admin.id, date:todayIsoDate(), shift:{ mode:'custom', isWorking:true, branchId:'Kedamaian', startTime:'00:00', endTime:'23:59' }, updatedAt:'', updatedBy:'HR' }] }))
 
   it('allows an active admin to self check in once with image evidence', () => {
     const result = useHrStore.getState().recordSelfieAttendance({ employeeId:admin.id, selfieDataUrl:'data:image/jpeg;base64,abc', actor:{ name:'Tito', role:'admin' }, location:{ latitude:-5.3971, longitude:105.2668, accuracyMeters:10 } })
