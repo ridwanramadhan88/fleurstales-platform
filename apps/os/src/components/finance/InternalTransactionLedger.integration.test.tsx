@@ -60,7 +60,7 @@ describe('completed order transaction flow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Orders' }))
     const row = screen.getByText('Order payment · KDM-2026-9001').closest('article')
     expect(row).toBeInTheDocument()
-    expect(row).toHaveTextContent('Managed by Order Verification')
+    expect(row).toHaveTextContent('Managed by Order Reconciliation')
     expect(row).toHaveTextContent(new Date(completedAt).toLocaleDateString('id-ID', {
       day: '2-digit', month: 'short', year: 'numeric',
     }))

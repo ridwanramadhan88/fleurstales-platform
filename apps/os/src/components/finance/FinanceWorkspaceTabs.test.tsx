@@ -5,7 +5,7 @@ import { FinanceWorkspaceTabs } from './FinanceWorkspaceTabs'
 afterEach(cleanup)
 
 describe('FinanceWorkspaceTabs', () => {
-  it('renders a single Order Verification header without sensitive module navigation', () => {
+  it('renders a single Order Reconciliation header without sensitive module navigation', () => {
     render(
       <FinanceWorkspaceTabs
         modules={['order_verification']}
@@ -14,7 +14,7 @@ describe('FinanceWorkspaceTabs', () => {
       />,
     )
 
-    expect(screen.getByRole('heading', { name: 'Order Verification' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Order Reconciliation' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Finance modules' })).not.toBeInTheDocument()
     expect(screen.queryByText('Payroll')).not.toBeInTheDocument()
     expect(screen.queryByText('Refunds')).not.toBeInTheDocument()

@@ -51,6 +51,6 @@ describe('summarizeActionPermissions', () => {
       admin: { ...DEFAULT_ACTION_PERMISSIONS.admin, 'finance.verify_order': true },
     }
     const summary = summarizeActionPermissions(DEFAULT_ACTION_PERMISSIONS, after)
-    expect(summary).toContain('Admin — Verify Orders: Enabled')
+    expect(summary).toContain('Admin — Reconcile Orders: Enabled')
   })
 })

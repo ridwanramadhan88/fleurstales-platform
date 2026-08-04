@@ -59,7 +59,7 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
         <div className="flex min-w-0 items-center justify-end gap-2">
           {locked && !order.financeVerified && (
             <span className="inline-flex max-w-[12rem] shrink items-center truncate rounded-full bg-warning/10 px-2.5 py-1 text-2xs font-semibold text-warning ring-1 ring-warning/20">
-              {currentUserRole === 'admin' ? 'Sent to Order Verification' : 'Awaiting Finance'}
+              {currentUserRole === 'admin' ? 'Awaiting Finance Reconciliation' : 'Awaiting Finance'}
             </span>
           )}
 
@@ -91,7 +91,7 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
                 {canVerifyThisOrder && (
                   <DropdownMenuItem onClick={onVerifyOrder}>
                     <ShieldCheck className="size-3.5" />
-                    Verify order
+                    Reconcile order
                   </DropdownMenuItem>
                 )}
                 {canEdit && (

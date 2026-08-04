@@ -61,7 +61,7 @@ export const BulkVerifyBar: FC<BulkVerifyBarProps> = ({
             onClick={() => setConfirmOpen(true)}
             className="cursor-pointer h-11 rounded-full bg-success px-[18px] text-sm font-medium text-white shadow-ios-sm hover:bg-success/90"
           >
-            Verify {selectedCount} selected
+            Reconcile {selectedCount} selected
           </button>
         </div>
       )}
@@ -69,9 +69,9 @@ export const BulkVerifyBar: FC<BulkVerifyBarProps> = ({
       <ConfirmActionDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={`Verify ${selectedCount} selected order${selectedCount === 1 ? '' : 's'}?`}
-        description="Verify selected payments. Corrections require a reversal."
-        confirmLabel={`Verify ${selectedCount}`}
+        title={`Reconcile ${selectedCount} selected order${selectedCount === 1 ? '' : 's'}?`}
+        description="Reconcile selected completed orders. Corrections require a reversal."
+        confirmLabel={`Reconcile ${selectedCount}`}
         onConfirm={() => { setConfirmOpen(false); onBulkVerify() }}
         disabled={selectedCount < 1}
       />

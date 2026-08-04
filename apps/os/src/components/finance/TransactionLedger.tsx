@@ -40,7 +40,7 @@ const sourceLabel = (transaction: FinanceTransaction) => {
   return 'Manual'
 }
 const statusLabel = (transaction: FinanceTransaction) => {
-  if (transaction.source === 'order_payment') return 'Managed by Order Verification'
+  if (transaction.source === 'order_payment') return 'Managed by Order Reconciliation'
   if (transaction.source === 'payroll') return 'Managed by Payroll'
   if (transaction.source === 'order_refund') return 'Managed by Refunds'
   return 'Recorded'

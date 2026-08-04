@@ -98,8 +98,8 @@ export const getNavigationDestinationLabel = (
 
   if (id === 'finance') {
     if (surface === 'workspace') return 'Finance'
-    if (role === 'finance') return surface === 'mobile-bottom' ? 'Verify' : 'Order Verification'
-    return surface === 'mobile-bottom' ? 'Collect' : 'Order Verification'
+    if (role === 'finance') return surface === 'mobile-bottom' ? 'Reconcile' : 'Order Reconciliation'
+    return surface === 'mobile-bottom' ? 'Reconcile' : 'Order Reconciliation'
   }
 
   if (id === 'hr' && surface === 'desktop') return 'People & Attendance'

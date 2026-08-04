@@ -128,19 +128,19 @@ export const OrderVerificationQueue: FC<
   onRejectChangeRequest,
 }) => {
   const emptyTitle = statusFilter === 'pending'
-    ? canVerify ? 'Nothing to verify' : 'No completed orders in this view'
+    ? canVerify ? 'Nothing to reconcile' : 'No completed orders in this view'
     : 'No matching orders'
   const emptyDescription = statusFilter === 'pending'
     ? canVerify
-      ? 'Orders needing verification will appear here.'
-      : 'Completed orders will appear here for read-only review. Finance or Owner handles verification.'
+      ? 'Orders needing reconciliation will appear here.'
+      : 'Completed orders will appear here for read-only review. Finance or Owner handles reconciliation.'
     : 'Try another date range, search, or status filter.'
 
   return (
-    <section aria-label="Order verification" className="space-y-6">
+    <section aria-label="Order reconciliation" className="space-y-6">
       {showHeading && <header className="space-y-1">
         <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
-          Order Verification
+          Order Reconciliation
         </h1>
         <p className="mt-1 text-sm leading-5 text-muted-foreground">
           Review completed orders and exceptions that need attention.
@@ -168,7 +168,7 @@ export const OrderVerificationQueue: FC<
       <div className="space-y-3">
         <div className="flex justify-end">
           <InfoDisclosure title="How this queue works" className="hidden sm:block">
-            <p className="max-w-md">Orders appear after delivery or pickup is complete. Finished orders stay locked from direct edits; Finance or Owner can verify or request a correction.</p>
+            <p className="max-w-md">Orders appear after delivery or pickup is complete. Finished orders stay locked from direct edits; Finance or Owner can reconcile or request a correction.</p>
           </InfoDisclosure>
         </div>
 

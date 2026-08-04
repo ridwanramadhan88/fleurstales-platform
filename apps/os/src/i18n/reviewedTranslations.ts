@@ -25,6 +25,7 @@ export const ID_REVIEWED_TRANSLATIONS: Record<string, string> = {
   "Store Profile": "Store Profile",
   "Branches": "Branches",
   "Order Verification": "Order Verification",
+  "Order Reconciliation": "Order Reconciliation",
   "Refund Queue": "Refund Queue",
   "Monthly Report": "Monthly Report",
   "Owner": "Owner",

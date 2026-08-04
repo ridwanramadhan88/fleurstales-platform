@@ -61,8 +61,8 @@ const dateScopeLabel = (scope: FinanceDateScopeId): string => {
 
 const STATUS_OPTIONS: Array<{ id: FinanceOrderStatusFilter; label: string }> = [
   { id: 'all', label: 'All' },
-  { id: 'pending', label: 'To verify' },
-  { id: 'verified', label: 'Completed' },
+  { id: 'pending', label: 'To reconcile' },
+  { id: 'verified', label: 'Reconciled' },
   { id: 'rejected', label: 'Rejected' },
   { id: 'review', label: 'Needs attention' },
 ]
@@ -113,7 +113,7 @@ export const FinanceOrderFilterBar: FC<FinanceOrderFilterBarProps> = ({
             type="search"
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}
-            placeholder="Search collect orders, customer, or ID..."
+            placeholder="Search completed orders, customer, or ID..."
             className="h-9 w-full rounded-full border border-border bg-card pl-8 pr-8 text-sm text-foreground shadow-ios-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
           />
           {searchQuery.length > 0 && (
@@ -173,7 +173,7 @@ export const FinanceOrderFilterBar: FC<FinanceOrderFilterBarProps> = ({
                 Cancel
               </>
             ) : (
-              'Bulk verify'
+              'Bulk reconcile'
             )}
           </button>
         )}

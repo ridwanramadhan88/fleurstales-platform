@@ -116,7 +116,7 @@ const capabilitySector = (capability: ActionCapability): Sector => {
 const capabilityWorkspaceLabel = (capability: ActionCapability): string => {
   if (capability.startsWith('settings.')) return 'Owner Settings'
   if (capability.startsWith('orders.')) return capability === 'orders.read_assigned' ? 'Assigned Work' : 'Orders'
-  if (capability === 'finance.view_order_verification' || capability === 'finance.verify_order') return 'Order Collection'
+  if (capability === 'finance.view_order_verification' || capability === 'finance.verify_order') return 'Order Reconciliation'
   if (capability.includes('payroll') && capability.startsWith('finance.')) return 'Payroll Review'
   if (capability.includes('refund')) return 'Refunds'
   if (capability.includes('ledger')) return 'Finance Transactions'
@@ -128,7 +128,7 @@ const capabilityWorkspaceLabel = (capability: ActionCapability): string => {
 }
 
 const SAFETY_NOTES: Partial<Record<ActionCapability, string>> = {
-  'finance.verify_order': 'Verification locks financial fields.',
+  'finance.verify_order': 'Reconciliation locks financial fields.',
   'finance.approve_employee_payroll': 'Available during Finance review only.',
   'finance.approve_all_payroll': 'Approves pending items only.',
   'finance.reject_employee_payroll': 'Reason required; returns one item to HR.',

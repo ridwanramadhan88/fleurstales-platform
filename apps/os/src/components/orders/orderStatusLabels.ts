@@ -12,7 +12,7 @@ import type { OrderStatusFilter } from './OrdersTableView'
  */
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending_verification: 'Pending',
+  pending_verification: 'Awaiting confirmation',
   confirmed: 'Confirmed',
   processing: 'Processing',
   ready: 'Ready',
@@ -138,7 +138,7 @@ export const PAYMENT_STATUS_OPTIONS: { id: Exclude<PaymentStatus, 'refund_pendin
  */
 export const STATUS_FILTER_OPTIONS: { id: OrderStatusFilter; label: string }[] = [
   { id: 'all', label: 'All statuses' },
-  { id: 'pending_verification', label: 'Pending' },
+  { id: 'pending_verification', label: 'Awaiting confirmation' },
   { id: 'confirmed', label: 'Confirmed' },
   { id: 'processing', label: 'Processing' },
   { id: 'ready', label: 'Ready' },

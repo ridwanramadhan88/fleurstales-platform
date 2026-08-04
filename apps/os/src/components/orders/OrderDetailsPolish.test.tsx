@@ -45,7 +45,7 @@ describe('order details collection polish', () => {
   it('shows the admin collection label without hiding it on mobile', () => {
     render(<OrderDetailsHeader viewModel={makeViewModel()} />)
 
-    const label = screen.getByText('Sent to Order Verification')
+    const label = screen.getByText('Awaiting Finance Reconciliation')
     expect(label).toBeInTheDocument()
     expect(label.className).not.toContain('hidden')
     expect(screen.queryByText('Awaiting Finance')).not.toBeInTheDocument()

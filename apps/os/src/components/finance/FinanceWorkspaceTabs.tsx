@@ -20,8 +20,8 @@ const ITEMS: Record<
   { label: string; description: string; icon: typeof ClipboardCheck }
 > = {
   order_verification: {
-    label: "Order Verification",
-    description: "Review completed orders once",
+    label: "Order Reconciliation",
+    description: "Reconcile completed orders once",
     icon: ClipboardCheck,
   },
   payroll: {
