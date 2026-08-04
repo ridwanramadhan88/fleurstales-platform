@@ -6,7 +6,7 @@
 import type { FC } from 'react'
 import type { BranchFilter } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
-import type { AppNavigationRequest } from '../../config/appNavigation'
+import { toOrders, type AppNavigationRequest } from '../../config/appNavigation'
 import { DashboardHeader } from './DashboardHeader'
 import { ModuleShortcuts } from './ModuleShortcuts'
 import { RoleFocusNotice } from './RoleFocusNotice'
@@ -65,7 +65,11 @@ export const DashboardTab: FC<DashboardTabProps> = ({
           <SelfieAttendanceCard />
           <MySchedulePanel />
           <AdminFinishedMetrics activeBranch={activeBranch} onOpenFinishedOrders={onGoToFinishedOrders} />
-          <AdminTodayQueue activeBranch={activeBranch} onGoToOrders={onGoToOrders} />
+          <AdminTodayQueue
+            activeBranch={activeBranch}
+            onGoToOrders={onGoToOrders}
+            onOpenOrder={(orderNumber) => onNavigate(toOrders({ orderNumber }))}
+          />
           <ModuleShortcuts userRole={userRole} onNavigate={onNavigate} />
         </>
       )}

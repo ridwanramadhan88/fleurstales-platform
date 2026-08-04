@@ -72,13 +72,15 @@ export default function App() {
       const internalSettingsReady = await connectInternalSettingsSupabase()
       const operationalReady = await connectOperationalSupabase()
       const staffOperationsReady = await connectStaffOperationsSupabase()
-      if (getSharedSession().source === 'supabase' && (!authorizationReady || !internalSettingsReady || !operationalReady || !staffOperationsReady)) {
+      const productionSession = getSharedSession().source === 'supabase'
+      if (productionSession && (!authorizationReady || !internalSettingsReady || !operationalReady || !staffOperationsReady)) {
         throw new Error('Fleurstales staff authority, settings, schedule, or operational data could not be fully hydrated.')
       }
 
       const hr = useHrStore.getState()
       const currentSettings = useSettingsStore.getState()
       const hydratedEmployee = hr.employees.find((candidate) => candidate.id === employee.id) ?? employee
+      const datedAssignment = hr.scheduleOverrides.find((item) => item.employeeId === hydratedEmployee.id && item.date === today)
       const effective = getEffectiveScheduleForDate({
         employee: hydratedEmployee,
         date: today,
@@ -86,16 +88,24 @@ export default function App() {
         overrides: hr.scheduleOverrides,
         settings: { scheduling: currentSettings.getSchedulingSettingsForDate(today), branches: currentSettings.branches },
       })
-      const assignedBranch = effective.shift.isWorking ? effective.shift.branchId : undefined
+      const assignedBranch = role === 'admin'
+        ? (datedAssignment?.shift.isWorking ? datedAssignment.shift.branchId : undefined)
+        : (effective.shift.isWorking ? effective.shift.branchId : undefined)
       const activeBranches = currentSettings.branches.filter((branch) => branch.isActive)
+      const assignedBranchIsActive = Boolean(assignedBranch && activeBranches.some((branch) => branch.id === assignedBranch))
       const profileBranchIsActive = profileBranch && activeBranches.some((branch) => branch.id === profileBranch)
       const fallbackOperationalBranch = profileBranchIsActive
         ? profileBranch
         : (activeBranches.find((branch) => branch.isDefault)?.id ?? activeBranches[0]?.id)
       const requiresOperationalBranch = role === 'admin' || role === 'florist'
-      const operationalBranch = assignedBranch ?? (requiresOperationalBranch ? fallbackOperationalBranch : undefined)
+      const operationalBranch = role === 'admin' && productionSession
+        ? assignedBranch
+        : assignedBranch ?? (requiresOperationalBranch ? fallbackOperationalBranch : undefined)
 
-      if (getSharedSession().source === 'supabase') {
+      if (productionSession) {
+        if (role === 'admin' && (!datedAssignment?.shift.isWorking || !assignedBranchIsActive)) {
+          throw new Error('Admin requires a dated working schedule at an active branch before opening operational tools.')
+        }
         if (requiresOperationalBranch && !operationalBranch) throw new Error('No active Fleurstales branch is available for this staff session.')
         await setRuntimeBranchContext({ scheduledBranchId: assignedBranch, operationalBranchId: operationalBranch, operationalDate: today })
       }
@@ -103,9 +113,9 @@ export default function App() {
       signIn({ employeeId: hydratedEmployee.id, name: hydratedEmployee.name, username: hydratedEmployee.username ?? role, role, branchId: operationalBranch, scheduledBranchId: assignedBranch })
       setSelectedBranch(operationalBranch || 'All')
       const payrollReady = await connectPayrollSupabase()
-      if (getSharedSession().source === 'supabase' && !payrollReady) throw new Error('Fleurstales Payroll data could not be hydrated for this authorized staff session.')
+      if (productionSession && !payrollReady) throw new Error('Fleurstales Payroll data could not be hydrated for this authorized staff session.')
       const pointsReady = await connectEmployeePointsSupabase()
-      if (getSharedSession().source === 'supabase' && !pointsReady) throw new Error('Fleurstales employee-point authority could not be hydrated.')
+      if (productionSession && !pointsReady) throw new Error('Fleurstales employee-point authority could not be hydrated.')
 
       const [storeReady, catalogReady, ordersReady, customersReady] = await Promise.all([
         refreshBusinessOsStoreFromRemote(),
@@ -113,7 +123,7 @@ export default function App() {
         refreshBusinessOsOrdersFromRemote(),
         refreshBusinessOsCustomersFromRemote(),
       ])
-      if (getSharedSession().source === 'supabase' && (!storeReady || !catalogReady || !ordersReady || !customersReady)) {
+      if (productionSession && (!storeReady || !catalogReady || !ordersReady || !customersReady)) {
         const failures = [
           !storeReady ? `Store (${getStoreBridgeStatus().message ?? 'unknown client error'})` : undefined,
           !catalogReady ? `Catalog (${getCatalogBridgeStatus().message ?? 'unknown client error'})` : undefined,

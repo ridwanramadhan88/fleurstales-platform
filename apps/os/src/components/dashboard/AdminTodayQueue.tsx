@@ -4,7 +4,7 @@ import type { BranchFilter, OrderTableRow } from '../../types/orders'
 import { useOrdersStore } from '../../store/ordersStore'
 import { surfaceCardClass } from '../ui/card'
 import { getOrderStatusGroup } from '../../domain/orderGroupingDomain'
-
+import { getLocalDateString, nowInJakarta } from '../../domain/orderTimingDomain'
 
 const toDateValue = (order: OrderTableRow) => {
   if (!order.scheduleDate) return Number.POSITIVE_INFINITY
@@ -19,16 +19,27 @@ const getPriorityLabel = (order: OrderTableRow, today: string) => {
   return { label: 'Upcoming', tone: 'bg-info/10 text-info' }
 }
 
+const getNextActionLabel = (order: OrderTableRow): string => {
+  if (order.status === 'pending_verification') return 'Review & confirm'
+  if (order.status === 'confirmed') return 'Assign & start'
+  if (order.status === 'processing') return 'Mark ready'
+  if (order.status === 'ready') return order.fulfillment === 'delivery' ? 'Start delivery' : 'Complete pickup'
+  if (order.status === 'delivering') return 'Mark delivered'
+  return 'Open order'
+}
+
 export function AdminTodayQueue({
   activeBranch,
   onGoToOrders,
+  onOpenOrder,
 }: {
   activeBranch: BranchFilter
   onGoToOrders: () => void
+  onOpenOrder: (orderNumber: string) => void
 }) {
   const orders = useOrdersStore((state) => state.orders)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = getLocalDateString(nowInJakarta())
   const activeOrders = useMemo(
     () =>
       orders
@@ -48,14 +59,13 @@ export function AdminTodayQueue({
 
   const visibleOrders = activeOrders.slice(0, 4)
 
-
   return (
     <section className={surfaceCardClass('standard', 'border border-border ring-0')} aria-label="Today's order priority">
       <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold leading-6">Today&apos;s order priority</h2>
           <p className="text-sm text-muted-foreground">
-            Work from the top. Late, due-today, and unassigned orders appear first.
+            Work from the top. Open an order to perform its single next action.
           </p>
           {activeOrders.length > 0 && (
             <p className="mt-1 text-xs font-medium text-muted-foreground">
@@ -83,7 +93,7 @@ export function AdminTodayQueue({
           {visibleOrders.map((order, index) => {
             const priority = getPriorityLabel(order, today)
             return (
-              <article key={order.orderNumber} className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <article key={order.orderNumber} className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-center">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     {index === 0 && (
@@ -103,7 +113,7 @@ export function AdminTodayQueue({
                   </p>
                 </div>
 
-                <div className="sm:w-48">
+                <div className="space-y-2">
                   {order.floristAssignedEmployeeId ? (
                     <div className="flex min-h-9 items-center gap-2 rounded-lg bg-muted px-3 text-xs">
                       <UserRound className="size-3.5 text-muted-foreground" />
@@ -112,9 +122,17 @@ export function AdminTodayQueue({
                   ) : (
                     <div className="flex min-h-9 items-center gap-2 rounded-lg bg-muted px-3 text-xs text-muted-foreground">
                       <UserRound className="size-3.5" />
-                      <span className="truncate font-medium">Assign when Process starts</span>
+                      <span className="truncate font-medium">Not assigned</span>
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => onOpenOrder(order.orderNumber)}
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    {getNextActionLabel(order)}
+                    <ArrowRight className="size-3.5" />
+                  </button>
                 </div>
               </article>
             )

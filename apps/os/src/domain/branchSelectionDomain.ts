@@ -29,6 +29,24 @@ export const getBranchSwitchDecision = ({
     }
   }
 
+  if (role === 'admin') {
+    if (!scheduledBranchId) {
+      return {
+        allowed: false,
+        requiresConfirmation: false,
+        reason: 'Admin requires a dated branch assignment before operational work.',
+      }
+    }
+    if (targetBranch !== scheduledBranchId) {
+      return {
+        allowed: false,
+        requiresConfirmation: false,
+        reason: `Admin operations are locked to today's scheduled branch: ${scheduledBranchId}.`,
+      }
+    }
+    return { allowed: true, requiresConfirmation: false }
+  }
+
   if (scheduledBranchId === targetBranch) {
     return { allowed: true, requiresConfirmation: false }
   }
