@@ -64,7 +64,7 @@ describe('SelfieAttendanceCard', () => {
     const location = useHrStore.getState().attendance[0].checkInLocation
     expect(location?.detectedBranchId).toBe('Pahoman')
     expect(location?.branchMismatch).toBe(false)
-    expect(location?.reviewStatus).toBe('pending_review')
+    expect(location?.reviewStatus).toBe('not_required')
   })
 
 })

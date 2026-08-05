@@ -20,6 +20,8 @@ import { PeoplePageHeader, PeopleSummaryCard } from './PeopleWorkspaceUI'
 import { PeoplePeriodNavigation } from './PeoplePeriodControls'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { downloadScheduleVectorPdf, type VectorScheduleCell } from '../../lib/vectorPdfExport'
+import { isEmployeeOperationallyReady } from '../../domain/hrEmployeeLifecycleDomain'
+import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 
 interface Props { activeBranch: BranchFilter; searchQuery?: string }
 
@@ -58,6 +60,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
   const publishWeek = useHrStore((state)=>state.publishScheduleWeek)
   const permissions = useSettingsStore((state)=>state.permissions)
   const branches = useSettingsStore((state)=>state.branches).filter((branch)=>branch.isActive)
+  const payrollSettings = useSettingsStore((state)=>state.payroll)
   const getSchedulingSettingsForDate = useSettingsStore((state)=>state.getSchedulingSettingsForDate)
   const allBranches = useSettingsStore((state)=>state.branches)
   const canEdit = canEditScheduling(role, permissions)
@@ -69,6 +72,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
   const [message,setMessage] = useState<string|null>(null)
   const [error,setError] = useState<string|null>(null)
   const [confirmShortage,setConfirmShortage] = useState(false)
+  const [shortageReason,setShortageReason] = useState('')
   const [isMoreOpen,setIsMoreOpen] = useState(false)
   const [mobileMode,setMobileMode] = useState<'day'|'week'>('day')
   const [selectedDate,setSelectedDate] = useState(()=>todayIsoDate())
@@ -95,7 +99,11 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
     if (typeof dayScrollRef.current?.scrollTo === 'function') dayScrollRef.current.scrollTo({ left: 0, behavior: 'auto' })
     else if (dayScrollRef.current) dayScrollRef.current.scrollLeft = 0
   }, [weekStart])
-  const staff = useMemo(()=>employees.filter((employee)=>employee.status==='active' && ['admin','florist','hr'].includes(employee.systemRole) && (!searchQuery.trim() || employee.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))),[employees,searchQuery])
+  const staff = useMemo(()=>employees.filter((employee)=>
+    ['admin','florist'].includes(employee.systemRole)
+    && isEmployeeOperationallyReady({ employee, roleSalaryIdr:employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0), productionAuth:isSupabaseConfigured() })
+    && (!searchQuery.trim() || employee.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+  ),[employees,payrollSettings.baseSalaryByRole,searchQuery])
   const settingsForDate = (date:string)=>({ scheduling:getSchedulingSettingsForDate(date), branches:allBranches })
   const publication = publications.find((item)=>item.weekStart===weekStart && item.branchId===activeBranch)
 
@@ -113,7 +121,6 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
   const totalOff = employeeSummaries.filter((item)=>item.employee.systemRole!=='hr').reduce((sum,item)=>sum+item.offDays,0)
   const totalUnassigned = employeeSummaries.filter((item)=>item.employee.systemRole!=='hr').reduce((sum,item)=>sum+item.unassigned,0)
   const invalidRest = employeeSummaries.filter((item)=>item.employee.systemRole!=='hr' && item.offDays!==1)
-  const hrVisitIssues = employeeSummaries.filter((item)=>item.employee.systemRole==='hr' && item.workdays<3)
 
   const suggestions = useMemo(()=>coverageWarnings.slice(0,10).map((warning)=>{
     const roleNeeded = warning.adminScheduled < warning.adminRequired ? 'admin' : 'florist'
@@ -147,12 +154,12 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
     setMessage(`Copied ${result.affected} assignments from the previous week.`);setError(null)
   }
   const publish = (allowCoverageShortage=false) => {
-    const result=publishWeek({weekStart,branchId:activeBranch,actor:{name:actorName,role},allowCoverageShortage})
+    const result=publishWeek({weekStart,branchId:activeBranch,actor:{name:actorName,role},allowCoverageShortage,coverageShortageReason:allowCoverageShortage?shortageReason:undefined})
     if(!result.ok){
       if(result.code==='coverage_warning'){setConfirmShortage(true);setError(null);return}
       setError(result.reason);return
     }
-    setConfirmShortage(false);setMessage(`Published schedule for ${result.affected} employees.`);setError(null)
+    setConfirmShortage(false);setShortageReason('');setMessage(`Published schedule for ${result.affected} employees.`);setError(null)
   }
   const moveWeek=(days:number)=>{const date=new Date(`${weekStart}T00:00:00`);date.setDate(date.getDate()+days);setWeekStart(toIsoDate(date))}
 
@@ -213,7 +220,6 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
           { label: 'Unassigned', value: totalUnassigned },
           { label: 'Coverage warnings', value: coverageWarnings.length },
           { label: 'Rest issues', value: invalidRest.length },
-          { label: 'HR visit issues', value: hrVisitIssues.length },
         ],
         coverageWarnings: coverageWarnings.map((item) => ({
           title: `${formatDay(item.date)} · ${item.branchName}`,
@@ -246,17 +252,16 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
   return <div className="space-y-5 pb-28 md:space-y-6 md:pb-0">
     <PeoplePageHeader
       section="scheduling"
-      action={<span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${publication?.status==='published'?'bg-success/10 text-success':publication?.status==='changed_after_publish'?'bg-warning/10 text-warning':'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{publication?.status==='published'?'Published':publication?.status==='changed_after_publish'?'Revision needed':'Draft'}</span>}
+      action={<span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${publication?.status==='published'?'bg-success/10 text-success':publication?.status==='published_with_shortage'||publication?.status==='changed_after_publish'?'bg-warning/10 text-warning':'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{publication?.status==='published'?'Published':publication?.status==='published_with_shortage'?'Published with shortage':publication?.status==='changed_after_publish'?'Revision needed':'Draft'}</span>}
     />
 
     <div className="flex flex-col gap-5 md:gap-4">
-      <div className="order-1 no-scrollbar -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 lg:grid-cols-6 md:order-2">
+      <div className="order-1 no-scrollbar -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 lg:grid-cols-5 md:order-2">
         <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Staff" value={staff.length} />
         <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="OFF" value={totalOff} />
         <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Unassigned" value={totalUnassigned} tone={totalUnassigned ? 'warning' : 'default'} />
         <PeopleSummaryCard className="w-[148px] min-w-[148px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Coverage" value={coverageWarnings.length} tone={coverageWarnings.length ? 'warning' : 'default'} />
         <PeopleSummaryCard className="w-[140px] min-w-[140px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Rest issues" value={invalidRest.length} tone={invalidRest.length ? 'warning' : 'default'} />
-        <PeopleSummaryCard className="w-[148px] min-w-[148px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="HR visits" value={hrVisitIssues.length} tone={hrVisitIssues.length ? 'warning' : 'default'} />
       </div>
 
       <div className="order-2 space-y-2 md:order-3">
@@ -284,7 +289,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
 
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] items-center gap-2 md:flex md:w-auto md:shrink-0 md:justify-end">
           {canEdit ? <>
-            <button aria-label="Generate new pattern" onClick={generate} className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full px-3 text-xs font-semibold ring-1 ring-border/70 hover:bg-accent sm:px-[18px] sm:text-sm"><Sparkles className="size-4 shrink-0"/><span className="whitespace-nowrap">Generate pattern</span></button>
+            <button aria-label="Copy previous week" onClick={copyPrevious} className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full px-3 text-xs font-semibold ring-1 ring-border/70 hover:bg-accent sm:px-[18px] sm:text-sm"><Copy className="size-4 shrink-0"/><span className="whitespace-nowrap">Copy previous</span></button>
             <button onClick={()=>publish(false)} className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:px-[18px]"><Send className="size-4 shrink-0"/><span>Publish</span></button>
           </> : <div className="col-span-2" />}
           <div className="relative">
@@ -301,7 +306,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
             {isMoreOpen && (
               <div ref={moreMenuRef} className="absolute right-0 top-[calc(100%+8px)] z-40 w-56 overflow-hidden rounded-xl bg-surface-popover p-1.5 shadow-lg ring-1 ring-border">
                 <button onClick={()=>{exportPdf();setIsMoreOpen(false)}} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium hover:bg-accent"><Download className="size-4"/>Export PDF</button>
-                {canEdit && <button onClick={()=>{copyPrevious();setIsMoreOpen(false)}} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium hover:bg-accent"><Copy className="size-4"/>Copy previous week</button>}
+                {canEdit && <button onClick={()=>{generate();setIsMoreOpen(false)}} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium hover:bg-accent"><Sparkles className="size-4"/>Generate deterministic pattern</button>}
               </div>
             )}
           </div>
@@ -350,25 +355,20 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
 
     <Dialog open={Boolean(editor)} onOpenChange={(open)=>{if(!open)setEditor(null)}}><DialogContent className="max-w-3xl">{editor&&<><DialogHeader><DialogTitle>{editor.employee.name} · {formatDay(editor.date)}</DialogTitle><DialogDescription>{editor.employee.systemRole==='hr'?'Choose a branch visit and time, or set the day to WFH. HR needs at least 3 visit days each week.':'Choose one branch or set this day as weekly OFF.'}</DialogDescription></DialogHeader><ShiftEditor employee={editor.employee} shift={editor.shift} setShift={(shift)=>setEditor((current)=>current?{...current,shift}:current)} branches={branches} note={note} setNote={setNote} workMode={workMode} setWorkMode={setWorkMode} revisionReasonRequired={Boolean(publication)}/><DialogFooter><button onClick={()=>setEditor(null)} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium hover:bg-accent">Cancel</button><button onClick={save} className="bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Save assignment</button></DialogFooter></>}</DialogContent></Dialog>
 
-    <Dialog open={confirmShortage} onOpenChange={setConfirmShortage}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Publish with coverage warnings?</DialogTitle><DialogDescription>{coverageWarnings.length} branch-day assignment(s) are below the minimum of 1 Admin and 2 Florists. HR may continue, but the shortage will remain visible.</DialogDescription></DialogHeader><div className="max-h-48 space-y-1 overflow-auto rounded-lg bg-warning/10 p-3 text-xs text-warning">{coverageWarnings.map((item)=><p key={`${item.date}-${item.branchId}`}>{formatDay(item.date)} · {item.branchName}: Admin {item.adminScheduled}/{item.adminRequired}, Florist {item.floristScheduled}/{item.floristRequired}</p>)}</div><DialogFooter><button onClick={()=>setConfirmShortage(false)} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium hover:bg-accent">Review schedule</button><button onClick={()=>publish(true)} className="h-11 rounded-full bg-warning px-[18px] text-sm font-semibold text-warning-foreground hover:bg-warning">Publish anyway</button></DialogFooter></DialogContent></Dialog>
+    <Dialog open={confirmShortage} onOpenChange={(open)=>{setConfirmShortage(open);if(!open)setShortageReason('')}}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Publish with coverage warnings?</DialogTitle><DialogDescription>{coverageWarnings.length} branch-day assignment(s) are below the configured minimum. Add the operational reason so the shortage remains explicit.</DialogDescription></DialogHeader><div className="max-h-48 space-y-1 overflow-auto rounded-lg bg-warning/10 p-3 text-xs text-warning">{coverageWarnings.map((item)=><p key={`${item.date}-${item.branchId}`}>{formatDay(item.date)} · {item.branchName}: Admin {item.adminScheduled}/{item.adminRequired}, Florist {item.floristScheduled}/{item.floristRequired}</p>)}</div><label className="space-y-1.5"><span className="text-xs font-medium">Shortage reason · Required</span><input value={shortageReason} onChange={(event)=>setShortageReason(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" placeholder="Example: two new staff accounts are still being onboarded" /></label><DialogFooter><button onClick={()=>setConfirmShortage(false)} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium hover:bg-accent">Review schedule</button><button disabled={!shortageReason.trim()} onClick={()=>publish(true)} className="h-11 rounded-full bg-warning px-[18px] text-sm font-semibold text-warning-foreground hover:bg-warning disabled:opacity-50">Publish with shortage</button></DialogFooter></DialogContent></Dialog>
   </div>
 }
 
 
-const ShiftEditor:FC<{employee:Employee;shift:ScheduleShift;setShift:(shift:ScheduleShift)=>void;branches:Array<{id:string;name:string}>;note:string;setNote:(value:string)=>void;workMode:'onsite'|'wfh';setWorkMode:(value:'onsite'|'wfh')=>void;revisionReasonRequired:boolean}>=({employee,shift,setShift,branches,note,setNote,workMode,setWorkMode,revisionReasonRequired})=>{
+const ShiftEditor:FC<{employee:Employee;shift:ScheduleShift;setShift:(shift:ScheduleShift)=>void;branches:Array<{id:string;name:string}>;note:string;setNote:(value:string)=>void;workMode:'onsite'|'wfh';setWorkMode:(value:'onsite'|'wfh')=>void;revisionReasonRequired:boolean}>=({shift,setShift,branches,note,setNote,revisionReasonRequired})=>{
   const mode=getShiftMode(shift)
-  const hasBranch=(branchId:string)=>branches.some((branch)=>branch.id===branchId)
   const selectBranch=(branchId:string)=>{
-    const isKedamaian=branchId==='Kedamaian'; const isAdmin=employee.systemRole==='admin'; const isHr=employee.systemRole==='hr'
-    const startTime=isHr ? (isKedamaian?'12:00':'14:00') : isKedamaian ? (isAdmin?'07:30':'07:00') : '10:00'
-    const endTime=isHr ? (isKedamaian?'13:00':'15:00') : isKedamaian ? (isAdmin?'16:30':'16:00') : '19:00'
-    setShift({...shift,mode:'custom',isWorking:true,branchId,startTime,endTime})
+    setShift({...shift,mode:'follow_branch_hours',isWorking:true,branchId,startTime:'00:00',endTime:'00:00'})
   }
-  return <div className="space-y-4"><div className="grid grid-cols-3 gap-2">
-    <button type="button" disabled={!hasBranch('Kedamaian')} onClick={()=>selectBranch('Kedamaian')} className={`rounded-lg px-3 py-2.5 text-sm font-medium ${shift.isWorking&&shift.branchId==='Kedamaian'?'bg-success text-success-foreground':'bg-success/10 text-success ring-1 ring-success/20'}`}>Kedamaian</button>
-    <button type="button" disabled={!hasBranch('Pahoman')} onClick={()=>selectBranch('Pahoman')} className={`rounded-lg px-3 py-2.5 text-sm font-medium ${shift.isWorking&&shift.branchId==='Pahoman'?'bg-info text-info-foreground':'bg-info/10 text-info ring-1 ring-info/20'}`}>Pahoman</button>
-    {employee.systemRole==='hr'?<button type="button" onClick={()=>{setShift(emptyShift());setWorkMode(workMode==='wfh'?'onsite':'wfh')}} className={`rounded-lg px-3 py-2.5 text-sm font-medium ${!shift.isWorking&&workMode==='wfh'?'bg-secondary text-secondary-foreground':'bg-muted text-foreground ring-1 ring-border'}`}>WFH {workMode==='wfh'?'On':'Off'}</button>:<button type="button" onClick={()=>{setShift(emptyShift());setNote('Weekly rest')}} className={`rounded-lg px-3 py-2.5 text-sm font-medium ${!shift.isWorking?'bg-secondary text-secondary-foreground':'bg-muted text-foreground ring-1 ring-border'}`}>OFF</button>}
+  return <div className="space-y-4"><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+    {branches.map((branch)=><button key={branch.id} type="button" onClick={()=>selectBranch(branch.id)} className={`rounded-lg px-3 py-2.5 text-sm font-medium ${shift.isWorking&&shift.branchId===branch.id?'bg-primary text-primary-foreground':'bg-muted text-foreground ring-1 ring-border'}`}>{branch.name}</button>)}
+    <button type="button" onClick={()=>{setShift(emptyShift());setNote('Weekly rest')}} className={`rounded-lg px-3 py-2.5 text-sm font-medium ${!shift.isWorking?'bg-secondary text-secondary-foreground':'bg-muted text-foreground ring-1 ring-border'}`}>OFF</button>
   </div>
-  {mode!=='off'&&<div className="grid gap-3 sm:grid-cols-2"><label className="space-y-1"><span className="text-xs text-muted-foreground">Start</span><TimeSelectField value={shift.startTime} onChange={(startTime)=>setShift({...shift,mode:'custom',startTime})}/></label><label className="space-y-1"><span className="text-xs text-muted-foreground">End</span><TimeSelectField value={shift.endTime} onChange={(endTime)=>setShift({...shift,mode:'custom',endTime})}/></label></div>}
+  {mode==='custom'&&<div className="grid gap-3 sm:grid-cols-2"><label className="space-y-1"><span className="text-xs text-muted-foreground">Start</span><TimeSelectField value={shift.startTime} onChange={(startTime)=>setShift({...shift,mode:'custom',startTime})}/></label><label className="space-y-1"><span className="text-xs text-muted-foreground">End</span><TimeSelectField value={shift.endTime} onChange={(endTime)=>setShift({...shift,mode:'custom',endTime})}/></label></div>}
   <label className="block space-y-1"><span className="text-xs text-muted-foreground">{revisionReasonRequired ? 'Revision reason · Required' : 'Note · Optional'}</span><input value={note} onChange={(event)=>setNote(event.target.value)} className="h-10 w-full rounded-lg bg-background px-3 text-sm ring-1 ring-border"/></label></div>
 }

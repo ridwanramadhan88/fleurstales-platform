@@ -6,22 +6,19 @@ import { useHrStore } from '../../store/hrStore'
 import { useOrdersStore } from '../../store/ordersStore'
 import type { EmployeeStatusFilter } from '../../domain/hrDomain'
 import { getEmployeeOrderPerformance } from '../../domain/employeeOrderPerformanceDomain'
-import { buildHrProblems, getHrProblemStatus } from '../../domain/hrProblemDomain'
-import { useHrProblemStore } from '../../store/hrProblemStore'
 import { DatePickerField } from '../ui/date-time-field'
 import type { HrSection, HrTabContentViewModel } from './HrTabContentController'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { HrSchedulingSection } from './HrSchedulingSection'
 import { AttendanceReviewQueue } from './AttendanceReviewQueue'
-import { HrPointsSection } from './HrPointsSection'
 import { HrPayrollSection } from './HrPayrollSection'
-import { HrMonthlyReportSection } from './HrMonthlyReportSection'
 import { FieldLabel, ValidationSummary } from '../ui/form-patterns'
 import { ChevronRight, UserPlus } from 'lucide-react'
 import { FilterChip } from '../ui/chip'
 import { InfoHint } from '../ui/info-hint'
 import { CreateStaffSheet, PeopleListCard, PeoplePageHeader, PeoplePageShell, PeopleSummaryCard, PeopleSummaryGrid, PeopleTabs } from './PeopleWorkspaceUI'
+import { EmployeeRemovalControl } from './EmployeeRemovalControl'
 
 export interface HrTabContentProps {
   activeBranch: BranchFilter
@@ -41,35 +38,34 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
   const signedInRole = useUserStore((state) => state.role)
   const attendanceReviewCases = useHrStore((state) => state.attendanceReviewCases)
   const orders = useOrdersStore((state) => state.orders)
-  const problemReviews = useHrProblemStore((state) => state.reviews)
   const {
-    activeBranch, onOpenOrder, activeSection, availableSections, canEdit, canCreateEmployee, canManageEmployeeStatus, canManageEmployeeDetails, canEditCredentials, canCreateAccounts, usesProductionPassword,
+    activeBranch, activeSection, availableSections, canEdit, canCreateEmployee, canManageEmployeeStatus, canManageEmployeeDetails, canEditCredentials, canCreateAccounts, usesProductionPassword,
     pendingStatusEmployee, statusActionError, attendanceEditor, attendanceActionError, attendanceHistory,
     statusFilter, employeeSearch, employeeRoleFilter, isAddOpen, form, formErrors, detailsEmployee, detailsForm, profileErrors, accessErrors, detailsError, detailsMessage, pendingAccessConfirmation, pendingDetailsCloseConfirmation, pendingAddCloseConfirmation, hasUnsavedEmployeeDetails,
-    summary, branchEmployees, employeeRows, assignableRoles,
+    summary, employeeRows, assignableRoles,
   } = vm
-
-
-  const openProblemCount = buildHrProblems({ employees: branchEmployees, attendanceCases: attendanceReviewCases, orders }).filter((problem) => getHrProblemStatus(problem, problemReviews[problem.id]?.status) !== 'solved').length
 
   const selectedAccountEditable = canManageEmployeeDetails && detailsEmployee?.systemRole !== 'owner'
   const [detailsSection,setDetailsSection] = useState<'profile'|'access'>('profile')
+  const readyCount = employeeRows.filter((item)=>item.readiness.state==='active').length
+  const setupRequiredCount = employeeRows.filter((item)=>item.readiness.state==='setup_required').length
+  const inactiveCount = employeeRows.filter((item)=>item.readiness.state==='inactive').length
 
   return <PeoplePageShell>
-    <PeopleTabs sections={availableSections} activeSection={activeSection} onChange={vm.onSectionChange} badges={{ reports: openProblemCount }} />
+    <PeopleTabs sections={availableSections} activeSection={activeSection} onChange={vm.onSectionChange} />
 
 
     <div className="space-y-5">
-    {activeSection === 'scheduling' ? <HrSchedulingSection activeBranch={activeBranch} searchQuery={employeeSearch} /> : activeSection === 'reports' ? <HrMonthlyReportSection activeBranch={activeBranch} searchQuery={employeeSearch} onOpenOrder={onOpenOrder} /> : activeSection === 'points' ? <HrPointsSection searchQuery={employeeSearch} /> : activeSection === 'payroll' ? <HrPayrollSection searchQuery={employeeSearch} /> : activeSection === 'employees' ? <>
+    {activeSection === 'scheduling' ? <HrSchedulingSection activeBranch={activeBranch} searchQuery={employeeSearch} /> : activeSection === 'payroll' ? <HrPayrollSection searchQuery={employeeSearch} /> : activeSection === 'employees' ? <>
       <PeoplePageHeader
         section="employees"
         action={canCreateEmployee ? <button type="button" onClick={vm.onToggleAddOpen} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm"><UserPlus className="size-4" />{canCreateAccounts ? 'Create staff' : 'New employee'}</button> : undefined}
       />
 
       <PeopleSummaryGrid className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <PeopleSummaryCard className="min-w-0 md:min-h-[76px]" label="Active staff" value={summary.activeCount.toString()} tone="default" />
-        <PeopleSummaryCard className="min-w-0 md:min-h-[76px]" label="Inactive staff" value={(branchEmployees.length - summary.activeCount).toString()} tone="warning" />
-        <PeopleSummaryCard className="col-span-2 min-w-0 sm:col-span-1 md:min-h-[76px]" label="Total employees" value={branchEmployees.length.toString()} tone="default" />
+        <PeopleSummaryCard className="min-w-0 md:min-h-[76px]" label="Ready" value={readyCount.toString()} tone="success" />
+        <PeopleSummaryCard className="min-w-0 md:min-h-[76px]" label="Setup required" value={setupRequiredCount.toString()} tone={setupRequiredCount ? 'warning' : 'default'} />
+        <PeopleSummaryCard className="col-span-2 min-w-0 sm:col-span-1 md:min-h-[76px]" label="Inactive" value={inactiveCount.toString()} tone="default" />
       </PeopleSummaryGrid>
 
       <section aria-label="Employee filters" className="flex flex-col gap-3 border-y border-border/60 py-3 md:flex-row md:items-center">
@@ -82,12 +78,13 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       <section aria-label="Employees" className="space-y-3 pb-4">
         <header><h3 className="text-sm font-semibold leading-5 text-foreground">{signedInRole === 'owner' ? 'Staff account management' : 'Employee directory'}</h3></header>
 
-        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">No employees match the selected filters.</p> : employeeRows.map(({ employee }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); const performance = getEmployeeOrderPerformance(employee.id, orders); return <PeopleListCard key={employee.id} density="dense">
+        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">No employees match the selected filters.</p> : employeeRows.map(({ employee, readiness }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); const performance = getEmployeeOrderPerformance(employee.id, orders); return <PeopleListCard key={employee.id} density="dense">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{employee.name}</p><p className="mt-0.5 text-xs font-medium text-muted-foreground">{roleLabel(employee.systemRole)}</p></div>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${employee.status === 'active' ? 'bg-success/10 text-success' : 'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{employee.status === 'active' ? 'Active' : 'Inactive'}</span>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${readiness.state === 'active' ? 'bg-success/10 text-success' : readiness.state === 'setup_required' ? 'bg-warning/10 text-warning' : 'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{readiness.state === 'active' ? 'Active' : readiness.state === 'setup_required' ? 'Setup required' : 'Inactive'}</span>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">{employee.phone || 'No WhatsApp'} · Since {new Date(employee.hireDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+          {readiness.missing.length > 0 && <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">Missing: {readiness.missing.join(', ')}</p>}
           {employee.systemRole === 'florist' && <div className="mt-3 rounded-lg bg-muted/40 p-2.5"><p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All-time order performance</p><div className="grid grid-cols-3 gap-2 text-center"><div><p className="text-sm font-semibold leading-5">{performance.floristAssigned}</p><p className="text-2xs text-muted-foreground">Assigned</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristCompleted}</p><p className="text-2xs text-muted-foreground">Completed</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristProcessing}</p><p className="text-2xs text-muted-foreground">Processing</p></div></div></div>}
           {employee.systemRole === 'admin' && <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs"><span className="mr-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All time</span><span className="font-semibold">{performance.adminStartedProcessing}</span> orders moved to Processing</div>}
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-4">
@@ -107,7 +104,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       <section aria-label="Employee attendance" className="space-y-3">
         <header className="flex items-center gap-1.5"><h3 className="text-sm font-semibold leading-5 text-foreground">Employee attendance</h3><InfoHint label="About employee attendance">Create today&apos;s record or review previous entries.</InfoHint></header>
         {attendanceActionError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{attendanceActionError}</p>}
-        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.filter(({ employee }) => employee.status === 'active').map(({ employee, todayRecord }) => {
+        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.filter(({ readiness }) => readiness.state === 'active').map(({ employee, todayRecord }) => {
           const warningTypes = attendanceReviewCases
             .filter((item) => item.employeeId === employee.id && item.date === todayRecord?.date && ['pending', 'problem'].includes(item.status))
             .map((item) => item.warningType)
@@ -175,6 +172,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
             </div>
             {selectedAccountEditable && <div className="mt-3 flex justify-end"><button type="button" onClick={vm.onSaveEmployeeProfile} className="bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Save profile</button></div>}
           </section>
+          <div className={detailsSection==='profile'?'block':'hidden'}><EmployeeRemovalControl employee={detailsEmployee} onRemoved={vm.onDiscardEmployeeDetailsChanges} /></div>
 
           <section className={`${detailsSection==='access'?'block':'hidden'} rounded-xl bg-muted/35 p-4 ring-1 ring-border/60`}>
             <div className="mb-3"><h3 className="text-sm font-semibold leading-5">Access & role</h3><p className="text-xs text-muted-foreground">Role changes affect permissions. Daily branch assignment is managed only from Scheduling.</p></div>

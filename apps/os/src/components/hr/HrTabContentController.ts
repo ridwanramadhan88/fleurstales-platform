@@ -17,6 +17,7 @@ import { provisionStaffAccountSupabase, syncStaffAccessProfileSupabase } from '.
 import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from '../../domain/staffCredentialDomain'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
+import { getEmployeeReadiness, type EmployeeReadiness } from '../../domain/hrEmployeeLifecycleDomain'
 
 export type HrSection = 'employees' | 'attendance' | 'scheduling' | 'reports' | 'points' | 'payroll'
 
@@ -47,7 +48,7 @@ export interface EmployeeDetailsFormState {
   pin: string
 }
 
-export interface HrEmployeeRowViewModel { employee: Employee; todayRecord: AttendanceRecord | null }
+export interface HrEmployeeRowViewModel { employee: Employee; todayRecord: AttendanceRecord | null; readiness: EmployeeReadiness }
 export interface AttendanceEditorState { employee: Employee; date: string; status: AttendanceStatus | ''; note: string; reviewCaseId?: string }
 
 export interface HrTabContentViewModel {
@@ -131,6 +132,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   const permissions = useSettingsStore((state) => state.permissions)
   const actionPermissions = useSettingsStore((state) => state.actionPermissions)
   const staffRoles = useSettingsStore((state) => state.staffRoles)
+  const payrollSettings = useSettingsStore((state) => state.payroll)
   const hrManagedRoles = staffRoles.hrManagedRoles
   const configuredBranches = useSettingsStore((state) => state.branches)
   const branches = configuredBranches.filter((branch) => branch.isActive)
@@ -142,16 +144,13 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   const canManageEmployeeStatus = canManageEmployeeDetails
   const canReviewAttendance = hasActionPermission(role, 'hr.review_attendance', actionPermissions, permissions)
   const canCorrectAttendance = hasActionPermission(role, 'hr.correct_attendance', actionPermissions, permissions)
-  const canManagePoints = hasActionPermission(role, 'hr.manage_points', actionPermissions, permissions)
   const canPreparePayroll = hasActionPermission(role, 'hr.create_payroll_proposal', actionPermissions, permissions) || hasActionPermission(role, 'hr.edit_payroll_proposal', actionPermissions, permissions) || hasActionPermission(role, 'hr.resolve_rejected_employee', actionPermissions, permissions)
   const canEdit = canEditSectionLevel && canCorrectAttendance
   const canAccessScheduling = canViewScheduling(role, permissions)
   const availableSections: HrSection[] = [
     ...(canAccessHrCore && canViewEmployees ? ['employees'] as HrSection[] : []),
-    ...(canAccessHrCore && (canReviewAttendance || canCorrectAttendance) ? ['attendance'] as HrSection[] : []),
     ...(canAccessScheduling ? ['scheduling'] as HrSection[] : []),
-    ...(canAccessHrCore && (canReviewAttendance || canCorrectAttendance) ? ['reports'] as HrSection[] : []),
-    ...(canAccessHrCore && canManagePoints ? ['points'] as HrSection[] : []),
+    ...(canAccessHrCore && (canReviewAttendance || canCorrectAttendance) ? ['attendance'] as HrSection[] : []),
     ...(canAccessHrCore && canPreparePayroll ? ['payroll'] as HrSection[] : []),
   ]
   const canEditCredentials = role === 'owner' && canManageEmployeeDetails
@@ -224,7 +223,15 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     return matchesSearch && matchesRole && matchesBranch
   }), [branchEmployees, statusFilter, employeeSearch, employeeRoleFilter])
   const attendanceHistory = useMemo(() => attendanceEditor ? attendance.filter((record) => record.employeeId === attendanceEditor.employee.id).sort((a, b) => b.date.localeCompare(a.date)) : [], [attendance, attendanceEditor])
-  const employeeRows = useMemo(() => filteredEmployees.map((employee) => ({ employee, todayRecord: getAttendanceForEmployeeOnDate(attendance, employee.id, today) })), [attendance, filteredEmployees, today])
+  const employeeRows = useMemo(() => filteredEmployees.map((employee) => ({
+    employee,
+    todayRecord: getAttendanceForEmployeeOnDate(attendance, employee.id, today),
+    readiness: getEmployeeReadiness({
+      employee,
+      roleSalaryIdr: employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0),
+      productionAuth: usesProductionPassword,
+    }),
+  })), [attendance, filteredEmployees, payrollSettings.baseSalaryByRole, today, usesProductionPassword])
 
 
   const emptyNewEmployeeForm = createEmptyHrForm(assignableRoles.includes(staffRoles.defaultRole) ? staffRoles.defaultRole : (assignableRoles[0] ?? 'florist'))
@@ -270,6 +277,9 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     if (!assignableRoles.includes(form.systemRole)) preflightErrors.systemRole = 'The selected role is not available for this account.'
     if (Object.keys(preflightErrors).length) { setFormErrors(preflightErrors); return }
     const common = { name: form.name, position: form.systemRole, systemRole: form.systemRole, phone: form.phone, hireDate, actor }
+    const configuredRoleSalary = form.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[form.systemRole] ?? 0)
+    const baseSalaryIdr = Number.isInteger(configuredRoleSalary) && configuredRoleSalary > 0
+      ? configuredRoleSalary : undefined
     let result: HrEmployeeCommandResult
     if (canCreateAccounts && isSupabaseConfigured()) {
       const eligibility = canCreateStaffAccount({ employees, email: form.email, username: form.username, pin: form.pin, systemRole: form.systemRole, actor, hrManagedRoles, usesProductionPassword })
@@ -285,10 +295,10 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
         setDetailsError(cause instanceof Error ? cause.message : 'Unable to create the staff login invitation.')
         return
       }
-      result = createStaffAccount({ ...common, employeeId, email: form.email, username: form.username, pin: form.pin, productionAuth: true })
+      result = createStaffAccount({ ...common, employeeId, email: form.email, username: form.username, pin: form.pin, productionAuth: true, baseSalaryIdr })
     } else {
       result = canCreateAccounts
-        ? createStaffAccount({ ...common, email: form.email, username: form.username, pin: form.pin })
+        ? createStaffAccount({ ...common, email: form.email, username: form.username, pin: form.pin, baseSalaryIdr })
         : addEmployee(common)
     }
     if (!result.ok) { applyEmployeeCommandError(result, 'form'); return }

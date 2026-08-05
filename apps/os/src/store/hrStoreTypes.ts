@@ -86,10 +86,12 @@ export interface WeeklySchedulePublication {
   id: string
   weekStart: string
   branchId: string | 'All'
-  status: 'published' | 'changed_after_publish'
+  status: 'published' | 'published_with_shortage' | 'changed_after_publish'
   publishedAt: string
   publishedBy: string
   updatedAt: string
+  shortageReason?: string
+  shortageCount?: number
 }
 
 /**

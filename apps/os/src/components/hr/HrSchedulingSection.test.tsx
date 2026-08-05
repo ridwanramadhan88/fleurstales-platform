@@ -20,11 +20,11 @@ describe('HR Scheduling UI', () => {
     useUserStore.setState({ employeeId:'emp-star', username:'hr', role:'hr', name:'Star' })
     render(<HrTabContentContainer activeBranch="All" />)
     openScheduling()
-    expect(screen.getByRole('heading', { name:'Scheduling' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name:'Schedule' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name:'About this People section' }))
-    expect(screen.getByText('Create, review, and publish weekly staff schedules.')).toBeInTheDocument()
+    expect(screen.getByText('Copy, adjust, validate, and publish weekly branch assignments.')).toBeInTheDocument()
     expect(screen.queryByText('Staff defaults')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name:'Generate new pattern' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name:'Copy previous week' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name:'More scheduling actions' }))
     expect(screen.getByRole('button', { name:'Export PDF' })).toBeInTheDocument()
   })
@@ -43,7 +43,7 @@ describe('HR Scheduling UI', () => {
     expect(columns.some((item) => item.classList.contains('w-[148px]'))).toBe(true)
     expect(columns.filter((item) => item.classList.contains('w-[112px]'))).toHaveLength(7)
     expect(columns.some((item) => item.classList.contains('w-[110px]'))).toBe(true)
-    expect(screen.getByRole('button', { name:'Generate new pattern' }).parentElement).toHaveClass('md:flex')
+    expect(screen.getByRole('button', { name:'Copy previous week' }).parentElement).toHaveClass('md:flex')
   })
 
   it('uses one compact mobile week control without weekday or branch text', () => {
@@ -90,7 +90,8 @@ describe('HR Scheduling UI', () => {
     useSettingsStore.setState((state) => ({ permissions:{ ...state.permissions, admin:{ ...state.permissions.admin, scheduling:'view' } } }))
     useUserStore.setState({ employeeId:'emp-akbar', username:'akbar', role:'admin', name:'Akbar' })
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
-    expect(screen.getByRole('heading', { name:'Scheduling' })).toBeInTheDocument()
+    openScheduling()
+    expect(screen.getByRole('heading', { name:'Schedule' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name:'Publish' })).not.toBeInTheDocument()
   })
   it('keeps mobile summaries in one horizontal row and secondary actions inside More', () => {
@@ -102,7 +103,7 @@ describe('HR Scheduling UI', () => {
     expect(screen.queryByRole('button', { name:'Export PDF' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name:'More scheduling actions' }))
     expect(screen.getByRole('button', { name:'Export PDF' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name:'Copy previous week' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name:'Generate deterministic pattern' })).toBeInTheDocument()
     expect(container.querySelector('[aria-label="Show weekly grid"]')).toHaveTextContent('Grid')
   })
 

@@ -32,6 +32,8 @@ import { getPayrollPeriodIdForActivityDate } from '../domain/payrollScheduleDoma
 import { canActorManageEmployee, isHrManagedEmployee, isHrManagedEmployeeRole, HR_PROTECTED_ROLE_MESSAGE } from '../domain/hrManagedEmployeeDomain'
 import { isActionAuthorized } from '../config/authorization'
 import { isSharedBackendConfigured } from '../api/remoteSession'
+import { isSupabaseConfigured } from '../data/shared/supabaseConfig'
+import { getEmployeeRemovalBlockers, isEmployeeOperationallyReady } from '../domain/hrEmployeeLifecycleDomain'
 import type {
   Employee,
   EmployeeStatus,
@@ -52,6 +54,10 @@ export type HrEmployeeCommandField = 'name' | 'phone' | 'hireDate' | 'branch' | 
 export type HrEmployeeCommandResult =
   | { ok: true; employeeId: string }
   | { ok: false; code: 'not_found' | 'forbidden' | 'invalid_name' | 'invalid_phone' | 'invalid_hire_date' | 'future_hire_date' | 'invalid_branch' | 'disabled_role' | 'invalid_email' | 'duplicate_email' | 'invalid_username' | 'duplicate_username' | 'invalid_pin' | 'last_owner' | 'unknown'; reason: string; fieldErrors?: Partial<Record<HrEmployeeCommandField, string>> }
+
+export type HrEmployeeRemovalResult =
+  | { ok:true; employeeId:string }
+  | { ok:false; code:'not_found'|'forbidden'|'reason_required'|'history_exists'; reason:string }
 
 export type HrScheduleCommandResult =
   | { ok: true; affected: number }
@@ -124,6 +130,7 @@ interface HrStoreState {
   }) => HrEmployeeCommandResult
   activateEmployee: (employeeId: string, actor: HrActor) => boolean
   deactivateEmployee: (employeeId: string, actor: HrActor) => boolean
+  removeUnusedEmployee: (params: { employeeId:string; reason:string; actor:HrActor }) => HrEmployeeRemovalResult
   /**
    * @description Sets or overwrites today's (or a given date's) attendance
    * status for one employee. Idempotent per employee+date.
@@ -163,7 +170,7 @@ interface HrStoreState {
   generateWeekFromDefaults: (params: { weekStart:string; branchId:BranchId|'All'; actor:HrActor }) => HrScheduleCommandResult
   copyPreviousScheduleWeek: (params: { weekStart:string; branchId:BranchId|'All'; actor:HrActor }) => HrScheduleCommandResult
   resetScheduleWeekToDefaults: (params: { weekStart:string; branchId:BranchId|'All'; actor:HrActor }) => HrScheduleCommandResult
-  publishScheduleWeek: (params: { weekStart:string; branchId:BranchId|'All'; actor:HrActor; allowCoverageShortage?:boolean }) => HrScheduleCommandResult
+  publishScheduleWeek: (params: { weekStart:string; branchId:BranchId|'All'; actor:HrActor; allowCoverageShortage?:boolean; coverageShortageReason?:string }) => HrScheduleCommandResult
   recordSelfieAttendance: (params: {
     employeeId: string
     selfieDataUrl: string
@@ -308,11 +315,13 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       if (cleanPhone && !/^\+?[0-9][0-9 ()-]{7,19}$/.test(cleanPhone)) { result = employeeCommandError('invalid_phone', 'Enter a valid WhatsApp number.', 'phone'); return state }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(hireDate)) { result = employeeCommandError('invalid_hire_date', 'Hire date is required.', 'hireDate'); return state }
       if (hireDate > todayIsoDate()) { result = employeeCommandError('future_hire_date', 'Hire date cannot be in the future.', 'hireDate'); return state }
-      if (baseSalaryIdr !== undefined && (!Number.isInteger(baseSalaryIdr) || baseSalaryIdr <= 0)) { result = employeeCommandError('unknown', 'Base salary must be a positive whole rupiah amount.', 'baseSalaryIdr'); return state }
+      const configuredRoleSalary = systemRole === 'owner' ? 0 : (settings.payroll.baseSalaryByRole?.[systemRole] ?? 0)
+      const resolvedBaseSalaryIdr = baseSalaryIdr ?? (configuredRoleSalary > 0 ? configuredRoleSalary : undefined)
+      if (resolvedBaseSalaryIdr !== undefined && (!Number.isInteger(resolvedBaseSalaryIdr) || resolvedBaseSalaryIdr <= 0)) { result = employeeCommandError('unknown', 'Base salary must be a positive whole rupiah amount.', 'baseSalaryIdr'); return state }
       const normalized = username ? normalizeUsername(username) : undefined
       if (normalized && state.employees.some((item) => item.username === normalized)) { result = employeeCommandError('duplicate_username', 'Username is already in use.', 'username'); return state }
       const normalizedEmail = email?.trim().toLowerCase()
-      const employee: Employee = { id: employeeId ?? `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: cleanName, position: getEmployeeRoleLabel(systemRole), branch: '' as BranchId, systemRole, status: 'active', phone: cleanPhone, hireDate, email: normalizedEmail, username: normalized, pin: productionAuth ? undefined : pin, baseSalaryIdr }
+      const employee: Employee = { id: employeeId ?? `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: cleanName, position: getEmployeeRoleLabel(systemRole), branch: '' as BranchId, systemRole, status: 'active', phone: cleanPhone, hireDate, email: normalizedEmail, username: normalized, pin: productionAuth ? undefined : pin, baseSalaryIdr:resolvedBaseSalaryIdr }
       result = { ok: true, employeeId: employee.id }
       return { employees: [employee, ...state.employees] }
     })
@@ -409,9 +418,53 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     set((state) => {
       if (!canSetEmployeeActiveState({ employees: state.employees, employeeId, active: false, actor }).ok) return state
       changed = true
-      return { employees: state.employees.map((employee) => employee.id === employeeId ? { ...employee, status: 'inactive' as const } : employee) }
+      const today = todayIsoDate()
+      const removedDates = state.scheduleOverrides.filter((item)=>item.employeeId===employeeId && item.date>today).map((item)=>item.date)
+      return {
+        employees: state.employees.map((employee) => employee.id === employeeId ? { ...employee, status: 'inactive' as const } : employee),
+        scheduleOverrides: state.scheduleOverrides.filter((item)=>item.employeeId!==employeeId || item.date<=today),
+        weeklySchedulePublications: state.weeklySchedulePublications.map((publication)=>{
+          const end = new Date(`${publication.weekStart}T00:00:00Z`)
+          end.setUTCDate(end.getUTCDate()+6)
+          const affected = removedDates.some((date)=>date>=publication.weekStart && date<=end.toISOString().slice(0,10))
+          return affected ? { ...publication, status:'changed_after_publish' as const, updatedAt:nowIso() } : publication
+        }),
+      }
     })
     return changed
+  },
+
+  removeUnusedEmployee: ({ employeeId, reason, actor }) => {
+    if (!['owner','hr'].includes(actor.role) || !isActionAuthorized(actor.role, 'hr.edit_employee')) return { ok:false, code:'forbidden', reason:'Only Owner or HR can permanently remove an employee within their role authority.' }
+    if (reason.trim().length < 3) return { ok:false, code:'reason_required', reason:'Add a removal reason.' }
+    let result:HrEmployeeRemovalResult = { ok:false, code:'not_found', reason:'Employee was not found.' }
+    set((state)=>{
+      const employee=state.employees.find((item)=>item.id===employeeId)
+      if (!employee) return state
+      if (employee.systemRole==='owner') { result={ok:false,code:'forbidden',reason:'Owner accounts cannot be removed.'}; return state }
+      if (actor.role==='hr' && !['admin','florist'].includes(employee.systemRole)) { result={ok:false,code:'forbidden',reason:'HR can permanently remove unused Admin or Florist accounts only.'}; return state }
+      const blockers=getEmployeeRemovalBlockers({
+        employeeId,
+        attendance:state.attendance,
+        attendanceReviews:state.attendanceReviewCases,
+        points:state.employeePointEntries,
+        scheduleOverrides:state.scheduleOverrides,
+        scheduleRevisions:state.scheduleRevisions,
+        schedulePublications:state.weeklySchedulePublications,
+        orders:[],
+        payrollDrafts:[],
+        compensations:[],
+        today:todayIsoDate(),
+      })
+      if (blockers.length) { result={ok:false,code:'history_exists',reason:'This employee has operational history and cannot be permanently removed. Deactivate the employee instead.'}; return state }
+      result={ok:true,employeeId}
+      return {
+        employees:state.employees.filter((item)=>item.id!==employeeId),
+        employeeDefaultSchedules:state.employeeDefaultSchedules.filter((item)=>item.employeeId!==employeeId),
+        scheduleOverrides:state.scheduleOverrides.filter((item)=>item.employeeId!==employeeId),
+      }
+    })
+    return result
   },
 
   saveEmployeeDefaultSchedule: () => ({
@@ -503,55 +556,42 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       const settings = useSettingsStore.getState()
       if (!canEditScheduling(actor.role, settings.permissions)) { result={ok:false,code:'forbidden',reason:'You do not have permission to generate schedules.'}; return state }
       const dates = Array.from({length:7},(_,index)=>{ const date=new Date(`${weekStart}T00:00:00`); date.setDate(date.getDate()+index); return getLocalDateString(date) })
-      const roster = state.employees.filter((employee)=>employee.status==='active' && (employee.systemRole==='admin' || employee.systemRole==='florist' || employee.systemRole==='hr'))
-      const operational = roster.filter((employee)=>employee.systemRole==='admin' || employee.systemRole==='florist')
+      const activeBranches = settings.branches.filter((branch)=>branch.isActive && (branchId==='All' || branch.id===branchId)).sort((a,b)=>a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+      if (!activeBranches.length) { result={ok:false,code:'invalid_branch',reason:'No active branch is available for this schedule.'}; return state }
+      const roster = state.employees.filter((employee)=>
+        (employee.systemRole==='admin' || employee.systemRole==='florist')
+        && isEmployeeOperationallyReady({
+          employee,
+          roleSalaryIdr:settings.payroll.baseSalaryByRole?.[employee.systemRole] ?? 0,
+          productionAuth:isSupabaseConfigured() || isSharedBackendConfigured(),
+        }),
+      ).sort((a,b)=>a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+      const operational = roster
       if (!operational.length) return state
       const weekKeys = new Set(roster.flatMap((employee)=>dates.map((date)=>`${employee.id}|${date}`)))
       const retained = state.scheduleOverrides.filter((item)=>!weekKeys.has(`${item.employeeId}|${item.date}`))
       const created: ScheduleOverride[] = []
-      const shuffle = <T,>(items:T[]):T[] => {
-        const copy=[...items]
-        for(let index=copy.length-1;index>0;index--){
-          const swapIndex=Math.floor(Math.random()*(index+1))
-          ;[copy[index],copy[swapIndex]]=[copy[swapIndex],copy[index]]
-        }
-        return copy
-      }
-      const branchShift = (employee: Employee, assignmentBranchId: string): ScheduleShift => {
-        if (assignmentBranchId === 'Kedamaian') return { mode:'custom', isWorking:true, branchId:assignmentBranchId, startTime:employee.systemRole==='admin'?'07:30':'07:00', endTime:employee.systemRole==='admin'?'16:30':'16:00' }
-        return { mode:'custom', isWorking:true, branchId:assignmentBranchId, startTime:'10:00', endTime:'19:00' }
-      }
+      const branchShift = (assignmentBranchId:string,date:string):ScheduleShift => materializeScheduleShift(
+        { mode:'follow_branch_hours', isWorking:true, branchId:assignmentBranchId, startTime:'00:00', endTime:'00:00' },
+        activeBranches.find((branch)=>branch.id===assignmentBranchId),
+        getWeekdayKey(date),
+      )
       for (const roleName of ['admin','florist'] as const) {
-        const people = shuffle(operational.filter((employee)=>employee.systemRole===roleName))
-        const minimum = roleName === 'admin' ? 1 : 2
-        const offDayOrder = shuffle([0,1,2,3,4,5,6])
-        const offDayByEmployee = new Map(people.map((employee,index)=>[employee.id,offDayOrder[index % 7]]))
+        const people = operational.filter((employee)=>employee.systemRole===roleName)
+        const minimum = settings.scheduling.minimumCoverage?.[roleName] ?? (roleName==='admin'?1:2)
+        const branchSlots = activeBranches.flatMap((branch)=>Array.from({length:minimum},()=>branch.id))
+        const offDayByEmployee = new Map(people.map((employee,index)=>[employee.id,(index+(roleName==='florist'?1:0))%7]))
         dates.forEach((date,dayIndex)=>{
-          const workingToday=shuffle(people.filter((employee)=>offDayByEmployee.get(employee.id)!==dayIndex))
+          const workingToday=people.filter((employee)=>offDayByEmployee.get(employee.id)!==dayIndex)
           workingToday.forEach((employee,index)=>{
-            const assignedBranch = index < minimum ? 'Kedamaian' : index < minimum*2 ? 'Pahoman' : (Math.random()<0.5?'Kedamaian':'Pahoman')
-            created.push({id:`schedule-${employee.id}-${date}`,employeeId:employee.id,date,shift:branchShift(employee,assignedBranch),note:'Generated schedule',updatedAt:nowIso(),updatedBy:actor.name})
+            const assignedBranch = branchSlots[index % Math.max(1,branchSlots.length)] ?? activeBranches[index % activeBranches.length].id
+            created.push({id:`schedule-${employee.id}-${date}`,employeeId:employee.id,date,shift:branchShift(assignedBranch,date),note:'Generated deterministic schedule',updatedAt:nowIso(),updatedBy:actor.name})
           })
           people.filter((employee)=>offDayByEmployee.get(employee.id)===dayIndex).forEach((employee)=>{
             created.push({id:`schedule-${employee.id}-${date}`,employeeId:employee.id,date,shift:{mode:'off',isWorking:false,branchId:'',startTime:'00:00',endTime:'00:00'},note:'Weekly rest',updatedAt:nowIso(),updatedBy:actor.name})
           })
         })
       }
-      const hrPeople = roster.filter((employee)=>employee.systemRole==='hr')
-      hrPeople.forEach((employee)=>{
-        const visitDays=new Set(shuffle([0,1,2,3,4,5,6]).slice(0,3))
-        dates.forEach((date,dayIndex)=>{
-          if(!visitDays.has(dayIndex)){
-            created.push({id:`schedule-${employee.id}-${date}`,employeeId:employee.id,date,shift:{mode:'off',isWorking:false,branchId:'',startTime:'00:00',endTime:'00:00'},note:undefined,workMode:'wfh',updatedAt:nowIso(),updatedBy:actor.name})
-            return
-          }
-          const assignedBranch=Math.random()<0.5?'Kedamaian':'Pahoman'
-          const startHour=11+Math.floor(Math.random()*4)
-          const startTime=`${String(startHour).padStart(2,'0')}:00`
-          const endTime=`${String(startHour+1).padStart(2,'0')}:00`
-          created.push({id:`schedule-${employee.id}-${date}`,employeeId:employee.id,date,shift:{mode:'custom',isWorking:true,branchId:assignedBranch,startTime,endTime},note:'HR visit - adjust time if needed',updatedAt:nowIso(),updatedBy:actor.name})
-        })
-      })
       result={ok:true,affected:created.length}
       return {scheduleOverrides:[...retained,...created],weeklySchedulePublications:state.weeklySchedulePublications.filter((item)=>!(item.weekStart===weekStart && item.branchId===branchId))}
     })
@@ -583,7 +623,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     return get().generateWeekFromDefaults({ weekStart, branchId, actor })
   },
 
-  publishScheduleWeek: ({ weekStart, branchId, actor, allowCoverageShortage=false }) => {
+  publishScheduleWeek: ({ weekStart, branchId, actor, allowCoverageShortage=false, coverageShortageReason }) => {
     let result: HrScheduleCommandResult = { ok:false, code:'empty_selection', reason:'No schedule was available to publish.' }
     set((state)=>{
       const settings=useSettingsStore.getState()
@@ -606,11 +646,6 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
           if(error){result={ok:false,code:'invalid_shift',reason:`${employee.name} · ${item.date}: ${error}`};return state}
         }
       }
-      const hrEmployees=state.employees.filter((employee)=>employee.status==='active' && employee.systemRole==='hr')
-      for (const employee of hrEmployees) {
-        const visits=dates.filter((date)=>state.scheduleOverrides.some((item)=>item.employeeId===employee.id && item.date===date && item.shift.isWorking)).length
-        if (visits < 3) { result={ok:false,code:'insufficient_hr_visits',reason:`${employee.name} needs at least 3 HR visit days this week.`}; return state }
-      }
       const selectedBranches = branchId==='All' ? settings.branches.filter((item)=>item.isActive) : settings.branches.filter((item)=>item.id===branchId && item.isActive)
       const minimum=settings.scheduling.minimumCoverage ?? {admin:1,florist:2}
       const shortages:string[]=[]
@@ -625,8 +660,10 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
         if (admins<minimum.admin || florists<minimum.florist) shortages.push(`${date} ${branch.name}: Admin ${admins}/${minimum.admin}, Florist ${florists}/${minimum.florist}`)
       }
       if (shortages.length && !allowCoverageShortage) { result={ok:false,code:'coverage_warning',reason:`Coverage is below minimum on ${shortages.length} branch-day(s). Confirm to publish anyway.`}; return state }
+      const shortageReason=coverageShortageReason?.trim()
+      if (shortages.length && allowCoverageShortage && !shortageReason) { result={ok:false,code:'invalid_shift',reason:'Add a reason before publishing below minimum coverage.'}; return state }
       const now=nowIso(); const existing=state.weeklySchedulePublications.find((item)=>item.weekStart===weekStart&&item.branchId===branchId)
-      const publication:WeeklySchedulePublication={id:existing?.id??`schedule-publication-${branchId}-${weekStart}`,weekStart,branchId,status:'published',publishedAt:existing?.publishedAt??now,publishedBy:actor.name,updatedAt:now}
+      const publication:WeeklySchedulePublication={id:existing?.id??`schedule-publication-${branchId}-${weekStart}`,weekStart,branchId,status:shortages.length?'published_with_shortage':'published',publishedAt:existing?.publishedAt??now,publishedBy:actor.name,updatedAt:now,shortageReason:shortageReason||undefined,shortageCount:shortages.length||undefined}
       result={ok:true,affected:employees.length}
       return {weeklySchedulePublications:[...state.weeklySchedulePublications.filter((item)=>item.id!==publication.id),publication]}
     })

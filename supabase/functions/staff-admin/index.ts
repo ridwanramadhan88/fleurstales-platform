@@ -26,7 +26,13 @@ type UpdateRequest = {
   isActive: boolean
 }
 
-type StaffRequest = InviteRequest | UpdateRequest
+type RemoveRequest = {
+  action:'remove'
+  employeeId:string
+  reason:string
+}
+
+type StaffRequest = InviteRequest | UpdateRequest | RemoveRequest
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -109,13 +115,38 @@ Deno.serve(async (request) => {
 
     const body = await request.json() as StaffRequest
     const action = body.action ?? 'invite'
-    if (action !== 'invite' && action !== 'update') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
+    if (action !== 'invite' && action !== 'update' && action !== 'remove') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
     const employeeId = body.employeeId?.trim()
-    const username = body.username?.trim().toLowerCase()
-    const password = body.password
-    const email = body.email?.trim().toLowerCase()
-    const displayName = body.displayName?.trim()
-    const role = body.role
+    if (action === 'remove') {
+      const removal=body as RemoveRequest
+      if (!employeeId || removal.reason?.trim().length<3) return json({error:'INVALID_STAFF_REMOVAL'},400)
+      if (!['owner','hr'].includes(actorProfile.role)) return json({error:'HR_OR_OWNER_REQUIRED'},403)
+      const { data:prepared, error:prepareError }=await userClient.rpc('prepare_unused_staff_removal',{
+        p_employee_id:employeeId,
+        p_reason:removal.reason.trim(),
+      })
+      if (prepareError) return json({error:'STAFF_REMOVAL_PREPARE_FAILED',message:prepareError.message},400)
+      if (!prepared?.allowed) return json({error:'EMPLOYEE_REMOVAL_BLOCKED',blockers:prepared?.blockers ?? {}},409)
+      const targetUserId=prepared.targetUserId as string|undefined
+      if (targetUserId) {
+        const { data:targetAuth }=await admin.auth.admin.getUserById(targetUserId)
+        if (targetAuth?.user) {
+          const { error:deleteError }=await admin.auth.admin.deleteUser(targetUserId)
+          if (deleteError) return json({error:'STAFF_AUTH_REMOVAL_FAILED',message:deleteError.message},400)
+        }
+      }
+      const { data:finalized, error:finalizeError }=await userClient.rpc('finalize_unused_staff_removal',{
+        p_request_id:prepared.requestId,
+      })
+      if (finalizeError || !finalized?.removed) return json({error:'STAFF_REMOVAL_FINALIZE_FAILED',message:finalizeError?.message ?? 'Removal was not finalized.'},400)
+      return json({ok:true,employeeId,removed:true})
+    }
+    const accessBody = body as InviteRequest | UpdateRequest
+    const username = accessBody.username?.trim().toLowerCase()
+    const password = accessBody.password
+    const email = accessBody.email?.trim().toLowerCase()
+    const displayName = accessBody.displayName?.trim()
+    const role = accessBody.role
     if (!employeeId || !displayName || !username || !usernamePattern.test(username) || !validRoles.has(role)) {
       return json({ error: action === 'update' ? 'INVALID_STAFF_UPDATE' : 'INVALID_STAFF_INVITE' }, 400)
     }

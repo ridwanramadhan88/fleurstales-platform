@@ -100,7 +100,8 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
       const effectiveCompensation = compensations.some((item) => item.employeeId === employee.id
         && item.effectiveFrom <= period.periodEnd
         && (!item.effectiveTo || item.effectiveTo >= period.periodEnd))
-      return !effectiveCompensation && (!employee.baseSalaryIdr || employee.baseSalaryIdr <= 0)
+      const roleSalary = employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0)
+      return !effectiveCompensation && (!employee.baseSalaryIdr || employee.baseSalaryIdr <= 0) && roleSalary <= 0
     })
     : []
   const pendingPoints = period ? entries.filter((entry) => entry.status === 'pending'

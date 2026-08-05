@@ -15,14 +15,13 @@ import {
 import { OverviewStatCard, OverviewStatGrid } from '../ui/overview-card'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import type { HrSection } from './HrTabContentController'
-import { useUserStore } from '../../store/userStore'
 import { InfoHint } from '../ui/info-hint'
 
 
 export const PEOPLE_SECTION_META: Record<HrSection, { label: string; description: string; icon: LucideIcon }> = {
   employees: {
-    label: 'Employees',
-    description: 'Manage staff profiles, roles, and employment status.',
+    label: 'People',
+    description: 'Create staff, finish setup, manage access, and deactivate or remove unused records.',
     icon: UsersRound,
   },
   attendance: {
@@ -31,8 +30,8 @@ export const PEOPLE_SECTION_META: Record<HrSection, { label: string; description
     icon: ClipboardCheck,
   },
   scheduling: {
-    label: 'Scheduling',
-    description: 'Create, review, and publish weekly staff schedules.',
+    label: 'Schedule',
+    description: 'Copy, adjust, validate, and publish weekly branch assignments.',
     icon: CalendarDays,
   },
   reports: {
@@ -67,11 +66,6 @@ export const PeopleTabs = ({
   onChange: (section: HrSection) => void
   badges?: Partial<Record<HrSection, number>>
 }) => {
-  const role = useUserStore((state) => state.role)
-  const hrGroups: HrSection[][] = [['attendance', 'scheduling'], ['employees', 'reports'], ['payroll', 'points']]
-  const groupedSections = role === 'hr'
-    ? (hrGroups.find((group) => group.includes(activeSection)) ?? hrGroups[0]).filter((section) => sections.includes(section))
-    : sections
   const navRef = useActiveItemScroll<HTMLElement>(activeSection, '[aria-current="page"]')
   return (
     <div className="min-w-0">
@@ -80,7 +74,7 @@ export const PeopleTabs = ({
         aria-label="People sections"
         className={settingsTabTrackClass({ level: 'primary', className: 'gap-5 scroll-px-1 sm:gap-7' })}
       >
-        {groupedSections.map((section) => {
+        {sections.map((section) => {
           const meta = PEOPLE_SECTION_META[section]
           const Icon = meta.icon
           return (

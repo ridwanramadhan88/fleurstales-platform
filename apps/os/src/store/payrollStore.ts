@@ -276,14 +276,15 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (currentPeriodDrafts.some((draft) => draft.status === 'pending_finance_review')) return { ok:false, code:'invalid_status', reason:'Payroll currently under Finance review cannot be regenerated.' }
     const existingByEmployee = new Map(currentPeriodDrafts.map((draft) => [draft.employeeId, draft]))
     const now = new Date().toISOString()
-    const missingSalaryEmployees = employees.filter((employee) => !get().compensations.some((item) => item.employeeId === employee.id && isCompensationEffectiveForDate(item, period.periodEnd)) && (!employee.baseSalaryIdr || employee.baseSalaryIdr <= 0))
-    if (missingSalaryEmployees.length) return { ok:false, code:'missing_salary', reason:'Set an individual base salary for every employee before generating payroll.', employeeIds:missingSalaryEmployees.map((employee)=>employee.id) }
+    const missingSalaryEmployees = employees.filter((employee) => !get().compensations.some((item) => item.employeeId === employee.id && isCompensationEffectiveForDate(item, period.periodEnd)) && (!employee.baseSalaryIdr || employee.baseSalaryIdr <= 0) && (employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0)) <= 0)
+    if (missingSalaryEmployees.length) return { ok:false, code:'missing_salary', reason:'Set a role salary default or individual salary before generating payroll.', employeeIds:missingSalaryEmployees.map((employee)=>employee.id) }
     const drafts = employees.map((employee): EmployeePayrollDraft => {
       const compensation = get().compensations
         .filter((item) => item.employeeId === employee.id && isCompensationEffectiveForDate(item, period.periodEnd))
         .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0]
       const entries = hr.employeePointEntries.filter((entry) => entry.employeeId === employee.id && isPointEntryInsidePayrollPeriod(entry, period.periodStart, period.periodEnd))
-      const baseSalaryIdr = compensation?.baseSalaryIdr ?? employee.baseSalaryIdr ?? 0
+      const roleSalaryIdr = employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0)
+      const baseSalaryIdr = compensation?.baseSalaryIdr ?? employee.baseSalaryIdr ?? roleSalaryIdr
       const calculation = calculateEmployeePayroll(baseSalaryIdr, entries, payrollSettings.pointValueIdr)
       const existing = existingByEmployee.get(employee.id)
       if (existing && ['finance_verified','paid','resolved'].includes(existing.status)) return existing
@@ -345,10 +346,11 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (missingSalary.length) return { ok:false, code:'missing_salary', reason:'Every employee needs an effective base salary before payroll can be submitted.', employeeIds:missingSalary }
     const hrStore = useHrStore.getState()
     hrStore.generateAttendanceWarnings(new Date())
-    const warningMessages = [
-      ...(useHrStore.getState().attendanceReviewCases.some((item) => item.status === 'pending' && item.date >= period.periodStart && item.date <= period.periodEnd) ? ['Attendance warnings remain unresolved.'] : []),
-      ...(useHrStore.getState().employeePointEntries.some((entry) => entry.status === 'pending' && isPointEntryInsidePayrollPeriod(entry, period.periodStart, period.periodEnd)) ? ['Point entries remain pending review.'] : []),
-    ]
+    const unresolvedAttendance = useHrStore.getState().attendanceReviewCases.filter((item) => ['pending','problem'].includes(item.status) && item.date >= period.periodStart && item.date <= period.periodEnd)
+    if (unresolvedAttendance.length) return { ok:false, code:'pending_attendance', reason:`Resolve ${unresolvedAttendance.length} attendance warning(s) before sending payroll to Finance.` }
+    const warningMessages = useHrStore.getState().employeePointEntries.some((entry) => entry.status === 'pending' && isPointEntryInsidePayrollPeriod(entry, period.periodStart, period.periodEnd))
+      ? ['Point entries remain pending review.']
+      : []
     const validationFailure = proposalDrafts.find((draft) => !validatePayrollForFinance(draft).ok)
     if (validationFailure) return { ok:false, code:'calculation_mismatch', reason:`Payroll calculation is invalid for ${validationFailure.employeeName}.` }
     const now = new Date().toISOString()
