@@ -11,7 +11,10 @@ import { InfoDisclosure } from '../ui/info-disclosure'
 
 const formatIdr = (value: number) => `Rp${Math.round(value).toLocaleString('id-ID')}`
 const formatPeriod = (start?: string, end?: string) => start && end ? `${start}–${end}` : ''
-const roleLabel = (role: EmployeePayrollDraft['employeeRole']) => role === 'hr' ? 'HR' : role[0].toUpperCase() + role.slice(1)
+const manualPayeeLabel = { owner:'Owner', part_time:'Part-time', contractor:'Contractor', other:'Other' } as const
+const roleLabel = (draft: EmployeePayrollDraft) => draft.entryMode === 'manual' && draft.manualPayeeType
+  ? manualPayeeLabel[draft.manualPayeeType]
+  : draft.employeeRole === 'hr' ? 'HR' : draft.employeeRole[0].toUpperCase() + draft.employeeRole.slice(1)
 
 const isOwnFinancePayroll = (
   draft: EmployeePayrollDraft,
@@ -106,7 +109,6 @@ export const FinancePayrollReview = () => {
   const pendingRows = selectedDrafts.filter((draft) => draft.status === 'pending_finance_review')
   const rejectedRows = selectedDrafts.filter((draft) => draft.status === 'finance_rejected')
   const approvedRows = selectedDrafts.filter((draft) => ['finance_verified', 'paid'].includes(draft.status))
-  const ownPendingPayroll = pendingRows.find((draft) => isOwnFinancePayroll(draft, { employeeId: actorEmployeeId, name: actorName, role }))
 
   const reset = () => {
     setDecision(null)
@@ -305,7 +307,8 @@ export const FinancePayrollReview = () => {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="truncate text-sm font-semibold">{draft.employeeName}</p>
-                            <span className="text-xs text-muted-foreground">· {roleLabel(draft.employeeRole)}</span>
+                            <span className="text-xs text-muted-foreground">· {roleLabel(draft)}</span>
+                            {draft.entryMode === 'manual' && <span className="rounded-full bg-info/10 px-2 py-0.5 text-2xs font-semibold text-info">Manual</span>}
                             <PayrollStatusBadge status={draft.status} />
                           </div>
                           <p className="mt-1 text-sm font-semibold">{formatIdr(draft.finalPayrollIdr)}</p>
@@ -320,13 +323,14 @@ export const FinancePayrollReview = () => {
                             <Breakdown label="Adjustment" value={formatIdr(draft.hrAdjustmentIdr ?? 0)} />
                           </dl>
                           {draft.hrAdjustmentReason && <p className="mt-2 rounded-lg bg-surface-panel p-2 text-xs">HR adjustment: {draft.hrAdjustmentReason}</p>}
+                          {draft.manualReason && <p className="mt-2 rounded-lg bg-info/10 p-2 text-xs text-info">HR manual-payee reason: {draft.manualReason}</p>}
                           {draft.rejectionReason && <p className="mt-2 rounded-lg bg-destructive/10 p-2 text-xs text-destructive">Finance rejection: {draft.rejectionReason}</p>}
-                          {lastReview && <p className="mt-2 text-xs text-muted-foreground">Last Finance decision: {lastReview.decision}{lastReview.note ? ` · ${lastReview.note}` : ''}</p>}
+                          {lastReview && <p className="mt-2 text-xs text-muted-foreground">Last Finance decision: {lastReview.decision}{lastReview.selfApproval ? ' · self-approved from HR proposal' : ''}{lastReview.note ? ` · ${lastReview.note}` : ''}</p>}
                           <InfoDisclosure title="Review point evidence" className="mt-2"><div className="space-y-1">{draft.pointEntries.length === 0 ? <p>No approved points.</p> : draft.pointEntries.map((entry) => <p key={entry.id} className="rounded-lg bg-background p-2 ring-1 ring-border/60">{entry.points > 0 ? '+' : ''}{entry.points} · {entry.reason}{entry.orderNumber ? ` · ${entry.orderNumber}` : ''}</p>)}</div></InfoDisclosure>
-                          {ownPayroll && draft.status === 'pending_finance_review' && <p className="mt-3 text-xs text-info">Another Finance reviewer or Owner must review your payroll.</p>}
+                          {ownPayroll && draft.status === 'pending_finance_review' && <p className="mt-3 text-xs text-info">This row was submitted by HR. Self-approval is allowed and will be marked in the audit history.</p>}
                         </div>
                       )}
-                      {draft.status === 'pending_finance_review' && !ownPayroll && (canApproveEmployee || canRejectEmployee) && (
+                      {draft.status === 'pending_finance_review' && (canApproveEmployee || canRejectEmployee) && (
                         <div className="flex flex-wrap gap-2 border-t border-border/70 px-3 py-3">
                           {canApproveEmployee && <button onClick={() => { reset(); setDecision({ kind: 'approve_employee', draftId: draft.id }) }} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground">Approve employee</button>}
                           {canRejectEmployee && <button aria-label="Reject employee" onClick={() => { reset(); setDecision({ kind: 'reject_employee', draftId: draft.id }) }} className="h-11 rounded-full border border-destructive/40 px-[18px] text-sm font-medium text-destructive">Return to HR</button>}
@@ -375,9 +379,9 @@ export const FinancePayrollReview = () => {
               <div className="flex flex-wrap justify-end gap-2">
                 {['submitted_to_finance', 'returned_to_hr'].includes(selected.status) && canApproveAll && pendingRows.length > 0 && (
                   <button
-                    disabled={rejectedRows.length > 0 || Boolean(ownPendingPayroll)}
+                    disabled={rejectedRows.length > 0}
                     onClick={() => { reset(); setDecision({ kind: 'approve_all' }) }}
-                    title={ownPendingPayroll ? 'Another Finance reviewer or Owner must approve your payroll first.' : rejectedRows.length ? 'Resolve and resubmit returned payrolls first.' : undefined}
+                    title={rejectedRows.length ? 'Resolve and resubmit returned payrolls first.' : undefined}
                     className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
                   >
                     Approve all remaining payroll
@@ -385,7 +389,6 @@ export const FinancePayrollReview = () => {
                 )}
                 {selected.status === 'finance_approved' && canRecordPayment && <button onClick={() => { reset(); setPaymentOpen(true) }} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground">Record final payment</button>}
               </div>
-              {ownPendingPayroll && <p className="mt-2 text-right text-xs text-muted-foreground">Group approval waits for another reviewer to approve {ownPendingPayroll.employeeName}.</p>}
             </div>
           </div>
         </div>

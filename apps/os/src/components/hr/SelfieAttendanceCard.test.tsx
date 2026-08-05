@@ -21,7 +21,7 @@ describe('SelfieAttendanceCard', () => {
   beforeEach(() => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (success: PositionCallback) => success({ coords: { latitude:-5.3971, longitude:105.2668, accuracy:10 } } as GeolocationPosition) } })
     useUserStore.setState({ employeeId: admin.id, role: admin.systemRole, name: admin.name, username: admin.username })
-    useHrStore.setState({ employees: [admin], attendance: [], scheduleOverrides:[{ id:'today-admin', employeeId:admin.id, date:todayIsoDate(), shift:{ mode:'custom', isWorking:true, branchId:'Kedamaian', startTime:'07:30', endTime:'16:30' }, updatedAt:'', updatedBy:'HR' }] })
+    useHrStore.setState({ employees: [admin], attendance: [], scheduleOverrides:[{ id:'today-admin', employeeId:admin.id, date:todayIsoDate(), shift:{ mode:'custom', isWorking:true, branchId:'Kedamaian', startTime:'00:00', endTime:'23:59' }, updatedAt:'', updatedBy:'HR' }] })
   })
 
   it('shows the linked employee and requires a photo before check-in can be submitted', () => {
@@ -54,7 +54,7 @@ describe('SelfieAttendanceCard', () => {
   })
 
   it('accepts the nearest active branch without relying on an employee default branch', async () => {
-    useHrStore.setState({ scheduleOverrides:[{ id:'today-admin', employeeId:admin.id, date:todayIsoDate(), shift:{ mode:'custom', isWorking:true, branchId:'Pahoman', startTime:'07:30', endTime:'16:30' }, updatedAt:'', updatedBy:'HR' }] })
+    useHrStore.setState({ scheduleOverrides:[{ id:'today-admin', employeeId:admin.id, date:todayIsoDate(), shift:{ mode:'custom', isWorking:true, branchId:'Pahoman', startTime:'00:00', endTime:'23:59' }, updatedAt:'', updatedBy:'HR' }] })
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (success: PositionCallback) => success({ coords: { latitude:-5.4210, longitude:105.2580, accuracy:10 } } as GeolocationPosition) } })
     render(<SelfieAttendanceCard />)
     fireEvent.click(screen.getByRole('button', { name: 'Verify location' }))

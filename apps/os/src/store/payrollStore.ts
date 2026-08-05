@@ -34,6 +34,7 @@ export interface EmployeeCompensation {
   createdAt: string
 }
 
+export type PayrollManualPayeeType = 'owner' | 'part_time' | 'contractor' | 'other'
 export type EmployeePayrollStatus = 'draft' | 'pending_finance_review' | 'finance_rejected' | 'finance_verified' | 'paid' | 'resolved'
 
 export interface PayrollPointSnapshot {
@@ -55,6 +56,9 @@ export interface EmployeePayrollDraft {
   employeeId: string
   employeeName: string
   employeeRole: UserRole
+  entryMode?: 'generated' | 'manual'
+  manualPayeeType?: PayrollManualPayeeType
+  manualReason?: string
   compensationId?: string
   baseSalaryIdr: number
   positivePoints: number
@@ -118,6 +122,7 @@ export interface PayrollProposalReviewRecord {
   payrollPeriodId: string
   decision: 'approved' | 'rejected' | 'paid' | 'resolved'
   note?: string
+  selfApprovalEmployeeIds?: string[]
   actorName: string
   actorRole: UserRole
   createdAt: string
@@ -151,6 +156,7 @@ export interface PayrollReviewRecord {
   employeeId: string
   decision: PayrollReviewDecision
   note?: string
+  selfApproval?: boolean
   actorName: string
   actorRole: UserRole
   createdAt: string
@@ -158,7 +164,7 @@ export interface PayrollReviewRecord {
 
 export type PayrollCommandResult =
   | { ok: true; affected?: number; draftId?: string; proposalId?: string; compensationId?: string; adjustmentId?:string; status?:PayrollScheduleAdjustmentStatus }
-  | { ok: false; code: 'forbidden' | 'not_found' | 'invalid_salary' | 'invalid_date' | 'missing_salary' | 'pending_points' | 'pending_attendance' | 'invalid_status' | 'empty_payroll' | 'note_required' | 'calculation_mismatch' | 'invalid_schedule' | 'overlapping_period' | 'decision_required' | 'payment_details_required' | 'ledger_error'; reason: string; employeeIds?: string[]; fieldErrors?:Record<string,string> }
+  | { ok: false; code: 'forbidden' | 'not_found' | 'invalid_salary' | 'invalid_date' | 'missing_salary' | 'pending_points' | 'pending_attendance' | 'invalid_status' | 'empty_payroll' | 'note_required' | 'calculation_mismatch' | 'invalid_schedule' | 'overlapping_period' | 'decision_required' | 'payment_details_required' | 'ledger_error' | 'invalid_payee' | 'duplicate_payee'; reason: string; employeeIds?: string[]; fieldErrors?:Record<string,string> }
 
 interface PayrollStoreState {
   periods: PayrollPeriod[]
@@ -171,6 +177,8 @@ interface PayrollStoreState {
   ensureCurrentPeriod: (now?: Date) => PayrollPeriod
   setEmployeeCompensation: (params: { employeeId:string; baseSalaryIdr:number; effectiveFrom:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
   generateEmployeePayrollDrafts: (params: { payrollPeriodId:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
+  saveManualPayrollDraft: (params: { payrollPeriodId:string; payrollDraftId?:string; payeeName:string; payeeType:PayrollManualPayeeType; amountIdr:number; reason:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
+  removeManualPayrollDraft: (params: { payrollDraftId:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
   adjustEmployeePayrollByHr: (params: { payrollDraftId:string; adjustmentIdr:number; reason:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
   submitPayrollToFinance: (params: { payrollPeriodId:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
   approvePayrollProposal: (params: { payrollProposalId:string; note?:string; actor:{ employeeId?:string; name:string; role:UserRole } }) => PayrollCommandResult
@@ -274,7 +282,9 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (!employees.length) return { ok:false, code:'empty_payroll', reason:'No active employees are eligible for this payroll period.' }
     const currentPeriodDrafts = get().employeePayrolls.filter((draft) => draft.payrollPeriodId === payrollPeriodId)
     if (currentPeriodDrafts.some((draft) => draft.status === 'pending_finance_review')) return { ok:false, code:'invalid_status', reason:'Payroll currently under Finance review cannot be regenerated.' }
-    const existingByEmployee = new Map(currentPeriodDrafts.map((draft) => [draft.employeeId, draft]))
+    const manualDrafts = currentPeriodDrafts.filter((draft) => draft.entryMode === 'manual' && draft.status !== 'resolved')
+    const generatedDrafts = currentPeriodDrafts.filter((draft) => draft.entryMode !== 'manual')
+    const existingByEmployee = new Map(generatedDrafts.map((draft) => [draft.employeeId, draft]))
     const now = new Date().toISOString()
     const missingSalaryEmployees = employees.filter((employee) => !get().compensations.some((item) => item.employeeId === employee.id && isCompensationEffectiveForDate(item, period.periodEnd)) && (!employee.baseSalaryIdr || employee.baseSalaryIdr <= 0) && (employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0)) <= 0)
     if (missingSalaryEmployees.length) return { ok:false, code:'missing_salary', reason:'Set a role salary default or individual salary before generating payroll.', employeeIds:missingSalaryEmployees.map((employee)=>employee.id) }
@@ -294,6 +304,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
         employeeId:employee.id,
         employeeName:employee.name,
         employeeRole:employee.systemRole,
+        entryMode:'generated',
         compensationId:compensation?.id,
         baseSalaryIdr,
         ...calculation,
@@ -307,9 +318,84 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
         rejectionReason:undefined,
       }
     })
-    set((state) => ({ employeePayrolls:[...state.employeePayrolls.filter((draft) => draft.payrollPeriodId !== payrollPeriodId), ...drafts] }))
+    set((state) => ({ employeePayrolls:[...state.employeePayrolls.filter((draft) => draft.payrollPeriodId !== payrollPeriodId), ...drafts, ...manualDrafts] }))
     publishPayrollWorkflowMutation('generate')
     return { ok:true, affected:drafts.length }
+  },
+
+  saveManualPayrollDraft: ({ payrollPeriodId, payrollDraftId, payeeName, payeeType, amountIdr, reason, actor }) => {
+    if (!isActionAuthorized(actor.role, 'hr.edit_payroll_proposal')) return { ok:false, code:'forbidden', reason:'This role cannot edit payroll proposals.' }
+    if (!['owner','hr'].includes(actor.role)) return { ok:false, code:'forbidden', reason:'Only HR or Owner can add a manual payroll payee.' }
+    const period = get().periods.find((item) => item.id === payrollPeriodId)
+    if (!period) return { ok:false, code:'not_found', reason:'Payroll period was not found.' }
+    const proposal = get().payrollProposals.find((item) => item.payrollPeriodId === payrollPeriodId && item.status !== 'resolved')
+    if (proposal && !['draft','returned_to_hr'].includes(proposal.status)) return { ok:false, code:'invalid_status', reason:'Manual payees can only be changed before submission or after Finance returns the proposal.' }
+
+    const normalizedName = payeeName.trim().replace(/\s+/g, ' ')
+    const normalizedReason = reason.trim()
+    if (normalizedName.length < 2) return { ok:false, code:'invalid_payee', reason:'Enter the payee name.' }
+    if (!['owner','part_time','contractor','other'].includes(payeeType)) return { ok:false, code:'invalid_payee', reason:'Select a valid payee type.' }
+    if (!Number.isInteger(amountIdr) || amountIdr <= 0) return { ok:false, code:'invalid_salary', reason:'Manual payroll amount must be a positive whole rupiah amount.' }
+    if (normalizedReason.replace(/\s/g, '').length < 3) return { ok:false, code:'note_required', reason:'Explain why this payee is included manually.' }
+
+    const duplicate = get().employeePayrolls.find((item) =>
+      item.id !== payrollDraftId
+      && item.payrollPeriodId === payrollPeriodId
+      && item.entryMode === 'manual'
+      && item.status !== 'resolved'
+      && item.manualPayeeType === payeeType
+      && item.employeeName.trim().toLocaleLowerCase() === normalizedName.toLocaleLowerCase()
+    )
+    if (duplicate) return { ok:false, code:'duplicate_payee', reason:'This manual payee is already included in the selected payroll period.' }
+
+    const existing = payrollDraftId ? get().employeePayrolls.find((item) => item.id === payrollDraftId) : undefined
+    if (payrollDraftId && (!existing || existing.entryMode !== 'manual')) return { ok:false, code:'not_found', reason:'Manual payroll payee was not found.' }
+    if (existing && !['draft','finance_rejected'].includes(existing.status)) return { ok:false, code:'invalid_status', reason:'This manual payee is locked while Finance reviews or after approval.' }
+
+    const now = new Date().toISOString()
+    const draftId = existing?.id ?? `payroll-manual-${payrollPeriodId}-${Date.now()}`
+    const manualDraft: EmployeePayrollDraft = {
+      id:draftId,
+      payrollPeriodId,
+      employeeId:existing?.employeeId ?? `manual-payee:${payrollPeriodId}:${Date.now()}`,
+      employeeName:normalizedName,
+      employeeRole:payeeType === 'owner' ? 'owner' : 'florist',
+      entryMode:'manual',
+      manualPayeeType:payeeType,
+      manualReason:normalizedReason,
+      baseSalaryIdr:amountIdr,
+      positivePoints:0,
+      negativePoints:0,
+      netPoints:0,
+      bonusIdr:0,
+      finalPayrollIdr:amountIdr,
+      hrAdjustmentIdr:0,
+      pointEntries:[],
+      status:existing?.status ?? 'draft',
+      generatedAt:existing?.generatedAt ?? now,
+      generatedBy:existing?.generatedBy ?? actor.name,
+      rejectionReason:existing?.rejectionReason,
+    }
+    set((state) => ({
+      employeePayrolls: existing
+        ? state.employeePayrolls.map((item) => item.id === draftId ? manualDraft : item)
+        : [...state.employeePayrolls, manualDraft],
+    }))
+    publishPayrollWorkflowMutation('prepare')
+    return { ok:true, draftId }
+  },
+
+  removeManualPayrollDraft: ({ payrollDraftId, actor }) => {
+    if (!isActionAuthorized(actor.role, 'hr.edit_payroll_proposal')) return { ok:false, code:'forbidden', reason:'This role cannot edit payroll proposals.' }
+    if (!['owner','hr'].includes(actor.role)) return { ok:false, code:'forbidden', reason:'Only HR or Owner can remove a manual payroll draft.' }
+    const draft = get().employeePayrolls.find((item) => item.id === payrollDraftId)
+    if (!draft || draft.entryMode !== 'manual') return { ok:false, code:'not_found', reason:'Manual payroll payee was not found.' }
+    if (draft.status !== 'draft') return { ok:false, code:'invalid_status', reason:'Only an unsubmitted manual payroll draft can be removed. Returned rows must use Resolve employee.' }
+    const proposal = get().payrollProposals.find((item) => item.employeePayrollIds.includes(draft.id) && item.status !== 'resolved')
+    if (proposal) return { ok:false, code:'invalid_status', reason:'This manual payee is already attached to a payroll proposal.' }
+    set((state) => ({ employeePayrolls:state.employeePayrolls.filter((item) => item.id !== payrollDraftId) }))
+    publishPayrollWorkflowMutation('prepare')
+    return { ok:true, draftId:payrollDraftId }
   },
 
   adjustEmployeePayrollByHr: ({ payrollDraftId, adjustmentIdr, reason, actor }) => {
@@ -320,7 +406,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (adjustmentIdr !== 0 && !normalizedReason) return { ok:false, code:'note_required', reason:'Adjustment reason is required.' }
     const draft = get().employeePayrolls.find((item) => item.id === payrollDraftId)
     if (!draft) return { ok:false, code:'not_found', reason:'Employee payroll was not found.' }
-    if (draft.employeeRole === 'owner') return { ok:false, code:'forbidden', reason:'Owner salary is not managed from staff payroll.' }
+    if (draft.employeeRole === 'owner' && draft.entryMode !== 'manual') return { ok:false, code:'forbidden', reason:'Generated Owner salary is not managed from staff payroll.' }
     const proposal = get().payrollProposals.find((item) => item.payrollPeriodId === draft.payrollPeriodId && item.status !== 'resolved')
     if (proposal && !['draft','returned_to_hr'].includes(proposal.status)) return { ok:false, code:'invalid_status', reason:'Payroll can only be adjusted by HR before Finance approval.' }
     if (!['draft','finance_rejected'].includes(draft.status)) return { ok:false, code:'invalid_status', reason:'This employee payroll is not editable by HR.' }
@@ -338,7 +424,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const period = get().periods.find((item) => item.id === payrollPeriodId)
     if (!period) return { ok:false, code:'not_found', reason:'Payroll period was not found.' }
     const drafts = get().employeePayrolls.filter((draft) => draft.payrollPeriodId === payrollPeriodId)
-    const proposalDrafts = drafts.filter((draft) => draft.status !== 'resolved' && draft.employeeRole !== 'owner')
+    const proposalDrafts = drafts.filter((draft) => draft.status !== 'resolved')
     if (!proposalDrafts.length) return { ok:false, code:'empty_payroll', reason:'Generate employee payroll drafts first.' }
     const activeProposal = get().payrollProposals.find((item) => item.payrollPeriodId === payrollPeriodId && item.status !== 'resolved')
     if (activeProposal && ['submitted_to_finance','finance_approved','paid'].includes(activeProposal.status)) return { ok:false, code:'invalid_status', reason:'This payroll proposal cannot be submitted in its current status.' }
@@ -383,13 +469,12 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (!drafts.length) return { ok:false, code:'empty_payroll', reason:'This proposal has no employee payrolls.' }
     if (drafts.some((draft)=>draft.status==='finance_rejected')) return { ok:false, code:'invalid_status', reason:'Resolve and resubmit rejected employee payrolls before approving the complete proposal.' }
     const candidates=drafts.filter((draft)=>draft.status==='pending_finance_review')
-    const ownPayroll = candidates.find((draft)=>isActorOwnPayroll(draft, actor))
-    if (ownPayroll) return { ok:false, code:'forbidden', reason:'Another Finance reviewer or Owner must approve your payroll before group approval.' }
     if (!candidates.length) return { ok:false, code:'invalid_status', reason:'No employee payroll is waiting for Finance approval.' }
     const invalid = candidates.find((draft)=>!validatePayrollForFinance(draft).ok)
     if (invalid) return { ok:false, code:'calculation_mismatch', reason:`Payroll calculation is invalid for ${invalid.employeeName}.` }
     const now=new Date().toISOString()
-    const review:PayrollProposalReviewRecord={ id:`proposal-review-${Date.now()}`, payrollProposalId:proposal.id, payrollPeriodId:proposal.payrollPeriodId, decision:'approved', ...(normalizedNote ? { note:normalizedNote } : {}), actorName:actor.name, actorRole:actor.role, createdAt:now }
+    const selfApprovalEmployeeIds = candidates.filter((draft)=>isActorOwnPayroll(draft, actor)).map((draft)=>draft.employeeId)
+    const review:PayrollProposalReviewRecord={ id:`proposal-review-${Date.now()}`, payrollProposalId:proposal.id, payrollPeriodId:proposal.payrollPeriodId, decision:'approved', ...(normalizedNote ? { note:normalizedNote } : {}), ...(selfApprovalEmployeeIds.length ? { selfApprovalEmployeeIds } : {}), actorName:actor.name, actorRole:actor.role, createdAt:now }
     set((state)=>({
       payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id ? { ...item, status:'finance_approved', financeDecisionAt:now, financeDecisionBy:actor.name, financeNote:normalizedNote || undefined } : item),
       employeePayrolls:state.employeePayrolls.map((draft)=>candidates.some((candidate)=>candidate.id===draft.id) ? { ...draft, status:'finance_verified', financeReviewedAt:now, financeReviewedBy:actor.name, rejectionReason:undefined } : draft),
@@ -468,13 +553,13 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const draft=get().employeePayrolls.find((item)=>item.id===payrollDraftId)
     if (!draft) return { ok:false, code:'not_found', reason:'Employee payroll was not found.' }
     if (draft.status!=='pending_finance_review') return { ok:false, code:'invalid_status', reason:'Only pending employee payroll can be approved.' }
-    if (isActorOwnPayroll(draft, actor)) return { ok:false, code:'forbidden', reason:'Another Finance reviewer or Owner must approve your payroll.' }
     const proposal=get().payrollProposals.find((item)=>item.employeePayrollIds.includes(draft.id)&&['submitted_to_finance','returned_to_hr'].includes(item.status))
     if (!proposal) return { ok:false, code:'invalid_status', reason:'This employee payroll is not inside an active proposal.' }
     const validation=validatePayrollForFinance(draft)
     if (!validation.ok) return { ok:false, code:'calculation_mismatch', reason:validation.reason }
     const now=new Date().toISOString()
-    const review:PayrollReviewRecord={id:`payroll-review-${Date.now()}`,payrollDraftId:draft.id,payrollPeriodId:draft.payrollPeriodId,employeeId:draft.employeeId,decision:'verified',...(normalizedNote ? {note:normalizedNote} : {}),actorName:actor.name,actorRole:actor.role,createdAt:now}
+    const selfApproval = isActorOwnPayroll(draft, actor)
+    const review:PayrollReviewRecord={id:`payroll-review-${Date.now()}`,payrollDraftId:draft.id,payrollPeriodId:draft.payrollPeriodId,employeeId:draft.employeeId,decision:'verified',...(normalizedNote ? {note:normalizedNote} : {}),...(selfApproval ? {selfApproval:true} : {}),actorName:actor.name,actorRole:actor.role,createdAt:now}
     const nextDrafts=get().employeePayrolls.filter((item)=>proposal.employeePayrollIds.includes(item.id)).map((item)=>item.id===draft.id?{...item,status:'finance_verified' as const,financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item)
     const nextStatus=deriveProposalReviewStatus(nextDrafts)
     set((state)=>({
@@ -492,7 +577,6 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const draft=get().employeePayrolls.find((item)=>item.id===payrollDraftId)
     if (!draft) return { ok:false, code:'not_found', reason:'Employee payroll was not found.' }
     if (draft.status!=='pending_finance_review') return { ok:false, code:'invalid_status', reason:'Only pending employee payroll can be rejected.' }
-    if (isActorOwnPayroll(draft, actor)) return { ok:false, code:'forbidden', reason:'Another Finance reviewer or Owner must review your payroll.' }
     const proposal=get().payrollProposals.find((item)=>item.employeePayrollIds.includes(draft.id)&&['submitted_to_finance','returned_to_hr'].includes(item.status))
     if (!proposal) return { ok:false, code:'invalid_status', reason:'This employee payroll is not inside an active proposal.' }
     const now=new Date().toISOString()

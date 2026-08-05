@@ -7,6 +7,16 @@ export type PayrollFinanceValidationResult =
 export const validatePayrollForFinance = (draft: EmployeePayrollDraft): PayrollFinanceValidationResult => {
   if (draft.baseSalaryIdr <= 0) return { ok:false, reason:'Base salary must be greater than zero.' }
 
+  if (draft.entryMode === 'manual') {
+    if (!draft.manualPayeeType || !['owner','part_time','contractor','other'].includes(draft.manualPayeeType)) return { ok:false, reason:'Manual payroll payee type is invalid.' }
+    if (!draft.manualReason?.trim()) return { ok:false, reason:'Manual payroll reason is required.' }
+    if (draft.pointEntries.length || draft.positivePoints !== 0 || draft.negativePoints !== 0 || draft.netPoints !== 0 || draft.bonusIdr !== 0) return { ok:false, reason:'Manual payroll rows cannot contain point calculations.' }
+    const expected = draft.baseSalaryIdr + (draft.hrAdjustmentIdr ?? 0)
+    if (expected < draft.baseSalaryIdr) return { ok:false, reason:'HR adjustment cannot reduce payroll below the manual amount.' }
+    if (draft.finalPayrollIdr !== expected) return { ok:false, reason:'Manual payroll total is incorrect.' }
+    return { ok:true }
+  }
+
   const ids = new Set<string>()
   const sources = new Set<string>()
   let positivePoints = 0

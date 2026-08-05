@@ -28,10 +28,13 @@ describe('payroll workflow redesign regressions', () => {
     expect(refunds).toContain("settingsTabButtonClass({ active: activeTab === id, level: 'primary'")
   })
 
-  it('includes every non-owner payroll role and protects Finance self-review', () => {
+  it('includes generated non-owner roles, manual payees, and audited Finance self-approval', () => {
     const store = read('src/store/payrollStore.ts')
     expect(store).toContain("employee.systemRole !== 'owner'")
-    expect(store).toContain("draft.employeeRole !== 'owner'")
+    expect(store).toContain("entryMode:'manual'")
     expect(store).toContain('isActorOwnPayroll')
+    expect(store).toContain('selfApprovalEmployeeIds')
+    expect(store).toContain('selfApproval:true')
+    expect(store).not.toContain('Another Finance reviewer or Owner must approve your payroll')
   })
 })
