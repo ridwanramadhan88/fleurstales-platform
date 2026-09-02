@@ -11,7 +11,7 @@ import type { OrderStatus, OrderTableRow } from '../types/orders'
 import type { UserRole } from '../store/userStore'
 import { canEditSection } from '../config/permissions'
 import { DEFAULT_ACTION_PERMISSIONS, hasActionPermission, type ActionPermissionMatrix } from '../config/actionPermissions'
-import { canDirectlyEditOrder, isOrderLocked } from './orderWorkflowDomain'
+import { canDirectlyEditOrder } from './orderWorkflowDomain'
 
 export interface OrderActor {
   employeeId?: string
@@ -126,23 +126,20 @@ export const authorizeOrderMutation = ({
       : { allowed: false, reason: 'Only Admin or Owner can resubmit a rejected order.' }
   }
 
-
   if (kind === 'refund') {
     return actor.role === 'finance' || actor.role === 'owner'
       ? { allowed: true }
-      : { allowed: false, reason: 'Only Finance or Owner can initiate refunds; only Finance can complete them.' }
+      : { allowed: false, reason: 'Only Finance or Owner can manage refunds.' }
   }
 
   const hasSectionEdit = canEditSection(actor.role, 'orders', permissions)
-  const financeLockedOverride =
-    actor.role === 'finance' && isOrderLocked(order) && canDirectlyEditOrder(order, actor.role)
 
   if (kind === 'status') {
     if (actor.role === 'florist') {
       return { allowed: false, reason: 'Florists can view assigned work but cannot change order status.' }
     }
-    const canOperateStatus = actor.role === 'owner' || actor.role === 'admin' || financeLockedOverride
-    if (!canOperateStatus || (!hasSectionEdit && !financeLockedOverride)) {
+    const canOperateStatus = actor.role === 'owner' || actor.role === 'admin'
+    if (!canOperateStatus || !hasSectionEdit) {
       return { allowed: false, reason: 'Only Owner or Admin can advance active order statuses.' }
     }
     if (!canDirectlyEditOrder(order, actor.role)) {
@@ -155,8 +152,8 @@ export const authorizeOrderMutation = ({
   }
 
   if (kind === 'details' || kind === 'assignment' || kind === 'fulfillment') {
-    const roleAllowed = actor.role === 'owner' || actor.role === 'admin' || financeLockedOverride
-    if (!roleAllowed || (!hasSectionEdit && !financeLockedOverride)) {
+    const roleAllowed = actor.role === 'owner' || actor.role === 'admin'
+    if (!roleAllowed || !hasSectionEdit) {
       return { allowed: false, reason: 'Your role cannot change these order details.' }
     }
     if (!canDirectlyEditOrder(order, actor.role)) {
@@ -169,8 +166,8 @@ export const authorizeOrderMutation = ({
   }
 
   if (kind === 'payment') {
-    const roleAllowed = actor.role === 'owner' || actor.role === 'admin' || financeLockedOverride
-    if (!roleAllowed || (!hasSectionEdit && !financeLockedOverride)) {
+    const roleAllowed = actor.role === 'owner' || actor.role === 'admin'
+    if (!roleAllowed || !hasSectionEdit) {
       return { allowed: false, reason: 'Your role cannot update order payment.' }
     }
     if (!canDirectlyEditOrder(order, actor.role)) {
