@@ -66,8 +66,8 @@ forbidText('apps/os/src/data/realtimeSupabaseSync.ts', [
 ])
 requireText('supabase/tests/v311_production_hardening_smoke.sql', ['Attendance selfie evidence is still deletable', 'current_staff_branch_id', 'hr.review_attendance'])
 requireText('scripts/run-supabase-smoke-tests.sh', ["find supabase/tests", "-name '*.sql'"])
-requireText('.github/workflows/release-production.yml', ['database-preflight', 'run-supabase-smoke-tests.sh'])
-requireText('.github/workflows/release-production.yml', ['push:', 'branches: [main]', 'deploy-functions:'])
+requireText('.github/workflows/release-production.yml', ['database-preflight', 'run-supabase-smoke-tests.sh', 'workflow_dispatch:', 'deploy-functions:'])
+forbidText('.github/workflows/release-production.yml', ['push:', 'branches: [main]'])
 requireText('supabase/migrations/20260802034249_prune_unused_realtime_publication.sql', [
   'alter publication supabase_realtime drop table',
   'staff_roster_refresh_events',
