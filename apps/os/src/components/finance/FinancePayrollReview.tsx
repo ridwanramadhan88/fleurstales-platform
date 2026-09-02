@@ -19,20 +19,15 @@ const roleLabel = (draft: EmployeePayrollDraft) => draft.entryMode === 'manual' 
 const isOwnFinancePayroll = (
   draft: EmployeePayrollDraft,
   actor: { employeeId?: string; name: string; role: string },
-) => actor.role === 'finance' && (
-  Boolean(actor.employeeId && draft.employeeId === actor.employeeId)
-  || draft.employeeName.trim().toLocaleLowerCase() === actor.name.trim().toLocaleLowerCase()
-)
+) => actor.role === 'finance' && Boolean(actor.employeeId && draft.employeeId === actor.employeeId)
 
-type View = 'pending' | 'approved' | 'rejected' | 'paid' | 'all'
+type View = 'review' | 'ready' | 'history'
 type Decision = { kind: 'approve_all' } | { kind: 'approve_employee' | 'reject_employee'; draftId: string }
 
 const viewLabels: Record<View, string> = {
-  pending: 'Review',
-  approved: 'Approved',
-  rejected: 'Returned to HR',
-  paid: 'Paid',
-  all: 'All',
+  review: 'Review',
+  ready: 'Ready to Pay',
+  history: 'History',
 }
 
 const getProposalVisualStatus = (
@@ -76,7 +71,7 @@ export const FinancePayrollReview = () => {
   const rejectEmployee = usePayrollStore((state) => state.rejectEmployeePayroll)
   const recordPayment = usePayrollStore((state) => state.recordPayrollProposalPayment)
 
-  const [view, setView] = useState<View>('pending')
+  const [view, setView] = useState<View>('review')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [decision, setDecision] = useState<Decision | null>(null)
   const [note, setNote] = useState('')
@@ -91,18 +86,14 @@ export const FinancePayrollReview = () => {
 
   const selected = selectedId ? proposals.find((item) => item.id === selectedId) ?? null : null
   const filtered = proposals.filter((proposal) => {
-    if (view === 'pending') return ['submitted_to_finance', 'returned_to_hr'].includes(proposal.status)
-    if (view === 'approved') return proposal.status === 'finance_approved'
-    if (view === 'rejected') return proposal.status === 'returned_to_hr'
-    if (view === 'paid') return proposal.status === 'paid'
-    return proposal.status !== 'draft'
+    if (view === 'review') return ['submitted_to_finance', 'returned_to_hr'].includes(proposal.status)
+    if (view === 'ready') return proposal.status === 'finance_approved'
+    return ['paid', 'resolved'].includes(proposal.status)
   })
   const counts: Record<View, number> = {
-    pending: proposals.filter((item) => ['submitted_to_finance', 'returned_to_hr'].includes(item.status)).length,
-    approved: proposals.filter((item) => item.status === 'finance_approved').length,
-    rejected: proposals.filter((item) => item.status === 'returned_to_hr').length,
-    paid: proposals.filter((item) => item.status === 'paid').length,
-    all: proposals.filter((item) => item.status !== 'draft').length,
+    review: proposals.filter((item) => ['submitted_to_finance', 'returned_to_hr'].includes(item.status)).length,
+    ready: proposals.filter((item) => item.status === 'finance_approved').length,
+    history: proposals.filter((item) => ['paid', 'resolved'].includes(item.status)).length,
   }
   const selectedDrafts = useMemo(() => selected ? drafts.filter((item) => selected.employeePayrollIds.includes(item.id)) : [], [selected, drafts])
   const selectedPeriod = selected ? periods.find((item) => item.id === selected.payrollPeriodId) : undefined
@@ -172,10 +163,9 @@ export const FinancePayrollReview = () => {
             <p className="mt-1 text-sm text-muted-foreground">Review employee payrolls, return corrections to HR, and record final payment.</p>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <Metric label="Review" value={counts.pending} />
-            <Metric label="Approved" value={counts.approved} />
-            <Metric label="Returned" value={counts.rejected} />
-            <Metric label="Paid" value={counts.paid} />
+            <Metric label="Review" value={counts.review} />
+            <Metric label="Ready to pay" value={counts.ready} />
+            <Metric label="History" value={counts.history} />
           </div>
         </div>
 
