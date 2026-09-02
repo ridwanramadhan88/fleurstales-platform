@@ -6,6 +6,7 @@ import { useOrdersStore } from '../../store/ordersStore'
 import { useOrderRuntimeStore } from '../../store/orderRuntimeStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { DEFAULT_OWNER_SETTINGS } from '../../domain/settings/defaultOwnerSettings'
+import { DEFAULT_ACTION_PERMISSIONS } from '../../config/actionPermissions'
 import { FinanceRefundQueue } from './FinanceRefundQueue'
 
 const pendingOrder = makeOrder({
@@ -32,7 +33,11 @@ const completedOrder = makeOrder({
 
 describe('FinanceRefundQueue', () => {
   beforeEach(() => {
-    useSettingsStore.setState({ ...structuredClone(DEFAULT_OWNER_SETTINGS), settingsHasUnsavedChanges:false })
+    useSettingsStore.setState({
+      ...structuredClone(DEFAULT_OWNER_SETTINGS),
+      actionPermissions: structuredClone(DEFAULT_ACTION_PERMISSIONS),
+      settingsHasUnsavedChanges:false,
+    })
     useOrdersStore.setState({ orders: [pendingOrder, completedOrder] })
     useOrderRuntimeStore.setState({ activities: {} })
   })
