@@ -1,5 +1,6 @@
 import { finalizeIndonesianStaticCopy } from './finalizeIndonesianCopy'
 import { ID_PATTERN_TRANSLATIONS, ID_TRANSLATIONS } from './indonesianTranslations'
+import { ID_REVIEWED_SOURCE_TRANSLATIONS } from './reviewedTranslationSource'
 import type { UiLanguage } from './uiLanguage'
 
 const normalize = (value: string): string => value.replace(/\s+/g, ' ').trim()
@@ -38,6 +39,11 @@ export const translateUiText = (value: string, language: UiLanguage): string => 
 
   const patterned = applyPatterns(normalized, ID_PATTERN_TRANSLATIONS)
   if (patterned !== undefined) return preserveBoundaryWhitespace(value, patterned)
+
+  const reviewedFallback = ID_REVIEWED_SOURCE_TRANSLATIONS[normalized]
+  if (reviewedFallback !== undefined) {
+    return preserveBoundaryWhitespace(value, finalizeIndonesianStaticCopy(reviewedFallback))
+  }
 
   return value
 }
