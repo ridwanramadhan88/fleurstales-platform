@@ -1,3 +1,4 @@
+import { finalizeIndonesianStaticCopy } from './finalizeIndonesianCopy'
 import { ID_PATTERN_TRANSLATIONS, ID_TRANSLATIONS } from './indonesianTranslations'
 import type { UiLanguage } from './uiLanguage'
 
@@ -31,7 +32,9 @@ export const translateUiText = (value: string, language: UiLanguage): string => 
   if (!normalized || !/[A-Za-z]/.test(normalized)) return value
 
   const exact = ID_TRANSLATIONS[normalized]
-  if (exact !== undefined) return preserveBoundaryWhitespace(value, exact)
+  if (exact !== undefined) {
+    return preserveBoundaryWhitespace(value, finalizeIndonesianStaticCopy(exact))
+  }
 
   const patterned = applyPatterns(normalized, ID_PATTERN_TRANSLATIONS)
   if (patterned !== undefined) return preserveBoundaryWhitespace(value, patterned)
