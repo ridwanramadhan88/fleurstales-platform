@@ -1,5 +1,6 @@
 const PHRASE_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bPeriod vs Previous Period\b/g, 'Periode vs Periode Sebelumnya'],
+  [/\bSingle view\b/g, 'Tampilan tunggal'],
   [/\bdefault role\b/gi, 'peran bawaan'],
   [/\bdefault schedule\b/gi, 'jadwal bawaan'],
   [/\bdefault week\b/gi, 'minggu kerja bawaan'],
@@ -13,6 +14,8 @@ const PHRASE_REPLACEMENTS: Array<[RegExp, string]> = [
 const TERM_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bBranch\b/g, 'Cabang'],
   [/\bDashboard\b/g, 'Ringkasan'],
+  [/\bRevenue\b/g, 'Pendapatan'],
+  [/\bExpense\b/g, 'Pengeluaran'],
   [/\bstorefront\b/gi, 'toko online'],
   [/\bSettings\b/g, 'Pengaturan'],
   [/\bEdit\b/g, 'Ubah'],
