@@ -75,7 +75,7 @@ describe('payroll role eligibility and independent Finance review', () => {
 
     const state = usePayrollStore.getState()
     const proposal = state.payrollProposals[0]
-    const demoFinance = { employeeId:'demo-finance', name:'Dewi', role:'finance' as const }
+    const demoFinance = { employeeId:'emp-finance', name:'Dewi', role:'finance' as const }
 
     expect(usePayrollStore.getState().approvePayrollProposal({ payrollProposalId:proposal.id, note:'', actor:demoFinance }).ok).toBe(true)
     expect(usePayrollStore.getState().payrollProposals[0].status).toBe('finance_approved')
