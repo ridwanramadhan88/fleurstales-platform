@@ -34,6 +34,13 @@ describe('natural Indonesian UI copy', () => {
     )
   })
 
+  it('uses the reviewed source only as a polished lowest-priority fallback', () => {
+    expect(translateUiText('Branch vs Branch', 'id')).toBe('Cabang vs Cabang')
+    expect(translateUiText('Period vs Previous Period', 'id')).toBe('Periode vs Periode Sebelumnya')
+    expect(translateUiText('Revenue vs Expense', 'id')).toBe('Pendapatan vs Pengeluaran')
+    expect(translateUiText('Single view', 'id')).toBe('Tampilan tunggal')
+  })
+
   it('translates dynamic operational copy without legacy English terms', () => {
     expect(translateUiText('Showing 3 of 8', 'id')).toBe('Menampilkan 3 dari 8')
     expect(translateUiText('4 results', 'id')).toBe('4 hasil')
