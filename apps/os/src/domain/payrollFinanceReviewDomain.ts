@@ -1,4 +1,8 @@
 import type { EmployeePayrollDraft } from '../store/payrollStore'
+import {
+  calculatePayrollFromPointValues,
+  DEFAULT_PAYROLL_CALCULATION_POLICY,
+} from './payrollPreparationDomain'
 
 export type PayrollFinanceValidationResult =
   | { ok: true }
@@ -19,28 +23,27 @@ export const validatePayrollForFinance = (draft: EmployeePayrollDraft): PayrollF
 
   const ids = new Set<string>()
   const sources = new Set<string>()
-  let positivePoints = 0
-  let negativePoints = 0
   for (const entry of draft.pointEntries) {
     if (ids.has(entry.id)) return { ok:false, reason:'Payroll contains a duplicate point-entry snapshot.' }
     ids.add(entry.id)
     const sourceKey = `${entry.sourceType}:${entry.sourceId}`
     if (sources.has(sourceKey)) return { ok:false, reason:'Payroll contains duplicate point evidence from the same source.' }
     sources.add(sourceKey)
-    if (entry.points >= 0) positivePoints += entry.points
-    else negativePoints += entry.points
   }
 
-  const netPoints = positivePoints + negativePoints
-  const bonusIdr = Math.max(0, netPoints) * 1_000
+  const calculation = calculatePayrollFromPointValues(
+    draft.baseSalaryIdr,
+    draft.pointEntries,
+    draft.calculationPolicy ?? DEFAULT_PAYROLL_CALCULATION_POLICY,
+  )
   const adjustmentIdr = draft.hrAdjustmentIdr ?? 0
-  const finalPayrollIdr = draft.baseSalaryIdr + bonusIdr + adjustmentIdr
+  const finalPayrollIdr = calculation.finalPayrollIdr + adjustmentIdr
   if (finalPayrollIdr < draft.baseSalaryIdr) return { ok:false, reason:'HR adjustment cannot reduce payroll below base salary.' }
 
-  if (draft.positivePoints !== positivePoints) return { ok:false, reason:'Positive-point total does not match the evidence snapshot.' }
-  if (draft.negativePoints !== negativePoints) return { ok:false, reason:'Minus-point total does not match the evidence snapshot.' }
-  if (draft.netPoints !== netPoints) return { ok:false, reason:'Net-point total is incorrect.' }
-  if (draft.bonusIdr !== bonusIdr) return { ok:false, reason:'Point bonus calculation is incorrect.' }
+  if (draft.positivePoints !== calculation.positivePoints) return { ok:false, reason:'Positive-point total does not match the evidence snapshot.' }
+  if (draft.negativePoints !== calculation.negativePoints) return { ok:false, reason:'Minus-point total does not match the evidence snapshot.' }
+  if (draft.netPoints !== calculation.netPoints) return { ok:false, reason:'Net-point total is incorrect.' }
+  if (draft.bonusIdr !== calculation.bonusIdr) return { ok:false, reason:'Point bonus calculation is incorrect.' }
   if (draft.finalPayrollIdr !== finalPayrollIdr) return { ok:false, reason:'Final payroll calculation is incorrect.' }
 
   return { ok:true }
