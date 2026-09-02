@@ -19,19 +19,32 @@ describe('HR employee lifecycle', () => {
   it('uses the role salary when no individual override exists', () => {
     expect(getEmployeeReadiness({ employee, roleSalaryIdr:4_000_000, productionAuth:true })).toEqual({
       state:'active',
+      setupComplete:true,
       missing:[],
       effectiveBaseSalaryIdr:4_000_000,
     })
   })
 
-  it('shows setup required without a production recovery email', () => {
+  it('keeps an employed person operational while flagging missing setup', () => {
     const readiness = getEmployeeReadiness({
       employee:{ ...employee, email:undefined },
       roleSalaryIdr:4_000_000,
       productionAuth:true,
     })
-    expect(readiness.state).toBe('setup_required')
+    expect(readiness.state).toBe('active')
+    expect(readiness.setupComplete).toBe(false)
     expect(readiness.missing).toContain('Recovery email')
+  })
+
+  it('keeps inactive employment separate from setup completeness', () => {
+    const readiness = getEmployeeReadiness({
+      employee:{ ...employee, status:'inactive', email:undefined },
+      roleSalaryIdr:0,
+      productionAuth:true,
+    })
+    expect(readiness.state).toBe('inactive')
+    expect(readiness.setupComplete).toBe(false)
+    expect(readiness.missing).toEqual(expect.arrayContaining(['Recovery email','Salary']))
   })
 
   it('blocks permanent removal when operational history exists', () => {
