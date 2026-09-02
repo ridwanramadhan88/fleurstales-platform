@@ -10,6 +10,7 @@ const normalize = (value) => value.replace(/\r\n/g, '\n').trim()
 const sharedFiles = [
   'naturalTranslations.ts',
   'indonesianTranslations.ts',
+  'finalizeIndonesianCopy.ts',
   'reviewedTranslations.ts',
   'translateUiText.ts',
   'translateUiText.test.ts',
