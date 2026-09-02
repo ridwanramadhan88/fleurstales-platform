@@ -50,6 +50,8 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const employees = useHrStore((state) => state.employees)
   const entries = useHrStore((state) => state.employeePointEntries)
   const attendanceReviews = useHrStore((state) => state.attendanceReviewCases)
+  const approvePointEntry = useHrStore((state) => state.approvePointEntry)
+  const rejectPointEntry = useHrStore((state) => state.rejectPointEntry)
   const periods = usePayrollStore((state) => state.periods)
   const drafts = usePayrollStore((state) => state.employeePayrolls)
   const proposals = usePayrollStore((state) => state.payrollProposals)
@@ -78,6 +80,8 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const [salaryEmployeeId, setSalaryEmployeeId] = useState<string | null>(null)
   const [salary, setSalary] = useState('')
   const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10))
+  const [pointRejectEntryId, setPointRejectEntryId] = useState<string | null>(null)
+  const [pointRejectReason, setPointRejectReason] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
@@ -150,9 +154,9 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
       detail: pendingAttendance.length === 0 ? 'No attendance warnings are waiting for HR.' : `${pendingAttendance.length} attendance warning(s) must be confirmed or corrected before payroll submission.`,
     },
     {
-      label: 'Points reviewed', severity:'warning',
+      label: 'Point adjustments reviewed', severity:'warning',
       complete: pendingPoints.length === 0,
-      detail: pendingPoints.length === 0 ? 'No point entries are waiting for review.' : `${pendingPoints.length} point entry/entries require review.`,
+      detail: pendingPoints.length === 0 ? 'No manual point adjustments are waiting for review.' : `${pendingPoints.length} manual point adjustment(s) are pending and excluded until approved.`,
     },
     {
       label: 'Calculations valid', severity:'blocker',
@@ -182,6 +186,21 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
     if (!result.ok) { setError(result.reason); setMessage(null); return }
     setError(null)
     setMessage(proposal?.status === 'returned_to_hr' ? 'Corrected employee payrolls resubmitted to Finance.' : 'Complete payroll proposal sent to Finance.')
+  }
+  const handleApprovePoint = (entryId:string) => {
+    const result = approvePointEntry({ entryId, actor:{ name:actorName, role } })
+    if (!result.ok) { setError(result.reason); setMessage(null); return }
+    setError(null)
+    setMessage('Point adjustment approved. Regenerate payroll to include it.')
+  }
+  const handleRejectPoint = () => {
+    if (!pointRejectEntryId) return
+    const result = rejectPointEntry({ entryId:pointRejectEntryId, note:pointRejectReason, actor:{ name:actorName, role } })
+    if (!result.ok) { setError(result.reason); return }
+    setPointRejectEntryId(null)
+    setPointRejectReason('')
+    setError(null)
+    setMessage('Point adjustment rejected.')
   }
   const openManualEditor = (draft?: EmployeePayrollDraft) => {
     setManualDraft(draft ?? null)
@@ -354,6 +373,24 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
           {warnings.length > 0 && <p className={`${readinessOpen ? 'block' : 'hidden'} mt-3 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning md:block`}>{warnings.map((item) => item.detail).join(' · ')} These warnings do not block submission.</p>}
         </div>
 
+        {pendingPoints.length > 0 && (
+          <section aria-label="Pending point adjustments" className="rounded-xl border border-warning/25 bg-warning/[0.035] p-3.5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><h3 className="text-sm font-semibold">Point adjustments to review</h3><p className="mt-1 text-xs text-muted-foreground">Only manual pending adjustments appear here. Automatic order points are already final.</p></div>
+              <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">{pendingPoints.length} pending</span>
+            </div>
+            <div className="mt-3 space-y-2">
+              {pendingPoints.map((entry) => {
+                const employee = employees.find((item) => item.id === entry.employeeId)
+                return <article key={entry.id} className="flex flex-col gap-3 rounded-lg bg-card p-3 ring-1 ring-border/60 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0"><p className="text-sm font-semibold">{employee?.name ?? 'Unknown employee'} · {entry.points > 0 ? '+' : ''}{entry.points} points</p><p className="mt-1 text-xs text-muted-foreground">{entry.reason}</p></div>
+                  {!locked ? <div className="flex shrink-0 gap-2"><button type="button" onClick={() => handleApprovePoint(entry.id)} className="h-10 rounded-full bg-success px-4 text-xs font-semibold text-success-foreground">Approve</button><button type="button" onClick={() => { setPointRejectEntryId(entry.id); setPointRejectReason(''); setError(null) }} className="h-10 rounded-full border border-destructive/30 px-4 text-xs font-semibold text-destructive">Reject</button></div> : <span className="text-xs text-muted-foreground">Proposal locked</span>}
+                </article>
+              })}
+            </div>
+          </section>
+        )}
+
         {proposal?.status === 'returned_to_hr' && (
           <p className="rounded-lg bg-warning/10 p-3 text-xs text-warning">Finance returned {rejectedCount} employee payroll(s). Correct or resolve those records, then resubmit. {approvedCount} approved payroll(s) remain locked and accepted.</p>
         )}
@@ -398,6 +435,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
       {adjustDraft && <Modal title={`Adjust ${adjustDraft.employeeName}`} onClose={() => setAdjustDraft(null)}><p className="text-xs text-muted-foreground">HR owns proposal adjustments. Finance may approve or reject this employee inside the monthly group.</p><label className="mt-4 block space-y-1"><span className="text-xs font-medium">Adjustment amount (IDR)</span><input aria-label="HR payroll adjustment" value={adjustment} onChange={(e) => setAdjustment(e.target.value.replace(/[^\d-]/g, ''))} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></label><label className="mt-3 block space-y-1"><span className="text-xs font-medium">Reason · Required when amount changes</span><textarea aria-label="HR payroll adjustment reason" value={adjustmentReason} onChange={(e) => setAdjustmentReason(e.target.value)} className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" /></label>{error && <p className="mt-2 text-xs text-destructive">{error}</p>}<Footer cancel={() => setAdjustDraft(null)} confirm={saveAdjustment} label="Save adjustment" /></Modal>}
       {resolveDraft && <Modal title={`Resolve ${resolveDraft.employeeName}`} onClose={() => setResolveDraft(null)}><p className="text-xs text-muted-foreground">Remove only this rejected employee from the current monthly proposal. Other Finance-approved payrolls remain accepted.</p><textarea aria-label="Employee payroll resolution reason" value={resolutionReason} onChange={(e) => setResolutionReason(e.target.value)} className="mt-3 min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" placeholder="Reason · Required" />{error && <p className="mt-2 text-xs text-destructive">{error}</p>}<Footer cancel={() => setResolveDraft(null)} confirm={handleResolveEmployee} label="Resolve employee" /></Modal>}
       {salaryEmployeeId && <Modal title="Set base salary" onClose={() => setSalaryEmployeeId(null)}><label className="block space-y-1"><span className="text-xs font-medium">Monthly base salary</span><input aria-label="Monthly base salary" inputMode="numeric" value={salary} onChange={(event) => setSalary(event.target.value.replace(/\D/g, ''))} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></label><label className="mt-3 block space-y-1"><span className="text-xs font-medium">Effective from</span><DatePickerField value={effectiveFrom} onChange={setEffectiveFrom} /></label>{error && <p className="mt-2 text-xs text-destructive">{error}</p>}<Footer cancel={() => setSalaryEmployeeId(null)} confirm={saveSalary} label="Save salary" /></Modal>}
+      {pointRejectEntryId && <Modal title="Reject point adjustment" onClose={() => { setPointRejectEntryId(null); setPointRejectReason(''); setError(null) }}><p className="text-xs text-muted-foreground">Rejected adjustments stay in history but are excluded from payroll.</p><textarea aria-label="Point adjustment rejection reason" value={pointRejectReason} onChange={(event) => setPointRejectReason(event.target.value)} className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" placeholder="Reason · Required" />{error && <p className="mt-2 text-xs text-destructive">{error}</p>}<Footer cancel={() => { setPointRejectEntryId(null); setPointRejectReason('') }} confirm={handleRejectPoint} label="Reject adjustment" /></Modal>}
     </section>
   )
 }

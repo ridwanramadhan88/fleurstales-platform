@@ -73,8 +73,8 @@ describe('role capability checks', () => {
     expect(canVerifyOrder('florist')).toBe(false)
   })
 
-  it('only finance can directly edit a verified/locked order (owner cannot)', () => {
-    expect(canEditVerifiedOrder('finance')).toBe(true)
+  it('does not allow any role to directly edit a verified/locked order', () => {
+    expect(canEditVerifiedOrder('finance')).toBe(false)
     expect(canEditVerifiedOrder('owner')).toBe(false)
     expect(canEditVerifiedOrder('admin')).toBe(false)
   })
@@ -145,9 +145,9 @@ describe('canDirectlyEditOrder', () => {
     expect(canDirectlyEditOrder(order, 'florist')).toBe(true)
   })
 
-  it('only finance can edit a locked (finished) order directly', () => {
+  it('does not allow any role to edit a locked finished order directly', () => {
     const order = makeOrder({ status: 'delivered' })
-    expect(canDirectlyEditOrder(order, 'finance')).toBe(true)
+    expect(canDirectlyEditOrder(order, 'finance')).toBe(false)
     expect(canDirectlyEditOrder(order, 'owner')).toBe(false)
     expect(canDirectlyEditOrder(order, 'admin')).toBe(false)
   })
@@ -301,7 +301,6 @@ describe('applyApprovedEditChangeRequest', () => {
 
     expect(updated.editUnlocked).toBe(true)
     expect(updated.pendingChangeRequest).toBeUndefined()
-    // Approving an edit request must not itself change the order's status.
     expect(updated.status).toBe('delivered')
   })
 })

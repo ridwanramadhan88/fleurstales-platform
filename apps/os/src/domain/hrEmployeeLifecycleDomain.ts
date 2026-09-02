@@ -11,10 +11,13 @@ import type {
 import type { EmployeeCompensation, EmployeePayrollDraft } from '../store/payrollStore'
 import type { OrderTableRow } from '../types/orders'
 
+/** Employment status is independent from account/payroll setup completeness. */
 export type EmployeeOperationalState = 'setup_required' | 'active' | 'inactive'
 
 export interface EmployeeReadiness {
+  /** Active/inactive follows employment status only. `setup_required` remains for compatibility with older persisted UI state. */
   state: EmployeeOperationalState
+  setupComplete: boolean
   missing: Array<'Login account' | 'Recovery email' | 'Salary'>
   effectiveBaseSalaryIdr: number
 }
@@ -36,12 +39,14 @@ export const getEmployeeReadiness = ({
   if (productionAuth && !employee.email) missing.push('Recovery email')
   if (effectiveBaseSalaryIdr <= 0) missing.push('Salary')
   return {
-    state: employee.status === 'inactive' ? 'inactive' : missing.length ? 'setup_required' : 'active',
+    state: employee.status === 'inactive' ? 'inactive' : 'active',
+    setupComplete: missing.length === 0,
     missing,
     effectiveBaseSalaryIdr,
   }
 }
 
+/** Scheduling and attendance follow employment status; missing login/salary remains a setup warning, not a roster exclusion. */
 export const isEmployeeOperationallyReady = (params: Parameters<typeof getEmployeeReadiness>[0]): boolean =>
   getEmployeeReadiness(params).state === 'active'
 

@@ -43,8 +43,8 @@ export const OrderFinanceReviewSheetFooter: FC<
         </div>
       ) : (
         <>
-          {hasPaymentMismatch && <label className="mb-3 flex items-start gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning"><input type="checkbox" checked={mismatchReviewed} onChange={(event) => setMismatchReviewed(event.target.checked)} className="mt-0.5"/><span>I reviewed the payment mismatch and still want to verify this order.</span></label>}
-          <div className="flex items-center justify-end gap-2"><button type="button" onClick={() => onStartAction("correction")} className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-warning/30 bg-warning/5 px-[18px] text-sm font-semibold text-warning"><AlertTriangle className="size-4"/>Needs correction</button><button type="button" onClick={onVerifyOrder} disabled={hasPaymentMismatch && !mismatchReviewed} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-success px-[18px] text-sm font-semibold text-white disabled:opacity-40"><ShieldCheck className="size-4"/>Verify</button></div>
+          {hasPaymentMismatch && <label className="mb-3 flex items-start gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning"><input type="checkbox" checked={mismatchReviewed} onChange={(event) => setMismatchReviewed(event.target.checked)} className="mt-0.5"/><span>I reviewed the payment mismatch and still want to reconcile this order.</span></label>}
+          <div className="flex items-center justify-end gap-2"><button type="button" onClick={() => onStartAction("correction")} className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-warning/30 bg-warning/5 px-[18px] text-sm font-semibold text-warning"><AlertTriangle className="size-4"/>Needs correction</button><button type="button" onClick={onVerifyOrder} disabled={hasPaymentMismatch && !mismatchReviewed} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-success px-[18px] text-sm font-semibold text-white disabled:opacity-40"><ShieldCheck className="size-4"/>Reconcile order</button></div>
         </>
       )}
     </section>

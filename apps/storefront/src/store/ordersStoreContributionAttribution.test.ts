@@ -57,7 +57,7 @@ describe('order contribution attribution',()=>{
   expect(useOrdersStore.getState().orders[0]).toMatchObject({
     status:'processing',
     floristScheduleOverride:true,
-    floristScheduleOverrideReason:'Shift 07:00-16:00 does not cover the order time.',
+    floristScheduleOverrideReason:'Shift 07:00-16:00 does not cover the assignment time.',
     floristScheduledBranchId:'Kedamaian',
     floristAssignedBranchId:'Kedamaian',
   })

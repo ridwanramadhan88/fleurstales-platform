@@ -132,8 +132,8 @@ export interface PayrollDefaultSettings {
   timezone: 'Asia/Jakarta'
   /** Owner-editable conversion used for future payroll calculations. */
   pointValueIdr: number
-  /** Default monthly base salary by role. Individual effective salary records may override these defaults. */
-  baseSalaryByRole?: Record<Exclude<UserRole, 'owner'>, number>
+  /** Default monthly base salary by staff role. Owner stays outside generated payroll but is a safe optional lookup key. */
+  baseSalaryByRole?: Record<Exclude<UserRole, 'owner'>, number> & { owner?: number }
 }
 
 export interface BranchSettings {

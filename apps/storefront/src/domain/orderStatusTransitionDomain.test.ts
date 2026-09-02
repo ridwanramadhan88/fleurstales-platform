@@ -26,10 +26,7 @@ describe('transitionOrderStatus — fulfillment pipeline', () => {
     ['ready', 'delivering'],
     ['delivering', 'delivered'],
   ] as const)('allows delivery %s → %s', (from, to) => {
-    const result = run({
-      order: makeOrder({ status: from, fulfillment: 'delivery' }),
-      nextStatus: to,
-    })
+    const result = run({ order: makeOrder({ status: from, fulfillment: 'delivery' }), nextStatus: to })
     expect(result.allowed).toBe(true)
   })
 
@@ -39,38 +36,23 @@ describe('transitionOrderStatus — fulfillment pipeline', () => {
     ['processing', 'ready'],
     ['ready', 'picked_up'],
   ] as const)('allows pickup %s → %s', (from, to) => {
-    const result = run({
-      order: makeOrder({ status: from, fulfillment: 'pickup' }),
-      nextStatus: to,
-    })
+    const result = run({ order: makeOrder({ status: from, fulfillment: 'pickup' }), nextStatus: to })
     expect(result.allowed).toBe(true)
   })
 
   it('allows Admin to advance processing directly to ready', () => {
-    const result = run({
-      order: makeOrder({ status: 'processing', fulfillment: 'delivery' }),
-      nextStatus: 'ready',
-    })
+    const result = run({ order: makeOrder({ status: 'processing', fulfillment: 'delivery' }), nextStatus: 'ready' })
     expect(result).toMatchObject({ allowed: true, order: { status: 'ready' } })
   })
 
   it('blocks skipped stages', () => {
-    const result = run({
-      order: makeOrder({ status: 'processing', fulfillment: 'delivery' }),
-      nextStatus: 'delivered',
-    })
+    const result = run({ order: makeOrder({ status: 'processing', fulfillment: 'delivery' }), nextStatus: 'delivered' })
     expect(result).toMatchObject({ allowed: false, code: 'ILLEGAL_TRANSITION' })
   })
 
   it('blocks fulfillment-incompatible statuses', () => {
-    const result = run({
-      order: makeOrder({ status: 'ready', fulfillment: 'pickup' }),
-      nextStatus: 'delivering',
-    })
-    expect(result).toMatchObject({
-      allowed: false,
-      code: 'INVALID_FULFILLMENT_STATUS',
-    })
+    const result = run({ order: makeOrder({ status: 'ready', fulfillment: 'pickup' }), nextStatus: 'delivering' })
+    expect(result).toMatchObject({ allowed: false, code: 'INVALID_FULFILLMENT_STATUS' })
   })
 
   it('blocks same-state writes', () => {
@@ -89,29 +71,23 @@ describe('transitionOrderStatus — exception and lock rules', () => {
   })
 
   it('makes cancelled and failed states immutable outside exact Undo', () => {
-    const result = run({
-      order: makeOrder({ status: 'cancelled' }),
-      nextStatus: 'processing',
-    })
+    const result = run({ order: makeOrder({ status: 'cancelled' }), nextStatus: 'processing' })
     expect(result).toMatchObject({ allowed: false, code: 'TERMINAL_STATUS' })
   })
 
   it('blocks Admin from changing a finished locked order', () => {
-    const result = run({
-      order: makeOrder({ status: 'delivered', fulfillment: 'delivery' }),
-      nextStatus: 'cancelled',
-    })
+    const result = run({ order: makeOrder({ status: 'delivered', fulfillment: 'delivery' }), nextStatus: 'cancelled' })
     expect(result).toMatchObject({ allowed: false, code: 'ORDER_LOCKED' })
   })
 
-  it('allows Finance to directly cancel a finished locked order', () => {
+  it('does not give Finance a finished-order status bypass', () => {
     const result = run({
       order: makeOrder({ status: 'delivered', fulfillment: 'delivery' }),
       nextStatus: 'cancelled',
       actor: { name: 'Finance A', role: 'finance' },
       canEditOrders: false,
     })
-    expect(result.allowed).toBe(true)
+    expect(result).toMatchObject({ allowed: false, code: 'NOT_PERMITTED' })
   })
 
   it('blocks roles without Orders edit permission', () => {
@@ -131,11 +107,7 @@ describe('transitionOrderStatus — cancellation approval', () => {
 
   it('routes a finished cancellation request through the same command and clears it', () => {
     const result = run({
-      order: makeOrder({
-        status: 'delivered',
-        fulfillment: 'delivery',
-        pendingChangeRequest: request,
-      }),
+      order: makeOrder({ status: 'delivered', fulfillment: 'delivery', pendingChangeRequest: request }),
       nextStatus: 'cancelled',
       actor: { name: 'Owner A', role: 'owner' },
       source: 'change_request_approval',
@@ -164,10 +136,7 @@ describe('transitionOrderStatus — cancellation approval', () => {
       actor: { name: 'Finance A', role: 'finance' },
       source: 'change_request_approval',
     })
-    expect(result).toMatchObject({
-      allowed: false,
-      code: 'CHANGE_REQUEST_REQUIRED',
-    })
+    expect(result).toMatchObject({ allowed: false, code: 'CHANGE_REQUEST_REQUIRED' })
   })
 })
 
@@ -179,11 +148,7 @@ describe('transitionOrderStatus — exact Undo', () => {
       nextStatus: 'ready',
       source: 'undo',
       completedAtOverride: originalCompletedAt,
-      undoOf: {
-        previousStatus: 'ready',
-        nextStatus: 'delivering',
-        originalSource: 'workflow',
-      },
+      undoOf: { previousStatus: 'ready', nextStatus: 'delivering', originalSource: 'workflow' },
     })
 
     expect(result.allowed).toBe(true)
@@ -195,11 +160,7 @@ describe('transitionOrderStatus — exact Undo', () => {
       order: makeOrder({ status: 'cancelled' }),
       nextStatus: 'processing',
       source: 'undo',
-      undoOf: {
-        previousStatus: 'processing',
-        nextStatus: 'cancelled',
-        originalSource: 'workflow',
-      },
+      undoOf: { previousStatus: 'processing', nextStatus: 'cancelled', originalSource: 'workflow' },
     })
     expect(result.allowed).toBe(true)
   })
@@ -209,11 +170,7 @@ describe('transitionOrderStatus — exact Undo', () => {
       order: makeOrder({ status: 'delivered' }),
       nextStatus: 'processing',
       source: 'undo',
-      undoOf: {
-        previousStatus: 'processing',
-        nextStatus: 'ready',
-        originalSource: 'workflow',
-      },
+      undoOf: { previousStatus: 'processing', nextStatus: 'ready', originalSource: 'workflow' },
     })
     expect(result).toMatchObject({ allowed: false, code: 'INVALID_UNDO' })
   })
@@ -226,7 +183,6 @@ describe('transitionOrderStatus — timestamps', () => {
     if (result.allowed) expect(result.order.completedAt).toBe(at)
   })
 
-
   it('does not treat ready as the completed business event', () => {
     const result = run()
     expect(result.allowed).toBe(true)
@@ -234,10 +190,7 @@ describe('transitionOrderStatus — timestamps', () => {
   })
 
   it('does not stamp an ordinary in-progress status', () => {
-    const result = run({
-      order: makeOrder({ status: 'confirmed', completedAt: undefined }),
-      nextStatus: 'processing',
-    })
+    const result = run({ order: makeOrder({ status: 'confirmed', completedAt: undefined }), nextStatus: 'processing' })
     expect(result.allowed).toBe(true)
     if (result.allowed) expect(result.order.completedAt).toBeUndefined()
   })

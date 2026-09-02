@@ -1,10 +1,10 @@
 /**
  * @file FinanceOrderFilterBar.tsx
- * @description Filter controls for the "Order list (finished)" section of
+ * @description Filter controls for the order-reconciliation list in
  * OrderTransactionVerificationQueue: the completion-date scope tabs, the
  * "Showing N of M" summary line, the status filter chip row (All / Pending
- * / Verified / Rejected / Review, with a count badge on Pending), and the
- * "Select" toggle that enters/exits bulk-verify mode. All filter state
+ * / Reconciled / Rejected / Review, with a count badge on Pending), and the
+ * "Select" toggle that enters/exits bulk-reconciliation mode. All filter state
  * itself is owned by the parent — this component is purely presentational
  * and wires user interactions back up via callbacks.
  */
@@ -41,7 +41,7 @@ export interface FinanceOrderFilterBarProps {
   searchQuery?: string
   onSearchQueryChange?: (value: string) => void
 
-  /** Whether the current user can verify orders directly (Finance/Owner) — gates the "Select" toggle. */
+  /** Whether the current user can reconcile orders directly (Finance/Owner) — gates the "Select" toggle. */
   canVerify: boolean
   /** Whether there's at least one row eligible for bulk selection right now. */
   hasSelectableOrders: boolean
@@ -61,8 +61,8 @@ const dateScopeLabel = (scope: FinanceDateScopeId): string => {
 
 const STATUS_OPTIONS: Array<{ id: FinanceOrderStatusFilter; label: string }> = [
   { id: 'all', label: 'All' },
-  { id: 'pending', label: 'To verify' },
-  { id: 'verified', label: 'Completed' },
+  { id: 'pending', label: 'To reconcile' },
+  { id: 'verified', label: 'Reconciled' },
   { id: 'rejected', label: 'Rejected' },
   { id: 'review', label: 'Needs attention' },
 ]
@@ -113,7 +113,7 @@ export const FinanceOrderFilterBar: FC<FinanceOrderFilterBarProps> = ({
             type="search"
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}
-            placeholder="Search collect orders, customer, or ID..."
+            placeholder="Search orders, customer, or ID..."
             className="h-9 w-full rounded-full border border-border bg-card pl-8 pr-8 text-sm text-foreground shadow-ios-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
           />
           {searchQuery.length > 0 && (
@@ -129,7 +129,7 @@ export const FinanceOrderFilterBar: FC<FinanceOrderFilterBarProps> = ({
         </div>
       )}
 
-      {/* Status filter chips: All / Pending / Verified / Rejected / Review,
+      {/* Status filter chips: All / Pending / Reconciled / Rejected / Review,
           same FilterChip treatment as the Orders tab's All/New/Processing/etc
           row, with a count badge on Pending. */}
       <div className="relative flex min-w-0 flex-wrap items-center gap-2">
@@ -158,9 +158,6 @@ export const FinanceOrderFilterBar: FC<FinanceOrderFilterBarProps> = ({
           ))}
         </ChipRow>
 
-        {/* Toggles bulk-select mode on/off. Turning it off clears any
-            in-progress selection (handled by the parent) so re-entering
-            always starts fresh. */}
         {canVerify && hasSelectableOrders && (
           <button
             type="button"
@@ -173,7 +170,7 @@ export const FinanceOrderFilterBar: FC<FinanceOrderFilterBarProps> = ({
                 Cancel
               </>
             ) : (
-              'Bulk verify'
+              'Bulk reconcile'
             )}
           </button>
         )}

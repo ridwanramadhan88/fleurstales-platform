@@ -70,7 +70,7 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'finance.record_final_payment', label:'Record Final Payment', description:'Record final payroll payment.', parentSection:'finance', group:'Finance' },
   { id:'finance.adjust_payroll_schedule', label:'Adjust Payroll Schedule', description:'Adjust a future payroll cycle schedule before approval/payment.', parentSection:'finance', group:'Finance' },
   { id:'finance.view_refunds', label:'View Refunds', description:'Open the refund workspace.', parentSection:'finance', group:'Finance' },
-  { id:'finance.approve_refund', label:'Approve Refunds', description:'Review refund requests.', parentSection:'finance', group:'Finance' },
+  { id:'finance.approve_refund', label:'Manage Refunds', description:'Initiate, complete, or cancel refunds from the Finance workflow.', parentSection:'finance', group:'Finance' },
   { id:'finance.view_ledger', label:'View Transactions', description:'Read transaction entries.', parentSection:'finance', group:'Finance' },
   { id:'finance.create_ledger_entry', label:'Create Transactions', description:'Add Money In or Money Out.', parentSection:'finance', group:'Finance' },
   { id:'finance.edit_ledger_entry', label:'Edit Manual Transactions', description:'Edit manual ledger entries. Automatic entries stay read-only.', parentSection:'finance', group:'Finance' },
@@ -103,7 +103,6 @@ export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
   hr: withEnabled('hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
 }
-
 
 export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
   'orders.read_all': ['owner','admin','finance'],

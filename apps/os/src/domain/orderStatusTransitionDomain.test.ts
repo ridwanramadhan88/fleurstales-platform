@@ -104,14 +104,14 @@ describe('transitionOrderStatus — exception and lock rules', () => {
     expect(result).toMatchObject({ allowed: false, code: 'ORDER_LOCKED' })
   })
 
-  it('allows Finance to directly cancel a finished locked order', () => {
+  it('does not give Finance a finished-order status bypass', () => {
     const result = run({
       order: makeOrder({ status: 'delivered', fulfillment: 'delivery' }),
       nextStatus: 'cancelled',
       actor: { name: 'Finance A', role: 'finance' },
       canEditOrders: false,
     })
-    expect(result.allowed).toBe(true)
+    expect(result).toMatchObject({ allowed: false, code: 'NOT_PERMITTED' })
   })
 
   it('blocks roles without Orders edit permission', () => {
@@ -225,7 +225,6 @@ describe('transitionOrderStatus — timestamps', () => {
     expect(result.allowed).toBe(true)
     if (result.allowed) expect(result.order.completedAt).toBe(at)
   })
-
 
   it('does not treat ready as the completed business event', () => {
     const result = run()

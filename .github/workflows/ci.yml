@@ -4,12 +4,94 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  verify:
+  mode:
+    name: Select CI mode
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      full: ${{ steps.mode.outputs.full }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - id: mode
+        name: Choose fast PR checks or full merge gate
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || git log -1 --pretty=%B | grep -q '\[full-ci\]'; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "full=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  critical:
+    name: Critical contracts
+    needs: mode
+    if: needs.mode.outputs.full != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run critical security and authority checks
+        run: |
+          npm run check:i18n
+          npm run check:supabase-security
+          npm run check:v37
+          npm run check:v38
+          npm run check:v311
+
+  storefront:
+    name: Storefront fast checks
+    needs: mode
+    if: needs.mode.outputs.full != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace=fleurstales-storefront
+      - run: npm test --workspace=fleurstales-storefront
+
+  os:
+    name: Business OS fast checks
+    needs: mode
+    if: needs.mode.outputs.full != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace=fleurstales-os
+      - run: npm test --workspace=fleurstales-os
+
+  full-verify:
+    name: Full merge verification
+    needs: mode
+    if: needs.mode.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -22,7 +104,9 @@ jobs:
       - run: npm run check
 
   database-gate:
-    needs: verify
+    name: Full Supabase database gate
+    needs: [mode, full-verify]
+    if: needs.mode.outputs.full == 'true' && needs.full-verify.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

@@ -2,13 +2,9 @@ name: Release production
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
-  checks: write
-  statuses: write
 
 concurrency:
   group: fleurstales-production
@@ -83,11 +79,27 @@ jobs:
           node-version: 22
       - run: npx -y supabase@2.109.1 functions deploy staff-admin --project-ref "$SUPABASE_PROJECT_ID"
       - run: npx -y supabase@2.109.1 functions deploy staff-login --project-ref "$SUPABASE_PROJECT_ID"
-      - name: Notify Vercel OS production release
-        uses: vercel/repository-dispatch/actions/status@v1
+
+  deploy-web:
+    needs: deploy-functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          name: "Vercel - fleurstales-os: production-release"
-      - name: Notify Vercel Storefront production release
-        uses: vercel/repository-dispatch/actions/status@v1
-        with:
-          name: "Vercel - fleurstales-storefront: production-release"
+          node-version: 22
+      - name: Deploy Storefront to Vercel production
+        working-directory: apps/storefront
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STOREFRONT_PROJECT_ID }}
+        run: npx -y vercel@59.11.2 deploy --prod --yes --project "$VERCEL_PROJECT_ID" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+      - name: Deploy Business OS to Vercel production
+        working-directory: apps/os
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OS_PROJECT_ID }}
+        run: npx -y vercel@59.11.2 deploy --prod --yes --project "$VERCEL_PROJECT_ID" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"

@@ -17,15 +17,19 @@ beforeEach(()=>{
 })
 
 describe('group proposal with employee-level Finance review',()=>{
-  it('allows Finance to approve the complete proposal at once',()=>{
+  it('allows Finance to approve the complete proposal at once without backfilling HR-owned legacy policy',()=>{
     expect(usePayrollStore.getState().approvePayrollProposal({payrollProposalId:'proposal-1',note:'All totals reviewed.',actor:hr})).toMatchObject({ok:false,code:'forbidden'})
     expect(usePayrollStore.getState().approvePayrollProposal({payrollProposalId:'proposal-1',note:'',actor:finance}).ok).toBe(true)
     expect(usePayrollStore.getState().payrollProposals[0].status).toBe('finance_approved')
     expect(usePayrollStore.getState().employeePayrolls.every((item)=>item.status==='finance_verified')).toBe(true)
+    expect(usePayrollStore.getState().payrollProposals[0].calculationPolicy).toBeUndefined()
+    expect(usePayrollStore.getState().employeePayrolls.every((item)=>item.calculationPolicy===undefined)).toBe(true)
   })
 
-  it('keeps approved employees accepted when another employee is rejected',()=>{
+  it('keeps approved employees accepted when another employee is rejected and leaves policy ownership with HR',()=>{
     expect(usePayrollStore.getState().verifyEmployeePayroll({payrollDraftId:'draft-1',note:'',actor:finance}).ok).toBe(true)
+    expect(usePayrollStore.getState().employeePayrolls.find((item)=>item.id==='draft-1')?.calculationPolicy).toBeUndefined()
+    expect(usePayrollStore.getState().payrollProposals[0].calculationPolicy).toBeUndefined()
     expect(usePayrollStore.getState().rejectEmployeePayroll({payrollDraftId:'draft-2',note:'Check duplicate points.',actor:finance}).ok).toBe(true)
     expect(usePayrollStore.getState().employeePayrolls.find((item)=>item.id==='draft-1')?.status).toBe('finance_verified')
     expect(usePayrollStore.getState().employeePayrolls.find((item)=>item.id==='draft-2')?.status).toBe('finance_rejected')

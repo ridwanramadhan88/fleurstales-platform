@@ -17,6 +17,26 @@ describe('payroll finance validation', () => {
     expect(validatePayrollForFinance(draft())).toEqual({ ok:true })
   })
 
+  it('uses the frozen proposal policy instead of hardcoded point math', () => {
+    const custom = draft()
+    custom.calculationPolicy = { pointValueIdr:2_000, bonusCapIdr:500_000 }
+    custom.bonusIdr = 30_000
+    custom.finalPayrollIdr = 4_030_000
+    expect(validatePayrollForFinance(custom)).toEqual({ ok:true })
+  })
+
+  it('enforces the frozen bonus cap', () => {
+    const capped = draft()
+    capped.pointEntries = [{ id:'p-cap', category:'florist_assignment', points:600, reason:'High volume period', sourceType:'order', sourceId:'order:cap', createdAt:'2026-08-01T00:00:00.000Z' }]
+    capped.positivePoints = 600
+    capped.negativePoints = 0
+    capped.netPoints = 600
+    capped.calculationPolicy = { pointValueIdr:2_000, bonusCapIdr:500_000 }
+    capped.bonusIdr = 500_000
+    capped.finalPayrollIdr = 4_500_000
+    expect(validatePayrollForFinance(capped)).toEqual({ ok:true })
+  })
+
   it('rejects calculation mismatch and duplicate evidence', () => {
     expect(validatePayrollForFinance({ ...draft(), finalPayrollIdr:4_999_999 })).toMatchObject({ ok:false })
     const duplicate = draft()

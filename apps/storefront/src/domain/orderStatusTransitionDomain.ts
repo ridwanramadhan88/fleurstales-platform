@@ -8,7 +8,6 @@
 import type { OrderFulfillment, OrderStatus, OrderTableRow } from '../types/orders'
 import type { UserRole } from '../store/userStore'
 import {
-  canDirectlyEditOrder,
   canResolveChangeRequest,
   isOrderFinished,
   isOrderLocked,
@@ -104,21 +103,11 @@ const denied = (
   reason: string,
 ): OrderStatusTransitionResult => ({ allowed: false, code, reason })
 
-const hasRuntimeStatusPermission = (
-  order: OrderTableRow,
-  actor: OrderStatusTransitionActor,
-  canEditOrders: boolean,
-): boolean => {
-  // Finance has a narrow direct-edit override only once an order is locked;
-  // outside that state it remains read-only in the general Orders section.
-  if (canEditOrders) return true
-  return isOrderLocked(order) && canDirectlyEditOrder(order, actor.role)
-}
+const hasRuntimeStatusPermission = (canEditOrders: boolean): boolean => canEditOrders
 
 const validateNormalTransition = ({
   order,
   nextStatus,
-  actor,
   canEditOrders,
 }: Pick<
   TransitionOrderStatusInput,
@@ -128,11 +117,14 @@ const validateNormalTransition = ({
     return denied('ORDER_NOT_FOUND', 'The order could not be found.')
   }
 
-  if (!hasRuntimeStatusPermission(order, actor, canEditOrders)) {
+  if (!hasRuntimeStatusPermission(canEditOrders)) {
     return denied('NOT_PERMITTED', 'This role cannot change order statuses.')
   }
 
-  if (!canDirectlyEditOrder(order, actor.role)) {
+  // Finished orders have no role-based mutation bypass. Admin/Owner may only
+  // edit again after Finance approves an edit request, which sets editUnlocked
+  // and therefore makes isOrderLocked return false for that one correction.
+  if (isOrderLocked(order)) {
     return denied(
       'ORDER_LOCKED',
       'This finished order requires Finance review or an approved change request.',
@@ -156,14 +148,11 @@ const validateNormalTransition = ({
     )
   }
 
-  // Cancellation is an explicit exception path. Finished orders reach this
-  // branch only for Finance, because the lock check above blocks everyone
-  // else; Owner/Admin must use an approved cancellation request instead.
+  // Cancellation is an explicit exception path for an active order. Finished
+  // orders are already blocked above and require the change-request approval
+  // path instead.
   if (nextStatus === 'cancelled') return null
 
-  // Failure is valid only while fulfillment is still in progress. A settled
-  // order must be voided through cancellation review, never rewritten as a
-  // failed delivery after the fact.
   if (nextStatus === 'failed') {
     return isOrderFinished(order)
       ? denied('ILLEGAL_TRANSITION', 'A finished order cannot be changed to failed.')
@@ -231,9 +220,6 @@ const validateUndoTransition = (input: TransitionOrderStatusInput): OrderStatusT
     return denied('INVALID_UNDO', 'Undo no longer matches the current order transition.')
   }
 
-  // Prove that the original forward transition itself was legal for the same
-  // actor and permission context. This prevents callers from using `undo` as
-  // a generic terminal-state escape hatch or arbitrary backward jump.
   const originalOrder: OrderTableRow = {
     ...order,
     status: undoOf.previousStatus,
@@ -252,10 +238,6 @@ const validateUndoTransition = (input: TransitionOrderStatusInput): OrderStatusT
   return null
 }
 
-/**
- * @description Applies a legal order-status transition and returns the
- * resulting order. It is pure: callers own persistence and side effects.
- */
 export const transitionOrderStatus = (
   input: TransitionOrderStatusInput,
 ): OrderStatusTransitionResult => {

@@ -5,6 +5,8 @@ import type { UserRole } from '../../store/userStore'
 import { useUserStore } from '../../store/userStore'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useOrderRuntimeStore } from '../../store/orderRuntimeStore'
+import { useSettingsStore } from '../../store/settingsStore'
+import { hasActionPermission } from '../../config/actionPermissions'
 import { toast } from '../../hooks/use-toast'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
@@ -47,9 +49,10 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
   const addActivity = useOrderRuntimeStore((state) => state.addActivity)
   const employeeId = useUserStore((state) => state.employeeId)
   const branchId = useUserStore((state) => state.branchId)
-  const canViewRefunds = actorRole === 'finance' || actorRole === 'owner'
-  const canCompleteRefund = actorRole === 'finance'
-  const canCancelRefund = actorRole === 'finance' || actorRole === 'owner'
+  const permissions = useSettingsStore((state) => state.permissions)
+  const actionPermissions = useSettingsStore((state) => state.actionPermissions)
+  const canViewRefunds = hasActionPermission(actorRole, 'finance.view_refunds', actionPermissions, permissions)
+  const canManageRefunds = hasActionPermission(actorRole, 'finance.approve_refund', actionPermissions, permissions)
 
   const refundOrders = useMemo(
     () => orders.filter((order) => order.paymentStatus === 'refund_pending' || order.paymentStatus === 'refunded'),
@@ -70,7 +73,7 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
     : undefined
 
   const completeRefund = () => {
-    if (!pendingAction || pendingAction.type !== 'complete') return
+    if (!canManageRefunds || !pendingAction || pendingAction.type !== 'complete') return
     const result = useOrdersStore.getState().completeRefund({
       orderNumber: pendingAction.orderNumber,
       expectedRevision: confirmOrder?.revision ?? 1,
@@ -96,7 +99,7 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
   }
 
   const cancelRefund = () => {
-    if (!pendingAction || pendingAction.type !== 'cancel') return
+    if (!canManageRefunds || !pendingAction || pendingAction.type !== 'cancel') return
     const result = useOrdersStore.getState().cancelRefund({
       orderNumber: pendingAction.orderNumber,
       expectedRevision: confirmOrder?.revision ?? 1,
@@ -199,10 +202,10 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
                       {!pending && <div><dt className="text-muted-foreground">Completed at</dt><dd className="font-medium text-foreground">{formatTimestamp(order.refundCompletedAt)}</dd></div>}
                     </dl>
                   </div>
-                  {pending && (canCompleteRefund || canCancelRefund) && (
+                  {pending && canManageRefunds && (
                     <div className="mt-4 flex min-w-[9.5rem] flex-col items-stretch gap-2 sm:mt-0">
-                      {canCompleteRefund && <button type="button" onClick={() => { setActionError(null); setPendingAction({ type: 'complete', orderNumber: order.orderNumber }) }} className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-foreground/90">Complete Refund</button>}
-                      {canCancelRefund && <details className="relative"><summary className="flex cursor-pointer list-none items-center justify-center rounded-full border border-border text-xs font-semibold text-muted-foreground h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap">More actions</summary><div className="absolute right-0 z-20 mt-1 w-40 rounded-xl bg-surface-popover p-2 shadow-lg ring-1 ring-border"><button type="button" onClick={() => { setActionError(null); setCancelReason(''); setPendingAction({ type: 'cancel', orderNumber: order.orderNumber }) }} className="flex h-11 w-full items-center justify-center rounded-full px-[18px] text-sm font-semibold text-destructive hover:bg-destructive/10">Cancel Refund</button></div></details>}
+                      <button type="button" onClick={() => { setActionError(null); setPendingAction({ type: 'complete', orderNumber: order.orderNumber }) }} className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-foreground/90">Complete Refund</button>
+                      <details className="relative"><summary className="flex h-9 cursor-pointer list-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3.5 text-xs font-semibold text-muted-foreground">More actions</summary><div className="absolute right-0 z-20 mt-1 w-40 rounded-xl bg-surface-popover p-2 shadow-lg ring-1 ring-border"><button type="button" onClick={() => { setActionError(null); setCancelReason(''); setPendingAction({ type: 'cancel', orderNumber: order.orderNumber }) }} className="flex h-11 w-full items-center justify-center rounded-full px-[18px] text-sm font-semibold text-destructive hover:bg-destructive/10">Cancel Refund</button></div></details>
                     </div>
                   )}
                 </div>

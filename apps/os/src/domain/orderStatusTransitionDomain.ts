@@ -8,7 +8,6 @@
 import type { OrderFulfillment, OrderStatus, OrderTableRow } from '../types/orders'
 import type { UserRole } from '../store/userStore'
 import {
-  canDirectlyEditOrder,
   canResolveChangeRequest,
   isOrderFinished,
   isOrderLocked,
@@ -104,21 +103,11 @@ const denied = (
   reason: string,
 ): OrderStatusTransitionResult => ({ allowed: false, code, reason })
 
-const hasRuntimeStatusPermission = (
-  order: OrderTableRow,
-  actor: OrderStatusTransitionActor,
-  canEditOrders: boolean,
-): boolean => {
-  // Finance has a narrow direct-edit override only once an order is locked;
-  // outside that state it remains read-only in the general Orders section.
-  if (canEditOrders) return true
-  return isOrderLocked(order) && canDirectlyEditOrder(order, actor.role)
-}
+const hasRuntimeStatusPermission = (canEditOrders: boolean): boolean => canEditOrders
 
 const validateNormalTransition = ({
   order,
   nextStatus,
-  actor,
   canEditOrders,
 }: Pick<
   TransitionOrderStatusInput,
@@ -128,11 +117,14 @@ const validateNormalTransition = ({
     return denied('ORDER_NOT_FOUND', 'The order could not be found.')
   }
 
-  if (!hasRuntimeStatusPermission(order, actor, canEditOrders)) {
+  if (!hasRuntimeStatusPermission(canEditOrders)) {
     return denied('NOT_PERMITTED', 'This role cannot change order statuses.')
   }
 
-  if (!canDirectlyEditOrder(order, actor.role)) {
+  // Finished orders have no role-based mutation bypass. Admin/Owner may only
+  // edit again after Finance approves an edit request, which sets editUnlocked
+  // and therefore makes isOrderLocked return false for that one correction.
+  if (isOrderLocked(order)) {
     return denied(
       'ORDER_LOCKED',
       'This finished order requires Finance review or an approved change request.',
@@ -156,9 +148,9 @@ const validateNormalTransition = ({
     )
   }
 
-  // Cancellation is an explicit exception path. Finished orders reach this
-  // branch only for Finance, because the lock check above blocks everyone
-  // else; Owner/Admin must use an approved cancellation request instead.
+  // Cancellation is an explicit exception path for an active order. Finished
+  // orders are already blocked above and require the change-request approval
+  // path instead.
   if (nextStatus === 'cancelled') return null
 
   // Failure is valid only while fulfillment is still in progress. A settled

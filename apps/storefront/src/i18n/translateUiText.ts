@@ -1,12 +1,15 @@
-import { ID_EXACT_TRANSLATIONS, ID_PATTERN_TRANSLATIONS } from './idTranslations'
-import {
-  ID_NATURAL_PATTERN_TRANSLATIONS,
-  ID_NATURAL_TRANSLATIONS,
-  normalizeIndonesianUiCopy,
-} from './naturalTranslations'
+import { finalizeIndonesianStaticCopy } from './finalizeIndonesianCopy'
+import { ID_PATTERN_TRANSLATIONS, ID_TRANSLATIONS } from './indonesianTranslations'
+import { ID_REVIEWED_SOURCE_TRANSLATIONS } from './reviewedTranslationSource'
 import type { UiLanguage } from './uiLanguage'
 
 const normalize = (value: string): string => value.replace(/\s+/g, ' ').trim()
+
+const preserveBoundaryWhitespace = (original: string, translated: string): string => {
+  const leading = original.match(/^\s+/)?.[0] ?? ''
+  const trailing = original.match(/\s+$/)?.[0] ?? ''
+  return `${leading}${translated}${trailing}`
+}
 
 const applyPatterns = (
   value: string,
@@ -29,17 +32,18 @@ export const translateUiText = (value: string, language: UiLanguage): string => 
   const normalized = normalize(value)
   if (!normalized || !/[A-Za-z]/.test(normalized)) return value
 
-  const reviewed = ID_NATURAL_TRANSLATIONS[normalized]
-  if (reviewed !== undefined) return reviewed
+  const exact = ID_TRANSLATIONS[normalized]
+  if (exact !== undefined) {
+    return preserveBoundaryWhitespace(value, finalizeIndonesianStaticCopy(exact))
+  }
 
-  const reviewedPattern = applyPatterns(normalized, ID_NATURAL_PATTERN_TRANSLATIONS)
-  if (reviewedPattern !== undefined) return reviewedPattern
+  const patterned = applyPatterns(normalized, ID_PATTERN_TRANSLATIONS)
+  if (patterned !== undefined) return preserveBoundaryWhitespace(value, patterned)
 
-  const exact = ID_EXACT_TRANSLATIONS[normalized]
-  if (exact) return normalizeIndonesianUiCopy(exact, normalized)
-
-  const legacyPattern = applyPatterns(normalized, ID_PATTERN_TRANSLATIONS)
-  if (legacyPattern !== undefined) return normalizeIndonesianUiCopy(legacyPattern, normalized)
+  const reviewedFallback = ID_REVIEWED_SOURCE_TRANSLATIONS[normalized]
+  if (reviewedFallback !== undefined) {
+    return preserveBoundaryWhitespace(value, finalizeIndonesianStaticCopy(reviewedFallback))
+  }
 
   return value
 }

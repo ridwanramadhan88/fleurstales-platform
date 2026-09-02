@@ -78,9 +78,7 @@ export const useOrderFinanceReviewSheetController = ({
     (state) => state.activities[order.orderNumber] ?? EMPTY_ACTIVITIES,
   )
   const verifyOrderFinance = useOrdersStore((state) => state.verifyOrderFinance)
-  const markOrderForFinanceReview = useOrdersStore(
-    (state) => state.markOrderForFinanceReview,
-  )
+  const rejectOrderFinance = useOrdersStore((state) => state.rejectOrderFinance)
   const employeeId = useUserStore((state) => state.employeeId)
   const branchId = useUserStore((state) => state.branchId)
   const actor = { employeeId, name: actorName, role: userRole, branchId }
@@ -185,9 +183,9 @@ export const useOrderFinanceReviewSheetController = ({
         actor,
         note: actionNote.trim() || undefined,
       }
-      const result = actionType === 'correction' ? markOrderForFinanceReview(input) : null
+      const result = actionType === 'correction' ? rejectOrderFinance(input) : null
       if (result && !result.allowed) {
-        toast({ title: 'Order was not updated', description: result.reason, variant: 'destructive' })
+        toast({ title: 'Order was not returned', description: result.reason, variant: 'destructive' })
         return
       }
       closeAction()

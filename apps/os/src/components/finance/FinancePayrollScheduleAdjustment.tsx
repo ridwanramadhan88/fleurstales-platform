@@ -4,6 +4,8 @@ import { DatePickerField } from '../ui/date-time-field'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '../ui/sheet'
 import { usePayrollStore, type PayrollPeriod } from '../../store/payrollStore'
 import { useUserStore } from '../../store/userStore'
+import { useSettingsStore } from '../../store/settingsStore'
+import { hasActionPermission } from '../../config/actionPermissions'
 import type { PayrollScheduleSnapshot } from '../../domain/payrollScheduleDomain'
 
 const formatDate = (value:string) => new Intl.DateTimeFormat('en-GB', { day:'numeric', month:'short', year:'numeric', timeZone:'Asia/Jakarta' }).format(new Date(`${value}T12:00:00+07:00`))
@@ -15,6 +17,8 @@ const snapshot = (period:PayrollPeriod):PayrollScheduleSnapshot => ({ periodStar
 export const FinancePayrollScheduleAdjustment = () => {
   const role = useUserStore((state) => state.role)
   const actorName = useUserStore((state) => state.name)
+  const permissions = useSettingsStore((state) => state.permissions)
+  const actionPermissions = useSettingsStore((state) => state.actionPermissions)
   const periods = usePayrollStore((state) => state.periods)
   const ensureCurrentPeriod = usePayrollStore((state) => state.ensureCurrentPeriod)
   const adjust = usePayrollStore((state) => state.adjustPayrollSchedule)
@@ -27,10 +31,10 @@ export const FinancePayrollScheduleAdjustment = () => {
 
   useEffect(() => { const period = ensureCurrentPeriod(); setPeriodId((current) => current || period.id) }, [ensureCurrentPeriod])
   const period = periods.find((item) => item.id === periodId) ?? periods.slice().sort((a,b) => b.paymentDate.localeCompare(a.paymentDate))[0]
-  const canEdit = role === 'finance' || role === 'owner'
-  const openEditor = () => { if (!period) return; setProposed(snapshot(period)); setError(null); setFieldErrors({}); setMessage(null); setEditing(true) }
+  const canEdit = hasActionPermission(role, 'finance.adjust_payroll_schedule', actionPermissions, permissions)
+  const openEditor = () => { if (!period || !canEdit) return; setProposed(snapshot(period)); setError(null); setFieldErrors({}); setMessage(null); setEditing(true) }
   const save = () => {
-    if (!period || !proposed) return
+    if (!period || !proposed || !canEdit) return
     const result = adjust({ payrollPeriodId:period.id, proposed, reason:'', actor:{ name:actorName, role } })
     if (!result.ok) { setError(result.reason); setFieldErrors(result.fieldErrors ?? {}); return }
     setEditing(false); setError(null); setFieldErrors({}); setMessage('Payroll schedule updated.')
@@ -49,7 +53,7 @@ export const FinancePayrollScheduleAdjustment = () => {
     {message && <p className="mt-4 rounded-lg bg-success/10 p-3 text-sm text-success">{message}</p>}
     <Sheet open={editing} onOpenChange={setEditing}>
       <SheetContent side="right" className="flex w-full flex-col sm:w-[min(40rem,88vw)] sm:max-w-none md:w-[min(44rem,72vw)]">
-        <SheetHeader><SheetTitle>Edit payroll schedule</SheetTitle><SheetDescription>Changes apply immediately after validation.</SheetDescription></SheetHeader>
+        <SheetHeader><SheetTitle>Edit payroll schedule</SheetTitle><SheetDescription>Changes apply immediately after validation and are kept in the audit history.</SheetDescription></SheetHeader>
         {proposed && <div className="mt-5 flex-1 space-y-4 overflow-y-auto pr-1">{fields.map(({ key,label }) => <label key={key} className="block space-y-1.5"><span className="text-sm font-medium">{label}</span><DatePickerField value={proposed[key]} onChange={(value) => setProposed((current) => current ? { ...current, [key]:value } : current)} />{fieldErrors[key] && <p className="text-xs text-destructive">{fieldErrors[key]}</p>}</label>)}</div>}
         {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
         <SheetFooter className="mt-auto"><button type="button" onClick={() => setEditing(false)} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium">Cancel</button><button type="button" onClick={save} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-semibold text-background">Save schedule</button></SheetFooter>

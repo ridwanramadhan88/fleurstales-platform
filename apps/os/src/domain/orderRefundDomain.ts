@@ -1,5 +1,6 @@
 import type { OrderTableRow } from '../types/orders'
 import type { UserRole } from '../store/userStore'
+import { isActionAuthorized } from '../config/authorization'
 
 export type NormalPaymentStatus = 'unpaid' | 'partial' | 'paid'
 export type RefundActor = { name: string; role: UserRole }
@@ -8,14 +9,17 @@ export type RefundResult =
   | { allowed: true; order: OrderTableRow }
   | { allowed: false; reason: string }
 
+/** One capability owns the full refund lifecycle: initiate, complete, or cancel. */
 export const canInitiateOrderRefund = (role: UserRole): boolean =>
-  role === 'finance' || role === 'owner'
+  isActionAuthorized(role, 'finance.approve_refund')
 
 export const canCompleteOrderRefund = (role: UserRole): boolean =>
-  role === 'finance'
+  isActionAuthorized(role, 'finance.approve_refund')
 
 export const canCancelOrderRefund = (role: UserRole): boolean =>
-  role === 'finance' || role === 'owner'
+  isActionAuthorized(role, 'finance.approve_refund')
+
+const refundPermissionMessage = 'You do not have permission to manage refunds.'
 
 export const initiateOrderRefund = ({
   order,
@@ -29,7 +33,7 @@ export const initiateOrderRefund = ({
   initiatedAt: string
 }): RefundResult => {
   if (!order) return { allowed: false, reason: 'Order not found.' }
-  if (!canInitiateOrderRefund(actor.role)) return { allowed: false, reason: 'Only Finance or Owner can initiate a refund.' }
+  if (!canInitiateOrderRefund(actor.role)) return { allowed: false, reason: refundPermissionMessage }
   if (!reason.trim()) return { allowed: false, reason: 'A refund reason is required.' }
   if (order.paymentStatus !== 'paid') return { allowed: false, reason: 'Only fully paid orders can enter the current full-refund workflow.' }
   if ((order.paidAmountIdr ?? 0) <= 0 || order.totalIdr <= 0) return { allowed: false, reason: 'The order has no valid paid amount to refund.' }
@@ -61,7 +65,7 @@ export const completeOrderRefund = ({
   completedAt: string
 }): RefundResult => {
   if (!order) return { allowed: false, reason: 'Order not found.' }
-  if (!canCompleteOrderRefund(actor.role)) return { allowed: false, reason: 'Only Finance can verify and complete a refund.' }
+  if (!canCompleteOrderRefund(actor.role)) return { allowed: false, reason: refundPermissionMessage }
   if (order.paymentStatus !== 'refund_pending') return { allowed: false, reason: 'Only a pending refund can be completed.' }
   if (!order.refundReason || !order.refundInitiatedBy || !order.refundInitiatedAt || !(order.refundAmountIdr && order.refundAmountIdr > 0)) {
     return { allowed: false, reason: 'Refund evidence is incomplete.' }
@@ -78,7 +82,6 @@ export const completeOrderRefund = ({
   }
 }
 
-
 export const cancelOrderRefund = ({
   order,
   actor,
@@ -91,7 +94,7 @@ export const cancelOrderRefund = ({
   cancelledAt: string
 }): RefundResult => {
   if (!order) return { allowed: false, reason: 'Order not found.' }
-  if (!canCancelOrderRefund(actor.role)) return { allowed: false, reason: 'Only Finance or Owner can cancel a refund.' }
+  if (!canCancelOrderRefund(actor.role)) return { allowed: false, reason: refundPermissionMessage }
   if (order.paymentStatus !== 'refund_pending') return { allowed: false, reason: 'Only a pending refund can be cancelled.' }
   if (!reason.trim()) return { allowed: false, reason: 'A cancellation reason is required.' }
   return {

@@ -20,7 +20,7 @@ const [
   read('apps/os/src/domain/hrEmployeeLifecycleDomain.ts'),
   read('apps/os/src/data/staffLifecycleSupabase.ts'),
   read('supabase/functions/staff-admin/index.ts'),
-  read('supabase/migrations/20260805023000_simplify_hr_workflow.sql'),
+  read('supabase/migrations/20260805042546_simplify_hr_workflow.sql'),
 ])
 
 const assert = (condition, message) => {
