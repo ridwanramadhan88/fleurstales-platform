@@ -5,38 +5,43 @@ import type { OrderTableRow } from '../types/orders'
 import { DEFAULT_OWNER_SETTINGS } from './settings/defaultOwnerSettings'
 
 const florist = (id:string, name:string):Employee => ({ id, name, position:'Florist', branch:'', systemRole:'florist', status:'active', phone:'', hireDate:'2026-01-01' })
-const order = { orderNumber:'KDM-1', branch:'Kedamaian', scheduleDate:'2026-07-16', scheduleTime:'14:00', status:'confirmed' } as OrderTableRow
+const assignmentNow = new Date('2026-07-15T03:00:00.000Z') // 10:00 Jakarta
+const order = { orderNumber:'KDM-1', branch:'Kedamaian', fulfillment:'delivery', scheduleDate:'2026-07-16', scheduleTime:'14:00', status:'confirmed' } as OrderTableRow
 const shifts:ScheduleOverride[] = [
-  { id:'s1', employeeId:'f1', date:'2026-07-16', shift:{ mode:'custom', isWorking:true, branchId:'Kedamaian', startTime:'09:00', endTime:'17:00' }, updatedAt:'', updatedBy:'HR' },
-  { id:'s2', employeeId:'f2', date:'2026-07-16', shift:{ mode:'custom', isWorking:true, branchId:'Pahoman', startTime:'09:00', endTime:'17:00' }, updatedAt:'', updatedBy:'HR' },
-  { id:'s3', employeeId:'f3', date:'2026-07-16', shift:{ mode:'off', isWorking:false, branchId:'', startTime:'', endTime:'' }, updatedAt:'', updatedBy:'HR' },
+  { id:'s1', employeeId:'f1', date:'2026-07-15', shift:{ mode:'custom', isWorking:true, branchId:'Kedamaian', startTime:'09:00', endTime:'17:00' }, updatedAt:'', updatedBy:'HR' },
+  { id:'s2', employeeId:'f2', date:'2026-07-15', shift:{ mode:'custom', isWorking:true, branchId:'Pahoman', startTime:'09:00', endTime:'17:00' }, updatedAt:'', updatedBy:'HR' },
+  { id:'s3', employeeId:'f3', date:'2026-07-15', shift:{ mode:'off', isWorking:false, branchId:'', startTime:'', endTime:'' }, updatedAt:'', updatedBy:'HR' },
 ]
 
 describe('florist assignment availability', () => {
-  it('uses the future order date and time instead of the processing time', () => {
-    expect(resolveFloristAssignmentMoment(order, new Date('2026-07-15T03:00:00+07:00'))).toEqual({ date:'2026-07-16', time:'14:00', source:'scheduled' })
+  it('uses the actual assignment moment for a future delivery order', () => {
+    expect(resolveFloristAssignmentMoment(order, assignmentNow)).toEqual({ date:'2026-07-15', time:'10:00', source:'current' })
   })
 
-  it('returns only active florists whose branch shift covers the order time', () => {
+  it('keeps future pickup assignment based on the requested pickup slot', () => {
+    const pickup = { ...order, fulfillment:'pickup' as const }
+    expect(resolveFloristAssignmentMoment(pickup, assignmentNow)).toEqual({ date:'2026-07-16', time:'14:00', source:'scheduled' })
+  })
+
+  it('recommends only active florists working at the order branch at assignment time', () => {
     const result = getFloristAssignmentOptionsForOrder({
       order,
       employees:[florist('f1','A'), florist('f2','B'), florist('f3','C')],
       defaults:[], overrides:shifts,
       settings:{ scheduling:DEFAULT_OWNER_SETTINGS.scheduling, branches:DEFAULT_OWNER_SETTINGS.branches },
-      orders:[],
+      orders:[], now:assignmentNow,
     })
     expect(result.filter((item)=>item.isRecommended).map((item)=>item.employeeId)).toEqual(['f1'])
   })
-
 
   it('keeps every active florist available for an explicit override with a clear status', () => {
     const result = getFloristAssignmentOptionsForOrder({
       order,
       employees:[florist('f1','A'), florist('f2','B'), florist('f3','C'), florist('f4','D')],
       defaults:[],
-      overrides:[...shifts, { id:'s4', employeeId:'f4', date:'2026-07-16', shift:{ mode:'custom', isWorking:true, branchId:'Kedamaian', startTime:'15:00', endTime:'20:00' }, updatedAt:'', updatedBy:'HR' }],
+      overrides:[...shifts, { id:'s4', employeeId:'f4', date:'2026-07-15', shift:{ mode:'custom', isWorking:true, branchId:'Kedamaian', startTime:'11:00', endTime:'20:00' }, updatedAt:'', updatedBy:'HR' }],
       settings:{ scheduling:DEFAULT_OWNER_SETTINGS.scheduling, branches:DEFAULT_OWNER_SETTINGS.branches },
-      orders:[],
+      orders:[], now:assignmentNow,
     })
     expect(result.map((item)=>[item.employeeId,item.scheduleStatus])).toEqual([
       ['f1','scheduled'],
@@ -48,8 +53,8 @@ describe('florist assignment availability', () => {
 
   it('sorts lower current workload first', () => {
     const sameBranch = [...shifts, { ...shifts[0], id:'s4', employeeId:'f4' }]
-    const active = [{ ...order, orderNumber:'KDM-2', status:'processing', floristAssignedEmployeeId:'f1' } as OrderTableRow]
-    const result = getFloristAssignmentOptionsForOrder({ order, employees:[florist('f1','A'),florist('f4','D')], defaults:[], overrides:sameBranch, settings:{ scheduling:DEFAULT_OWNER_SETTINGS.scheduling, branches:DEFAULT_OWNER_SETTINGS.branches }, orders:active })
+    const active = [{ ...order, orderNumber:'KDM-2', status:'processing', floristAssignedEmployeeId:'f1', floristAssignedForDate:'2026-07-15' } as OrderTableRow]
+    const result = getFloristAssignmentOptionsForOrder({ order, employees:[florist('f1','A'),florist('f4','D')], defaults:[], overrides:sameBranch, settings:{ scheduling:DEFAULT_OWNER_SETTINGS.scheduling, branches:DEFAULT_OWNER_SETTINGS.branches }, orders:active, now:assignmentNow })
     expect(result.filter((item)=>item.isRecommended).map((item)=>item.employeeId)).toEqual(['f4','f1'])
   })
 })
