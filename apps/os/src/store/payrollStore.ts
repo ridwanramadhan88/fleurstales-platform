@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import { getCurrentPayrollSchedule, getPayrollPeriodKey, getPayrollScheduleStage, type PayrollScheduleSnapshot } from '../domain/payrollScheduleDomain'
-import { calculateEmployeePayroll, isCompensationEffectiveForDate, isPointEntryInsidePayrollPeriod } from '../domain/payrollPreparationDomain'
+import {
+  buildPayrollCalculationPolicy,
+  calculateEmployeePayroll,
+  isCompensationEffectiveForDate,
+  isPointEntryInsidePayrollPeriod,
+  type PayrollCalculationPolicy,
+} from '../domain/payrollPreparationDomain'
 import { useSettingsStore } from './settingsStore'
 import { hasActionPermission } from '../config/actionPermissions'
 import { isActionAuthorized } from '../config/authorization'
@@ -69,6 +75,8 @@ export interface EmployeePayrollDraft {
   hrAdjustmentIdr?: number
   hrAdjustmentReason?: string
   pointEntries: PayrollPointSnapshot[]
+  /** Frozen rules used to calculate this payroll row. Optional for legacy persisted rows. */
+  calculationPolicy?: PayrollCalculationPolicy
   status: EmployeePayrollStatus
   generatedAt: string
   generatedBy: string
@@ -87,7 +95,6 @@ export interface EmployeePayrollDraft {
   resolutionReason?: string
 }
 
-
 export type PayrollProposalStatus = 'draft' | 'submitted_to_finance' | 'returned_to_hr' | 'finance_approved' | 'paid' | 'resolved'
 export interface PayrollProposal {
   id: string
@@ -98,6 +105,8 @@ export interface PayrollProposal {
   totalBonusIdr: number
   totalAdjustmentsIdr: number
   totalPayrollIdr: number
+  /** Frozen calculation rules for this proposal. Optional only for legacy persisted proposals. */
+  calculationPolicy?: PayrollCalculationPolicy
   createdAt: string
   createdBy: string
   submittedAt?: string
@@ -128,8 +137,8 @@ export interface PayrollProposalReviewRecord {
   createdAt: string
 }
 
-
-export type PayrollScheduleAdjustmentStatus = 'applied' | 'pending_owner_approval' | 'approved' | 'rejected'
+/** Schedule adjustments are direct, validated and audited. There is no second approval state. */
+export type PayrollScheduleAdjustmentStatus = 'applied'
 export interface PayrollScheduleAdjustmentRecord {
   id:string
   payrollPeriodId:string
@@ -141,11 +150,6 @@ export interface PayrollScheduleAdjustmentRecord {
   changedBy:string
   changedByRole:UserRole
   changedAt:string
-  approvedBy?:string
-  approvedAt?:string
-  rejectedBy?:string
-  rejectedAt?:string
-  decisionNote?:string
 }
 
 export type PayrollReviewDecision = 'verified' | 'rejected' | 'paid' | 'resolved'
@@ -212,13 +216,16 @@ const deriveProposalReviewStatus = (drafts:EmployeePayrollDraft[]):PayrollPropos
   return 'submitted_to_finance'
 }
 
+const sameCalculationPolicy = (a: PayrollCalculationPolicy, b: PayrollCalculationPolicy) =>
+  a.pointValueIdr === b.pointValueIdr && a.bonusCapIdr === b.bonusCapIdr
+
+const validateWithPolicy = (draft: EmployeePayrollDraft, policy: PayrollCalculationPolicy) =>
+  validatePayrollForFinance(draft.entryMode === 'manual' ? draft : { ...draft, calculationPolicy: policy })
+
 const isActorOwnPayroll = (
   draft: EmployeePayrollDraft,
   actor: { employeeId?: string; name: string; role: UserRole },
-) => actor.role === 'finance' && (
-  Boolean(actor.employeeId && draft.employeeId === actor.employeeId)
-  || draft.employeeName.trim().toLocaleLowerCase() === actor.name.trim().toLocaleLowerCase()
-)
+) => actor.role === 'finance' && Boolean(actor.employeeId && draft.employeeId === actor.employeeId)
 
 const testCompensations: EmployeeCompensation[] = TEST_RUNTIME ? [
   ['emp-budi', 7_000_000], ['emp-dewi', 5_000_000], ['emp-bintang', 4_500_000],
@@ -235,6 +242,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
   payrollProposals: [],
   payrollProposalReviews: [],
   payrollScheduleAdjustments: [],
+
   ensureCurrentPeriod: (now = new Date()) => {
     const localDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(now)
     const settings = useSettingsStore.getState().getPayrollSettingsForDate(localDate)
@@ -278,6 +286,9 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (!period) return { ok:false, code:'not_found', reason:'Payroll period was not found.' }
     const hr = useHrStore.getState()
     const payrollSettings = useSettingsStore.getState().getPayrollSettingsForDate(period.periodEnd)
+    const activeProposal = get().payrollProposals.find((item) => item.payrollPeriodId === payrollPeriodId && item.status !== 'resolved')
+    const defaultPolicy = buildPayrollCalculationPolicy(payrollSettings.pointValueIdr)
+    const proposalPolicy = activeProposal?.calculationPolicy ?? defaultPolicy
     const employees = hr.employees.filter((employee) => employee.status === 'active' && employee.hireDate <= period.periodEnd && employee.systemRole !== 'owner')
     if (!employees.length) return { ok:false, code:'empty_payroll', reason:'No active employees are eligible for this payroll period.' }
     const currentPeriodDrafts = get().employeePayrolls.filter((draft) => draft.payrollPeriodId === payrollPeriodId)
@@ -286,18 +297,20 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const generatedDrafts = currentPeriodDrafts.filter((draft) => draft.entryMode !== 'manual')
     const existingByEmployee = new Map(generatedDrafts.map((draft) => [draft.employeeId, draft]))
     const now = new Date().toISOString()
-    const missingSalaryEmployees = employees.filter((employee) => !get().compensations.some((item) => item.employeeId === employee.id && isCompensationEffectiveForDate(item, period.periodEnd)) && (!employee.baseSalaryIdr || employee.baseSalaryIdr <= 0) && (employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0)) <= 0)
+    const missingSalaryEmployees = employees.filter((employee) => !get().compensations.some((item) => item.employeeId === employee.id && isCompensationEffectiveForDate(item, period.periodEnd)) && (!employee.baseSalaryIdr || employee.baseSalaryIdr <= 0) && (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0) <= 0)
     if (missingSalaryEmployees.length) return { ok:false, code:'missing_salary', reason:'Set a role salary default or individual salary before generating payroll.', employeeIds:missingSalaryEmployees.map((employee)=>employee.id) }
+
     const drafts = employees.map((employee): EmployeePayrollDraft => {
       const compensation = get().compensations
         .filter((item) => item.employeeId === employee.id && isCompensationEffectiveForDate(item, period.periodEnd))
         .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0]
       const entries = hr.employeePointEntries.filter((entry) => entry.employeeId === employee.id && isPointEntryInsidePayrollPeriod(entry, period.periodStart, period.periodEnd))
-      const roleSalaryIdr = employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0)
+      const roleSalaryIdr = payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0
       const baseSalaryIdr = compensation?.baseSalaryIdr ?? employee.baseSalaryIdr ?? roleSalaryIdr
-      const calculation = calculateEmployeePayroll(baseSalaryIdr, entries, payrollSettings.pointValueIdr)
       const existing = existingByEmployee.get(employee.id)
       if (existing && ['finance_verified','paid','resolved'].includes(existing.status)) return existing
+      const calculationPolicy = activeProposal?.calculationPolicy ?? existing?.calculationPolicy ?? proposalPolicy
+      const calculation = calculateEmployeePayroll(baseSalaryIdr, entries, calculationPolicy.pointValueIdr)
       return {
         id: existing?.id ?? `payroll-draft-${payrollPeriodId}-${employee.id}`,
         payrollPeriodId,
@@ -312,7 +325,8 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
         hrAdjustmentReason: existing?.hrAdjustmentReason,
         finalPayrollIdr: Math.max(baseSalaryIdr, calculation.finalPayrollIdr + (existing?.hrAdjustmentIdr ?? 0)),
         pointEntries:entries.filter((entry) => entry.status === 'approved').map((entry) => ({ id:entry.id, category:entry.category, points:entry.points, reason:entry.reason, sourceType:entry.sourceType, sourceId:entry.sourceId, orderNumber:entry.orderNumber, createdAt:entry.createdAt, effectiveDate:entry.effectiveDate, payrollPeriodId:entry.payrollPeriodId })),
-        status: 'draft',
+        calculationPolicy,
+        status:'draft',
         generatedAt:now,
         generatedBy:actor.name,
         rejectionReason:undefined,
@@ -352,6 +366,8 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (payrollDraftId && (!existing || existing.entryMode !== 'manual')) return { ok:false, code:'not_found', reason:'Manual payroll payee was not found.' }
     if (existing && !['draft','finance_rejected'].includes(existing.status)) return { ok:false, code:'invalid_status', reason:'This manual payee is locked while Finance reviews or after approval.' }
 
+    const payrollSettings = useSettingsStore.getState().getPayrollSettingsForDate(period.periodEnd)
+    const calculationPolicy = proposal?.calculationPolicy ?? existing?.calculationPolicy ?? buildPayrollCalculationPolicy(payrollSettings.pointValueIdr)
     const now = new Date().toISOString()
     const draftId = existing?.id ?? `payroll-manual-${payrollPeriodId}-${Date.now()}`
     const manualDraft: EmployeePayrollDraft = {
@@ -371,6 +387,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       finalPayrollIdr:amountIdr,
       hrAdjustmentIdr:0,
       pointEntries:[],
+      calculationPolicy,
       status:existing?.status ?? 'draft',
       generatedAt:existing?.generatedAt ?? now,
       generatedBy:existing?.generatedBy ?? actor.name,
@@ -430,30 +447,35 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (activeProposal && ['submitted_to_finance','finance_approved','paid'].includes(activeProposal.status)) return { ok:false, code:'invalid_status', reason:'This payroll proposal cannot be submitted in its current status.' }
     const missingSalary = proposalDrafts.filter((draft) => draft.baseSalaryIdr <= 0).map((draft) => draft.employeeId)
     if (missingSalary.length) return { ok:false, code:'missing_salary', reason:'Every employee needs an effective base salary before payroll can be submitted.', employeeIds:missingSalary }
+
     const hrStore = useHrStore.getState()
     hrStore.generateAttendanceWarnings(new Date())
     const unresolvedAttendance = useHrStore.getState().attendanceReviewCases.filter((item) => ['pending','problem'].includes(item.status) && item.date >= period.periodStart && item.date <= period.periodEnd)
     if (unresolvedAttendance.length) return { ok:false, code:'pending_attendance', reason:`Resolve ${unresolvedAttendance.length} attendance warning(s) before sending payroll to Finance.` }
+
+    const payrollSettings = useSettingsStore.getState().getPayrollSettingsForDate(period.periodEnd)
+    const legacyPolicy = buildPayrollCalculationPolicy(payrollSettings.pointValueIdr)
+    const firstGeneratedPolicy = proposalDrafts.find((draft) => draft.entryMode !== 'manual' && draft.calculationPolicy)?.calculationPolicy
+    const proposalPolicy = activeProposal?.calculationPolicy ?? firstGeneratedPolicy ?? legacyPolicy
+    const mixedPolicy = proposalDrafts.some((draft) => draft.entryMode !== 'manual' && draft.calculationPolicy && !sameCalculationPolicy(draft.calculationPolicy, proposalPolicy))
+    if (mixedPolicy) return { ok:false, code:'calculation_mismatch', reason:'Payroll rows were generated with different calculation policies. Regenerate the returned rows before submission.' }
+
     const warningMessages = useHrStore.getState().employeePointEntries.some((entry) => entry.status === 'pending' && isPointEntryInsidePayrollPeriod(entry, period.periodStart, period.periodEnd))
       ? ['Point entries remain pending review.']
       : []
-    const validationFailure = proposalDrafts.find((draft) => !validatePayrollForFinance(draft).ok)
+    const validationFailure = proposalDrafts.find((draft) => !validateWithPolicy(draft, proposalPolicy).ok)
     if (validationFailure) return { ok:false, code:'calculation_mismatch', reason:`Payroll calculation is invalid for ${validationFailure.employeeName}.` }
+
     const now = new Date().toISOString()
-    const totals = {
-      totalBaseSalaryIdr:proposalDrafts.reduce((sum,item)=>sum+item.baseSalaryIdr,0),
-      totalBonusIdr:proposalDrafts.reduce((sum,item)=>sum+item.bonusIdr,0),
-      totalAdjustmentsIdr:proposalDrafts.reduce((sum,item)=>sum+(item.hrAdjustmentIdr ?? 0),0),
-      totalPayrollIdr:proposalDrafts.reduce((sum,item)=>sum+item.finalPayrollIdr,0),
-    }
-    const proposal:PayrollProposal = activeProposal ? { ...activeProposal, ...totals, status:'submitted_to_finance', employeePayrollIds:proposalDrafts.map((item)=>item.id), submittedAt:now, submittedBy:actor.name, financeNote:undefined, warnings:warningMessages } : {
-      id:`payroll-proposal-${payrollPeriodId}`, payrollPeriodId, status:'submitted_to_finance', employeePayrollIds:proposalDrafts.map((item)=>item.id), ...totals, createdAt:now, createdBy:actor.name, submittedAt:now, submittedBy:actor.name, warnings:warningMessages,
-    }
+    const totals = summarizePayrollDrafts(proposalDrafts)
+    const proposal:PayrollProposal = activeProposal
+      ? { ...activeProposal, ...totals, calculationPolicy:proposalPolicy, status:'submitted_to_finance', employeePayrollIds:proposalDrafts.map((item)=>item.id), submittedAt:now, submittedBy:actor.name, financeNote:undefined, warnings:warningMessages }
+      : { id:`payroll-proposal-${payrollPeriodId}`, payrollPeriodId, status:'submitted_to_finance', employeePayrollIds:proposalDrafts.map((item)=>item.id), ...totals, calculationPolicy:proposalPolicy, createdAt:now, createdBy:actor.name, submittedAt:now, submittedBy:actor.name, warnings:warningMessages }
     const resubmittedIds = new Set(proposalDrafts.filter((draft)=>['draft','finance_rejected'].includes(draft.status)).map((draft)=>draft.id))
     if (!resubmittedIds.size && proposalDrafts.every((draft)=>draft.status==='finance_verified')) return { ok:false, code:'invalid_status', reason:'Every employee payroll in this proposal is already approved.' }
     set((state) => ({
       payrollProposals:[...state.payrollProposals.filter((item)=>item.id!==proposal.id), proposal],
-      employeePayrolls:state.employeePayrolls.map((draft)=>resubmittedIds.has(draft.id) ? { ...draft, status:'pending_finance_review', submittedAt:now, submittedBy:actor.name, rejectionReason:undefined } : draft),
+      employeePayrolls:state.employeePayrolls.map((draft)=>resubmittedIds.has(draft.id) ? { ...draft, calculationPolicy:proposalPolicy, status:'pending_finance_review', submittedAt:now, submittedBy:actor.name, rejectionReason:undefined } : draft),
     }))
     publishPayrollWorkflowMutation('submit')
     return { ok:true, affected:resubmittedIds.size, proposalId:proposal.id }
@@ -470,14 +492,15 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (drafts.some((draft)=>draft.status==='finance_rejected')) return { ok:false, code:'invalid_status', reason:'Resolve and resubmit rejected employee payrolls before approving the complete proposal.' }
     const candidates=drafts.filter((draft)=>draft.status==='pending_finance_review')
     if (!candidates.length) return { ok:false, code:'invalid_status', reason:'No employee payroll is waiting for Finance approval.' }
-    const invalid = candidates.find((draft)=>!validatePayrollForFinance(draft).ok)
+    const policy = proposal.calculationPolicy ?? candidates.find((draft)=>draft.calculationPolicy)?.calculationPolicy ?? buildPayrollCalculationPolicy(useSettingsStore.getState().payroll.pointValueIdr)
+    const invalid = candidates.find((draft)=>!validateWithPolicy(draft, policy).ok)
     if (invalid) return { ok:false, code:'calculation_mismatch', reason:`Payroll calculation is invalid for ${invalid.employeeName}.` }
     const now=new Date().toISOString()
     const selfApprovalEmployeeIds = candidates.filter((draft)=>isActorOwnPayroll(draft, actor)).map((draft)=>draft.employeeId)
     const review:PayrollProposalReviewRecord={ id:`proposal-review-${Date.now()}`, payrollProposalId:proposal.id, payrollPeriodId:proposal.payrollPeriodId, decision:'approved', ...(normalizedNote ? { note:normalizedNote } : {}), ...(selfApprovalEmployeeIds.length ? { selfApprovalEmployeeIds } : {}), actorName:actor.name, actorRole:actor.role, createdAt:now }
     set((state)=>({
-      payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id ? { ...item, status:'finance_approved', financeDecisionAt:now, financeDecisionBy:actor.name, financeNote:normalizedNote || undefined } : item),
-      employeePayrolls:state.employeePayrolls.map((draft)=>candidates.some((candidate)=>candidate.id===draft.id) ? { ...draft, status:'finance_verified', financeReviewedAt:now, financeReviewedBy:actor.name, rejectionReason:undefined } : draft),
+      payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id ? { ...item, calculationPolicy:policy, status:'finance_approved', financeDecisionAt:now, financeDecisionBy:actor.name, financeNote:normalizedNote || undefined } : item),
+      employeePayrolls:state.employeePayrolls.map((draft)=>candidates.some((candidate)=>candidate.id===draft.id) ? { ...draft, calculationPolicy:policy, status:'finance_verified', financeReviewedAt:now, financeReviewedBy:actor.name, rejectionReason:undefined } : draft),
       payrollProposalReviews:[...state.payrollProposalReviews, review],
     }))
     publishPayrollWorkflowMutation('approve_all')
@@ -555,21 +578,23 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     if (draft.status!=='pending_finance_review') return { ok:false, code:'invalid_status', reason:'Only pending employee payroll can be approved.' }
     const proposal=get().payrollProposals.find((item)=>item.employeePayrollIds.includes(draft.id)&&['submitted_to_finance','returned_to_hr'].includes(item.status))
     if (!proposal) return { ok:false, code:'invalid_status', reason:'This employee payroll is not inside an active proposal.' }
-    const validation=validatePayrollForFinance(draft)
+    const policy = proposal.calculationPolicy ?? draft.calculationPolicy ?? buildPayrollCalculationPolicy(useSettingsStore.getState().payroll.pointValueIdr)
+    const validation=validateWithPolicy(draft, policy)
     if (!validation.ok) return { ok:false, code:'calculation_mismatch', reason:validation.reason }
     const now=new Date().toISOString()
     const selfApproval = isActorOwnPayroll(draft, actor)
     const review:PayrollReviewRecord={id:`payroll-review-${Date.now()}`,payrollDraftId:draft.id,payrollPeriodId:draft.payrollPeriodId,employeeId:draft.employeeId,decision:'verified',...(normalizedNote ? {note:normalizedNote} : {}),...(selfApproval ? {selfApproval:true} : {}),actorName:actor.name,actorRole:actor.role,createdAt:now}
-    const nextDrafts=get().employeePayrolls.filter((item)=>proposal.employeePayrollIds.includes(item.id)).map((item)=>item.id===draft.id?{...item,status:'finance_verified' as const,financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item)
+    const nextDrafts=get().employeePayrolls.filter((item)=>proposal.employeePayrollIds.includes(item.id)).map((item)=>item.id===draft.id?{...item,calculationPolicy:policy,status:'finance_verified' as const,financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item)
     const nextStatus=deriveProposalReviewStatus(nextDrafts)
     set((state)=>({
-      employeePayrolls:state.employeePayrolls.map((item)=>item.id===draft.id?{...item,status:'finance_verified',financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item),
-      payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id?{...item,status:nextStatus,financeDecisionAt:nextStatus==='finance_approved'?now:item.financeDecisionAt,financeDecisionBy:nextStatus==='finance_approved'?actor.name:item.financeDecisionBy}:item),
+      employeePayrolls:state.employeePayrolls.map((item)=>item.id===draft.id?{...item,calculationPolicy:policy,status:'finance_verified',financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item),
+      payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id?{...item,calculationPolicy:policy,status:nextStatus,financeDecisionAt:nextStatus==='finance_approved'?now:item.financeDecisionAt,financeDecisionBy:nextStatus==='finance_approved'?actor.name:item.financeDecisionBy}:item),
       payrollReviews:[...state.payrollReviews,review],
     }))
     publishPayrollWorkflowMutation('approve_employee')
     return {ok:true,draftId:draft.id,proposalId:proposal.id}
   },
+
   rejectEmployeePayroll: ({ payrollDraftId, note, actor }) => {
     if (!hasActionPermission(actor.role, 'finance.reject_employee_payroll', useSettingsStore.getState().actionPermissions, useSettingsStore.getState().permissions)) return { ok:false, code:'forbidden', reason:'This role cannot reject employee payroll.' }
     const normalizedNote=note.trim()
@@ -591,7 +616,7 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
   },
 
   adjustPayrollSchedule: ({ payrollPeriodId, proposed, reason, actor, now = new Date() }) => {
-    if (!['finance','owner'].includes(actor.role)) return { ok:false, code:'forbidden', reason:'Only Finance or Owner can adjust a payroll schedule.' }
+    if (!isActionAuthorized(actor.role, 'finance.adjust_payroll_schedule')) return { ok:false, code:'forbidden', reason:'You do not have permission to adjust the payroll schedule.' }
     const normalizedReason = reason.trim()
     const period = get().periods.find((item) => item.id === payrollPeriodId)
     if (!period) return { ok:false, code:'not_found', reason:'Payroll period was not found.' }
@@ -613,7 +638,6 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       previousValues:{ periodStart:period.periodStart, periodEnd:period.periodEnd, hrSubmissionDeadline:period.hrSubmissionDeadline, financeReviewDeadline:period.financeReviewDeadline, paymentDate:period.paymentDate },
       newValues:proposed, reason:normalizedReason || 'Direct schedule edit', status:'applied', impactReasons:impact.reasons,
       changedBy:actor.name, changedByRole:actor.role, changedAt:createdAt,
-      ...(actor.role === 'owner' ? { approvedBy:actor.name, approvedAt:createdAt } : {}),
     }
     set((state) => ({
       payrollScheduleAdjustments:[...state.payrollScheduleAdjustments, adjustment],
@@ -622,5 +646,4 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     publishPayrollWorkflowMutation('adjust_schedule')
     return { ok:true, adjustmentId:adjustment.id, status:adjustment.status }
   },
-
 }))
