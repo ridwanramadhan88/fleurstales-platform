@@ -11,10 +11,18 @@ const proposal:PayrollProposal={id:'proposal-1',payrollPeriodId:'period-1',statu
 beforeEach(()=>{
   useUserStore.setState({employeeId:'emp-dewi',name:'Dewi',username:'finance',role:'finance'})
   usePayrollStore.setState({employeePayrolls:drafts.map((item)=>({...item,pointEntries:item.pointEntries.map((entry)=>({...entry}))})),payrollProposals:[{...proposal,employeePayrollIds:[...proposal.employeePayrollIds]}],payrollProposalReviews:[],payrollReviews:[],periods:[{id:'period-1',periodStart:'2026-07-21',periodEnd:'2026-08-20',hrSubmissionDeadline:'2026-08-24',financeReviewDeadline:'2026-08-27',paymentDate:'2026-08-28',status:'finance_review',createdAt:'2026-08-21T00:00:00Z',source:'owner_defaults'}]})
-
 })
 
 describe('FinancePayrollReview',()=>{
+  it('uses the simplified Review / Ready to Pay / History navigation',()=>{
+    render(<FinancePayrollReview/>)
+    expect(screen.getByRole('tab',{name:'Review'})).toBeInTheDocument()
+    expect(screen.getByRole('tab',{name:'Ready to Pay'})).toBeInTheDocument()
+    expect(screen.getByRole('tab',{name:'History'})).toBeInTheDocument()
+    expect(screen.queryByRole('tab',{name:'Returned to HR'})).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab',{name:'All'})).not.toBeInTheDocument()
+  })
+
   it('supports employee rejection inside a monthly proposal',()=>{
     render(<FinancePayrollReview/>)
     fireEvent.click(screen.getByRole('button',{name:'Review proposal'}))
@@ -43,7 +51,7 @@ describe('FinancePayrollReview',()=>{
       periods:[{id:'period-1',periodStart:'2026-07-21',periodEnd:'2026-08-20',hrSubmissionDeadline:'2026-08-24',financeReviewDeadline:'2026-08-27',paymentDate:'2026-08-28',status:'finance_review',createdAt:'2026-08-21T00:00:00Z',source:'owner_defaults'}],
     })
     render(<FinancePayrollReview/>)
-    fireEvent.click(screen.getByRole('tab',{name:'Approved'}))
+    fireEvent.click(screen.getByRole('tab',{name:'Ready to Pay'}))
     fireEvent.click(screen.getByRole('button',{name:'Review proposal'}))
     fireEvent.click(screen.getByRole('button',{name:'Record final payment'}))
     expect(screen.getByText('Note · Optional')).toBeInTheDocument()
