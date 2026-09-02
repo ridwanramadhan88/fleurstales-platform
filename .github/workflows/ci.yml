@@ -50,6 +50,7 @@ jobs:
       - run: npm ci
       - name: Run critical security and authority checks
         run: |
+          npm run check:i18n
           npm run check:supabase-security
           npm run check:v37
           npm run check:v38
