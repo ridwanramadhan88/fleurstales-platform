@@ -11,7 +11,7 @@ import type { OrderStatus, OrderTableRow } from '../types/orders'
 import type { UserRole } from '../store/userStore'
 import { canEditSection } from '../config/permissions'
 import { DEFAULT_ACTION_PERMISSIONS, hasActionPermission, type ActionPermissionMatrix } from '../config/actionPermissions'
-import { canDirectlyEditOrder } from './orderWorkflowDomain'
+import { isOrderLocked } from './orderWorkflowDomain'
 
 export interface OrderActor {
   employeeId?: string
@@ -142,7 +142,7 @@ export const authorizeOrderMutation = ({
     if (!canOperateStatus || !hasSectionEdit) {
       return { allowed: false, reason: 'Only Owner or Admin can advance active order statuses.' }
     }
-    if (!canDirectlyEditOrder(order, actor.role)) {
+    if (isOrderLocked(order)) {
       return {
         allowed: false,
         reason: 'This finished order requires Finance review or an approved change request.',
@@ -156,7 +156,7 @@ export const authorizeOrderMutation = ({
     if (!roleAllowed || !hasSectionEdit) {
       return { allowed: false, reason: 'Your role cannot change these order details.' }
     }
-    if (!canDirectlyEditOrder(order, actor.role)) {
+    if (isOrderLocked(order)) {
       return {
         allowed: false,
         reason: 'This finished order requires Finance review or an approved change request.',
@@ -170,7 +170,7 @@ export const authorizeOrderMutation = ({
     if (!roleAllowed || !hasSectionEdit) {
       return { allowed: false, reason: 'Your role cannot update order payment.' }
     }
-    if (!canDirectlyEditOrder(order, actor.role)) {
+    if (isOrderLocked(order)) {
       return {
         allowed: false,
         reason: 'This finished order requires Finance review or an approved change request.',
