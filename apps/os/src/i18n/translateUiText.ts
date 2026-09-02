@@ -8,6 +8,12 @@ import type { UiLanguage } from './uiLanguage'
 
 const normalize = (value: string): string => value.replace(/\s+/g, ' ').trim()
 
+const preserveBoundaryWhitespace = (original: string, translated: string): string => {
+  const leading = original.match(/^\s+/)?.[0] ?? ''
+  const trailing = original.match(/\s+$/)?.[0] ?? ''
+  return `${leading}${translated}${trailing}`
+}
+
 const applyPatterns = (
   value: string,
   patterns: Array<[RegExp, (...matches: string[]) => string]>,
@@ -30,16 +36,18 @@ export const translateUiText = (value: string, language: UiLanguage): string => 
   if (!normalized || !/[A-Za-z]/.test(normalized)) return value
 
   const reviewed = ID_NATURAL_TRANSLATIONS[normalized]
-  if (reviewed !== undefined) return reviewed
+  if (reviewed !== undefined) return preserveBoundaryWhitespace(value, reviewed)
 
   const reviewedPattern = applyPatterns(normalized, ID_NATURAL_PATTERN_TRANSLATIONS)
-  if (reviewedPattern !== undefined) return reviewedPattern
+  if (reviewedPattern !== undefined) return preserveBoundaryWhitespace(value, reviewedPattern)
 
   const exact = ID_EXACT_TRANSLATIONS[normalized]
-  if (exact) return normalizeIndonesianUiCopy(exact, normalized)
+  if (exact) return preserveBoundaryWhitespace(value, normalizeIndonesianUiCopy(exact, normalized))
 
   const legacyPattern = applyPatterns(normalized, ID_PATTERN_TRANSLATIONS)
-  if (legacyPattern !== undefined) return normalizeIndonesianUiCopy(legacyPattern, normalized)
+  if (legacyPattern !== undefined) {
+    return preserveBoundaryWhitespace(value, normalizeIndonesianUiCopy(legacyPattern, normalized))
+  }
 
   return value
 }
