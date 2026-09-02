@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeOrder } from '../../test/factories/order'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useOrderRuntimeStore } from '../../store/orderRuntimeStore'
+import { useSettingsStore } from '../../store/settingsStore'
+import { DEFAULT_OWNER_SETTINGS } from '../../domain/settings/defaultOwnerSettings'
 import { FinanceRefundQueue } from './FinanceRefundQueue'
 
 const pendingOrder = makeOrder({
@@ -30,6 +32,7 @@ const completedOrder = makeOrder({
 
 describe('FinanceRefundQueue', () => {
   beforeEach(() => {
+    useSettingsStore.setState({ ...structuredClone(DEFAULT_OWNER_SETTINGS), settingsHasUnsavedChanges:false })
     useOrdersStore.setState({ orders: [pendingOrder, completedOrder] })
     useOrderRuntimeStore.setState({ activities: {} })
   })
@@ -78,8 +81,7 @@ describe('FinanceRefundQueue', () => {
     expect(useOrderRuntimeStore.getState().activities['KDM-REF-001']?.[0]?.description).toBe('Refund completed by Finance')
   })
 
-
-  it('allows Owner to view refunds without showing the completion action', () => {
+  it('allows Owner to manage refunds through the same capability', () => {
     render(
       <FinanceRefundQueue
         orders={[pendingOrder, completedOrder]}
@@ -90,10 +92,29 @@ describe('FinanceRefundQueue', () => {
     )
 
     expect(screen.getByText('Duplicate payment')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Complete Refund' })).toBeInTheDocument()
+  })
+
+  it('hides refund actions when the manage-refund capability is disabled', () => {
+    useSettingsStore.setState((state) => ({
+      actionPermissions: {
+        ...state.actionPermissions,
+        finance: { ...state.actionPermissions.finance, 'finance.approve_refund': false },
+      },
+    }))
+    render(
+      <FinanceRefundQueue
+        orders={[pendingOrder]}
+        actorName="Finance"
+        actorRole="finance"
+        onOpenOrder={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('Duplicate payment')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Complete Refund' })).not.toBeInTheDocument()
   })
 
-  it('is hidden from roles that cannot manage refunds', () => {
+  it('is hidden from roles that cannot view refunds', () => {
     const { container } = render(
       <FinanceRefundQueue
         orders={[pendingOrder]}
