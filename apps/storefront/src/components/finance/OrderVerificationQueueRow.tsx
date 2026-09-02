@@ -9,10 +9,9 @@ import type {
 } from './OrderTransactionVerificationQueueController'
 
 /**
- * @description Compact, task-focused row for Finance order verification.
- * The order identity opens the read-only review sheet, Verify is the single
- * visible primary action, and uncommon exception actions are progressively
- * disclosed under More actions.
+ * @description Compact, task-focused row for Finance order reconciliation.
+ * The order identity opens the read-only review sheet, Reconcile is the single
+ * visible primary action, and exception actions stay explicit.
  */
 type QueueRowActionProps = Pick<
   OrderTransactionVerificationQueueViewModel,
@@ -61,12 +60,12 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({
     row
 
   const statusText = isVerified
-    ? `Verified${order.financeVerifiedBy ? ` by ${order.financeVerifiedBy}` : ''}`
+    ? `Reconciled${order.financeVerifiedBy ? ` by ${order.financeVerifiedBy}` : ''}`
     : isRejected
       ? `Rejected${order.financeVerificationActor ? ` by ${order.financeVerificationActor}` : ''}`
       : isMarkedForReview
         ? `Needs attention${order.financeVerificationActor ? ` · flagged by ${order.financeVerificationActor}` : ''}`
-        : 'Ready to verify'
+        : 'Ready to reconcile'
 
   const waitingAge = isPending ? waitingAgeLabel(order.createdAtLabel) : null
 
@@ -96,7 +95,7 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({
               onCheckedChange={(checked) =>
                 onToggleOrderSelected(order.orderNumber, checked === true)
               }
-              aria-label={`Select order ${order.orderNumber} for bulk verify`}
+              aria-label={`Select order ${order.orderNumber} for bulk reconciliation`}
             />
           </div>
         )}
@@ -144,11 +143,11 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({
           <button type="button" onClick={() => onOpenVerificationAction(order.orderNumber, 'correction')} className="inline-flex h-11 items-center gap-2 rounded-full border border-warning/30 bg-warning/5 px-[18px] text-sm font-medium text-warning"><AlertTriangle className="size-4"/>Needs correction</button>
           <button
             type="button"
-            aria-label="Verify"
+            aria-label="Reconcile"
             onClick={() => onVerifyOrder(order.orderNumber)}
             className="h-11 cursor-pointer rounded-full bg-success px-[18px] text-sm font-semibold text-success-foreground shadow-ios-sm hover:bg-success/90"
           >
-            Verify payment
+            Reconcile order
           </button>
         </div>
       )}
@@ -160,7 +159,7 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({
               Correction reason · Required
             </label>
             <p className="text-2xs text-muted-foreground">
-              Explain what must be corrected before Finance can verify the order.
+              Explain what must be corrected before Finance can reconcile the order.
             </p>
           </div>
           <input
