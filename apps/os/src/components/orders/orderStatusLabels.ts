@@ -77,9 +77,6 @@ export const PICKUP_ONLY_STATUS_IDS: OrderStatus[] = ['ready', 'picked_up']
  */
 export const getOrderStatusOptionsForFulfillment = (
   fulfillment: OrderFulfillment,
-  // Retained for backwards compatibility with existing call sites; the
-  // pipeline no longer varies based on this flag since "Confirmed" is now
-  // part of every order's flow, today's included.
   _isFutureOrderFlag: boolean = false,
 ): { id: OrderStatus; label: string }[] => {
   const finishedId: OrderStatus = fulfillment === 'delivery' ? 'delivered' : 'picked_up'
@@ -107,35 +104,23 @@ export const getOrderStatusOptionsForFulfillment = (
   }))
 }
 
-/**
- * @description Options helper: order source for editing.
- */
 export const ORDER_SOURCE_OPTIONS: { id: OrderSource; label: string }[] = [
   { id: 'whatsapp', label: SOURCE_LABELS.whatsapp },
   { id: 'walk_in', label: SOURCE_LABELS.walk_in },
   { id: 'customer_app', label: SOURCE_LABELS.customer_app },
 ]
 
-/**
- * @description Options helper: fulfillment types for editing.
- */
 export const FULFILLMENT_OPTIONS: { id: OrderFulfillment; label: string }[] = [
   { id: 'delivery', label: 'Delivery' },
   { id: 'pickup', label: 'Pickup' },
 ]
 
-/**
- * @description Options helper: payment statuses for editing.
- */
 export const PAYMENT_STATUS_OPTIONS: { id: Exclude<PaymentStatus, 'refund_pending' | 'refunded'>; label: string }[] = [
   { id: 'unpaid', label: PAYMENT_STATUS_LABELS.unpaid },
   { id: 'partial', label: PAYMENT_STATUS_LABELS.partial },
   { id: 'paid', label: PAYMENT_STATUS_LABELS.paid },
 ]
 
-/**
- * @description Options for the status dropdown filter (Layer 2 filter).
- */
 export const STATUS_FILTER_OPTIONS: { id: OrderStatusFilter; label: string }[] = [
   { id: 'all', label: 'All statuses' },
   { id: 'pending_verification', label: 'Awaiting confirmation' },
@@ -158,25 +143,18 @@ export const STATUS_FILTER_OPTIONS: { id: OrderStatusFilter; label: string }[] =
  * - Processing: Processing
  * - Ready: Ready
  * - Delivering: Delivering
- * - Finished: Delivered, Picked up, Cancelled, Failed
+ * - Closed: Delivered, Picked up, Cancelled, Failed
  */
 export type UiStatusGroup = 'new' | 'processing' | 'ready' | 'delivering' | 'finished'
 
-/**
- * @description Human-facing labels for the UI status groups.
- */
 export const STATUS_GROUP_LABELS: Record<UiStatusGroup, string> = {
   new: 'New',
   processing: 'Processing',
   ready: 'Ready',
   delivering: 'Delivering',
-  finished: 'Finished',
+  finished: 'Closed',
 }
 
-/**
- * @description Mapping from backend statuses into UI status groups.
- * This does not modify the underlying status values.
- */
 export const STATUS_GROUP_FROM_STATUS: Record<OrderStatus, UiStatusGroup> = {
   pending_verification: 'new',
   confirmed: 'new',
@@ -189,10 +167,6 @@ export const STATUS_GROUP_FROM_STATUS: Record<OrderStatus, UiStatusGroup> = {
   failed: 'finished',
 }
 
-/**
- * @description Options for the UI status group filter (Layer 3 filter).
- * Defaults to "All".
- */
 export const STATUS_GROUP_FILTER_OPTIONS: { id: UiStatusGroup | 'all'; label: string }[] =
   [
     { id: 'all', label: 'All' },
