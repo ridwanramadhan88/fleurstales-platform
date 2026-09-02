@@ -104,8 +104,8 @@ jobs:
 
   database-gate:
     name: Full Supabase database gate
-    needs: full-verify
-    if: needs.mode.outputs.full == 'true'
+    needs: [mode, full-verify]
+    if: needs.mode.outputs.full == 'true' && needs.full-verify.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
