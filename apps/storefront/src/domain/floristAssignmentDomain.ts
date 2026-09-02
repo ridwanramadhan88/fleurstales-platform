@@ -2,7 +2,7 @@ import type { OrderTableRow } from '../types/orders'
 import type { Employee, EmployeeDefaultSchedule, ScheduleOverride } from '../store/hrStoreTypes'
 import type { OwnerSettingsStateValue } from '../types/settings'
 import { getEffectiveScheduleForDate } from './hrSchedulingDomain'
-import { getLocalDateString, nowInJakarta } from './orderTimingDomain'
+import { getLocalDateString, toJakarta } from './orderTimingDomain'
 
 export type FloristScheduleStatus =
   | 'scheduled'
@@ -30,18 +30,25 @@ const toMinutes = (value: string): number => {
 }
 
 export const resolveFloristAssignmentMoment = (
-  order: Pick<OrderTableRow, 'scheduleDate' | 'scheduleTime'>,
-  now = nowInJakarta(),
+  order: Pick<OrderTableRow, 'scheduleDate' | 'scheduleTime'> & Partial<Pick<OrderTableRow, 'fulfillment'>>,
+  now = new Date(),
 ): { date: string; time?: string; source: 'scheduled' | 'current' | 'date_only' } => {
+  const assignmentNow = toJakarta(now)
+  const currentDate = getLocalDateString(assignmentNow)
+  const currentTime = `${String(assignmentNow.getHours()).padStart(2, '0')}:${String(assignmentNow.getMinutes()).padStart(2, '0')}`
+
+  // Future delivery orders are assigned to whoever is actually working at
+  // the moment Admin assigns the order. The future delivery slot must not
+  // reserve or pre-select a florist from that future day's schedule.
+  if (order.fulfillment === 'delivery' && order.scheduleDate && order.scheduleDate > currentDate) {
+    return { date: currentDate, time: currentTime, source: 'current' }
+  }
+
   if (order.scheduleDate && order.scheduleTime) {
     return { date: order.scheduleDate, time: order.scheduleTime, source: 'scheduled' }
   }
   if (order.scheduleDate) return { date: order.scheduleDate, source: 'date_only' }
-  return {
-    date: getLocalDateString(now),
-    time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
-    source: 'current',
-  }
+  return { date: currentDate, time: currentTime, source: 'current' }
 }
 
 const getWorkload = ({
@@ -59,7 +66,7 @@ const getWorkload = ({
 ).length
 
 export const getFloristAssignmentOptionsForOrder = (params: {
-  order: Pick<OrderTableRow, 'branch' | 'scheduleDate' | 'scheduleTime'>
+  order: Pick<OrderTableRow, 'branch' | 'scheduleDate' | 'scheduleTime'> & Partial<Pick<OrderTableRow, 'fulfillment'>>
   employees: Employee[]
   defaults: EmployeeDefaultSchedule[]
   overrides: ScheduleOverride[]
@@ -118,7 +125,7 @@ export const getFloristAssignmentOptionsForOrder = (params: {
           employeeId: employee.id,
           name: employee.name,
           scheduleStatus: 'outside_shift',
-          scheduleReason: `Shift ${effective.shift.startTime}-${effective.shift.endTime} does not cover the order time.`,
+          scheduleReason: `Shift ${effective.shift.startTime}-${effective.shift.endTime} does not cover the assignment time.`,
           branchId: effective.shift.branchId,
           shiftStart: effective.shift.startTime,
           shiftEnd: effective.shift.endTime,
@@ -131,7 +138,7 @@ export const getFloristAssignmentOptionsForOrder = (params: {
         employeeId: employee.id,
         name: employee.name,
         scheduleStatus: 'scheduled',
-        scheduleReason: 'Scheduled at this branch for the order time.',
+        scheduleReason: 'Scheduled at this branch for the assignment time.',
         branchId: effective.shift.branchId,
         shiftStart: effective.shift.startTime,
         shiftEnd: effective.shift.endTime,
