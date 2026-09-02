@@ -499,8 +499,8 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const selfApprovalEmployeeIds = candidates.filter((draft)=>isActorOwnPayroll(draft, actor)).map((draft)=>draft.employeeId)
     const review:PayrollProposalReviewRecord={ id:`proposal-review-${Date.now()}`, payrollProposalId:proposal.id, payrollPeriodId:proposal.payrollPeriodId, decision:'approved', ...(normalizedNote ? { note:normalizedNote } : {}), ...(selfApprovalEmployeeIds.length ? { selfApprovalEmployeeIds } : {}), actorName:actor.name, actorRole:actor.role, createdAt:now }
     set((state)=>({
-      payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id ? { ...item, calculationPolicy:policy, status:'finance_approved', financeDecisionAt:now, financeDecisionBy:actor.name, financeNote:normalizedNote || undefined } : item),
-      employeePayrolls:state.employeePayrolls.map((draft)=>candidates.some((candidate)=>candidate.id===draft.id) ? { ...draft, calculationPolicy:policy, status:'finance_verified', financeReviewedAt:now, financeReviewedBy:actor.name, rejectionReason:undefined } : draft),
+      payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id ? { ...item, status:'finance_approved', financeDecisionAt:now, financeDecisionBy:actor.name, financeNote:normalizedNote || undefined } : item),
+      employeePayrolls:state.employeePayrolls.map((draft)=>candidates.some((candidate)=>candidate.id===draft.id) ? { ...draft, status:'finance_verified', financeReviewedAt:now, financeReviewedBy:actor.name, rejectionReason:undefined } : draft),
       payrollProposalReviews:[...state.payrollProposalReviews, review],
     }))
     publishPayrollWorkflowMutation('approve_all')
@@ -584,11 +584,11 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const now=new Date().toISOString()
     const selfApproval = isActorOwnPayroll(draft, actor)
     const review:PayrollReviewRecord={id:`payroll-review-${Date.now()}`,payrollDraftId:draft.id,payrollPeriodId:draft.payrollPeriodId,employeeId:draft.employeeId,decision:'verified',...(normalizedNote ? {note:normalizedNote} : {}),...(selfApproval ? {selfApproval:true} : {}),actorName:actor.name,actorRole:actor.role,createdAt:now}
-    const nextDrafts=get().employeePayrolls.filter((item)=>proposal.employeePayrollIds.includes(item.id)).map((item)=>item.id===draft.id?{...item,calculationPolicy:policy,status:'finance_verified' as const,financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item)
+    const nextDrafts=get().employeePayrolls.filter((item)=>proposal.employeePayrollIds.includes(item.id)).map((item)=>item.id===draft.id?{...item,status:'finance_verified' as const,financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item)
     const nextStatus=deriveProposalReviewStatus(nextDrafts)
     set((state)=>({
-      employeePayrolls:state.employeePayrolls.map((item)=>item.id===draft.id?{...item,calculationPolicy:policy,status:'finance_verified',financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item),
-      payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id?{...item,calculationPolicy:policy,status:nextStatus,financeDecisionAt:nextStatus==='finance_approved'?now:item.financeDecisionAt,financeDecisionBy:nextStatus==='finance_approved'?actor.name:item.financeDecisionBy}:item),
+      employeePayrolls:state.employeePayrolls.map((item)=>item.id===draft.id?{...item,status:'finance_verified',financeReviewedAt:now,financeReviewedBy:actor.name,rejectionReason:undefined}:item),
+      payrollProposals:state.payrollProposals.map((item)=>item.id===proposal.id?{...item,status:nextStatus,financeDecisionAt:nextStatus==='finance_approved'?now:item.financeDecisionAt,financeDecisionBy:nextStatus==='finance_approved'?actor.name:item.financeDecisionBy}:item),
       payrollReviews:[...state.payrollReviews,review],
     }))
     publishPayrollWorkflowMutation('approve_employee')
