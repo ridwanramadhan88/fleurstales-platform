@@ -1,4 +1,5 @@
 const PHRASE_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bPeriod vs Previous Period\b/g, 'Periode vs Periode Sebelumnya'],
   [/\bdefault role\b/gi, 'peran bawaan'],
   [/\bdefault schedule\b/gi, 'jadwal bawaan'],
   [/\bdefault week\b/gi, 'minggu kerja bawaan'],
