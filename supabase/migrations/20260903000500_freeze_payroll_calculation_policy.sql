@@ -95,11 +95,16 @@ begin
   loop
     v_policy := v_proposal->'calculationPolicy';
 
+    -- Validate textual integer shape before any casts so malformed JSON can
+    -- never surface as a PostgreSQL cast error instead of a domain error.
     if jsonb_typeof(v_policy) <> 'object'
       or coalesce(v_policy->>'pointValueIdr','') !~ '^[0-9]+$'
-      or (v_policy->>'pointValueIdr')::bigint <= 0
       or coalesce(v_policy->>'bonusCapIdr','') !~ '^[0-9]+$'
     then
+      raise exception 'INVALID_PAYROLL_CALCULATION_POLICY' using errcode = '22023';
+    end if;
+
+    if (v_policy->>'pointValueIdr')::numeric <= 0 then
       raise exception 'INVALID_PAYROLL_CALCULATION_POLICY' using errcode = '22023';
     end if;
 
