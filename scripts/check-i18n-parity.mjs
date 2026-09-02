@@ -11,6 +11,7 @@ const sharedFiles = [
   'naturalTranslations.ts',
   'indonesianTranslations.ts',
   'finalizeIndonesianCopy.ts',
+  'reviewedTranslationSource.ts',
   'reviewedTranslations.ts',
   'translateUiText.ts',
   'translateUiText.test.ts',
