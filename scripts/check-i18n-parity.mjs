@@ -4,18 +4,10 @@ import { resolve } from 'node:path'
 const root = process.cwd()
 const normalize = (value) => value.replace(/\r\n/g, '\n').trim()
 
-const normalizeAppSpecificCopy = (file, value) => {
-  const normalized = normalize(value)
-  if (file !== 'idTranslations.ts') return normalized
-
-  return normalized.replace(
-    /  'Invalid username or (?:password|PIN), or this account is inactive\.': 'Username atau (?:password|PIN) salah, atau akun nonaktif\.',/,
-    "  'Invalid username or {credential}, or this account is inactive.': 'Username atau {credential} salah, atau akun nonaktif.',",
-  )
-}
-
+// idTranslations.ts is intentionally app-specific: Business OS uses a password
+// while Storefront staff authentication uses a 6-digit PIN. The canonical
+// runtime layer below is what must stay byte-identical between both apps.
 const sharedFiles = [
-  'idTranslations.ts',
   'naturalTranslations.ts',
   'indonesianTranslations.ts',
   'reviewedTranslations.ts',
@@ -41,8 +33,8 @@ const reportFirstDifference = (file, os, storefront) => {
 for (const file of sharedFiles) {
   const osPath = resolve(root, 'apps/os/src/i18n', file)
   const storefrontPath = resolve(root, 'apps/storefront/src/i18n', file)
-  const os = normalizeAppSpecificCopy(file, readFileSync(osPath, 'utf8'))
-  const storefront = normalizeAppSpecificCopy(file, readFileSync(storefrontPath, 'utf8'))
+  const os = normalize(readFileSync(osPath, 'utf8'))
+  const storefront = normalize(readFileSync(storefrontPath, 'utf8'))
 
   if (os !== storefront) {
     console.error(`Indonesian i18n parity failed: OS and Storefront ${file} differ.`)
