@@ -140,6 +140,10 @@ begin
     raise exception 'FINANCE_CANNOT_EDIT_MANUAL_PAYEE' using errcode='42501';
   end if;
 
+  -- Once a period is submitted, HR may still perform the explicit workflow
+  -- transitions, but cannot insert, edit, or delete the HR-owned identity and
+  -- amount fields of a manual payee. Compare both snapshots so deletion is
+  -- protected as strongly as insertion and editing.
   if v_role in ('owner','hr') and exists (
     select 1
     from jsonb_array_elements(coalesce(v_previous->'employeePayrolls','[]'::jsonb)) o
