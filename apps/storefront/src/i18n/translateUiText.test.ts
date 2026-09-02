@@ -31,6 +31,14 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('1 item · 1 line', 'id')).toBe('1 item · 1 baris')
   })
 
+  it('preserves text-node boundary whitespace around translated copy', () => {
+    expect(translateUiText('Save ', 'id')).toBe('Simpan ')
+    expect(translateUiText(' Save changes', 'id')).toBe(' Simpan perubahan')
+    expect(translateUiText('\tConfirmed\n', 'id')).toBe('\tDikonfirmasi\n')
+    expect(`${translateUiText('Save ', 'id')}2026-09-03`).toBe('Simpan 2026-09-03')
+    expect(translateUiText('   ', 'id')).toBe('   ')
+  })
+
   it('keeps established role and technical names', () => {
     expect(translateUiText('Owner', 'id')).toBe('Owner')
     expect(translateUiText('Admin', 'id')).toBe('Admin')
