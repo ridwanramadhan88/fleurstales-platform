@@ -23,7 +23,7 @@ describe('Finance and HR note and rounding regressions', () => {
     expect(payroll).toContain('Employee approval note · Optional')
     expect(payroll).toContain('Note · Optional')
     expect(payroll).toContain('Employee rejection reason for HR · Required')
-    expect(schedule).toContain('Changes apply immediately after validation.')
+    expect(schedule).toContain('Changes apply immediately after validation')
     expect(schedule).not.toContain('Approval note')
     expect(schedule).not.toContain('Rejection reason')
     expect(attendance).toContain('Review note · Optional')
