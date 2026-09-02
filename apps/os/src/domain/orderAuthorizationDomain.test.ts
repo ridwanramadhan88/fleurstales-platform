@@ -37,7 +37,6 @@ describe('order row-level authorization', () => {
     ).toBe(true)
   })
 
-
   it('denies branch-scoped staff when no active branch assignment exists', () => {
     expect(
       canViewOrder(
@@ -74,8 +73,6 @@ describe('order row-level authorization', () => {
     ).toBe(false)
   })
 
-
-
   it('keeps assigned Florists read-only for Order status', () => {
     expect(
       authorizeOrderMutation({
@@ -86,6 +83,22 @@ describe('order row-level authorization', () => {
         nextStatus: 'processing',
       }),
     ).toMatchObject({ allowed: false })
+  })
+
+  it('keeps Finance read-only for direct locked-order mutations', () => {
+    const locked = makeOrder({ orderNumber:'KDM-FIN-LOCK', branch:'Kedamaian', status:'delivered' })
+    const finance = { employeeId:'finance-a', name:'Finance', role:'finance' as const }
+
+    for (const kind of ['details', 'payment', 'status'] as const) {
+      expect(
+        authorizeOrderMutation({
+          order:locked,
+          actor:finance,
+          permissions:DEFAULT_ROLE_SECTION_ACCESS,
+          kind,
+        }),
+      ).toMatchObject({ allowed:false })
+    }
   })
 
   it('denies direct mutations outside the actor row scope', () => {
