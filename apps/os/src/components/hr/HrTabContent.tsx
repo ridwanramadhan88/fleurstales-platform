@@ -47,8 +47,8 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
 
   const selectedAccountEditable = canManageEmployeeDetails && detailsEmployee?.systemRole !== 'owner'
   const [detailsSection,setDetailsSection] = useState<'profile'|'access'>('profile')
-  const readyCount = employeeRows.filter((item)=>item.readiness.state==='active').length
-  const setupRequiredCount = employeeRows.filter((item)=>item.readiness.state==='setup_required').length
+  const readyCount = employeeRows.filter((item)=>item.readiness.state==='active' && item.readiness.setupComplete).length
+  const setupRequiredCount = employeeRows.filter((item)=>item.readiness.state==='active' && !item.readiness.setupComplete).length
   const inactiveCount = employeeRows.filter((item)=>item.readiness.state==='inactive').length
 
   return <PeoplePageShell>
@@ -81,7 +81,10 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
         <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">No employees match the selected filters.</p> : employeeRows.map(({ employee, readiness }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); const performance = getEmployeeOrderPerformance(employee.id, orders); return <PeopleListCard key={employee.id} density="dense">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{employee.name}</p><p className="mt-0.5 text-xs font-medium text-muted-foreground">{roleLabel(employee.systemRole)}</p></div>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${readiness.state === 'active' ? 'bg-success/10 text-success' : readiness.state === 'setup_required' ? 'bg-warning/10 text-warning' : 'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{readiness.state === 'active' ? 'Active' : readiness.state === 'setup_required' ? 'Setup required' : 'Inactive'}</span>
+            <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+              <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${readiness.state === 'active' ? 'bg-success/10 text-success' : 'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{readiness.state === 'active' ? 'Active' : 'Inactive'}</span>
+              {readiness.state === 'active' && !readiness.setupComplete && <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning">Setup required</span>}
+            </div>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">{employee.phone || 'No WhatsApp'} · Since {new Date(employee.hireDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
           {readiness.missing.length > 0 && <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">Missing: {readiness.missing.join(', ')}</p>}
