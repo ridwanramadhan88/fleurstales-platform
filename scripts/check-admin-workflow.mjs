@@ -13,7 +13,7 @@ const [app, branches, queue, dashboard, migration] = await Promise.all([
   read('apps/os/src/domain/branchSelectionDomain.ts'),
   read('apps/os/src/components/dashboard/AdminTodayQueue.tsx'),
   read('apps/os/src/components/dashboard/DashboardTab.tsx'),
-  read('supabase/migrations/20260804174500_simplify_admin_workflow.sql'),
+  read('supabase/migrations/20260804183609_simplify_admin_workflow.sql'),
 ])
 
 assert(app.includes("role === 'admin' && productionSession"), 'Production Admin is not locked to the dated branch.')
