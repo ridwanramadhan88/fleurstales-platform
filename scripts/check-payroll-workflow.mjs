@@ -13,7 +13,7 @@ const [store, hrUi, financeUi, validation, migration, test] = await Promise.all(
   read('apps/os/src/components/hr/HrPayrollSection.tsx'),
   read('apps/os/src/components/finance/FinancePayrollReview.tsx'),
   read('apps/os/src/domain/payrollFinanceReviewDomain.ts'),
-  read('supabase/migrations/20260805054500_payroll_manual_payees_and_self_approval.sql'),
+  read('supabase/migrations/20260805104118_payroll_manual_payees_and_self_approval.sql'),
   read('apps/os/src/store/payrollManualPayeeWorkflow.test.ts'),
 ])
 
