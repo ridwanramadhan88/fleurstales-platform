@@ -149,9 +149,7 @@ export const useOrderTransactionVerificationQueueController = ({
   showHeading = true,
 }: OrderTransactionVerificationQueueProps): OrderTransactionVerificationQueueViewModel => {
   const verifyOrderFinance = useOrdersStore((state) => state.verifyOrderFinance)
-  const markOrderForFinanceReview = useOrdersStore(
-    (state) => state.markOrderForFinanceReview,
-  )
+  const rejectOrderFinance = useOrdersStore((state) => state.rejectOrderFinance)
   const approveChangeRequest = useOrdersStore((state) => state.approveChangeRequest)
   const rejectChangeRequest = useOrdersStore((state) => state.rejectChangeRequest)
   const employeeId = useUserStore((state) => state.employeeId)
@@ -360,9 +358,9 @@ export const useOrderTransactionVerificationQueueController = ({
         actor,
         note: verificationActionNote.trim() || undefined,
       }
-      const result = verificationActionType === 'correction' ? markOrderForFinanceReview(input) : null
+      const result = verificationActionType === 'correction' ? rejectOrderFinance(input) : null
       if (result && !result.allowed) {
-        toast({ title: 'Order was not updated', description: result.reason, variant: 'destructive' })
+        toast({ title: 'Order was not returned', description: result.reason, variant: 'destructive' })
         return
       }
       closeVerificationAction()
