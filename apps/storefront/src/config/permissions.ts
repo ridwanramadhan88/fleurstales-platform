@@ -61,6 +61,23 @@ export type AccessLevel = 'none' | 'view' | 'edit'
  * ever unavailable. `settings` is intentionally owner-only: only Owner can
  * see/edit the Settings Center itself.
  */
+
+export const SECTION_ALLOWED_ROLES: Record<AppSection, UserRole[]> = {
+  dashboard: ['owner','admin','finance','hr','florist'],
+  orders: ['owner','admin','finance'],
+  stock: ['owner','admin','finance'],
+  catalog: ['owner','admin','finance'],
+  customers: ['owner','admin','finance'],
+  revenue: ['owner','finance'],
+  finance: ['owner','finance'],
+  hr: ['owner','hr'],
+  scheduling: ['owner','hr'],
+  settings: ['owner'],
+}
+
+export const isSectionEligibleForRole = (role: UserRole, section: AppSection): boolean =>
+  SECTION_ALLOWED_ROLES[section].includes(role)
+
 export const DEFAULT_ROLE_SECTION_ACCESS: Record<UserRole, Record<AppSection, AccessLevel>> = {
   owner: {
     dashboard: 'edit',
@@ -90,7 +107,7 @@ export const DEFAULT_ROLE_SECTION_ACCESS: Record<UserRole, Record<AppSection, Ac
     dashboard: 'edit',
     // Finance can now view the general Orders table read-only (decided
     // 2026-07-10) — mutating order actions still only happen through the
-    // verification queue (OrderTransactionVerificationQueue), gated by
+    // verification queue (OrderVerificationQueue), gated by
     // canVerifyOrder / canResolveChangeRequest in orderWorkflowDomain.ts,
     // not by this 'view' grade.
     orders: 'view',
@@ -137,7 +154,7 @@ export const getAccessLevel = (
   role: UserRole,
   section: AppSection,
   permissions: PermissionMatrix = DEFAULT_ROLE_SECTION_ACCESS,
-): AccessLevel => permissions[role]?.[section] ?? 'none'
+): AccessLevel => isSectionEligibleForRole(role, section) ? (permissions[role]?.[section] ?? 'none') : 'none'
 
 /**
  * @description Returns whether a role can see a section at all (view or edit).
