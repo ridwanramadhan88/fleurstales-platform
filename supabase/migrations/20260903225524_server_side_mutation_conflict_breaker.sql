@@ -2,6 +2,7 @@
 -- revision-conflicted HR or Order mutations. A session is blocked for 15 minutes
 -- after 3 conflicts for the same scope within 5 seconds. Successful writes clear
 -- the session/scope streak. This keeps the database safe even before old tabs reload.
+-- This migration is intentionally covered by the repository's full Supabase replay gate.
 
 create table private.mutation_conflict_circuits (
   session_hash text not null,
