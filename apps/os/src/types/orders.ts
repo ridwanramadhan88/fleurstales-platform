@@ -278,6 +278,14 @@ export interface OrderTableRow {
    * slot, and to tell whether that completion happened after the original
    * scheduled slot (late). */
   completedAt?: string
+  /** Finance-only reconciliation identifier, persisted through a dedicated RPC. */
+  financeReferenceCode?: string
+  /** Customer-facing reason recorded when a pending storefront order is rejected. */
+  cancellationReason?: string
+  /** Staff display label responsible for the customer-facing cancellation. */
+  cancelledBy?: string
+  /** ISO timestamp of the customer-facing cancellation. */
+  cancelledAt?: string
   /** Whether Finance has verified this order. Once true, the order is
    * locked: only Finance/Owner can edit or void it directly, and revenue
    * only counts this order as "confirmed" (see revenueDomain). Admin can
@@ -338,14 +346,8 @@ export type OrderChangeRequestType = 'edit' | 'cancel'
  * request time. 'cancel' requests are still applied directly on approval.
  */
 export interface OrderChangeRequest {
-  /** Unique id for this request. */
-  id: string
-  /** Whether this is a request to edit, or a cancellation/void request. */
   type: OrderChangeRequestType
-  /** Reason given by Admin for the request — required, shown to Finance/Owner. */
-  reason: string
-  /** Display name of the Admin who submitted the request. */
   requestedBy: string
-  /** ISO timestamp the request was submitted. */
   requestedAt: string
+  reason: string
 }
