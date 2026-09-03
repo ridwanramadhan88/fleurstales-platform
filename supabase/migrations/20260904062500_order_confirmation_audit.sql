@@ -37,7 +37,7 @@ begin
   if v_order.revision <> p_expected_revision then
     raise exception 'REVISION_CONFLICT expected=%, actual=%', p_expected_revision, v_order.revision using errcode='40001';
   end if;
-  if v_order.storefront_idempotency_key is null then
+  if v_order.source <> 'customer_app' then
     raise exception 'STOREFRONT_ORDER_REQUIRED' using errcode='22023';
   end if;
   if v_order.status <> 'pending_verification' then
@@ -122,7 +122,7 @@ begin
   if v_order.revision <> p_expected_revision then
     raise exception 'REVISION_CONFLICT expected=%, actual=%', p_expected_revision, v_order.revision using errcode='40001';
   end if;
-  if v_order.storefront_idempotency_key is null then
+  if v_order.source <> 'customer_app' then
     raise exception 'STOREFRONT_ORDER_REQUIRED' using errcode='22023';
   end if;
   if v_order.status <> 'pending_verification' then
