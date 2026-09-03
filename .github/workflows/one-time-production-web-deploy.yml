@@ -20,7 +20,7 @@ jobs:
     environment: production
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_ORG_ID: team_2XDHF8xiGHAuhTfdS6LkGlnC
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,10 +29,10 @@ jobs:
       - name: Deploy Storefront to Vercel production
         working-directory: apps/storefront
         env:
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STOREFRONT_PROJECT_ID }}
-        run: npx -y vercel@59.11.2 deploy --prod --yes --project "$VERCEL_PROJECT_ID" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+          VERCEL_PROJECT_ID: prj_tuybo4rw5yqRUR06SlOWyd7wPXVv
+        run: npx -y vercel@59.11.2 deploy --prod --yes --scope rid5 --token "$VERCEL_TOKEN"
       - name: Deploy Business OS to Vercel production
         working-directory: apps/os
         env:
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OS_PROJECT_ID }}
-        run: npx -y vercel@59.11.2 deploy --prod --yes --project "$VERCEL_PROJECT_ID" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+          VERCEL_PROJECT_ID: prj_DCJttzhnZ7nQoEZHnrttEwwACdKd
+        run: npx -y vercel@59.11.2 deploy --prod --yes --scope rid5 --token "$VERCEL_TOKEN"
