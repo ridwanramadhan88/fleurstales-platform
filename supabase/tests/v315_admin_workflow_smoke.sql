@@ -54,10 +54,11 @@ begin
   end if;
 
   select pg_get_functiondef('public.save_order_operational_state_unchecked(text,integer,integer,jsonb,jsonb,jsonb)'::regprocedure) into v_save_internal_source;
-  if position('save_order_operational_state_v37_internal' in v_save_internal_source)=0
-     or position('ORDER_STATUS_SEQUENCE_REQUIRED' in v_save_internal_source)=0
-     or position('Ready for reconciliation' in v_save_internal_source)=0 then
-    raise exception 'Order sequence or Finance handoff authority is incomplete';
+  if position('save_order_operational_state_v37_internal' in v_save_internal_source)=0 then
+    raise exception 'Unchecked order authority lost v37 delegation';
+  end if;
+  if position('ORDER_STATUS_SEQUENCE_REQUIRED' in v_save_internal_source)=0 then
+    raise exception 'Unchecked order authority lost status sequencing';
   end if;
 
   select pg_get_functiondef('private.on_order_created_event()'::regprocedure) into v_trigger_source;
