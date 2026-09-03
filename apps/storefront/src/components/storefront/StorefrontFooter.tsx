@@ -17,16 +17,9 @@ interface SocialItemProps {
 }
 
 const SocialItem: FC<SocialItemProps> = ({ label, href, icon }) => {
-  const content = (
-    <span className="inline-flex size-12 items-center justify-center">
-      {icon}
-    </span>
-  )
-
+  const content = <span className="inline-flex size-12 items-center justify-center">{icon}</span>
   return href ? (
-    <a href={href} target="_blank" rel="noreferrer" className="tap-scale rounded-full outline-none focus-visible:ring-2 focus-visible:ring-black/25" aria-label={label}>
-      {content}
-    </a>
+    <a href={href} target="_blank" rel="noreferrer" className="tap-scale rounded-full outline-none focus-visible:ring-2 focus-visible:ring-black/25" aria-label={label}>{content}</a>
   ) : (
     <span aria-label={label}>{content}</span>
   )
@@ -34,10 +27,7 @@ const SocialItem: FC<SocialItemProps> = ({ label, href, icon }) => {
 
 export const StorefrontFooter: FC<Props> = ({ storeProfile }) => {
   const whatsapp = storeProfile.whatsapp || storeProfile.phone
-  const whatsappHref = whatsapp.trim()
-    ? `https://wa.me/${whatsapp.replace(/\D/g, '')}`
-    : null
-
+  const whatsappHref = whatsapp.trim() ? `https://wa.me/${whatsapp.replace(/\D/g, '')}` : null
   const legalName = storeProfile.legalName?.trim()
 
   return (
@@ -54,22 +44,11 @@ export const StorefrontFooter: FC<Props> = ({ storeProfile }) => {
               </div>
 
               <div className="mt-6 space-y-1.5 sf-type-2 leading-[1.45] text-black/72">
+                <p><a className="font-medium underline decoration-black/35 underline-offset-2" href="/track">Track Order</a></p>
                 {whatsapp.trim() && (
-                  <p>
-                    {whatsappHref ? (
-                      <a className="underline decoration-black/35 underline-offset-2" href={whatsappHref} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${whatsapp}`}>
-                        {whatsapp}
-                      </a>
-                    ) : whatsapp}
-                  </p>
+                  <p>{whatsappHref ? <a className="underline decoration-black/35 underline-offset-2" href={whatsappHref} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${whatsapp}`}>{whatsapp}</a> : whatsapp}</p>
                 )}
-                {storeProfile.email.trim() && (
-                  <p>
-                    <a className="underline decoration-black/35 underline-offset-2" href={`mailto:${storeProfile.email.trim()}`}>
-                      {storeProfile.email}
-                    </a>
-                  </p>
-                )}
+                {storeProfile.email.trim() && <p><a className="underline decoration-black/35 underline-offset-2" href={`mailto:${storeProfile.email.trim()}`}>{storeProfile.email}</a></p>}
                 {storeProfile.address.trim() && <p className="max-w-lg pt-1">{storeProfile.address}</p>}
               </div>
             </div>
