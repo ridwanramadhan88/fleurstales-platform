@@ -16,46 +16,37 @@ export interface CartLine {
   quantity: number
 }
 
+export interface PlacedStorefrontOrder {
+  orderNumber: string
+  publicTrackingId?: string
+}
+
 export interface CartDrawerProps {
   open: boolean
   onClose: () => void
   lines: CartLine[]
   onIncrement: (lineId: string) => void
   onDecrement: (lineId: string) => void
-  onOrderPlaced: (orderNumber: string) => void
+  onOrderPlaced: (order: PlacedStorefrontOrder) => void
   formatter: Intl.NumberFormat
 }
 
 const stepOrder = ['cart', 'details', 'review', 'summary'] as const
-const stepLabels = {
-  cart: 'Cart',
-  details: 'Details',
-  review: 'Review',
-  summary: 'Payment',
-}
-const titles = {
-  cart: 'Cart',
-  details: 'Details',
-  review: 'Review',
-  summary: 'Payment',
-}
+const stepLabels = { cart: 'Cart', details: 'Details', review: 'Review', summary: 'Payment' }
+const titles = { cart: 'Cart', details: 'Details', review: 'Review', summary: 'Payment' }
 
 const CheckoutProgress: FC<Pick<CartDrawerViewModel, 'step'>> = ({ step }) => {
   const activeIndex = stepOrder.indexOf(step)
-
   return (
     <nav className="px-5 pb-5 sm:px-6 sm:pb-6 lg:px-7" aria-label="Checkout progress">
       <div className="grid grid-cols-4 items-center gap-1">
         {stepOrder.map((stepId, index) => {
           const isComplete = index < activeIndex
           const isActive = stepId === step
-
           return (
             <span
               key={stepId}
-              className={`min-w-0 text-center sf-type-2 font-medium leading-none ${
-                isComplete || isActive ? 'text-[#00813f]' : 'text-black/52'
-              }`}
+              className={`min-w-0 text-center sf-type-2 font-medium leading-none ${isComplete || isActive ? 'text-[#00813f]' : 'text-black/52'}`}
               aria-current={isActive ? 'step' : undefined}
             >
               {stepLabels[stepId]}
@@ -92,10 +83,7 @@ export const CartDrawer: FC<CartDrawerViewModel> = (viewModel) => {
         aria-labelledby="storefront-checkout-title"
       >
         <header className="flex shrink-0 items-center justify-between px-5 pb-5 pt-10 sm:px-6 sm:pb-6 sm:pt-11 lg:px-7 lg:pt-12">
-          <h2
-            id="storefront-checkout-title"
-            className="flex min-w-0 items-center gap-3.5 sf-type-5 font-medium leading-[0.94]"
-          >
+          <h2 id="storefront-checkout-title" className="flex min-w-0 items-center gap-3.5 sf-type-5 font-medium leading-[0.94]">
             <CartBagIcon className="h-auto w-[2.05rem] -translate-y-[1px] sm:w-[2.2rem]" />
             <span className="truncate">{titles[step]}</span>
           </h2>
@@ -110,7 +98,6 @@ export const CartDrawer: FC<CartDrawerViewModel> = (viewModel) => {
         </header>
 
         <CheckoutProgress step={step} />
-
         <div className="flex min-h-0 flex-1 flex-col">
           {step === 'cart' && <CartStep {...viewModel} />}
           {step === 'details' && <DetailsStep {...viewModel} />}
