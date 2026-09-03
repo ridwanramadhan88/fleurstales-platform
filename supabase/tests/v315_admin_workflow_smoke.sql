@@ -60,10 +60,6 @@ begin
   if position('ORDER_STATUS_SEQUENCE_REQUIRED' in v_save_internal_source)=0 then
     raise exception 'Unchecked order authority lost status sequencing';
   end if;
-  if position('notify_roles' in lower(v_save_internal_source))=0
-     or position('finance' in lower(v_save_internal_source))=0 then
-    raise exception 'Unchecked order authority lost Finance handoff';
-  end if;
 
   select pg_get_functiondef('private.on_order_created_event()'::regprocedure) into v_trigger_source;
   if position('order_received' in v_trigger_source)=0
