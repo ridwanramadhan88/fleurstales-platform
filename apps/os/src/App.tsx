@@ -145,5 +145,5 @@ export default function App() {
   const handleSignOut = () => { void resetSession() }
 
   if (view === 'login') return <LoginPage onSignIn={handleSignIn} theme={theme} onToggleTheme={toggleTheme} />
-  return <HomePage onSignOut={handleSignIn as never} theme={theme} onToggleTheme={toggleTheme} initialBranch={selectedBranch} />
+  return <HomePage onSignOut={handleSignOut} theme={theme} onToggleTheme={toggleTheme} initialBranch={selectedBranch} />
 }
