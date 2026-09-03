@@ -51,6 +51,7 @@ import { useOrderDetailsChangeRequest } from './useOrderDetailsChangeRequest'
 import { useOrderDetailsEditing, type OrderEditDraft } from './useOrderDetailsEditing'
 import { useOrderDetailsFinance } from './useOrderDetailsFinance'
 import { useOrderDetailsRefund, type RefundDialogMode } from './useOrderDetailsRefund'
+import { useOrderStorefrontConfirmation } from './useOrderStorefrontConfirmation'
 
 export interface UseOrderDetailsControllerParams {
   order: OrderTableRow
@@ -75,6 +76,7 @@ export interface OrderDetailsViewModel {
   currentUserRole: ReturnType<typeof useUserStore.getState>['role']
   isCancellable: boolean
   isTerminalIssue: boolean
+  isPendingStorefrontConfirmation: boolean
   /** Pre-built pickup-ready WhatsApp message text, for OrderPostActionModal. */
   readyMessage: string
   /** WhatsApp deep link for the ready message, for OrderPostActionModal. */
@@ -99,6 +101,7 @@ export interface OrderDetailsViewModel {
   draft: OrderEditDraft
   actionModal: 'ready' | 'delivering' | null
   addressCopied: boolean
+  detailsCopied: boolean
   showPaymentGate: boolean
   showFloristAssignment: boolean
   floristDialogMode: 'assign-and-process' | 'reassign' | null
@@ -109,6 +112,10 @@ export interface OrderDetailsViewModel {
   refundReason: string
   resubmissionNote: string
   setRefundReason: (value: string) => void
+  storefrontDecisionBusy: 'confirm' | 'cancel' | null
+  storefrontCancelOpen: boolean
+  storefrontCancelReason: string
+  setStorefrontCancelReason: (value: string) => void
 
   // Handlers
   onDraftChange: <K extends keyof OrderEditDraft>(field: K, value: OrderEditDraft[K]) => void
@@ -137,6 +144,11 @@ export interface OrderDetailsViewModel {
   onSubmitRefundAction: () => void
   onCloseActionModal: () => void
   onCopyAddress: () => void
+  onCopyOrderDetails: () => void
+  onOpenStorefrontCancel: () => void
+  onCloseStorefrontCancel: () => void
+  onConfirmStorefrontOrder: () => void
+  onSubmitStorefrontCancel: () => void
 }
 
 /**
@@ -221,6 +233,12 @@ export const useOrderDetailsController = ({
   const nextStatus = getNextStatus(order)
   const isOrderFuture = isFutureOrder(order)
   const urgency = getOrderUrgency(order)
+  const isPendingStorefrontConfirmation = Boolean(
+    order.storefrontIdempotencyKey &&
+    order.status === 'pending_verification' &&
+    (userRole === 'admin' || userRole === 'owner') &&
+    canAdvance,
+  )
 
   // This panel is only mounted while an order is selected, so it's always
   // "open" for as long as it exists — Escape should close it right away.
@@ -266,6 +284,12 @@ export const useOrderDetailsController = ({
     actor,
   })
 
+  const storefrontConfirmation = useOrderStorefrontConfirmation({
+    order,
+    customerWhatsappNumber,
+    enabled: isPendingStorefrontConfirmation,
+  })
+
   const isTerminalIssue = isTerminalIssueOrder(order)
 
   const readyMessage = buildReadyForPickupMessage(
@@ -274,7 +298,6 @@ export const useOrderDetailsController = ({
     order.branch,
   )
   const whatsAppLink = buildWhatsAppLink(customerWhatsappNumber, readyMessage)
-
 
   return {
     order,
@@ -291,6 +314,7 @@ export const useOrderDetailsController = ({
     currentUserRole: userRole,
     isCancellable: actions.isCancellable,
     isTerminalIssue,
+    isPendingStorefrontConfirmation,
     readyMessage,
     whatsAppLink,
 
@@ -311,6 +335,7 @@ export const useOrderDetailsController = ({
     draft: editing.draft,
     actionModal: actions.actionModal,
     addressCopied: actions.addressCopied,
+    detailsCopied: actions.detailsCopied,
     showPaymentGate: actions.showPaymentGate,
     showFloristAssignment: actions.showFloristAssignment,
     floristDialogMode: actions.floristDialogMode,
@@ -321,6 +346,10 @@ export const useOrderDetailsController = ({
     refundReason: refund.refundReason,
     resubmissionNote: finance.resubmissionNote,
     setRefundReason: refund.setRefundReason,
+    storefrontDecisionBusy: storefrontConfirmation.storefrontDecisionBusy,
+    storefrontCancelOpen: storefrontConfirmation.storefrontCancelOpen,
+    storefrontCancelReason: storefrontConfirmation.storefrontCancelReason,
+    setStorefrontCancelReason: storefrontConfirmation.setStorefrontCancelReason,
 
     onDraftChange: editing.onDraftChange,
     onFulfillmentChange: editing.onFulfillmentChange,
@@ -348,5 +377,10 @@ export const useOrderDetailsController = ({
     onSubmitRefundAction: refund.submitRefundAction,
     onCloseActionModal: actions.onCloseActionModal,
     onCopyAddress: actions.onCopyAddress,
+    onCopyOrderDetails: actions.onCopyOrderDetails,
+    onOpenStorefrontCancel: storefrontConfirmation.onOpenStorefrontCancel,
+    onCloseStorefrontCancel: storefrontConfirmation.onCloseStorefrontCancel,
+    onConfirmStorefrontOrder: storefrontConfirmation.onConfirmStorefrontOrder,
+    onSubmitStorefrontCancel: storefrontConfirmation.onSubmitStorefrontCancel,
   }
 }
