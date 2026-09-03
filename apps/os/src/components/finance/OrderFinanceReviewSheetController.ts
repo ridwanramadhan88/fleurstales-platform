@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCatalogStore } from '../../store/catalogStore'
 import {
   useOrderRuntimeStore,
@@ -21,6 +21,7 @@ import type { OrderFinanceReviewSheetProps } from './OrderFinanceReviewSheet'
 import { STATUS_LABELS, getOrderStatusOptionsForFulfillment } from '../orders/orderTableLabels'
 import { EMPTY_ACTIVITIES } from '../orders/orderTableSharedConstants'
 import { getDisplayScheduleLabel, getOrderUrgency, isFutureOrder } from '../orders/orderTableFormatters'
+import { saveOrderFinanceReference } from '../../data/orderCustomerConfirmation'
 
 export interface FinanceReviewTimelineRow {
   id: OrderStatus
@@ -38,6 +39,9 @@ export interface OrderFinanceReviewSheetViewModel {
   activities: OrderActivityEvent[]
   actionType: 'correction' | null
   actionNote: string
+  financeReferenceDraft: string
+  financeReferenceBusy: boolean
+  financeReferenceDirty: boolean
   isOrderFuture: boolean
   urgency: ReturnType<typeof getOrderUrgency>
   wasRejected: boolean
@@ -53,6 +57,8 @@ export interface OrderFinanceReviewSheetViewModel {
   onStartAction: (type: 'correction') => void
   onConfirmAction: () => void
   onVerifyOrder: () => void
+  onFinanceReferenceChange: (value: string) => void
+  onSaveFinanceReference: () => Promise<void>
 }
 
 const formatActivityTime = (at: string): string => {
@@ -64,6 +70,8 @@ const formatActivityTime = (at: string): string => {
     minute: '2-digit',
   })
 }
+
+const normalizeFinanceReference = (value: string): string => value.trim().toUpperCase()
 
 export const useOrderFinanceReviewSheetController = ({
   order,
@@ -97,6 +105,15 @@ export const useOrderFinanceReviewSheetController = ({
 
   const [actionType, setActionType] = useState<'correction' | null>(null)
   const [actionNote, setActionNote] = useState('')
+  const [financeReferenceDraft, setFinanceReferenceDraft] = useState(order.financeReferenceCode ?? '')
+  const [financeReferenceBusy, setFinanceReferenceBusy] = useState(false)
+  const [savedFinanceReference, setSavedFinanceReference] = useState(order.financeReferenceCode ?? '')
+
+  useEffect(() => {
+    const next = order.financeReferenceCode ?? ''
+    setFinanceReferenceDraft(next)
+    setSavedFinanceReference(next)
+  }, [order.id, order.financeReferenceCode])
 
   const closeAction = () => {
     setActionType(null)
@@ -165,6 +182,29 @@ export const useOrderFinanceReviewSheetController = ({
     })
   }
 
+  const financeReferenceDirty =
+    normalizeFinanceReference(financeReferenceDraft) !== normalizeFinanceReference(savedFinanceReference)
+
+  const saveFinanceReference = async (): Promise<void> => {
+    if (!canVerify || financeReferenceBusy || !financeReferenceDirty) return
+    setFinanceReferenceBusy(true)
+    try {
+      const result = await saveOrderFinanceReference(order, financeReferenceDraft)
+      const normalized = result.financeReferenceCode ?? ''
+      setFinanceReferenceDraft(normalized)
+      setSavedFinanceReference(normalized)
+      toast({ title: 'Kode rekonsiliasi tersimpan' })
+    } catch (error) {
+      toast({
+        title: 'Kode rekonsiliasi tidak tersimpan',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setFinanceReferenceBusy(false)
+    }
+  }
+
   return {
     order,
     onClose,
@@ -174,6 +214,9 @@ export const useOrderFinanceReviewSheetController = ({
     activities,
     actionType,
     actionNote,
+    financeReferenceDraft,
+    financeReferenceBusy,
+    financeReferenceDirty,
     isOrderFuture,
     urgency,
     wasRejected,
@@ -187,6 +230,8 @@ export const useOrderFinanceReviewSheetController = ({
     onActionNoteChange: setActionNote,
     onCloseAction: closeAction,
     onStartAction: setActionType,
+    onFinanceReferenceChange: (value) => setFinanceReferenceDraft(value.toUpperCase()),
+    onSaveFinanceReference: saveFinanceReference,
     onConfirmAction: () => {
       const input = {
         orderNumber: order.orderNumber,
