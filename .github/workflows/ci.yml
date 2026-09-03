@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
       - id: mode
-        name: Choose fast PR checks or full merge gate
+        name: Choose fast checks or full verification
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || git log -1 --pretty=%B | grep -q '\[full-ci\]'; then
@@ -34,6 +34,64 @@ jobs:
           else
             echo "full=false" >> "$GITHUB_OUTPUT"
           fi
+
+  app-paths:
+    name: Detect affected app
+    needs: mode
+    if: needs.mode.outputs.full != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      storefront: ${{ steps.paths.outputs.storefront }}
+      os: ${{ steps.paths.outputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: paths
+        name: Detect changed paths
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+            if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
+              base="${head}^"
+            fi
+          fi
+
+          git diff --name-only "$base" "$head" > "$RUNNER_TEMP/changed-files.txt"
+          cat "$RUNNER_TEMP/changed-files.txt"
+
+          storefront=false
+          os=false
+
+          while IFS= read -r file; do
+            case "$file" in
+              apps/storefront/*)
+                storefront=true
+                ;;
+              apps/os/*)
+                os=true
+                ;;
+              README.md|*.md|docs/*)
+                ;;
+              *)
+                # Anything outside one app is treated as shared/unknown.
+                # Run both apps so future shared paths fail safe.
+                storefront=true
+                os=true
+                ;;
+            esac
+          done < "$RUNNER_TEMP/changed-files.txt"
+
+          echo "storefront=$storefront" >> "$GITHUB_OUTPUT"
+          echo "os=$os" >> "$GITHUB_OUTPUT"
 
   critical:
     name: Critical contracts
@@ -58,8 +116,8 @@ jobs:
 
   storefront:
     name: Storefront fast checks
-    needs: mode
-    if: needs.mode.outputs.full != 'true'
+    needs: [mode, app-paths]
+    if: needs.mode.outputs.full != 'true' && needs.app-paths.outputs.storefront == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -74,8 +132,8 @@ jobs:
 
   os:
     name: Business OS fast checks
-    needs: mode
-    if: needs.mode.outputs.full != 'true'
+    needs: [mode, app-paths]
+    if: needs.mode.outputs.full != 'true' && needs.app-paths.outputs.os == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -88,8 +146,65 @@ jobs:
       - run: npm run typecheck --workspace=fleurstales-os
       - run: npm test --workspace=fleurstales-os
 
-  full-verify:
-    name: Full merge verification
+  global-verify:
+    name: Global contracts (full)
+    needs: mode
+    if: needs.mode.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run every global contract check
+        run: |
+          npm run check:i18n
+          npm run check:supabase-security
+          npm run check:v36
+          npm run check:v37
+          npm run check:v38
+          npm run check:v311
+          npm run check:attendance-simplification
+          npm run check:admin-workflow
+          npm run check:hr-workflow
+          npm run check:payroll-workflow
+          npm run check:shared-parity
+
+  storefront-verify:
+    name: Storefront full check
+    needs: mode
+    if: needs.mode.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check --workspace=fleurstales-storefront
+
+  os-verify:
+    name: Business OS full check
+    needs: mode
+    if: needs.mode.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check --workspace=fleurstales-os
+
+  database-gate:
+    name: Full Supabase database gate
     needs: mode
     if: needs.mode.outputs.full == 'true'
     runs-on: ubuntu-latest
@@ -100,21 +215,79 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run check
-
-  database-gate:
-    name: Full Supabase database gate
-    needs: [mode, full-verify]
-    if: needs.mode.outputs.full == 'true' && needs.full-verify.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Replay migrations and run every SQL smoke test
         run: ./scripts/run-local-supabase-database-gate.sh
+
+  ci-gate:
+    name: CI gate
+    needs:
+      - mode
+      - app-paths
+      - critical
+      - storefront
+      - os
+      - global-verify
+      - storefront-verify
+      - os-verify
+      - database-gate
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      FULL: ${{ needs.mode.outputs.full }}
+      MODE_RESULT: ${{ needs.mode.result }}
+      APP_PATHS_RESULT: ${{ needs.app-paths.result }}
+      STOREFRONT_NEEDED: ${{ needs.app-paths.outputs.storefront }}
+      OS_NEEDED: ${{ needs.app-paths.outputs.os }}
+      CRITICAL_RESULT: ${{ needs.critical.result }}
+      STOREFRONT_RESULT: ${{ needs.storefront.result }}
+      OS_RESULT: ${{ needs.os.result }}
+      GLOBAL_VERIFY_RESULT: ${{ needs.global-verify.result }}
+      STOREFRONT_VERIFY_RESULT: ${{ needs.storefront-verify.result }}
+      OS_VERIFY_RESULT: ${{ needs.os-verify.result }}
+      DATABASE_RESULT: ${{ needs.database-gate.result }}
+    steps:
+      - name: Require every relevant CI job to pass
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          require_success() {
+            local name="$1"
+            local result="$2"
+            if [[ "$result" != "success" ]]; then
+              echo "::error::$name did not pass (result: $result)"
+              exit 1
+            fi
+          }
+
+          require_app_result() {
+            local name="$1"
+            local needed="$2"
+            local result="$3"
+
+            if [[ "$needed" == "true" ]]; then
+              require_success "$name" "$result"
+            elif [[ "$result" != "skipped" ]]; then
+              echo "::error::$name should have been skipped but was $result"
+              exit 1
+            fi
+          }
+
+          require_success "CI mode selection" "$MODE_RESULT"
+
+          if [[ "$FULL" == "true" ]]; then
+            require_success "Global verification" "$GLOBAL_VERIFY_RESULT"
+            require_success "Storefront full verification" "$STOREFRONT_VERIFY_RESULT"
+            require_success "Business OS full verification" "$OS_VERIFY_RESULT"
+            require_success "Supabase database gate" "$DATABASE_RESULT"
+            echo "Full CI passed."
+          else
+            require_success "Path detection" "$APP_PATHS_RESULT"
+            require_success "Critical contracts" "$CRITICAL_RESULT"
+            require_app_result "Storefront fast checks" "$STOREFRONT_NEEDED" "$STOREFRONT_RESULT"
+            require_app_result "Business OS fast checks" "$OS_NEEDED" "$OS_RESULT"
+            echo "Fast CI passed."
+          fi
