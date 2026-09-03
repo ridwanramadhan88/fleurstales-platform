@@ -60,12 +60,9 @@ export interface UseOrderDetailsControllerParams {
 }
 
 export interface OrderDetailsViewModel {
-  // Pass-through
   order: OrderTableRow
   formatter: Intl.NumberFormat
   onClose: () => void
-
-  // Derived display data
   productDisplay: ReturnType<typeof resolveOrderProductDisplay>
   itemDisplays: Record<string, ReturnType<typeof resolveOrderProductDisplay>>
   customerWhatsappNumber: string | undefined
@@ -77,12 +74,8 @@ export interface OrderDetailsViewModel {
   isCancellable: boolean
   isTerminalIssue: boolean
   isPendingStorefrontConfirmation: boolean
-  /** Pre-built pickup-ready WhatsApp message text, for OrderPostActionModal. */
   readyMessage: string
-  /** WhatsApp deep link for the ready message, for OrderPostActionModal. */
   whatsAppLink: string
-
-  // Permissions
   canEdit: boolean
   canVerify: boolean
   canVerifyThisOrder: boolean
@@ -94,8 +87,6 @@ export interface OrderDetailsViewModel {
   canCompleteRefund: boolean
   canCancelRefund: boolean
   canResubmitFinance: boolean
-
-  // Local UI state
   isEditing: boolean
   setIsEditing: (value: boolean) => void
   draft: OrderEditDraft
@@ -116,8 +107,6 @@ export interface OrderDetailsViewModel {
   storefrontCancelOpen: boolean
   storefrontCancelReason: string
   setStorefrontCancelReason: (value: string) => void
-
-  // Handlers
   onDraftChange: <K extends keyof OrderEditDraft>(field: K, value: OrderEditDraft[K]) => void
   onFulfillmentChange: (fulfillment: OrderFulfillment) => void
   onCancelOrder: () => void
@@ -151,12 +140,6 @@ export interface OrderDetailsViewModel {
   onSubmitStorefrontCancel: () => void
 }
 
-/**
- * @description Controller for OrderDetailsPanel: owns every store
- * subscription/mutation, all local state, derived values, and handlers, and
- * returns a single view-model object the (purely presentational) component
- * renders from.
- */
 export const useOrderDetailsController = ({
   order,
   onClose,
@@ -201,10 +184,6 @@ export const useOrderDetailsController = ({
     branchId: currentUserBranchId,
   }
 
-  // Finance lock: once an order is finished (delivered/picked_up) — not
-  // only once it's finance-verified — only Finance can edit or void it
-  // directly. Admin/Owner (and anyone else with ordinary Orders edit
-  // access) must submit a change request instead — see below.
   const locked = isOrderLocked(order)
   const canEdit =
     hasOrdersEditAccess &&
@@ -213,12 +192,6 @@ export const useOrderDetailsController = ({
   const canAdvance = authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'status' }).allowed
   const canVerify = canVerifyOrder(userRole)
     && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'finance_decision' }).allowed
-  // Whether Finance/Owner can verify THIS order right now: separate from
-  // `locked`, because an order is locked for editing as soon as it's
-  // finished — well before it's verified. Gating the Verify action on
-  // `locked` would mean it's never available (finished-but-unverified
-  // orders are always locked), so this checks the actual verification
-  // eligibility instead (finished, not yet verified, not rejected).
   const canVerifyThisOrder =
     canVerify &&
     canViewOrder(order, actor, permissions, actionPermissions) &&
@@ -234,14 +207,12 @@ export const useOrderDetailsController = ({
   const isOrderFuture = isFutureOrder(order)
   const urgency = getOrderUrgency(order)
   const isPendingStorefrontConfirmation = Boolean(
-    order.storefrontIdempotencyKey &&
+    order.source === 'customer_app' &&
     order.status === 'pending_verification' &&
     (userRole === 'admin' || userRole === 'owner') &&
     canAdvance,
   )
 
-  // This panel is only mounted while an order is selected, so it's always
-  // "open" for as long as it exists — Escape should close it right away.
   useDismissableModal(true, onClose)
 
   const editing = useOrderDetailsEditing({
@@ -260,11 +231,7 @@ export const useOrderDetailsController = ({
     addActivity,
   })
 
-  const refund = useOrderDetailsRefund({
-    order,
-    actor,
-    addActivity,
-  })
+  const refund = useOrderDetailsRefund({ order, actor, addActivity })
 
   const changeRequest = useOrderDetailsChangeRequest({
     order,
@@ -291,19 +258,13 @@ export const useOrderDetailsController = ({
   })
 
   const isTerminalIssue = isTerminalIssueOrder(order)
-
-  const readyMessage = buildReadyForPickupMessage(
-    order.customerName,
-    productDisplay.name,
-    order.branch,
-  )
+  const readyMessage = buildReadyForPickupMessage(order.customerName, productDisplay.name, order.branch)
   const whatsAppLink = buildWhatsAppLink(customerWhatsappNumber, readyMessage)
 
   return {
     order,
     formatter,
     onClose,
-
     productDisplay,
     itemDisplays,
     customerWhatsappNumber,
@@ -317,7 +278,6 @@ export const useOrderDetailsController = ({
     isPendingStorefrontConfirmation,
     readyMessage,
     whatsAppLink,
-
     canEdit,
     canVerify,
     canVerifyThisOrder,
@@ -329,7 +289,6 @@ export const useOrderDetailsController = ({
     canCompleteRefund: refund.canCompleteRefund,
     canCancelRefund: refund.canCancelRefund,
     canResubmitFinance: finance.canResubmitFinance,
-
     isEditing: editing.isEditing,
     setIsEditing: editing.setIsEditing,
     draft: editing.draft,
@@ -350,7 +309,6 @@ export const useOrderDetailsController = ({
     storefrontCancelOpen: storefrontConfirmation.storefrontCancelOpen,
     storefrontCancelReason: storefrontConfirmation.storefrontCancelReason,
     setStorefrontCancelReason: storefrontConfirmation.setStorefrontCancelReason,
-
     onDraftChange: editing.onDraftChange,
     onFulfillmentChange: editing.onFulfillmentChange,
     onCancelOrder: actions.onCancelOrder,
