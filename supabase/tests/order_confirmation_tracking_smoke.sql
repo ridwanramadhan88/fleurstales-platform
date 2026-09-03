@@ -46,30 +46,34 @@ begin
   select pg_get_functiondef('public.get_order_public_status(text)'::regprocedure) into v_source;
   if position('consume_public_order_lookup_budget' in v_source)=0
      or position('public_tracking_id' in v_source)=0
+     or position('customer_app' in v_source)=0
      or position('finance_reference_code' in v_source)>0 then
-    raise exception 'Full tracking RPC lost limiter/token boundary or leaks Finance reference';
+    raise exception 'Full tracking RPC lost limiter/source/token boundary or leaks Finance reference';
   end if;
 
   select pg_get_functiondef('public.search_order_public_status(text)'::regprocedure) into v_source;
   if position('consume_public_order_lookup_budget' in v_source)=0
+     or position('customer_app' in v_source)=0
      or position('customer_name_snapshot' in v_source)>0
      or position('delivery_address' in v_source)>0
      or position('payment_status' in v_source)>0 then
-    raise exception 'Coarse tracking lookup exposes customer/payment detail';
+    raise exception 'Coarse tracking lookup exposes customer/payment detail or lost customer-only scope';
   end if;
 
   select pg_get_functiondef('public.confirm_pending_storefront_order(text,integer)'::regprocedure) into v_source;
   if position('order_activities' in v_source)=0
      or position('write_business_activity' in v_source)=0
-     or position('STOREFRONT_ORDER_REQUIRED' in v_source)=0 then
-    raise exception 'Storefront confirmation lost audit or storefront guard';
+     or position('STOREFRONT_ORDER_REQUIRED' in v_source)=0
+     or position('customer_app' in v_source)=0 then
+    raise exception 'Storefront confirmation lost audit or storefront-source guard';
   end if;
 
   select pg_get_functiondef('public.cancel_pending_storefront_order(text,integer,text)'::regprocedure) into v_source;
   if position('order_activities' in v_source)=0
      or position('write_business_activity' in v_source)=0
-     or position('CANCELLATION_REASON_REQUIRED' in v_source)=0 then
-    raise exception 'Storefront cancellation lost audit or reason guard';
+     or position('CANCELLATION_REASON_REQUIRED' in v_source)=0
+     or position('customer_app' in v_source)=0 then
+    raise exception 'Storefront cancellation lost audit, source guard, or reason guard';
   end if;
 
   select pg_get_functiondef('private.order_idempotency_result(public.orders,boolean)'::regprocedure) into v_source;
