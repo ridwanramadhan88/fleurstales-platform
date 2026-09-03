@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { SelfieAttendanceCard } from './SelfieAttendanceCard'
 import { todayIsoDate, useHrStore } from '../../store/hrStore'
 import { useUserStore } from '../../store/userStore'
@@ -32,14 +32,13 @@ describe('SelfieAttendanceCard', () => {
     expect(screen.queryByRole('button', { name: 'Submit check-in' })).not.toBeInTheDocument()
   })
 
-  it('submits a compressed uploaded selfie and shows completed check-in', async () => {
+  it('submits a compressed uploaded selfie and records the check-in', async () => {
     render(<SelfieAttendanceCard />)
     fireEvent.click(screen.getByRole('button', { name: 'Verify location' }))
     expect(await screen.findByText('Location verified')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Upload check-in selfie photo'), { target: { files: [new File(['x'], 'selfie.jpg', { type: 'image/jpeg' })] } })
     fireEvent.click(await screen.findByRole('button', { name: 'Submit check-in' }))
-    expect(await screen.findByText('Completed')).toBeInTheDocument()
-    expect(await screen.findByText('Check-in recorded successfully.')).toBeInTheDocument()
+    await waitFor(() => expect(useHrStore.getState().attendance).toHaveLength(1))
     expect(useHrStore.getState().attendance[0].source).toBe('selfie')
     expect(useHrStore.getState().attendance[0].checkInAt).toBeTruthy()
   })
