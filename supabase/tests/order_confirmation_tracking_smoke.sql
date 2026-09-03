@@ -1,4 +1,5 @@
 -- Order confirmation, reconciliation reference, and privacy-safe tracking contract.
+-- This feature intentionally requires the repository's full disposable Supabase replay gate.
 
 do $$
 declare
