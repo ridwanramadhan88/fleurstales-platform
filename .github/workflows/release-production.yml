@@ -11,95 +11,226 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify:
+  source:
+    name: Confirm main release source
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 2
+    steps:
+      - name: Require main branch
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
+            echo "::error::Production releases must be dispatched from main."
+            exit 1
+          fi
+          echo "Releasing main at ${{ github.sha }}"
+
+  global-verify:
+    name: Global contracts
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check
+      - name: Run every global contract check
+        run: |
+          npm run check:i18n
+          npm run check:supabase-security
+          npm run check:v36
+          npm run check:v37
+          npm run check:v38
+          npm run check:v311
+          npm run check:attendance-simplification
+          npm run check:admin-workflow
+          npm run check:hr-workflow
+          npm run check:payroll-workflow
+          npm run check:shared-parity
+
+  storefront-verify:
+    name: Storefront full check
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check --workspace=fleurstales-storefront
+
+  os-verify:
+    name: Business OS full check
+    needs: source
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check --workspace=fleurstales-os
 
   database-preflight:
-    needs: verify
+    name: Disposable Supabase preflight
+    needs: source
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Replay all migrations and smoke tests on disposable Supabase
         run: ./scripts/run-local-supabase-database-gate.sh
 
-  migrate:
-    needs: database-preflight
+  release-ready:
+    name: Release candidate verified
+    needs:
+      - source
+      - global-verify
+      - storefront-verify
+      - os-verify
+      - database-preflight
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 2
+    steps:
+      - run: echo "Release candidate ${{ github.sha }} passed full verification."
+
+  release:
+    name: Stage and promote production
+    needs: release-ready
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
     environment: production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - run: npx -y supabase@2.109.1 link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
-      - name: Preview production migration plan
-        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --include-all --dry-run
-      - name: Apply production migrations
-        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --include-all --yes
-      - name: Lint live Supabase schema
-        run: npx -y supabase@2.109.1 db lint --linked --schema public --level error --fail-on error
-      - name: Run every live Fleurstales database smoke test
-        run: ./scripts/run-supabase-smoke-tests.sh "$SUPABASE_DB_URL"
-
-  deploy-functions:
-    needs: migrate
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment: production
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npx -y supabase@2.109.1 functions deploy staff-admin --project-ref "$SUPABASE_PROJECT_ID"
-      - run: npx -y supabase@2.109.1 functions deploy staff-login --project-ref "$SUPABASE_PROJECT_ID"
-
-  deploy-web:
-    needs: deploy-functions
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: production
-    env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Deploy Storefront to Vercel production
+
+      - name: Confirm release SHA is still current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "$current_main" != "$GITHUB_SHA" ]]; then
+            echo "::error::main moved to $current_main after this release was dispatched. Run the release again from the latest main."
+            exit 1
+          fi
+
+      - name: Stage Storefront with production environment
         working-directory: apps/storefront
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STOREFRONT_PROJECT_ID }}
-        run: npx -y vercel@59.11.2 deploy --prod --yes --project "$VERCEL_PROJECT_ID" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
-      - name: Deploy Business OS to Vercel production
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(npx -y vercel@59.11.2 deploy --prod --skip-domain --yes --project "$VERCEL_PROJECT_ID" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN")"
+          deployment_url="$(printf '%s\n' "$output" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n1)"
+          if [[ -z "$deployment_url" ]]; then
+            echo "::error::Could not capture Storefront staged deployment URL."
+            exit 1
+          fi
+          echo "STOREFRONT_DEPLOYMENT_URL=$deployment_url" >> "$GITHUB_ENV"
+          npx -y vercel@59.11.2 inspect "$deployment_url" --wait -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+          npx -y vercel@59.11.2 curl / --deployment "$deployment_url" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN" >/dev/null
+          echo "Storefront staged: $deployment_url"
+
+      - name: Stage Business OS with production environment
         working-directory: apps/os
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OS_PROJECT_ID }}
-        run: npx -y vercel@59.11.2 deploy --prod --yes --project "$VERCEL_PROJECT_ID" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(npx -y vercel@59.11.2 deploy --prod --skip-domain --yes --project "$VERCEL_PROJECT_ID" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN")"
+          deployment_url="$(printf '%s\n' "$output" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n1)"
+          if [[ -z "$deployment_url" ]]; then
+            echo "::error::Could not capture Business OS staged deployment URL."
+            exit 1
+          fi
+          echo "OS_DEPLOYMENT_URL=$deployment_url" >> "$GITHUB_ENV"
+          npx -y vercel@59.11.2 inspect "$deployment_url" --wait -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+          npx -y vercel@59.11.2 curl / --deployment "$deployment_url" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN" >/dev/null
+          echo "Business OS staged: $deployment_url"
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Link production Supabase
+        run: npx -y supabase@2.109.1 link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Preview production migration plan
+        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --include-all --dry-run
+
+      - name: Apply production migrations
+        run: npx -y supabase@2.109.1 db push --linked --password "$SUPABASE_DB_PASSWORD" --include-all --yes
+
+      - name: Lint live Supabase schema
+        run: npx -y supabase@2.109.1 db lint --linked --schema public --level error --fail-on error
+
+      - name: Run every live Fleurstales database smoke test
+        run: ./scripts/run-supabase-smoke-tests.sh "$SUPABASE_DB_URL"
+
+      - name: Deploy production staff functions
+        run: |
+          npx -y supabase@2.109.1 functions deploy staff-admin --project-ref "$SUPABASE_PROJECT_ID"
+          npx -y supabase@2.109.1 functions deploy staff-login --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Promote exact Business OS deployment
+        working-directory: apps/os
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OS_PROJECT_ID }}
+        run: |
+          npx -y vercel@59.11.2 promote "$OS_DEPLOYMENT_URL" --yes -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+          npx -y vercel@59.11.2 curl / --deployment "$OS_DEPLOYMENT_URL" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN" >/dev/null
+
+      - name: Promote exact Storefront deployment
+        working-directory: apps/storefront
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STOREFRONT_PROJECT_ID }}
+        run: |
+          npx -y vercel@59.11.2 promote "$STOREFRONT_DEPLOYMENT_URL" --yes -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+          npx -y vercel@59.11.2 curl / --deployment "$STOREFRONT_DEPLOYMENT_URL" -T "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN" >/dev/null
+
+      - name: Release summary
+        shell: bash
+        run: |
+          {
+            echo "### Production release"
+            echo ""
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Business OS: $OS_DEPLOYMENT_URL"
+            echo "- Storefront: $STOREFRONT_DEPLOYMENT_URL"
+            echo "- Database migrations and smoke tests: passed"
+            echo "- Staff functions: deployed"
+          } >> "$GITHUB_STEP_SUMMARY"
