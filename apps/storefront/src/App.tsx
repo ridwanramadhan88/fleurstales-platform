@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import StorefrontPage from './pages/Storefront'
 import StorefrontOrderTrackingPage from './pages/StorefrontOrderTrackingPage'
-
-export const STOREFRONT_NAVIGATION_EVENT = 'fleurstales:storefront-navigation'
+import {
+  STOREFRONT_NAVIGATION_EVENT,
+  type StorefrontNavigationDetail,
+} from './lib/storefrontNavigation'
 
 const readTrackingId = (): string | undefined => {
   const normalizedPath = window.location.pathname.replace(/\/+$/, '')
@@ -18,11 +20,20 @@ export default function App() {
 
   useEffect(() => {
     const refresh = () => setRouteRevision((value) => value + 1)
+    const navigate = (event: Event) => {
+      const detail = (event as CustomEvent<StorefrontNavigationDetail>).detail
+      if (!detail?.path) return
+      if (detail.replace) window.history.replaceState({}, '', detail.path)
+      else window.history.pushState({}, '', detail.path)
+      refresh()
+      window.scrollTo({ top: 0 })
+    }
+
     window.addEventListener('popstate', refresh)
-    window.addEventListener(STOREFRONT_NAVIGATION_EVENT, refresh)
+    window.addEventListener(STOREFRONT_NAVIGATION_EVENT, navigate)
     return () => {
       window.removeEventListener('popstate', refresh)
-      window.removeEventListener(STOREFRONT_NAVIGATION_EVENT, refresh)
+      window.removeEventListener(STOREFRONT_NAVIGATION_EVENT, navigate)
     }
   }, [])
 
