@@ -117,11 +117,12 @@ export default function App() {
       const pointsReady = await connectEmployeePointsSupabase()
       if (productionSession && !pointsReady) throw new Error('Fleurstales employee-point authority could not be hydrated.')
 
+      const shouldHydrateCustomers = role === 'owner' || role === 'admin'
       const [storeReady, catalogReady, ordersReady, customersReady] = await Promise.all([
         refreshBusinessOsStoreFromRemote(),
         refreshBusinessOsCatalogFromRemote(),
         refreshBusinessOsOrdersFromRemote(),
-        refreshBusinessOsCustomersFromRemote(),
+        shouldHydrateCustomers ? refreshBusinessOsCustomersFromRemote() : Promise.resolve(true),
       ])
       if (productionSession && (!storeReady || !catalogReady || !ordersReady || !customersReady)) {
         const failures = [
@@ -144,5 +145,5 @@ export default function App() {
   const handleSignOut = () => { void resetSession() }
 
   if (view === 'login') return <LoginPage onSignIn={handleSignIn} theme={theme} onToggleTheme={toggleTheme} />
-  return <HomePage onSignOut={handleSignOut} theme={theme} onToggleTheme={toggleTheme} initialBranch={selectedBranch} />
+  return <HomePage onSignOut={handleSignIn as never} theme={theme} onToggleTheme={toggleTheme} initialBranch={selectedBranch} />
 }
