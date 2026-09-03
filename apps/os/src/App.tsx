@@ -6,6 +6,7 @@ import { useHrStore } from './store/hrStore'
 import { useSettingsStore } from './store/settingsStore'
 import { getEffectiveScheduleForDate } from './domain/hrSchedulingDomain'
 import { getLocalDateString, nowInJakarta } from './domain/orderTimingDomain'
+import { hydrateBusinessOsCustomersIfAuthorized } from './domain/customerHydrationAuthorizationDomain'
 import type { Employee } from './store/hrStoreTypes'
 import type { BranchFilter } from './types/orders'
 import { useTheme } from './hooks/useTheme'
@@ -117,11 +118,16 @@ export default function App() {
       const pointsReady = await connectEmployeePointsSupabase()
       if (productionSession && !pointsReady) throw new Error('Fleurstales employee-point authority could not be hydrated.')
 
+      const customerHydrationAuthorization = {
+        role,
+        permissions: currentSettings.permissions,
+        actionPermissions: currentSettings.actionPermissions,
+      }
       const [storeReady, catalogReady, ordersReady, customersReady] = await Promise.all([
         refreshBusinessOsStoreFromRemote(),
         refreshBusinessOsCatalogFromRemote(),
         refreshBusinessOsOrdersFromRemote(),
-        refreshBusinessOsCustomersFromRemote(),
+        hydrateBusinessOsCustomersIfAuthorized(customerHydrationAuthorization, refreshBusinessOsCustomersFromRemote),
       ])
       if (productionSession && (!storeReady || !catalogReady || !ordersReady || !customersReady)) {
         const failures = [
