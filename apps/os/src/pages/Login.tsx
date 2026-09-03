@@ -53,7 +53,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     const employee = profile.employeeId
       ? employees.find((candidate) => candidate.id === profile.employeeId)
       : undefined
-    await onSignIn(employee ?? staffSessionToEmployee(profile))
+    await onSignIn(reconcileSupabaseEmployeeRole(employee, profile))
   }
 
   useEffect(() => {
@@ -186,7 +186,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           </label> : null}
           {mode === 'signin' ? <label className="block space-y-1.5">
             <span className="text-xs font-medium">{usesSupabase ? 'Username or email' : 'Username'}</span>
-            <input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder={usesSupabase ? 'username or email' : 'username'} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
+            <input aria-label={usesSupabase ? 'Username or email' : 'Username'} autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} placeholder={usesSupabase ? 'username or email' : 'username'} className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40" />
           </label> : null}
           {(!usesSupabase || mode !== 'forgot') ? <label className="block space-y-1.5">
             <span className="text-xs font-medium">{mode === 'set-password' ? 'New password' : 'Password'}</span>
@@ -225,6 +225,14 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
     </div>
   )
 }
+
+export const reconcileSupabaseEmployeeRole = (
+  employee: Employee | undefined,
+  session: SharedStaffSession,
+): Employee => ({
+  ...(employee ?? staffSessionToEmployee(session)),
+  systemRole: session.role,
+})
 
 const staffSessionToEmployee = (session: SharedStaffSession): Employee => ({
   id: session.employeeId ?? session.userId ?? 'supabase-staff',
