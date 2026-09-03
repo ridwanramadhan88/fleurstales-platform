@@ -6,7 +6,9 @@
     "fleurstales-os.vercel.app"
   ],
   "git": {
-    "deploymentEnabled": true
+    "deploymentEnabled": {
+      "main": false
+    }
   },
   "rewrites": [
     {
