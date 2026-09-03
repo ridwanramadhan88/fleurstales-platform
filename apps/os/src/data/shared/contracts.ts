@@ -341,6 +341,7 @@ export interface SharedOrder {
   adminHandledEmployeeId?: string
   adminHandledByName?: string
   completedAt?: string
+  financeReferenceCode?: string
   financeVerified?: boolean
   financeVerifiedBy?: string
   financeVerifiedAt?: string
@@ -352,6 +353,9 @@ export interface SharedOrder {
   financeResubmittedAt?: string
   financeResubmissionNote?: string
   financeSubmissionRevision?: number
+  cancellationReason?: string
+  cancelledBy?: string
+  cancelledAt?: string
   pendingChangeRequest?: Json
   editUnlocked?: boolean
   createdAt: string
@@ -462,6 +466,7 @@ export interface CreateInternalOrderResult {
 export interface CreateStorefrontOrderResult {
   orderId: string
   orderNumber: string
+  publicTrackingId: string
   customerId: string
   itemsSubtotalIdr: number
   deliveryFeeIdr: number
