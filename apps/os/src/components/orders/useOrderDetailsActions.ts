@@ -9,6 +9,7 @@ import { shouldGateOrderAdvanceForPayment } from '../../domain/orderPaymentGateD
 import { toast } from '../../hooks/use-toast'
 import { advanceOrderStatus } from './orderTableWorkflow'
 import { requestAppConfirmation } from '../ui/app-confirm'
+import { formatOrderHandoffText } from './orderHandoffText'
 
 export const useOrderDetailsActions = ({
   order,
@@ -30,6 +31,7 @@ export const useOrderDetailsActions = ({
 }) => {
   const [actionModal, setActionModal] = useState<'ready' | 'delivering' | null>(null)
   const [addressCopied, setAddressCopied] = useState(false)
+  const [detailsCopied, setDetailsCopied] = useState(false)
   const [showPaymentGate, setShowPaymentGate] = useState(false)
   const [floristDialogMode, setFloristDialogMode] = useState<'assign-and-process' | 'reassign' | null>(null)
   const isCancellable = canCancelOrder(order) && ['owner', 'admin', 'finance'].includes(actor.role)
@@ -117,9 +119,17 @@ export const useOrderDetailsActions = ({
       .catch(() => toast({ title: 'Could not copy address' }))
   }
 
+  const onCopyOrderDetails = () => {
+    navigator.clipboard
+      .writeText(formatOrderHandoffText(order))
+      .then(() => setDetailsCopied(true))
+      .catch(() => toast({ title: 'Could not copy order details' }))
+  }
+
   return {
     actionModal,
     addressCopied,
+    detailsCopied,
     showPaymentGate,
     showFloristAssignment: floristDialogMode !== null,
     floristDialogMode,
@@ -136,5 +146,6 @@ export const useOrderDetailsActions = ({
     onMarkPaidAndContinue,
     onCloseActionModal: () => setActionModal(null),
     onCopyAddress,
+    onCopyOrderDetails,
   }
 }
