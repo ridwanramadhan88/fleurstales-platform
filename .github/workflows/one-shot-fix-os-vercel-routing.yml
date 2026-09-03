@@ -11,12 +11,14 @@ permissions:
 jobs:
   fix-vercel-routing:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Disable Vercel Authentication for Fleurstales OS
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           set -euo pipefail
+          test -n "${VERCEL_TOKEN}" || { echo 'VERCEL_TOKEN is unavailable in the production environment.' >&2; exit 1; }
           body_file="$(mktemp)"
           status="$(curl --silent --show-error --output "$body_file" --write-out '%{http_code}' \
             --request PATCH \
