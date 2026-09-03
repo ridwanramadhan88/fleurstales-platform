@@ -108,12 +108,14 @@ export const useOrderFinanceReviewSheetController = ({
   const [financeReferenceDraft, setFinanceReferenceDraft] = useState(order.financeReferenceCode ?? '')
   const [financeReferenceBusy, setFinanceReferenceBusy] = useState(false)
   const [savedFinanceReference, setSavedFinanceReference] = useState(order.financeReferenceCode ?? '')
+  const [financeReferenceRevision, setFinanceReferenceRevision] = useState(order.revision ?? 1)
 
   useEffect(() => {
     const next = order.financeReferenceCode ?? ''
     setFinanceReferenceDraft(next)
     setSavedFinanceReference(next)
-  }, [order.id, order.financeReferenceCode])
+    setFinanceReferenceRevision(order.revision ?? 1)
+  }, [order.id, order.financeReferenceCode, order.revision])
 
   const closeAction = () => {
     setActionType(null)
@@ -189,10 +191,14 @@ export const useOrderFinanceReviewSheetController = ({
     if (!canVerify || financeReferenceBusy || !financeReferenceDirty) return
     setFinanceReferenceBusy(true)
     try {
-      const result = await saveOrderFinanceReference(order, financeReferenceDraft)
+      const result = await saveOrderFinanceReference(
+        { ...order, revision: financeReferenceRevision },
+        financeReferenceDraft,
+      )
       const normalized = result.financeReferenceCode ?? ''
       setFinanceReferenceDraft(normalized)
       setSavedFinanceReference(normalized)
+      setFinanceReferenceRevision(result.revision)
       toast({ title: 'Kode rekonsiliasi tersimpan' })
     } catch (error) {
       toast({
