@@ -6,6 +6,7 @@ import { useHrStore } from './store/hrStore'
 import { useSettingsStore } from './store/settingsStore'
 import { getEffectiveScheduleForDate } from './domain/hrSchedulingDomain'
 import { getLocalDateString, nowInJakarta } from './domain/orderTimingDomain'
+import { canHydrateCustomersForRole, resolveAuthoritativeStaffRole } from './domain/sessionHydrationDomain'
 import type { Employee } from './store/hrStoreTypes'
 import type { BranchFilter } from './types/orders'
 import { useTheme } from './hooks/useTheme'
@@ -59,12 +60,13 @@ export default function App() {
 
   const handleSignIn = useCallback(async (employee: Employee) => {
     try {
-      const role = employee.systemRole
+      const sharedSession = getSharedSession()
+      const role = resolveAuthoritativeStaffRole(employee.systemRole, sharedSession)
       const today = getLocalDateString(nowInJakarta())
       const profileBranch = employee.branch || undefined
 
       signIn({ employeeId: employee.id, name: employee.name, username: employee.username ?? role, role, branchId: profileBranch, scheduledBranchId: profileBranch })
-      if (getSharedSession().source !== 'supabase') {
+      if (sharedSession.source !== 'supabase') {
         setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: profileBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
       }
 
@@ -117,7 +119,7 @@ export default function App() {
       const pointsReady = await connectEmployeePointsSupabase()
       if (productionSession && !pointsReady) throw new Error('Fleurstales employee-point authority could not be hydrated.')
 
-      const shouldHydrateCustomers = role === 'owner' || role === 'admin'
+      const shouldHydrateCustomers = canHydrateCustomersForRole(role, currentSettings.permissions, currentSettings.actionPermissions)
       const [storeReady, catalogReady, ordersReady, customersReady] = await Promise.all([
         refreshBusinessOsStoreFromRemote(),
         refreshBusinessOsCatalogFromRemote(),
