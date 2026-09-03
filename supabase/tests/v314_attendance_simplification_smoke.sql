@@ -1,4 +1,5 @@
 -- Attendance simplification authority and compatibility checks.
+-- Full CI marker: this contract must be replayed against the complete local database.
 
 do $$
 declare
