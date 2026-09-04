@@ -72,7 +72,7 @@ declare
   v_order_branch text := case when tg_op = 'DELETE' then old.branch_id else new.branch_id end;
   v_operational_branch text;
 begin
-  if v_role <> 'admin' then
+  if v_role is distinct from 'admin' then
     if tg_op = 'DELETE' then return old; end if;
     return new;
   end if;
