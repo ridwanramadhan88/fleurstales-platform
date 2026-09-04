@@ -31,7 +31,7 @@ export interface CustomerListItemProps {
   /** Called when the profile drawer should open. */
   onOpenProfile: () => void
   /** Called when staff picks "Assign promo" from the card menu. */
-  onAssignPromo: () => void
+  onAssignPromo?: () => void
   onRemove?: () => void
 }
 
@@ -137,10 +137,12 @@ export const CustomerListItem: FC<CustomerListItemProps> = ({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onAssignPromo}>
-            <Ticket className="size-3.5" />
-            Assign promo
-          </DropdownMenuItem>
+          {onAssignPromo && (
+            <DropdownMenuItem onClick={onAssignPromo}>
+              <Ticket className="size-3.5" />
+              Assign promo
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={onOpenProfile}>
             <User className="size-3.5" />
             View profile
