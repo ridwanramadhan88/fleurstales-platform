@@ -18,6 +18,18 @@ export interface ProcessPaymentResult {
   ledgerTransactionId?: string
 }
 
+export interface ProcessOrderForProductionInput {
+  order: OrderTableRow
+  financeAccountId: string
+  floristEmployeeId: string
+  assignmentDate: string
+  assignmentTime?: string
+  allowScheduleOverride: boolean
+  scheduledBranchId?: string
+  shiftStart?: string
+  shiftEnd?: string
+}
+
 const getClient = () => {
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
   if (!shared.enabled) throw new Error('Supabase is not configured.')
@@ -99,4 +111,52 @@ export const confirmOrderPaymentForProcessing = async (
   const refreshed = await refreshBusinessOsOrdersFromRemote()
   if (!refreshed) throw new Error('Payment was saved, but the latest order could not be reloaded.')
   return result
+}
+
+export const processOrderForProduction = async (
+  input: ProcessOrderForProductionInput,
+): Promise<OrderTableRow> => {
+  const { order } = input
+  if (!order.id) throw new Error('Order id is missing.')
+  if (!input.financeAccountId) throw new Error('Receiving account is required.')
+
+  if (!isSharedBackendConfigured()) {
+    const payment = confirmLocalPaymentForProcessing(order, input.financeAccountId)
+    const current = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
+      ?? { ...order, revision: payment.revision, paymentStatus: 'paid' as const, paidAmountIdr: payment.paidAmountIdr }
+    const user = useUserStore.getState()
+    const result = useOrdersStore.getState().assignFloristAndStartProcessing({
+      orderNumber: current.orderNumber,
+      expectedRevision: current.revision ?? payment.revision,
+      floristEmployeeId: input.floristEmployeeId,
+      allowScheduleOverride: input.allowScheduleOverride,
+      actor: {
+        employeeId: user.employeeId,
+        name: user.name,
+        role: user.role,
+        branchId: user.branchId,
+      },
+    })
+    if (!result.allowed) throw new Error(result.reason)
+    return result.order
+  }
+
+  await getClient().rpc('process_order_for_production', {
+    p_order_id: order.id,
+    p_expected_revision: order.revision ?? 1,
+    p_finance_account_id: input.financeAccountId,
+    p_florist_employee_id: input.floristEmployeeId,
+    p_assignment_date: input.assignmentDate,
+    p_assignment_time: input.assignmentTime ?? null,
+    p_allow_schedule_override: input.allowScheduleOverride,
+    p_scheduled_branch_id: input.scheduledBranchId ?? null,
+    p_shift_start: input.shiftStart ?? null,
+    p_shift_end: input.shiftEnd ?? null,
+  })
+
+  const refreshed = await refreshBusinessOsOrdersFromRemote()
+  if (!refreshed) throw new Error('Order was processed, but the latest order could not be reloaded.')
+  const next = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
+  if (!next) throw new Error('Order was processed, but it is missing from the refreshed Orders list.')
+  return next
 }
