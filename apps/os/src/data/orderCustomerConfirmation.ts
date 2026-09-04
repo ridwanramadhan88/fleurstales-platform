@@ -3,12 +3,9 @@ import { bootstrapSharedData } from './shared/bootstrap'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
 
-const FALLBACK_STOREFRONT_ORIGIN = 'https://fleurstales-storefront-rid5.vercel.app'
+const STOREFRONT_ORIGIN = 'https://fleurstales-storefront-rid5.vercel.app'
 
-export const getStorefrontOrigin = (): string => {
-  const configured = import.meta.env.VITE_STOREFRONT_ORIGIN as string | undefined
-  return (configured?.trim() || FALLBACK_STOREFRONT_ORIGIN).replace(/\/$/, '')
-}
+export const getStorefrontOrigin = (): string => STOREFRONT_ORIGIN
 
 export const buildOrderTrackingUrl = (publicTrackingId: string): string =>
   `${getStorefrontOrigin()}/order/${encodeURIComponent(publicTrackingId)}`
