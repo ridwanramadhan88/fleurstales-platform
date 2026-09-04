@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FC, type FormEvent } from 'react'
 import { Archive, ArrowDownToLine, ArrowUpFromLine, Pencil, Plus, RotateCcw, Settings2, Trash2 } from 'lucide-react'
 import { useFinanceStore } from '../../store/financeStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import type { UserRole } from '../../store/userStore'
 import type { BranchId } from '../../types/orders'
 import { AppDialog } from '../ui/app-dialog'
@@ -17,7 +18,7 @@ import type {
 import { getCategoriesForDirection, getFinanceCategoryDefinition, getFinanceCategoryDefinitions } from '../../domain/financeTransactionCategoryDomain'
 
 interface AddInternalTransactionProps { branches: BranchId[]; defaultBranch?: BranchId; actorName: string; actorRole: UserRole }
-type FieldName = 'direction' | 'category' | 'branch' | 'method' | 'name' | 'amount' | 'manualEntryReason'
+type FieldName = 'direction' | 'category' | 'branch' | 'accountId' | 'method' | 'name' | 'amount' | 'manualEntryReason'
 type FieldErrors = Partial<Record<FieldName, string>>
 const methods: FinancePaymentMethod[] = ['cash','transfer','card','other']
 const methodLabel: Record<FinancePaymentMethod,string> = { cash:'Cash', transfer:'Bank transfer', card:'Card', other:'Other' }
@@ -35,6 +36,9 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({ branch
   const updateExpenseCategory=useFinanceStore(s=>s.updateExpenseCategory)
   const updateBuiltInCategory=useFinanceStore(s=>s.updateBuiltInCategory)
   const removeExpenseCategory=useFinanceStore(s=>s.removeExpenseCategory)
+  const paymentAccounts=useSettingsStore(s=>s.paymentMethods.bankAccounts)
+  const activePaymentAccounts=useMemo(()=>paymentAccounts.filter(account=>account.isActive).sort((a,b)=>a.displayOrder-b.displayOrder),[paymentAccounts])
+  const defaultTransferAccountId=activePaymentAccounts.find(account=>account.isDefault)?.id??activePaymentAccounts[0]?.id??''
   const initialBranch=useMemo(()=>defaultBranch&&defaultBranch!=='All'?defaultBranch:'',[defaultBranch])
   const [open,setOpen]=useState(false), [manageOpen,setManageOpen]=useState(false), [editorOpen,setEditorOpen]=useState(false)
   const [editingTransactionId,setEditingTransactionId]=useState<string|null>(null)
@@ -43,6 +47,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({ branch
   const [category,setCategory]=useState<FinanceCategory|''>('')
   const [scope,setScope]=useState<FinanceTransactionScope>('company')
   const [branch,setBranch]=useState<BranchId|''>(initialBranch as BranchId|'')
+  const [accountId,setAccountId]=useState(defaultTransferAccountId)
   const [transactionDate,setTransactionDate]=useState(new Date().toISOString().slice(0,10))
   const [amountDigits,setAmountDigits]=useState(''), [name,setName]=useState(''), [method,setMethod]=useState<FinancePaymentMethod>('transfer'), [note,setNote]=useState(''), [manualEntryReason,setManualEntryReason]=useState('')
   const [errors,setErrors]=useState<FieldErrors>({}), [formError,setFormError]=useState<string|null>(null), [success,setSuccess]=useState<string|null>(null)
@@ -66,6 +71,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({ branch
       setCategory(transaction.category)
       setScope(transaction.scope??(transaction.branch==='All'?'company':'branch'))
       setBranch(transaction.branch)
+      setAccountId(transaction.accountId??'')
       setTransactionDate((transaction.transactionDate??transaction.createdAt).slice(0,10))
       setAmountDigits(String(transaction.amount))
       setName(transaction.name??transaction.description)
@@ -81,17 +87,21 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({ branch
     window.addEventListener('finance-edit-manual-transaction',openManualEditor)
     return()=>window.removeEventListener('finance-edit-manual-transaction',openManualEditor)
   },[transactions])
-  if (actorRole!=='finance'&&actorRole!=='owner') return null
+  if (actorRole!=='finance') return null
   const inputClass='h-11 w-full rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-foreground/40 focus:ring-2 focus:ring-foreground/10'
-  const reset=()=>{setDirection(null);setCategory('');setScope('company');setBranch(initialBranch as BranchId|'');setTransactionDate(new Date().toISOString().slice(0,10));setAmountDigits('');setName('');setMethod('transfer');setNote('');setManualEntryReason('');setEditReason('');setErrors({});setFormError(null)}
+  const reset=()=>{setDirection(null);setCategory('');setScope('company');setBranch(initialBranch as BranchId|'');setAccountId(defaultTransferAccountId);setTransactionDate(new Date().toISOString().slice(0,10));setAmountDigits('');setName('');setMethod('transfer');setNote('');setManualEntryReason('');setEditReason('');setErrors({});setFormError(null)}
   const selectDirection=(value:FinanceTransactionType)=>{setDirection(value);setCategory('');setErrors({});setName('');setManualEntryReason('')}
   const selectCategory=(value:FinanceCategory|'')=>{setCategory(value);const d=value?getFinanceCategoryDefinition(value,customCategories,categoryOverrides):undefined;const policy=d?.scopePolicy??(d?.branchRequired?'branch':'company');setScope(policy==='branch'?'branch':'company');if(policy!=='branch')setBranch('All');else if(branch==='All')setBranch(initialBranch as BranchId|'');setErrors(e=>({...e,category:undefined}))}
+  const changeMethod=(value:FinancePaymentMethod)=>{setMethod(value);if(value==='cash')setAccountId('cash:main');else if(accountId==='cash:main'||!accountId)setAccountId(defaultTransferAccountId);setErrors(e=>({...e,accountId:undefined,method:undefined}))}
   const submit=(event:FormEvent)=>{
     event.preventDefault()
     const amount=Number(amountDigits)
     const next:FieldErrors={}
     if(!direction)next.direction='Choose Money In or Money Out.'
     if(!category)next.category='Select a transaction category.'
+    if(!accountId||accountId==='legacy:unassigned')next.accountId='Select the account or cash source affected by this transaction.'
+    if(method==='cash'&&accountId!=='cash:main')next.accountId='Cash transactions must use the Cash account.'
+    if(method!=='cash'&&accountId==='cash:main')next.accountId='Select a bank/e-wallet account for this payment method.'
     if(!name.trim())next.name='Transaction is required.'
     if(!(amount>0))next.amount='Amount must be greater than zero.'
     if(scope==='branch'&&(!branch||branch==='All'))next.branch='Select a Branch.'
@@ -99,7 +109,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({ branch
     if(Object.keys(next).length){setErrors(next);return}
     if(!direction||!category)return
     const common={
-      type:direction,category,scope,branch,amount,method,name,note,
+      type:direction,category,scope,branch,amount,method,name,note,accountId,
       manualEntryReason,transactionDate:`${transactionDate}T12:00:00+07:00`,
       actor:{name:actorName,role:actorRole},
     }
@@ -115,6 +125,9 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({ branch
       else setFormError(result.reason??'Unable to save transaction.')
       return
     }
+    if(result.transactionId){
+      useFinanceStore.setState(state=>({transactions:state.transactions.map(transaction=>transaction.id===result.transactionId?{...transaction,accountId}:transaction)}))
+    }
     setSuccess(editingTransactionId?'Manual transaction updated.':'Manual transaction recorded.')
     reset()
     setEditingTransactionId(null)
@@ -126,18 +139,18 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({ branch
   const setCategoryActive=(id:FinanceCategory,active:boolean)=>{const d=getFinanceCategoryDefinition(id,customCategories,categoryOverrides);if(!d)return;const actor={name:actorName,role:actorRole};const result=id.startsWith('custom:')?updateExpenseCategory({categoryId:id,name:d.label,description:d.description,branchRequired:(d.scopePolicy??(d.branchRequired?'branch':'company'))==='branch',scopePolicy:d.scopePolicy??(d.branchRequired?'branch':'company'),allowScopeOverride:d.allowScopeOverride??true,paymentMethodRequired:d.paymentMethodRequired,defaultPaymentMethod:'transfer',placeholder:d.placeholder,active,actor}):updateBuiltInCategory({categoryId:id as FinanceBuiltInCategory,name:d.label,description:d.description,scopePolicy:d.scopePolicy??(d.branchRequired?'branch':'company'),allowScopeOverride:d.allowScopeOverride??true,placeholder:d.placeholder,active,actor});if(!result.allowed)setCategoryError(result.reason??'Unable to update category.')}
   const saveCategory=()=>{const actor={name:actorName,role:actorRole};let result;if(editingCategoryId&&!editingCategoryId.startsWith('custom:'))result=updateBuiltInCategory({categoryId:editingCategoryId as FinanceBuiltInCategory,name:categoryDraft.name,description:categoryDraft.description,scopePolicy:categoryDraft.scopePolicy,allowScopeOverride:categoryDraft.allowScopeOverride,placeholder:categoryDraft.placeholder,active:categoryDraft.active,actor});else if(editingCategoryId)result=updateExpenseCategory({categoryId:editingCategoryId,name:categoryDraft.name,description:categoryDraft.description,branchRequired:categoryDraft.scopePolicy==='branch',scopePolicy:categoryDraft.scopePolicy,allowScopeOverride:categoryDraft.allowScopeOverride,paymentMethodRequired:categoryDraft.paymentMethodRequired,defaultPaymentMethod:categoryDraft.defaultPaymentMethod,placeholder:categoryDraft.placeholder,active:categoryDraft.active,actor});else result=addExpenseCategory({name:categoryDraft.name,description:categoryDraft.description,branchRequired:categoryDraft.scopePolicy==='branch',scopePolicy:categoryDraft.scopePolicy,allowScopeOverride:categoryDraft.allowScopeOverride,paymentMethodRequired:categoryDraft.paymentMethodRequired,defaultPaymentMethod:categoryDraft.defaultPaymentMethod,placeholder:categoryDraft.placeholder,actor});if(!result.allowed){setCategoryError(result.reason??'Unable to save category.');return}setEditorOpen(false);setCategoryError(null)}
   return <section aria-label="Transactions" className="rounded-xl bg-card p-4 ring-1 ring-border/60">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Transactions</h2><p className="text-xs text-muted-foreground">Record company-wide or branch Money In and Money Out.</p></div><div className="flex gap-2"><button type="button" onClick={()=>setManageOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-[18px] text-sm font-medium"><Settings2 className="size-4"/>Manage categories</button><button type="button" onClick={()=>{reset();setEditingTransactionId(null);setOpen(true);setSuccess(null)}} className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground"><Plus className="size-4"/>Add transaction</button></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-semibold">Transactions</h2><p className="text-xs text-muted-foreground">Record company-wide or branch Money In and Money Out to a real account or cash source.</p></div><div className="flex gap-2"><button type="button" onClick={()=>setManageOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-[18px] text-sm font-medium"><Settings2 className="size-4"/>Manage categories</button><button type="button" onClick={()=>{reset();setEditingTransactionId(null);setOpen(true);setSuccess(null)}} className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground"><Plus className="size-4"/>Add transaction</button></div></div>
     {success&&<p role="status" className="mt-3 rounded-lg bg-success/10 px-3 py-2 text-xs text-success">{success}</p>}
-    <AppDialog open={open} onOpenChange={v=>{setOpen(v);if(!v)reset()}} size="standard" title={editingTransactionId?'Edit manual transaction':'Add transaction'} description={editingTransactionId?'Update this manual ledger entry. Automatic entries remain read-only.':'Record a manual Money In or Money Out entry.'} contentClassName="max-w-3xl"><form onSubmit={submit} className="space-y-5">
+    <AppDialog open={open} onOpenChange={v=>{setOpen(v);if(!v)reset()}} size="standard" title={editingTransactionId?'Edit manual transaction':'Add transaction'} description={editingTransactionId?'Update this posted manual ledger entry.':'Record a manual Money In or Money Out entry.'} contentClassName="max-w-3xl"><form onSubmit={submit} className="space-y-5">
       <fieldset className="space-y-2"><legend className="text-xs font-semibold">Direction</legend><div className="grid grid-cols-2 gap-2 rounded-full bg-surface-track p-1">{([['income','Money In',ArrowDownToLine],['expense','Money Out',ArrowUpFromLine]] as const).map(([v,l,I])=><button key={v} type="button" onClick={()=>selectDirection(v)} className={`inline-flex h-10 items-center justify-center gap-2 rounded-full text-sm font-semibold ${direction===v?'bg-primary text-primary-foreground':'text-muted-foreground'}`}><I className="size-4"/>{l}</button>)}</div></fieldset>
       {direction&&<><div className="grid gap-4 sm:grid-cols-2"><label className="space-y-1.5 text-xs font-medium">Category<select aria-label="Transaction category" value={category} onChange={e=>selectCategory(e.target.value as FinanceCategory)} className={inputClass}><option value="">Select category</option>{directionCategories.map(d=><option key={d.id} value={d.id}>{d.label}{d.linkedWorkflow?' · automatic':''}</option>)}</select>{errors.category&&<span className="text-xs text-destructive">{errors.category}</span>}</label><label className="space-y-1.5 text-xs font-medium">Transaction date<input type="date" value={transactionDate} onChange={e=>setTransactionDate(e.target.value)} className={inputClass}/></label></div>
       <fieldset className="space-y-2"><legend className="text-xs font-semibold">Applies to</legend><div className="grid grid-cols-2 gap-2 rounded-full bg-surface-track p-1"><button type="button" disabled={selectedDefinition?.allowScopeOverride===false&&selectedDefinition.scopePolicy!=='company'} onClick={()=>{setScope('company');setBranch('All')}} className={`h-10 rounded-full text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${scope==='company'?'bg-card shadow-sm':'text-muted-foreground'}`}>Company-wide</button><button type="button" disabled={selectedDefinition?.allowScopeOverride===false&&selectedDefinition.scopePolicy!=='branch'} onClick={()=>{setScope('branch');if(branch==='All')setBranch(initialBranch as BranchId|'')}} className={`h-10 rounded-full text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${scope==='branch'?'bg-card shadow-sm':'text-muted-foreground'}`}>Specific branch</button></div></fieldset>
-      <div className="grid gap-4 sm:grid-cols-2">{scope==='branch'&&<label className="space-y-1.5 text-xs font-medium">Branch<select aria-label="Transaction branch" value={branch} onChange={e=>setBranch(e.target.value as BranchId)} className={inputClass}><option value="">Select Branch</option>{branches.filter(b=>b!=='All').map(b=><option key={b} value={b}>{b}</option>)}</select>{errors.branch&&<span className="text-xs text-destructive">{errors.branch}</span>}</label>}<label className="space-y-1.5 text-xs font-medium">Payment method<select value={method} onChange={e=>setMethod(e.target.value as FinancePaymentMethod)} className={inputClass}>{methods.map(m=><option key={m} value={m}>{methodLabel[m]}</option>)}</select></label><label className="space-y-1.5 text-xs font-medium sm:col-span-2">Transaction<input aria-label="Transaction" value={name} onChange={e=>setName(e.target.value)} className={inputClass} placeholder={selectedDefinition?.placeholder}/>{errors.name&&<span className="text-xs text-destructive">{errors.name}</span>}</label><label className="space-y-1.5 text-xs font-medium sm:col-span-2">Amount (IDR)<input aria-label="Amount IDR" inputMode="numeric" value={formatAmount(amountDigits)} onChange={e=>setAmountDigits(e.target.value.replace(/\D/g,''))} className={inputClass}/>{errors.amount&&<span className="text-xs text-destructive">{errors.amount}</span>}</label></div>
+      <div className="grid gap-4 sm:grid-cols-2">{scope==='branch'&&<label className="space-y-1.5 text-xs font-medium">Branch<select aria-label="Transaction branch" value={branch} onChange={e=>setBranch(e.target.value as BranchId)} className={inputClass}><option value="">Select Branch</option>{branches.filter(b=>b!=='All').map(b=><option key={b} value={b}>{b}</option>)}</select>{errors.branch&&<span className="text-xs text-destructive">{errors.branch}</span>}</label>}<label className="space-y-1.5 text-xs font-medium">Account / cash source<select aria-label="Finance account" value={accountId} onChange={e=>{setAccountId(e.target.value);setErrors(current=>({...current,accountId:undefined}))}} className={inputClass}><option value="">Select account</option><option value="cash:main">Cash</option>{activePaymentAccounts.map(account=><option key={account.id} value={account.id}>{account.bankName} · {account.accountNumber}</option>)}</select>{errors.accountId&&<span className="text-xs text-destructive">{errors.accountId}</span>}</label><label className="space-y-1.5 text-xs font-medium">Payment method<select value={method} onChange={e=>changeMethod(e.target.value as FinancePaymentMethod)} className={inputClass}>{methods.map(m=><option key={m} value={m}>{methodLabel[m]}</option>)}</select></label><label className="space-y-1.5 text-xs font-medium sm:col-span-2">Transaction<input aria-label="Transaction" value={name} onChange={e=>setName(e.target.value)} className={inputClass} placeholder={selectedDefinition?.placeholder}/>{errors.name&&<span className="text-xs text-destructive">{errors.name}</span>}</label><label className="space-y-1.5 text-xs font-medium sm:col-span-2">Amount (IDR)<input aria-label="Amount IDR" inputMode="numeric" value={formatAmount(amountDigits)} onChange={e=>setAmountDigits(e.target.value.replace(/\D/g,''))} className={inputClass}/>{errors.amount&&<span className="text-xs text-destructive">{errors.amount}</span>}</label></div>
       {editingTransactionId&&<label className="block space-y-1.5 text-xs font-medium">Edit reason · Optional<textarea value={editReason} onChange={e=>setEditReason(e.target.value)} className="min-h-20 w-full rounded-xl border border-border bg-background p-3 text-sm" placeholder="Why is this transaction being changed?"/></label>}{selectedDefinition?.linkedWorkflow&&<><p className="rounded-xl bg-warning/10 px-4 py-3 text-xs text-warning">{duplicateCandidates.length?`${duplicateCandidates.length} matching automatic transaction${duplicateCandidates.length===1?'':'s'} already exist for this date, amount, and scope. Check before saving.`:'This category is normally created automatically. Check that it has not already been recorded.'}</p><label className="block space-y-1.5 text-xs font-medium">Manual entry note · Required<textarea value={manualEntryReason} onChange={e=>setManualEntryReason(e.target.value)} className="min-h-24 w-full rounded-xl border border-border bg-background p-3 text-sm" placeholder="Explain why this automatic category is being entered manually."/>{errors.manualEntryReason&&<span className="text-xs text-destructive">{errors.manualEntryReason}</span>}</label></>}
       <label className="block space-y-1.5 text-xs font-medium">Note · Optional<textarea value={note} onChange={e=>setNote(e.target.value)} className="min-h-20 w-full rounded-xl border border-border bg-background p-3 text-sm"/></label></>}
       {formError&&<p role="alert" className="text-xs text-destructive">{formError}</p>}<ActionFooter className="sticky bottom-0 bg-card/95"><button type="button" onClick={()=>setOpen(false)} className="h-11 rounded-full px-[18px]">Cancel</button>{direction&&<button type="submit" className="h-11 rounded-full bg-primary px-[18px] font-semibold text-primary-foreground">{editingTransactionId?'Save changes':'Save transaction'}</button>}</ActionFooter>
     </form></AppDialog>
-    <AppSheet open={manageOpen} onOpenChange={setManageOpen} side="right" title="Expense categories" description="Finance and Owner can edit every category. Automatic keys stay stable for integrations." contentClassName="sm:left-auto sm:right-0 sm:top-0 sm:h-dvh sm:max-h-dvh sm:w-[40rem] sm:max-w-[92vw] md:w-[44rem] sm:translate-x-0 sm:translate-y-0 sm:rounded-none sm:border-l">
+    <AppSheet open={manageOpen} onOpenChange={setManageOpen} side="right" title="Expense categories" description="Finance can edit transaction categories. Automatic keys stay stable for integrations." contentClassName="sm:left-auto sm:right-0 sm:top-0 sm:h-dvh sm:max-h-dvh sm:w-[40rem] sm:max-w-[92vw] md:w-[44rem] sm:translate-x-0 sm:translate-y-0 sm:rounded-none sm:border-l">
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-1 pb-4">
           {definitions.filter(d=>d.direction==='expense').map(d=>{const custom=customCategories.find(c=>c.id===d.id);const used=transactions.some(t=>t.category===d.id);return <article key={d.id} className={`rounded-xl border px-4 py-3 ${d.active?'border-border/70':'border-border/50 bg-muted/35'}`}>
