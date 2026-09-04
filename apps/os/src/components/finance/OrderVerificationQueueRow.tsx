@@ -1,196 +1,88 @@
 import type { FC } from 'react'
-import { AlertTriangle, Eye } from 'lucide-react'
-import { Checkbox } from '../ui/checkbox'
+import { CheckCircle2, Clock3 } from 'lucide-react'
 import { formatIdrCurrency } from '../../lib/formatters'
-import { parseOrderDate } from '../../domain/revenueDateDomain'
-import type {
-  FinanceQueueRow,
-  OrderVerificationQueueViewModel,
-} from './OrderVerificationQueueController'
+import { useSettingsStore } from '../../store/settingsStore'
+import type { FinanceQueueRow } from './OrderVerificationQueueController'
 
-/**
- * @description Compact, task-focused row for Finance order verification.
- * The order identity opens the read-only review sheet, Verify is the single
- * visible primary action, and uncommon exception actions are progressively
- * disclosed under More actions.
- */
-type QueueRowActionProps = Pick<
-  OrderVerificationQueueViewModel,
-  | 'canVerify'
-  | 'isBulkSelectMode'
-  | 'verificationActionType'
-  | 'verificationActionNote'
-  | 'onSelectOrder'
-  | 'onToggleOrderSelected'
-  | 'onOpenVerificationAction'
-  | 'onVerificationActionNoteChange'
-  | 'onCloseVerificationAction'
-  | 'onConfirmVerificationAction'
-  | 'onVerifyOrder'
->
-
-interface OrderVerificationQueueRowProps extends QueueRowActionProps {
+interface OrderVerificationQueueRowProps {
   row: FinanceQueueRow
 }
 
-const waitingAgeLabel = (createdAtLabel: string) => {
-  const createdAt = parseOrderDate(createdAtLabel)
-  if (!createdAt) return null
-  const minutes = Math.max(0, Math.floor((Date.now() - createdAt.getTime()) / 60_000))
-  if (minutes < 60) return `Waiting ${Math.max(1, minutes)} min`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `Waiting ${hours} hr${hours === 1 ? '' : 's'}`
-  const days = Math.floor(hours / 24)
-  return `Waiting ${days} day${days === 1 ? '' : 's'}`
+const paymentMethodLabel = (method: FinanceQueueRow['paymentMethod']): string => {
+  if (method === 'cash') return 'Cash'
+  if (method === 'transfer') return 'Bank transfer'
+  if (method === 'card') return 'Card'
+  return 'Other'
 }
 
-export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({
-  row,
-  canVerify,
-  isBulkSelectMode,
-  verificationActionNote,
-  onSelectOrder,
-  onToggleOrderSelected,
-  onOpenVerificationAction,
-  onVerificationActionNoteChange,
-  onCloseVerificationAction,
-  onConfirmVerificationAction,
-  onVerifyOrder,
-}) => {
-  const { order, isEnteringNote, isMarkedForReview, isPending, isRejected, isVerified, isSelected } =
-    row
+const formatPaidAt = (value: string): string => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
-  const statusText = isVerified
-    ? `Reconciled${order.financeVerifiedBy ? ` by ${order.financeVerifiedBy}` : ''}`
-    : isRejected
-      ? `Rejected${order.financeVerificationActor ? ` by ${order.financeVerificationActor}` : ''}`
-      : isMarkedForReview
-        ? `Needs attention${order.financeVerificationActor ? ` · flagged by ${order.financeVerificationActor}` : ''}`
-        : 'Ready to reconcile'
-
-  const waitingAge = isPending ? waitingAgeLabel(order.createdAtLabel) : null
-
-  const statusClass = isVerified
-    ? 'text-success'
-    : isRejected
-      ? 'text-destructive'
-      : isMarkedForReview
-        ? 'text-warning'
-        : 'text-muted-foreground'
+export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ row }) => {
+  const bankAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
+  const accountLabel = row.accountId === 'cash:main'
+    ? 'Cash'
+    : row.accountId === 'legacy:unassigned' || !row.accountId
+      ? 'Unassigned account'
+      : bankAccounts.find((account) => account.id === row.accountId)?.bankName ?? row.accountId
+  const complete = row.status === 'complete'
+  const refunded = row.order.paymentStatus === 'refunded' || Boolean(row.order.refundCompletedAt)
 
   return (
-    <article
-      className={`space-y-2 rounded-xl bg-surface-card px-3.5 py-3 shadow-ios-sm ring-1 transition ${
-        isRejected
-          ? 'ring-destructive/30'
-          : isMarkedForReview
-            ? 'ring-warning/40'
-            : 'ring-border/60'
-      }`}
-    >
-      <div className="flex items-start gap-2.5">
-        {isPending && canVerify && isBulkSelectMode && (
-          <div className="mt-1">
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(checked) =>
-                onToggleOrderSelected(order.orderNumber, checked === true)
-              }
-              aria-label={`Select order ${order.orderNumber} for bulk reconciliation`}
-            />
+    <article className="rounded-xl bg-surface-card px-4 py-3.5 shadow-ios-sm ring-1 ring-border/60">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-semibold text-foreground">{row.order.customerName}</p>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-semibold ${complete ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}>
+              {complete ? <CheckCircle2 className="size-3" /> : <Clock3 className="size-3" />}
+              {complete ? 'Complete' : 'In Progress'}
+            </span>
+            {refunded && (
+              <span className="rounded-full bg-warning/10 px-2.5 py-1 text-2xs font-semibold text-warning">Refunded</span>
+            )}
           </div>
-        )}
-
-        <button
-          type="button"
-          onClick={() => onSelectOrder(order)}
-          className="min-w-0 flex-1 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-          aria-label={`Review order ${order.orderNumber} from ${order.customerName}`}
-        >
-          <span className="block">
-            <span className="flex items-start justify-between gap-3">
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-base font-semibold leading-tight text-foreground">
-                  {order.customerName}
-                </span>
-                <span className="mt-1 block truncate text-2xs font-medium text-muted-foreground">
-                  {order.orderNumber} · {order.branch}
-                </span>
-                <span className="mt-0.5 block text-2xs text-muted-foreground">
-                  {order.createdAtLabel}{waitingAge ? ` · ${waitingAge}` : ''}
-                </span>
-              </span>
-              <span className="shrink-0 text-right">
-                <span className="block text-sm font-semibold text-foreground">
-                  {formatIdrCurrency(order.totalIdr)}
-                </span>
-              </span>
-            </span>
-            <span className="mt-2 flex items-center justify-between gap-3">
-              <span className={`text-2xs font-medium ${statusClass}`}>
-                {statusText}
-              </span>
-              <span className="inline-flex items-center gap-1 text-2xs font-medium text-primary">
-                <Eye className="size-3" />
-                Review
-              </span>
-            </span>
-          </span>
-        </button>
-      </div>
-
-      {isPending && canVerify && !isEnteringNote && !isBulkSelectMode && (
-        <div className="flex items-center justify-end gap-2 border-t border-border/60 pt-2">
-          <button type="button" onClick={() => onOpenVerificationAction(order.orderNumber, 'correction')} className="inline-flex h-11 items-center gap-2 rounded-full border border-warning/30 bg-warning/5 px-[18px] text-sm font-medium text-warning"><AlertTriangle className="size-4"/>Needs correction</button>
-          <button
-            type="button"
-            aria-label="Reconcile"
-            onClick={() => onVerifyOrder(order.orderNumber)}
-            className="h-11 cursor-pointer rounded-full bg-success px-[18px] text-sm font-semibold text-success-foreground shadow-ios-sm hover:bg-success/90"
-          >
-            Reconcile order
-          </button>
-        </div>
-      )}
-
-      {isEnteringNote && (
-        <div className="space-y-2 border-t border-border/60 pt-2">
-          <div>
-            <label className="text-xs font-medium text-foreground" htmlFor={`finance-note-${order.orderNumber}`}>
-              Correction reason · Required
-            </label>
-            <p className="text-2xs text-muted-foreground">
-              Explain what must be corrected before Finance can reconcile the order.
+          <p className="mt-1 text-xs text-muted-foreground">
+            {row.order.orderNumber} · {row.order.branch}
+          </p>
+          <div className="mt-3 grid gap-x-6 gap-y-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-muted-foreground">Received into</p>
+              <p className="mt-0.5 font-medium text-foreground">{accountLabel}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Payment method</p>
+              <p className="mt-0.5 font-medium text-foreground">{paymentMethodLabel(row.paymentMethod)}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-muted-foreground">Payment confirmed</p>
+              <p className="mt-0.5 font-medium text-foreground">{formatPaidAt(row.paymentConfirmedAt)}</p>
+            </div>
+          </div>
+          {row.transactionStatus !== 'verified' && (
+            <p className="mt-2 text-2xs font-medium text-warning">
+              Legacy ledger status: {row.transactionStatus}. No Finance approval action is required in this workflow.
             </p>
-          </div>
-          <input
-            id={`finance-note-${order.orderNumber}`}
-            type="text"
-            value={verificationActionNote}
-            onChange={(event) => onVerificationActionNoteChange(event.target.value)}
-            placeholder={
-              'Enter correction reason'
-            }
-            className="h-9 w-full rounded-lg border border-border bg-surface-card px-3 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
-          />
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onCloseVerificationAction}
-              className="cursor-pointer rounded-full text-xs font-medium text-muted-foreground hover:bg-muted rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => onConfirmVerificationAction(order.orderNumber)}
-              className="h-11 cursor-pointer rounded-full bg-warning px-[18px] text-sm font-semibold text-warning-foreground shadow-ios-sm"
-            >
-              Send correction request
-            </button>
-          </div>
+          )}
         </div>
-      )}
+
+        <div className="shrink-0 sm:text-right">
+          <p className="text-xs text-muted-foreground">Amount received</p>
+          <p className="mt-1 text-base font-semibold text-foreground">
+            {formatIdrCurrency(row.paymentAmountIdr)}
+          </p>
+        </div>
+      </div>
     </article>
   )
 }
