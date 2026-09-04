@@ -22,10 +22,10 @@ export type AccessLevel = 'none' | 'view' | 'edit'
 
 export const SECTION_ALLOWED_ROLES: Record<AppSection, UserRole[]> = {
   dashboard: ['owner','admin','finance','hr','florist'],
-  orders: ['owner','admin','finance'],
+  orders: ['owner','admin','finance','hr'],
   stock: ['owner','admin','finance'],
   catalog: ['owner','admin','finance'],
-  customers: ['owner','admin','finance'],
+  customers: ['owner','admin','finance','hr'],
   revenue: ['owner','finance'],
   finance: ['finance'],
   hr: ['owner','hr'],
@@ -75,10 +75,10 @@ export const DEFAULT_ROLE_SECTION_ACCESS: Record<UserRole, Record<AppSection, Ac
   },
   hr: {
     dashboard: 'view',
-    orders: 'none',
+    orders: 'view',
     stock: 'none',
     catalog: 'none',
-    customers: 'none',
+    customers: 'view',
     revenue: 'none',
     finance: 'none',
     hr: 'edit',
