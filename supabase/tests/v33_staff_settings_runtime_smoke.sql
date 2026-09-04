@@ -11,8 +11,8 @@ begin
   select allowed_roles into v_roles
   from private.action_capability_registry
   where capability='finance.verify_order';
-  if v_roles is distinct from array['owner','finance']::text[] then
-    raise exception 'finance.verify_order role-family eligibility mismatch: %', v_roles;
+  if coalesce(cardinality(v_roles),0) <> 0 then
+    raise exception 'finance.verify_order must remain retired for every role: %', v_roles;
   end if;
 
   select allowed_roles into v_roles
@@ -22,18 +22,24 @@ begin
     raise exception 'hr.create_employee role-family eligibility mismatch: %', v_roles;
   end if;
 
+  if private.section_role_eligible('owner','finance') then
+    raise exception 'Owner crossed into Finance workspace authority domain';
+  end if;
   if private.section_role_eligible('admin','finance') then
     raise exception 'Admin crossed into Finance workspace authority domain';
   end if;
   if private.section_role_eligible('florist','orders') then
     raise exception 'Florist received the full Orders workspace domain';
   end if;
-  if private.section_access_for_role('admin','finance') <> 'none' then
-    raise exception 'Cross-domain section permission is not fail-closed';
+  if private.section_access_for_role('owner','finance') <> 'none'
+     or private.section_access_for_role('admin','finance') <> 'none' then
+    raise exception 'Cross-domain Finance section permission is not fail-closed';
   end if;
 
-  if private.has_action_permission_for_role('admin','finance.verify_order') then
-    raise exception 'Admin crossed into Finance authority through configurable capability';
+  if private.has_action_permission_for_role('owner','finance.view_ledger')
+     or private.has_action_permission_for_role('admin','finance.view_ledger')
+     or private.has_action_permission_for_role('finance','finance.verify_order') then
+    raise exception 'Finance capability boundary is inconsistent with the Finance-only workflow';
   end if;
   if private.has_action_permission_for_role('finance','hr.edit_employee') then
     raise exception 'Finance crossed into HR authority through configurable capability';

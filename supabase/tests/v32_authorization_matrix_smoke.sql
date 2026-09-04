@@ -16,6 +16,15 @@ begin
   if private.section_access_for_role('finance','customers') not in ('view','edit') then
     raise exception 'Finance must be able to read CRM by default';
   end if;
+  if private.section_access_for_role('owner','finance') <> 'none' then
+    raise exception 'Owner must not receive Finance workspace access';
+  end if;
+  if private.section_access_for_role('admin','finance') <> 'none' then
+    raise exception 'Admin must not receive Finance workspace access';
+  end if;
+  if private.section_access_for_role('finance','finance') <> 'edit' then
+    raise exception 'Finance role must own the Finance workspace';
+  end if;
   if private.section_access_for_role('hr','orders') <> 'none' then
     raise exception 'HR must not receive Orders section access by default';
   end if;
@@ -29,8 +38,18 @@ begin
   if not private.has_action_permission_for_role('admin','orders.edit') then
     raise exception 'Admin orders.edit missing';
   end if;
-  if not private.has_action_permission_for_role('finance','finance.verify_order') then
-    raise exception 'Finance verification capability missing';
+  if private.has_action_permission_for_role('finance','finance.verify_order') then
+    raise exception 'Legacy Finance order verification must remain retired';
+  end if;
+  if private.has_action_permission_for_role('owner','finance.view_ledger')
+     or private.has_action_permission_for_role('owner','finance.create_ledger_entry')
+     or private.has_action_permission_for_role('owner','finance.edit_ledger_entry') then
+    raise exception 'Owner received Finance ledger authority';
+  end if;
+  if not private.has_action_permission_for_role('finance','finance.view_ledger')
+     or not private.has_action_permission_for_role('finance','finance.create_ledger_entry')
+     or not private.has_action_permission_for_role('finance','finance.edit_ledger_entry') then
+    raise exception 'Finance ledger authority is incomplete';
   end if;
   if private.has_action_permission_for_role('hr','finance.verify_order') then
     raise exception 'HR can verify Finance orders';
