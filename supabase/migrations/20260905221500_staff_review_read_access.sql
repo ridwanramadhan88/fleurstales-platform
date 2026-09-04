@@ -1,5 +1,6 @@
 -- Read-only review/customer/order visibility for Owner, Admin, Finance, and HR.
 -- Review tables remain private; staff access goes through one narrow RPC.
+-- Admin branch ownership is an order-mutation rule, never a read filter.
 
 begin;
 
@@ -24,7 +25,6 @@ where id = 'primary';
 
 -- Read visibility and operational branch ownership are deliberately separate.
 -- Anyone with orders.read_all reads company-wide (Owner/Admin/Finance/HR).
--- Admin branch restrictions remain enforced by order mutation/processing RPCs.
 -- Florist reads remain assigned-employee-only, including intentional cross-branch
 -- assignments; branch membership must not hide an explicitly assigned order.
 create or replace function private.can_read_order_row(
@@ -40,10 +40,8 @@ as $$
 declare
   v_employee_id text := private.current_staff_employee_id();
 begin
-  -- p_branch_id is retained in the signature because existing RLS policies and
-  -- callers pass it, but branch is not part of the read-visibility decision.
-  perform p_branch_id;
-
+  -- Keep the historical signature because RLS callers pass branch_id. Branch
+  -- is intentionally not part of the read-visibility decision anymore.
   if private.has_action_permission('orders.read_all') then
     return true;
   end if;
@@ -58,6 +56,42 @@ end;
 $$;
 revoke execute on function private.can_read_order_row(text, text) from public, anon;
 grant execute on function private.can_read_order_row(text, text) to authenticated;
+
+-- One server-level invariant protects every current and future Order mutation
+-- path. This catches generic edits as well as direct RPCs such as Storefront
+-- confirm/cancel and atomic Process Order, which otherwise update orders
+-- directly. Owner/service/Storefront calls are unaffected.
+create or replace function private.enforce_admin_order_mutation_branch()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_role text := private.current_staff_role();
+  v_order_branch text := case when tg_op = 'DELETE' then old.branch_id else new.branch_id end;
+  v_operational_branch text;
+begin
+  if v_role <> 'admin' then
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
+  end if;
+
+  v_operational_branch := private.current_staff_branch_id();
+  if v_operational_branch is null or v_operational_branch is distinct from v_order_branch then
+    raise exception 'ORDER_OUTSIDE_BRANCH_SCOPE' using errcode = '42501';
+  end if;
+
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end;
+$$;
+revoke execute on function private.enforce_admin_order_mutation_branch() from public, anon, authenticated;
+
+drop trigger if exists enforce_admin_order_mutation_branch on public.orders;
+create trigger enforce_admin_order_mutation_branch
+before insert or update or delete on public.orders
+for each row execute function private.enforce_admin_order_mutation_branch();
 
 -- CRM visibility follows the authoritative section permission instead of a
 -- hard-coded role list. Mutation authority remains unchanged.
@@ -86,6 +120,36 @@ using (
       and private.can_read_order_row(o.branch_id, o.florist_assigned_employee_id)
   )
 );
+
+-- Notifications are a read/awareness surface. Admin can read company-wide
+-- notifications permitted by the capability matrix; acting on an Order still
+-- hits the branch-scoped mutation boundary above.
+create or replace function private.can_read_staff_notification(p_notification public.staff_notifications)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_profile public.staff_access_profiles%rowtype;
+begin
+  if (select auth.uid()) is null or p_notification.recipient_user_id <> (select auth.uid()) then
+    return false;
+  end if;
+
+  select * into v_profile
+  from public.staff_access_profiles
+  where user_id = (select auth.uid()) and is_active = true
+  limit 1;
+
+  if not found then return false; end if;
+  if not private.notification_kind_allowed_for_role(v_profile.role, p_notification.kind) then return false; end if;
+  return true;
+end;
+$$;
+revoke execute on function private.can_read_staff_notification(public.staff_notifications) from public, anon, authenticated;
+grant execute on function private.can_read_staff_notification(public.staff_notifications) to authenticated;
 
 create or replace function public.get_staff_reviews(
   p_order_id text default null,
