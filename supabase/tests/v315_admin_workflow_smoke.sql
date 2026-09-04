@@ -4,6 +4,8 @@ do $$
 declare
   v_runtime_source text;
   v_create_source text;
+  v_create_contract_source text;
+  v_create_delegate_source text;
   v_save_wrapper_source text;
   v_save_internal_source text;
   v_trigger_source text;
@@ -41,9 +43,28 @@ begin
   end if;
 
   select pg_get_functiondef('public.create_internal_order(jsonb)'::regprocedure) into v_create_source;
-  if position('create_internal_order_v36_internal' in v_create_source)=0
-     or position('set status=''confirmed''' in v_create_source)=0
-     or position('creationConfirmation' in v_create_source)=0 then
+  v_create_contract_source := v_create_source;
+
+  -- Newer workflow layers may wrap the proven Admin-creation implementation.
+  -- Follow that delegation instead of requiring every historical invariant to
+  -- be duplicated in the outer wrapper source text.
+  if position('create_internal_order_pre_cashflow' in v_create_source)>0 then
+    if to_regprocedure('public.create_internal_order_pre_cashflow(jsonb)') is null then
+      raise exception 'Internal-order pre-cashflow delegate is missing';
+    end if;
+
+    select pg_get_functiondef('public.create_internal_order_pre_cashflow(jsonb)'::regprocedure)
+      into v_create_delegate_source;
+    v_create_contract_source := v_create_contract_source || E'\n' || v_create_delegate_source;
+
+    if position('PAYMENT_CONFIRMED_DURING_PROCESS_ORDER' in v_create_source)=0 then
+      raise exception 'Internal-order Process Order payment guard is missing';
+    end if;
+  end if;
+
+  if position('create_internal_order_v36_internal' in v_create_contract_source)=0
+     or position('set status=''confirmed''' in v_create_contract_source)=0
+     or position('creationConfirmation' in v_create_contract_source)=0 then
     raise exception 'Internal-order confirmation wrapper is incomplete';
   end if;
 
