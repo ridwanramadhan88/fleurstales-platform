@@ -17,15 +17,17 @@ describe('simplified Finance workflow', () => {
     expect(scopes).toContain("export type FinanceDateScopeId = 'all'")
   })
 
-  it('keeps the transaction ledger read-only except for manual editing', () => {
+  it('keeps one filtered ledger with posted-entry editing and no verify/reject actions', () => {
     const ledger = read('src/components/finance/TransactionLedger.tsx')
     const controller = read('src/components/finance/TransactionLedgerController.ts')
 
-    expect(ledger).toContain("['orders', 'Orders']")
-    expect(ledger).toContain("['payroll', 'Payroll']")
-    expect(ledger).toContain("['refunds', 'Refunds']")
-    expect(ledger).toContain("['manual', 'Manual']")
-    expect(ledger).toContain('finance-edit-manual-transaction')
+    expect(ledger).toContain("type SourceTab = 'all' | 'orders' | 'payroll' | 'refunds' | 'manual' | 'cashflow'")
+    expect(ledger).toContain("['orders','Orders']")
+    expect(ledger).toContain("['payroll','Payroll']")
+    expect(ledger).toContain("['refunds','Refunds']")
+    expect(ledger).toContain("['manual','Manual']")
+    expect(ledger).toContain("['cashflow','Balance & Transfers']")
+    expect(ledger).toContain('finance-edit-posted-transaction')
     expect(ledger).not.toContain('onVerify')
     expect(ledger).not.toContain('onStartReject')
     expect(controller).not.toContain('verifyTransaction')
@@ -38,7 +40,7 @@ describe('simplified Finance workflow', () => {
     expect(store).toContain("status:'approved'")
   })
 
-  it('creates manual transactions as final and protects automatic editing', () => {
+  it('creates manual transactions as final and protects the legacy local automatic editor', () => {
     const store = read('src/store/financeStore.ts')
     expect(store).toContain('updateManualTransaction')
     expect(store).toContain("'finance.edit_ledger_entry'")
