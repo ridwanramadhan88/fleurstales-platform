@@ -23,21 +23,14 @@ import { CustomerListItem } from './CustomerListItem'
 import { CustomerProfileDrawer } from './CustomerProfileDrawer'
 import { CustomerVoucherDialogContainer } from './CustomerVoucherDialogContainer'
 import { CustomerSegmentRulesSettingsContainer } from './CustomerSegmentRulesSettingsContainer'
+import { ReviewPromoSettings } from './ReviewPromoSettings'
 import type { CustomersTabContentViewModel } from './CustomersTabContentController'
 
-/**
- * @description Props for the CustomersTabContent component.
- */
 export interface CustomersTabContentProps {
-  /** Search query owned by the main top bar (name / WhatsApp / email). */
   searchQuery: string
-  /** Handler fired when the search query should change (desktop filter bar). */
   onSearchQueryChange: (value: string) => void
 }
 
-/**
- * @description Customers CRM tab content.
- */
 export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
   searchQuery,
   onSearchQueryChange,
@@ -67,11 +60,7 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
 }) => {
   return (
     <section className="space-y-4">
-      {/* Top CRM summary */}
-      <section
-        aria-label="Customer CRM overview"
-        className="space-y-3"
-      >
+      <section aria-label="Customer CRM overview" className="space-y-3">
         <header className="space-y-3 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:space-y-0">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
@@ -108,10 +97,9 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
         </div>
       </section>
 
-      {/* VIP rule settings */}
       <CustomerSegmentRulesSettingsContainer />
+      <ReviewPromoSettings />
 
-      {/* Filters */}
       <CustomerFiltersBar
         segmentFilter={segmentFilter}
         onSegmentFilterChange={onSegmentFilterChange}
@@ -121,7 +109,6 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
         onSearchQueryChange={onSearchQueryChange}
       />
 
-      {/* Customer list */}
       <section aria-label="Customer list" className="space-y-3">
         {displayed.length === 0 ? (
           <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-xl bg-card px-6 py-8 text-center ring-1 ring-border">
@@ -153,7 +140,6 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
           onAssignPromo={() => onAssignPromo(selectedEnriched.profile.id)}
         />
       )}
-
 
       <ConfirmActionDialog
         open={Boolean(pendingRemoveCustomer)}

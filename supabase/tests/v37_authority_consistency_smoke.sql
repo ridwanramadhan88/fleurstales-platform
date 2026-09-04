@@ -82,10 +82,32 @@ end $$;
 do $$
 declare
   v_finance_source text;
+  v_finance_contract_source text;
+  v_finance_delegate_source text;
 begin
-  select pg_get_functiondef('public.save_finance_operational_state(bigint,jsonb)'::regprocedure) into v_finance_source;
-  if position('display_name' in v_finance_source)=0
-     or position('updatedAt' in v_finance_source)=0 then
+  select pg_get_functiondef('public.save_finance_operational_state(bigint,jsonb)'::regprocedure)
+  into v_finance_source;
+  v_finance_contract_source := v_finance_source;
+
+  -- Newer Finance layers wrap the proven V3.7 writer to tighten the role
+  -- boundary. Follow that delegation so the smoke test validates both the
+  -- current Finance-only guard and the original server-side actor stamping.
+  if position('save_finance_operational_state_pre_finance_only' in v_finance_source)>0 then
+    if to_regprocedure('public.save_finance_operational_state_pre_finance_only(bigint,jsonb)') is null then
+      raise exception 'Finance pre-finance-only delegate is missing';
+    end if;
+    if position('FINANCE_ROLE_REQUIRED' in v_finance_source)=0
+       or position('current_staff_role' in v_finance_source)=0 then
+      raise exception 'Finance-only operational-state boundary is incomplete';
+    end if;
+
+    select pg_get_functiondef('public.save_finance_operational_state_pre_finance_only(bigint,jsonb)'::regprocedure)
+      into v_finance_delegate_source;
+    v_finance_contract_source := v_finance_contract_source || E'\n' || v_finance_delegate_source;
+  end if;
+
+  if position('display_name' in v_finance_contract_source)=0
+     or position('updatedAt' in v_finance_contract_source)=0 then
     raise exception 'Finance verification actor is not server-stamped';
   end if;
 end $$;

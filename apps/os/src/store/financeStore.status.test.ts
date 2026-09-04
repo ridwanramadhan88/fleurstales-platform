@@ -128,8 +128,6 @@ describe('internal-ledger creation writer', () => {
     })
   })
 
-
-
   it('enforces the create-ledger permission at the store boundary', () => {
     useFinanceStore.setState({ transactions: [] })
     useSettingsStore.getState().updateRoleActionPermission('finance', 'finance.create_ledger_entry', false)
@@ -148,7 +146,7 @@ describe('internal-ledger creation writer', () => {
     expect(useFinanceStore.getState().transactions).toEqual([])
   })
 
-  it('allows Owner creation through the same guarded writer', () => {
+  it('blocks Owner creation because the ledger is Finance-only', () => {
     useFinanceStore.setState({ transactions: [] })
     const result = useFinanceStore.getState().addTransaction({
       type: 'expense',
@@ -160,7 +158,7 @@ describe('internal-ledger creation writer', () => {
       description: 'Test',
       actor: { name: 'Owner', role: 'owner' },
     })
-    expect(result.allowed).toBe(true)
-    expect(useFinanceStore.getState().transactions).toHaveLength(1)
+    expect(result.allowed).toBe(false)
+    expect(useFinanceStore.getState().transactions).toHaveLength(0)
   })
 })

@@ -39,7 +39,7 @@ describe('heading and title consistency', () => {
       'showHeading={financeModules.length > 1}',
     )
     expect(read('src/components/finance/OrderVerificationQueue.tsx')).toContain(
-      '{showHeading && <header className="space-y-1">',
+      '{showHeading && (',
     )
   })
 })

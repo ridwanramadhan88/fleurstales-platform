@@ -13,7 +13,7 @@ const command = {
   method: 'transfer' as const,
   sourceEventId: 'payment-event-1',
   idempotencyKey: 'payment-key-1',
-  actor: 'Owner',
+  actor: 'Admin',
   occurredAt: '2026-07-12T00:00:00.000Z',
 }
 
@@ -40,36 +40,19 @@ describe('automatic order ledger posting', () => {
     expect(useFinanceStore.getState().transactions).toHaveLength(1)
   })
 
-  it('verifies pending payment and correction entries together when Finance verifies the order', () => {
+  it('keeps the retired Finance verification writer disabled', () => {
     useFinanceStore.getState().recordOrderPayment(command)
-    useFinanceStore.getState().recordOrderRefund({
-      ...command,
-      amount: 50_000,
-      sourceEventId: 'reversal-event',
-      idempotencyKey: 'reversal-key',
-    })
+    const before = useFinanceStore.getState().transactions
 
     const result = useFinanceStore.getState().verifyOrderTransactions({
-      orderNumber: 'ORD-1', actor: { name: 'Finance', role: 'finance' },
+      orderNumber: 'ORD-1',
+      actor: { name: 'Finance', role: 'finance' },
       completedAt: '2026-07-14T09:30:00.000Z',
     })
 
-    expect(result).toMatchObject({ allowed: true, verifiedCount: 2 })
-    expect(useFinanceStore.getState().transactions.every((item) => item.status === 'verified')).toBe(true)
-  })
-
-
-  it('keeps an order transaction pending when the real completion time is missing', () => {
-    useFinanceStore.getState().recordOrderPayment(command)
-    const result = useFinanceStore.getState().verifyOrderTransactions({
-      orderNumber:'ORD-1',
-      actor:{ name:'Finance', role:'finance' },
-    })
-    expect(result).toMatchObject({ allowed:false, verifiedCount:0 })
-    expect(useFinanceStore.getState().transactions[0]).toMatchObject({
-      status:'pending',
-      dataWarning:'Order completion time is missing. Correct the order before confirming this transaction.',
-    })
+    expect(result.allowed).toBe(false)
+    expect(useFinanceStore.getState().transactions).toEqual(before)
+    expect(useFinanceStore.getState().transactions[0].status).toBe('pending')
   })
 
   it('prevents manual rejection of system-generated order entries', () => {

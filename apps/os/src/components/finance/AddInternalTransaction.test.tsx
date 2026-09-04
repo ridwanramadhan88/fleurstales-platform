@@ -7,11 +7,11 @@ import { AddInternalTransaction } from './AddInternalTransaction'
 describe('AddInternalTransaction', () => {
   beforeEach(() => useFinanceStore.setState({ transactions:[], customCategories:[], categoryOverrides:[] }))
 
-  it('is available to Finance and Owner but not HR', () => {
+  it('is available only to Finance', () => {
     const { rerender } = render(<AddInternalTransaction branches={['Kedamaian']} actorName="HR" actorRole="hr" />)
     expect(screen.queryByRole('button', { name:'Add transaction' })).not.toBeInTheDocument()
     rerender(<AddInternalTransaction branches={['Kedamaian']} actorName="Owner" actorRole="owner" />)
-    expect(screen.getByRole('button', { name:'Add transaction' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name:'Add transaction' })).not.toBeInTheDocument()
     rerender(<AddInternalTransaction branches={['Kedamaian']} actorName="Finance" actorRole="finance" />)
     expect(screen.getByRole('button', { name:'Add transaction' })).toBeInTheDocument()
   })

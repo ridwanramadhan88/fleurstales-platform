@@ -17,6 +17,8 @@ import { useOrdersStore } from '../../src/store/ordersStore'
 import { useStockStore } from '../../src/store/stockStore'
 import { useSettingsStore } from '../../src/store/settingsStore'
 import { useFinanceStore } from '../../src/store/financeStore'
+import { useUserStore } from '../../src/store/userStore'
+import { confirmOrderPaymentForProcessing } from '../../src/data/orderPaymentProcessing'
 import { transitionOrderStatus } from '../../src/domain/orderStatusTransitionDomain'
 
 const ordersOriginal = useOrdersStore.getState()
@@ -29,7 +31,7 @@ const stockOriginal = {
   transfers: [],
 }
 const financeOriginal = useFinanceStore.getState()
-
+const userOriginal = useUserStore.getState()
 
 beforeEach(() => {
   useSettingsStore.getState().updateStoreProfile({ inventoryEnabled: true })
@@ -43,6 +45,7 @@ afterEach(() => {
   })
   useStockStore.setState({ items: stockOriginal.items, transfers: stockOriginal.transfers })
   useFinanceStore.setState({ transactions: financeOriginal.transactions })
+  useUserStore.setState(userOriginal)
 })
 
 describe('§1 — order-status transitions are guarded (resolved 2026-07-10)', () => {
@@ -217,61 +220,56 @@ describe('§11 — cancellation and refund remain separate decisions', () => {
   })
 })
 
-describe('§13 — order payment events post to the ledger and Finance verifies the existing row', () => {
-  it('posts one pending payment transaction, then verifies and dates it by actual order completion', () => {
-    const completedAt = '2026-07-16T10:30:00.000Z'
+describe('§13 — Process Order payment confirmation posts the financial truth', () => {
+  it('posts one verified payment at confirmation time and does not require Finance re-verification', async () => {
     useFinanceStore.setState({ transactions: [] })
-    useOrdersStore.setState({
-      orders: [makeOrder({
-        orderNumber: 'A',
-        status: 'confirmed',
-        totalIdr: 200_000,
-        paidAmountIdr: 0,
-        paymentStatus: 'unpaid',
-        financeVerified: false,
-        revision: 1,
-      })],
+    useUserStore.setState({
+      role: 'admin',
+      name: 'Admin A',
+      employeeId: 'admin-1',
+      branchId: 'Kedamaian',
     })
-
-    const paymentResult = useOrdersStore.getState().updatePayment({
+    const order = makeOrder({
+      id: 'order-a',
       orderNumber: 'A',
-      expectedRevision: 1,
-      paymentStatus: 'paid',
-      actor: { employeeId: 'owner-1', name: 'Owner A', role: 'owner' },
+      status: 'confirmed',
+      totalIdr: 200_000,
+      paidAmountIdr: 0,
+      paymentStatus: 'unpaid',
+      paymentMethod: 'cash',
+      financeVerified: false,
+      revision: 1,
     })
-    expect(paymentResult.allowed).toBe(true)
+    useOrdersStore.setState({ orders: [order] })
 
-    const pending = useFinanceStore.getState().transactions
-    expect(pending).toHaveLength(1)
-    expect(pending[0]).toMatchObject({
+    const payment = await confirmOrderPaymentForProcessing(order, 'cash:main')
+
+    expect(payment).toMatchObject({
+      orderNumber: 'A',
+      paymentStatus: 'paid',
+      paidAmountIdr: 200_000,
+      financeAccountId: 'cash:main',
+    })
+    const posted = useFinanceStore.getState().transactions
+    expect(posted).toHaveLength(1)
+    expect(posted[0]).toMatchObject({
       orderNumber: 'A',
       category: 'order_payment',
       source: 'order_payment',
-      status: 'pending',
+      status: 'verified',
       amount: 200_000,
+      accountId: 'cash:main',
+      transactionDate: payment.paymentVerifiedAt,
     })
 
     const paidOrder = useOrdersStore.getState().orders[0]
-    useOrdersStore.setState({
-      orders: [{ ...paidOrder, status: 'delivered', completedAt }],
-    })
-    const orderRevision = useOrdersStore.getState().orders[0].revision ?? 2
-    const verificationResult = useOrdersStore.getState().verifyOrderFinance({
+    const legacyVerification = useOrdersStore.getState().verifyOrderFinance({
       orderNumber: 'A',
-      expectedRevision: orderRevision,
+      expectedRevision: paidOrder.revision ?? 2,
       actor: { employeeId: 'finance-1', name: 'Finance Tester', role: 'finance' },
     })
-    expect(verificationResult.allowed).toBe(true)
-
-    const verified = useFinanceStore.getState().transactions
-    expect(verified).toHaveLength(1)
-    expect(verified[0]).toMatchObject({
-      id: pending[0].id,
-      status: 'verified',
-      transactionDate: completedAt,
-      groupType: 'order_day',
-      groupKey: '2026-07-16',
-    })
+    expect(legacyVerification.allowed).toBe(false)
+    expect(useFinanceStore.getState().transactions).toHaveLength(1)
   })
 })
 
@@ -291,8 +289,6 @@ describe('§19 — order-creation/edit validation is not re-checked at the store
       branch: 'Kedamaian',
     } as never)
 
-    // The store-level action has no rule rejecting this combination —
-    // only the form component's validateNewOrderForm does.
     expect(useOrdersStore.getState().orders.length).toBe(before + 1)
   })
 })
@@ -478,4 +474,3 @@ describe('§28 — stock-transfer terminal reversals are blocked (resolved 2026-
     expect(state.events).toHaveLength(eventCountBeforeBlockedWrite)
   })
 })
-

@@ -6,10 +6,29 @@ import {
   type StorefrontNavigationDetail,
 } from './lib/storefrontNavigation'
 
-const readTrackingId = (): string | undefined => {
+interface TrackingRoute {
+  trackingId?: string
+  orderNumber?: string
+  legacy?: boolean
+}
+
+const readTrackingRoute = (): TrackingRoute => {
   const normalizedPath = window.location.pathname.replace(/\/+$/, '')
-  const match = normalizedPath.match(/^\/order\/([^/]+)$/)
-  return match ? decodeURIComponent(match[1]) : undefined
+  const readable = normalizedPath.match(/^\/track\/([^/]+)$/)
+  if (readable) {
+    const key = new URLSearchParams(window.location.search).get('key') ?? undefined
+    return {
+      orderNumber: decodeURIComponent(readable[1]),
+      trackingId: key,
+    }
+  }
+
+  const legacy = normalizedPath.match(/^\/order\/([^/]+)$/)
+  if (legacy) {
+    return { trackingId: decodeURIComponent(legacy[1]), legacy: true }
+  }
+
+  return {}
 }
 
 const isManualTrackingRoute = (): boolean =>
@@ -37,9 +56,15 @@ export default function App() {
     }
   }, [])
 
-  const trackingId = readTrackingId()
-  if (trackingId || isManualTrackingRoute()) {
-    return <StorefrontOrderTrackingPage trackingId={trackingId} />
+  const trackingRoute = readTrackingRoute()
+  if (trackingRoute.trackingId || trackingRoute.orderNumber || isManualTrackingRoute()) {
+    return (
+      <StorefrontOrderTrackingPage
+        trackingId={trackingRoute.trackingId}
+        orderNumber={trackingRoute.orderNumber}
+        legacyRoute={trackingRoute.legacy}
+      />
+    )
   }
 
   return <StorefrontPage />

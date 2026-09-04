@@ -115,7 +115,6 @@ describe('critical application workflows', () => {
     expect(screen.queryByRole('heading', { name: 'New order' })).not.toBeInTheDocument()
   })
 
-
   it('creates a custom pickup order through review and confirmation', async () => {
     render(<App />)
     const user = await chooseRole('Owner')
@@ -179,92 +178,28 @@ describe('critical application workflows', () => {
     ).toBe(true)
   })
 
-  it('verifies a completed order from the finance queue', async () => {
-    const created = useOrdersStore.getState().createOrder({
-      branch: 'Kedamaian',
-      customerName: 'Finance Workflow Customer',
-      orderType: 'walk_in',
-      fulfillmentType: 'pickup',
-      depositAmount: 0,
-      notes: null,
-      totalIdr: 450_000,
-      productName: 'Finance Workflow Bouquet',
-    })
-    useOrdersStore.getState().updatePayment({
-      orderNumber: created.orderNumber,
-      expectedRevision: created.revision ?? 1,
-      paymentStatus: 'paid',
-      paidAmountIdr: 450_000,
-      actor: { name: 'Owner', role: 'owner' },
-    })
-    useOrdersStore.setState((state) => ({
-      orders: state.orders.map((order) => order.orderNumber === created.orderNumber
-        ? { ...order, florist: 'Test Florist', floristAssignedEmployeeId: 'test-florist' }
-        : order),
-    }))
-    useOrdersStore.getState().updateOrderStatus({
-      orderNumber: created.orderNumber,
-      expectedRevision: useOrdersStore.getState().orders.find((order) => order.orderNumber === created.orderNumber)?.revision ?? 1,
-      status: 'processing',
-      actor: { name: 'Owner', role: 'owner' },
-      source: 'workflow',
-    })
-    useOrdersStore.getState().updateOrderStatus({
-      orderNumber: created.orderNumber,
-      expectedRevision: useOrdersStore.getState().orders.find((order) => order.orderNumber === created.orderNumber)?.revision ?? 1,
-      status: 'ready',
-      actor: { name: 'Admin', role: 'admin', branchId: 'Kedamaian' },
-      source: 'workflow',
-    })
-    useOrdersStore.getState().updateOrderStatus({
-      orderNumber: created.orderNumber,
-      expectedRevision: useOrdersStore.getState().orders.find((order) => order.orderNumber === created.orderNumber)?.revision ?? 1,
-      status: 'picked_up',
-      actor: { name: 'Owner', role: 'owner' },
-      source: 'workflow',
-    })
+  it('keeps Owner out of the Finance workspace', async () => {
     render(<App />)
-    const user = await chooseRole('Owner')
-    const financeButtons = screen.getAllByRole('button', { name: 'Order Reconciliation' })
-    await user.click(financeButtons[0])
+    await chooseRole('Owner')
 
-    expect(
-      screen.getByRole('heading', { name: 'Order Reconciliation' }),
-    ).toBeInTheDocument()
-    const result = useOrdersStore.getState().verifyOrderFinance({
-      orderNumber: created.orderNumber,
-      expectedRevision: useOrdersStore.getState().orders.find((order) => order.orderNumber === created.orderNumber)?.revision ?? 1,
-      actor: { name: 'Owner', role: 'owner' },
-    })
-    expect(result.allowed).toBe(true)
-
-    const verified = useOrdersStore
-      .getState()
-      .orders.find((order) => order.orderNumber === created.orderNumber)
-    expect(verified?.financeVerified).toBe(true)
+    expect(screen.queryByRole('button', { name: 'Order Reconciliation' })).not.toBeInTheDocument()
   })
 
-  it('opens a deterministic Finance module instead of restoring the last-used module', async () => {
+  it('keeps Admin out of the Finance workspace', async () => {
     render(<App />)
-    const user = await chooseRole('Owner')
+    await chooseRole('Admin')
 
-    await user.click(screen.getAllByRole('button', { name: 'Order Reconciliation' })[0])
-    await user.click(screen.getByRole('button', { name: /^Payroll/ }))
-    expect((await screen.findAllByRole('heading', { name: 'Payroll schedule' })).length).toBeGreaterThan(0)
-
-    await user.click(screen.getAllByRole('button', { name: /^(Overview|Business Overview)$/ })[0])
-    await user.click(screen.getAllByRole('button', { name: 'Order Reconciliation' })[0])
-
-    expect(screen.getByRole('heading', { name: 'Order Reconciliation' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Order Reconciliation' })).not.toBeInTheDocument()
   })
 
-  it('advances an active order from the orders table', async () => {
+  it('advances an active cash order through the new Process Order payment gate', async () => {
     const scheduleDate = todayIsoDate()
     const created = useOrdersStore.getState().createOrder({
       branch: 'Kedamaian',
       customerName: 'Status Workflow Customer',
       orderType: 'walk_in',
-      fulfillmentType: 'delivery',
+      fulfillmentType: 'pickup',
+      paymentMethod: 'cash',
       depositAmount: 0,
       notes: null,
       totalIdr: 300_000,
@@ -296,12 +231,14 @@ describe('critical application workflows', () => {
         name: 'Advance order to Processing',
       }),
     )
+    expect(await screen.findByRole('heading', { name: 'Process Order' })).toBeInTheDocument()
     await user.click((await screen.findAllByRole('radio'))[0])
-    await user.click(screen.getByRole('button', { name: 'Assign & start Processing' }))
+    await user.click(screen.getByRole('button', { name: 'Confirm payment & start Processing' }))
+
     const advanced = useOrdersStore
       .getState()
       .orders.find((order) => order.orderNumber === created.orderNumber)
-    expect(advanced?.status).toBe('processing')
+    expect(advanced).toMatchObject({ status: 'processing', paymentStatus: 'paid', paidAmountIdr: 300_000 })
   })
 
   it('requires bank-transfer settlement before finishing a ready pickup', async () => {

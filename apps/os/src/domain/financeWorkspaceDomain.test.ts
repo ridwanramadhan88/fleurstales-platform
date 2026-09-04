@@ -3,17 +3,17 @@ import {
   getFinanceWorkspaceModules,
 } from './financeWorkspaceDomain'
 
+// Regression boundary: the Finance workspace is intentionally Finance-only.
 describe('finance workspace privacy', () => {
-  it('keeps Admin and Florist out of Finance', () => {
+  it('keeps non-Finance roles out of Finance', () => {
+    expect(getFinanceWorkspaceModules('owner')).toEqual([])
     expect(getFinanceWorkspaceModules('admin')).toEqual([])
+    expect(getFinanceWorkspaceModules('hr')).toEqual([])
     expect(getFinanceWorkspaceModules('florist')).toEqual([])
   })
 
-  it('allows Finance and Owner to view all finance modules', () => {
+  it('allows Finance to view all finance modules', () => {
     expect(getFinanceWorkspaceModules('finance')).toEqual([
-      'order_verification', 'ledger', 'payroll', 'refunds',
-    ])
-    expect(getFinanceWorkspaceModules('owner')).toEqual([
       'order_verification', 'ledger', 'payroll', 'refunds',
     ])
   })

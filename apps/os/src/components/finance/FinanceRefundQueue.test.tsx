@@ -27,7 +27,7 @@ const completedOrder = makeOrder({
   refundReason: 'Cancelled after payment',
   refundInitiatedBy: 'Finance',
   refundInitiatedAt: '2026-07-09T10:00:00.000Z',
-  refundCompletedBy: 'Owner',
+  refundCompletedBy: 'Finance',
   refundCompletedAt: '2026-07-09T12:00:00.000Z',
 })
 
@@ -60,7 +60,7 @@ describe('FinanceRefundQueue', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Completed (1)' }))
     expect(screen.getByText('Cancelled after payment')).toBeInTheDocument()
-    expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(screen.getAllByText('Finance')).toHaveLength(2)
   })
 
   it('completes a pending refund through the guarded command', () => {
@@ -86,8 +86,8 @@ describe('FinanceRefundQueue', () => {
     expect(useOrderRuntimeStore.getState().activities['KDM-REF-001']?.[0]?.description).toBe('Refund completed by Finance')
   })
 
-  it('allows Owner to manage refunds through the same capability', () => {
-    render(
+  it('keeps Owner out of refund management', () => {
+    const { container } = render(
       <FinanceRefundQueue
         orders={[pendingOrder, completedOrder]}
         actorName="Owner"
@@ -96,8 +96,7 @@ describe('FinanceRefundQueue', () => {
       />,
     )
 
-    expect(screen.getByText('Duplicate payment')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Complete Refund' })).toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
   })
 
   it('hides refund actions when the manage-refund capability is disabled', () => {

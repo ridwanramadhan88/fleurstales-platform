@@ -8,6 +8,38 @@ export interface PublicOrderTrackingItem {
   unitPriceIdr: number
 }
 
+export interface PublicPaymentAccountSnapshot {
+  accountId: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+  type?: string
+}
+
+export interface PublicReviewQuestion {
+  id: string
+  question: string
+  displayOrder: number
+}
+
+export interface PublicSubmittedReview {
+  note?: string | null
+  submittedAt: string
+  answers: Array<{
+    questionId: string
+    question: string
+    score: number
+  }>
+}
+
+export interface PublicReviewReward {
+  percentOff: number
+  minOrderIdr: number
+  status: 'available' | 'redeemed'
+  issuedAt: string
+  redeemedAt?: string | null
+}
+
 export interface PublicOrderTrackingDetails {
   orderNumber: string
   status: OrderStatus
@@ -17,6 +49,7 @@ export interface PublicOrderTrackingDetails {
   branchAddress?: string | null
   customerName: string
   customerWhatsapp?: string | null
+  contactWhatsapp?: string | null
   deliveryAddress?: string | null
   deliveryInstructions?: string | null
   scheduleDate?: string | null
@@ -25,11 +58,16 @@ export interface PublicOrderTrackingDetails {
   requestedPickupTime?: string | null
   paymentStatus: PaymentStatus
   paymentMethod?: PaymentMethod | null
+  paymentAccountSnapshot?: PublicPaymentAccountSnapshot | null
   itemsSubtotalIdr: number
   deliveryFeeIdr: number
   discountIdr: number
   totalIdr: number
   cancellationReason?: string | null
+  reviewSubmitted?: boolean
+  reviewQuestions?: PublicReviewQuestion[]
+  review?: PublicSubmittedReview | null
+  reviewReward?: PublicReviewReward | null
   items: PublicOrderTrackingItem[]
 }
 
@@ -42,6 +80,22 @@ export interface PublicOrderStatusSummary {
   scheduleTime?: string | null
   requestedPickupDate?: string | null
   requestedPickupTime?: string | null
+}
+
+export interface TrackingAccessResult {
+  orderNumber: string
+  publicTrackingId: string
+}
+
+export interface SubmitReviewResult {
+  reviewSubmitted: true
+  reviewId: string
+  reward?: {
+    id: string
+    percentOff: number
+    minOrderIdr: number
+    status: 'available'
+  } | null
 }
 
 const getPublicClient = () => {
@@ -58,4 +112,24 @@ export const getPublicOrderTracking = async (trackingId: string): Promise<Public
 export const searchPublicOrderStatus = async (orderNumber: string): Promise<PublicOrderStatusSummary | null> =>
   getPublicClient().rpc<PublicOrderStatusSummary | null>('search_order_public_status', {
     p_order_number: orderNumber.trim(),
+  })
+
+export const verifyPublicOrderTrackingAccess = async (
+  orderNumber: string,
+  whatsappNumber: string,
+): Promise<TrackingAccessResult | null> =>
+  getPublicClient().rpc<TrackingAccessResult | null>('verify_order_tracking_access', {
+    p_order_number: orderNumber.trim(),
+    p_whatsapp_number: whatsappNumber.trim(),
+  })
+
+export const submitPublicOrderReview = async (
+  trackingId: string,
+  answers: Array<{ questionId: string; score: number }>,
+  note?: string,
+): Promise<SubmitReviewResult> =>
+  getPublicClient().rpc<SubmitReviewResult>('submit_order_review', {
+    p_tracking_id: trackingId,
+    p_answers: answers,
+    p_note: note?.trim() || null,
   })
