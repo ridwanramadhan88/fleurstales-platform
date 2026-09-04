@@ -31,6 +31,7 @@ export interface CustomersTabContentViewModel {
   selectedCustomerOrders: OrderTableRow[]
   voucherDialogOpen: boolean
   promoCustomerId: string | null
+  canEditCustomerWorkspace: boolean
   onSegmentFilterChange: (value: CustomerSegmentFilter) => void
   onSortOptionChange: (value: CustomerSortOption) => void
   onOpenProfile: (customerId: string) => void
@@ -54,7 +55,8 @@ export const useCustomersTabContentController = ({
   const removeCustomer = useCustomerStore((state) => state.removeCustomer)
   const role = useUserStore((state) => state.role)
   const permissions = useSettingsStore((state) => state.permissions)
-  const canRemoveCustomer = role === 'owner' || canEditSection(role, 'customers', permissions)
+  const canEditCustomerWorkspace = role === 'owner' || canEditSection(role, 'customers', permissions)
+  const canRemoveCustomer = canEditCustomerWorkspace
   const segmentRules = useCustomerStore((state) => state.segmentRules)
   const allOrders = useOrdersStore((state) => state.orders)
 
@@ -112,7 +114,6 @@ export const useCustomersTabContentController = ({
       : null
     : null
 
-
   const closeVoucherDialog = () => {
     setVoucherDialogOpen(false)
     setPromoCustomerId(null)
@@ -131,23 +132,29 @@ export const useCustomersTabContentController = ({
     selectedCustomerOrders,
     voucherDialogOpen,
     promoCustomerId,
+    canEditCustomerWorkspace,
     onSegmentFilterChange: setSegmentFilter,
     onSortOptionChange: setSortOption,
     onOpenProfile: setSelectedCustomerId,
     onCloseProfile: () => setSelectedCustomerId(null),
-    onOpenVoucherDialog: () => setVoucherDialogOpen(true),
+    onOpenVoucherDialog: () => {
+      if (canEditCustomerWorkspace) setVoucherDialogOpen(true)
+    },
     onCloseVoucherDialog: closeVoucherDialog,
     pendingRemoveCustomer,
     removeCustomerBlockedReason,
     canRemoveCustomer,
     onAssignPromo: (customerId) => {
+      if (!canEditCustomerWorkspace) return
       setPromoCustomerId(customerId)
       setVoucherDialogOpen(true)
     },
-    onRequestRemoveCustomer: setPendingRemoveCustomerId,
+    onRequestRemoveCustomer: (customerId) => {
+      if (canRemoveCustomer) setPendingRemoveCustomerId(customerId)
+    },
     onCancelRemoveCustomer: () => setPendingRemoveCustomerId(null),
     onConfirmRemoveCustomer: () => {
-      if (!pendingRemoveCustomerId || removeCustomerBlockedReason) return
+      if (!canRemoveCustomer || !pendingRemoveCustomerId || removeCustomerBlockedReason) return
       removeCustomer(pendingRemoveCustomerId)
       setPendingRemoveCustomerId(null)
       setSelectedCustomerId((current) => current === pendingRemoveCustomerId ? null : current)
