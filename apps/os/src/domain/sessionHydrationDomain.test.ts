@@ -39,8 +39,8 @@ describe('canHydrateCustomersForRole', () => {
     expect(canHydrateCustomersForRole('finance', DEFAULT_ROLE_SECTION_ACCESS, DEFAULT_ACTION_PERMISSIONS)).toBe(true)
   })
 
-  it('does not hydrate HR', () => {
-    expect(canHydrateCustomersForRole('hr', DEFAULT_ROLE_SECTION_ACCESS, DEFAULT_ACTION_PERMISSIONS)).toBe(false)
+  it('hydrates HR because HR can now view Customers', () => {
+    expect(canHydrateCustomersForRole('hr', DEFAULT_ROLE_SECTION_ACCESS, DEFAULT_ACTION_PERMISSIONS)).toBe(true)
   })
 
   it('hydrates Admin when Customers is hidden but order creation is still allowed', () => {
