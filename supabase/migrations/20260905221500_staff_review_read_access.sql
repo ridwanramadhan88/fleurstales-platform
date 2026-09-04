@@ -22,9 +22,11 @@ set revision = revision + 1,
     updated_at = now()
 where id = 'primary';
 
--- Order read scope stays driven by the backend capability matrix. Staff with
--- orders.read_all can read their configured scope; Admin remains branch-scoped.
--- The assigned-order capability remains the only path for Florist reads.
+-- Read visibility and operational branch ownership are deliberately separate.
+-- Anyone with orders.read_all reads company-wide (Owner/Admin/Finance/HR).
+-- Admin branch restrictions remain enforced by order mutation/processing RPCs.
+-- Florist reads remain assigned-employee-only, including intentional cross-branch
+-- assignments; branch membership must not hide an explicitly assigned order.
 create or replace function private.can_read_order_row(
   p_branch_id text,
   p_florist_employee_id text
@@ -36,21 +38,18 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_role text := private.current_staff_role();
-  v_branch_id text := private.current_staff_branch_id();
   v_employee_id text := private.current_staff_employee_id();
 begin
+  -- p_branch_id is retained in the signature because existing RLS policies and
+  -- callers pass it, but branch is not part of the read-visibility decision.
+  perform p_branch_id;
+
   if private.has_action_permission('orders.read_all') then
-    if v_role = 'admin' then
-      return v_branch_id is not null and v_branch_id = p_branch_id;
-    end if;
     return true;
   end if;
 
   if private.has_action_permission('orders.read_assigned') then
-    return v_branch_id is not null
-      and v_branch_id = p_branch_id
-      and v_employee_id is not null
+    return v_employee_id is not null
       and v_employee_id = p_florist_employee_id;
   end if;
 
@@ -73,8 +72,8 @@ for select to authenticated
 using (private.has_section_access('customers', 'view'));
 
 -- Payment-event reads require the configured all-orders capability and then
--- reuse the same row-scope helper. This intentionally excludes assigned-only
--- Florist access while allowing Owner/Admin/Finance/HR according to config.
+-- reuse the same company-wide read helper. This intentionally excludes
+-- assigned-only Florist access while allowing Owner/Admin/Finance/HR.
 drop policy if exists order_payments_staff_read on public.order_payment_events;
 create policy order_payments_staff_read on public.order_payment_events
 for select to authenticated
