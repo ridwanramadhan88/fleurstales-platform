@@ -16,6 +16,14 @@ describe('section access', () => {
     },
   )
 
+  it.each(['owner', 'admin', 'finance', 'hr'] as UserRole[])(
+    '%s can read Orders and Customers',
+    (role) => {
+      expect(canAccessSection(role, 'orders')).toBe(true)
+      expect(canAccessSection(role, 'customers')).toBe(true)
+    },
+  )
+
   it('gives HR read-only access to Orders and Customers', () => {
     expect(canAccessSection('hr', 'orders')).toBe(true)
     expect(canEditSection('hr', 'orders')).toBe(false)
