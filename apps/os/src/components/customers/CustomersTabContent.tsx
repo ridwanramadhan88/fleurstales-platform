@@ -24,6 +24,7 @@ import { CustomerProfileDrawer } from './CustomerProfileDrawer'
 import { CustomerVoucherDialogContainer } from './CustomerVoucherDialogContainer'
 import { CustomerSegmentRulesSettingsContainer } from './CustomerSegmentRulesSettingsContainer'
 import { ReviewPromoSettings } from './ReviewPromoSettings'
+import { StaffReviewHistory } from './StaffReviewHistory'
 import type { CustomersTabContentViewModel } from './CustomersTabContentController'
 
 export interface CustomersTabContentProps {
@@ -44,6 +45,7 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
   selectedCustomerOrders,
   voucherDialogOpen,
   promoCustomerId,
+  canEditCustomerWorkspace,
   onSegmentFilterChange,
   onSortOptionChange,
   onOpenProfile,
@@ -67,14 +69,16 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
               Customers
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={onOpenVoucherDialog}
-            className="tap-scale inline-flex w-full shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 sm:w-auto rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
-          >
-            <Ticket className="size-4" />
-            Manage vouchers
-          </button>
+          {canEditCustomerWorkspace && (
+            <button
+              type="button"
+              onClick={onOpenVoucherDialog}
+              className="tap-scale inline-flex w-full shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 sm:w-auto rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+            >
+              <Ticket className="size-4" />
+              Manage vouchers
+            </button>
+          )}
         </header>
 
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
@@ -99,6 +103,7 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
 
       <CustomerSegmentRulesSettingsContainer />
       <ReviewPromoSettings />
+      <StaffReviewHistory title="Customer reviews" />
 
       <CustomerFiltersBar
         segmentFilter={segmentFilter}
@@ -123,7 +128,7 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
                 customer={item.profile}
                 metrics={item.metrics}
                 onOpenProfile={() => onOpenProfile(item.profile.id)}
-                onAssignPromo={() => onAssignPromo(item.profile.id)}
+                onAssignPromo={canEditCustomerWorkspace ? () => onAssignPromo(item.profile.id) : undefined}
                 onRemove={canRemoveCustomer ? () => onRequestRemoveCustomer(item.profile.id) : undefined}
               />
             ))}
@@ -137,28 +142,32 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
           metrics={selectedEnriched.metrics}
           orders={selectedCustomerOrders}
           onClose={onCloseProfile}
-          onAssignPromo={() => onAssignPromo(selectedEnriched.profile.id)}
+          onAssignPromo={canEditCustomerWorkspace ? () => onAssignPromo(selectedEnriched.profile.id) : undefined}
         />
       )}
 
-      <ConfirmActionDialog
-        open={Boolean(pendingRemoveCustomer)}
-        onOpenChange={(open) => { if (!open) onCancelRemoveCustomer() }}
-        title="Remove customer?"
-        description={pendingRemoveCustomer ? `${pendingRemoveCustomer.profile.name} · WhatsApp ${pendingRemoveCustomer.profile.whatsappNumber} · ${pendingRemoveCustomer.metrics.orderCount} historical orders. Existing orders and customer snapshots will remain unchanged.` : ''}
-        confirmLabel="Remove customer"
-        destructive
-        onConfirm={onConfirmRemoveCustomer}
-        disabled={Boolean(removeCustomerBlockedReason)}
-      >
-        {removeCustomerBlockedReason && <p className="rounded-xl bg-warning/10 p-3 text-sm text-warning ring-1 ring-warning/25">{removeCustomerBlockedReason}</p>}
-      </ConfirmActionDialog>
+      {canRemoveCustomer && (
+        <ConfirmActionDialog
+          open={Boolean(pendingRemoveCustomer)}
+          onOpenChange={(open) => { if (!open) onCancelRemoveCustomer() }}
+          title="Remove customer?"
+          description={pendingRemoveCustomer ? `${pendingRemoveCustomer.profile.name} · WhatsApp ${pendingRemoveCustomer.profile.whatsappNumber} · ${pendingRemoveCustomer.metrics.orderCount} historical orders. Existing orders and customer snapshots will remain unchanged.` : ''}
+          confirmLabel="Remove customer"
+          destructive
+          onConfirm={onConfirmRemoveCustomer}
+          disabled={Boolean(removeCustomerBlockedReason)}
+        >
+          {removeCustomerBlockedReason && <p className="rounded-xl bg-warning/10 p-3 text-sm text-warning ring-1 ring-warning/25">{removeCustomerBlockedReason}</p>}
+        </ConfirmActionDialog>
+      )}
 
-      <CustomerVoucherDialogContainer
-        open={voucherDialogOpen}
-        onClose={onCloseVoucherDialog}
-        initialCustomerId={promoCustomerId}
-      />
+      {canEditCustomerWorkspace && (
+        <CustomerVoucherDialogContainer
+          open={voucherDialogOpen}
+          onClose={onCloseVoucherDialog}
+          initialCustomerId={promoCustomerId}
+        />
+      )}
     </section>
   )
 }
