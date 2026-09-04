@@ -79,7 +79,14 @@ export interface FinanceCustomCategory {
 
 export type FinancePaymentMethod = 'cash' | 'transfer' | 'card' | 'other'
 export type FinanceTransactionStatus = 'pending' | 'verified' | 'rejected'
-export type FinanceTransactionSource = 'manual' | 'order_payment' | 'order_refund' | 'payroll'
+export type FinanceTransactionSource =
+  | 'manual'
+  | 'order_payment'
+  | 'order_refund'
+  | 'payroll'
+  | 'opening_balance'
+  | 'adjustment'
+  | 'transfer'
 
 export interface FinanceTransactionEditRecord {
   revision: number
@@ -91,6 +98,7 @@ export interface FinanceTransactionEditRecord {
     category: FinanceCategory
     branch: BranchId
     scope?: FinanceTransactionScope
+    accountId?: string
     amount: number
     method: FinancePaymentMethod
     name?: string
@@ -106,6 +114,8 @@ export interface FinanceTransaction {
   category: FinanceCategory
   branch: BranchId
   scope?: FinanceTransactionScope
+  /** Financial account/cash source affected by this ledger row. */
+  accountId?: string
   amount: number
   method: FinancePaymentMethod
   status: FinanceTransactionStatus
@@ -124,6 +134,11 @@ export interface FinanceTransaction {
   groupKey?: string
   groupLabel?: string
   manualEntryReason?: string
+  /** Required correction reason for adjustment entries. */
+  adjustmentReason?: string
+  /** Linked transfer identity. Both legs share one transferId. */
+  transferId?: string
+  transferDirection?: 'out' | 'in'
   /** Data-quality issue that keeps an automatic transaction pending. */
   dataWarning?: string
   sourceEventId?: string
