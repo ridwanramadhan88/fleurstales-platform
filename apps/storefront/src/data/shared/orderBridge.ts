@@ -20,6 +20,25 @@ interface SaveOrderOperationalStateResult {
   updatedAt: string
 }
 
+interface OrderWorkflowMetadataRow {
+  id: string
+  finance_reference_code: string | null
+  cancellation_reason: string | null
+  cancelled_by: string | null
+  cancelled_at: string | null
+}
+
+const withWorkflowMetadata = (
+  order: OrderTableRow,
+  metadata: OrderWorkflowMetadataRow | undefined,
+): OrderTableRow => ({
+  ...order,
+  financeReferenceCode: metadata?.finance_reference_code ?? undefined,
+  cancellationReason: metadata?.cancellation_reason ?? undefined,
+  cancelledBy: metadata?.cancelled_by ?? undefined,
+  cancelledAt: metadata?.cancelled_at ?? undefined,
+})
+
 const orderStatePayload = (order: OrderTableRow): Json => ({
   customer_id: order.customerId ?? null,
   customer_name_snapshot: order.customerSnapshot?.name ?? order.customerName,
@@ -143,8 +162,16 @@ export const refreshBusinessOsOrdersFromRemote = async (): Promise<boolean> => {
   }
 
   try {
-    const orders = await shared.repositories.ordersAdmin.listOrders()
-    const mapped = orders.map(sharedOrderToOrderTableRow)
+    const [orders, workflowRows] = await Promise.all([
+      shared.repositories.ordersAdmin.listOrders(),
+      shared.repositories.client.select('orders', {
+        select: 'id,finance_reference_code,cancellation_reason,cancelled_by,cancelled_at',
+      }) as unknown as Promise<OrderWorkflowMetadataRow[]>,
+    ])
+    const workflowById = new Map(workflowRows.map((row) => [row.id, row]))
+    const mapped = orders.map((order) =>
+      withWorkflowMetadata(sharedOrderToOrderTableRow(order), workflowById.get(order.id)),
+    )
     useOrdersStore.setState((state) => ({
       ...state,
       orders: mapped,
@@ -157,9 +184,16 @@ export const refreshBusinessOsOrdersFromRemote = async (): Promise<boolean> => {
     const inFlight = new Set<string>()
 
     const refreshConflictedOrder = async (id: string): Promise<void> => {
-      const remote = await shared.repositories.ordersAdmin.getOrder(id)
+      const [remote, metadataRows] = await Promise.all([
+        shared.repositories.ordersAdmin.getOrder(id),
+        shared.repositories.client.select('orders', {
+          select: 'id,finance_reference_code,cancellation_reason,cancelled_by,cancelled_at',
+          filters: { id },
+          limit: 1,
+        }) as unknown as Promise<OrderWorkflowMetadataRow[]>,
+      ])
       if (!remote || generation !== syncGeneration) return
-      const mappedRemote = sharedOrderToOrderTableRow(remote)
+      const mappedRemote = withWorkflowMetadata(sharedOrderToOrderTableRow(remote), metadataRows[0])
       confirmedRevisions.set(id, mappedRemote.revision ?? 1)
       useOrdersStore.setState((state) => ({
         ...state,

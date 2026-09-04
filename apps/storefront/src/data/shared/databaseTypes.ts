@@ -286,6 +286,7 @@ export interface OrderRow {
   order_number: string
   revision: number
   storefront_idempotency_key: string | null
+  public_tracking_id: string
   customer_id: string | null
   customer_name_snapshot: string
   customer_whatsapp_snapshot: string | null
@@ -340,6 +341,7 @@ export interface OrderRow {
   admin_handled_employee_id: string | null
   admin_handled_by_name: string | null
   completed_at: string | null
+  finance_reference_code: string | null
   finance_verified: boolean
   finance_verified_by: string | null
   finance_verified_at: string | null
@@ -351,6 +353,9 @@ export interface OrderRow {
   finance_resubmitted_at: string | null
   finance_resubmission_note: string | null
   finance_submission_revision: number | null
+  cancellation_reason: string | null
+  cancelled_by: string | null
+  cancelled_at: string | null
   pending_change_request: Json | null
   edit_unlocked: boolean
   created_at: string

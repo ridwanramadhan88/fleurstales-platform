@@ -466,7 +466,8 @@ export interface CreateInternalOrderResult {
 export interface CreateStorefrontOrderResult {
   orderId: string
   orderNumber: string
-  publicTrackingId: string
+  /** Present for real Supabase checkout results; local simulation may omit it. */
+  publicTrackingId?: string
   customerId: string
   itemsSubtotalIdr: number
   deliveryFeeIdr: number

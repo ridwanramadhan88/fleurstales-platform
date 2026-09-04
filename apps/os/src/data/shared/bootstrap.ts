@@ -20,6 +20,7 @@ import {
 } from './repositories'
 import { resolveSupabaseConfig, type SupabaseConfigState } from './supabaseConfig'
 import { SupabaseHttpClient, type SupabaseAuthTokenProvider } from './supabaseHttpClient'
+import { rememberStorefrontCheckoutResult } from './storefrontCheckoutResult'
 
 export interface SharedDataRepositorySet {
   client: SupabaseHttpClient
@@ -53,7 +54,7 @@ export const bootstrapSharedData = (tokenProvider?: SupabaseAuthTokenProvider): 
       storeAdmin: createStoreAdminRepository(client),
       customersAdmin: createCustomerAdminRepository(client),
       ordersAdmin: createOrdersAdminRepository(client),
-      checkout: createStorefrontCheckoutRepository(client),
+      checkout: rememberStorefrontCheckoutResult(createStorefrontCheckoutRepository(client)),
       staffAccess: createStaffAccessRepository(client),
     },
   }
