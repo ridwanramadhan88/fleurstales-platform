@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import { useEffect, type FC } from 'react'
 import {
   Select,
   SelectContent,
@@ -8,12 +8,6 @@ import {
 } from '../ui/select'
 import type { NewOrderSheetViewModel } from './NewOrderSheetController'
 import { isCashAllowedForFulfillment } from '../../domain/orderPaymentGateDomain'
-
-/**
- * @description "Payment" card of the New Order sheet: payment method,
- * payment status, and (when partially paid) the deposit amount. Split out of
- * `NewOrderPaymentSection.tsx`.
- */
 
 interface NewOrderPaymentDetailsSectionProps {
   viewModel: NewOrderSheetViewModel
@@ -31,11 +25,19 @@ export const NewOrderPaymentDetailsSection: FC<NewOrderPaymentDetailsSectionProp
     errors,
     activeGuideField,
     activeGuideSection,
-    onCurrencyFieldChange,
     onPaymentMethodChange,
     onPaymentStatusChange,
+    onFieldValueChange,
     onSectionFocus,
   } = viewModel
+
+  // Partial/deposit payment remains readable in legacy order types, but new
+  // Admin-created orders always start unpaid. Full payment is verified during
+  // Process Order immediately before production starts.
+  useEffect(() => {
+    if (values.paymentStatus !== 'unpaid') onPaymentStatusChange('unpaid')
+    if (values.depositAmount) onFieldValueChange('depositAmount', '')
+  }, [onFieldValueChange, onPaymentStatusChange, values.depositAmount, values.paymentStatus])
 
   return (
     <section
@@ -48,82 +50,30 @@ export const NewOrderPaymentDetailsSection: FC<NewOrderPaymentDetailsSectionProp
       <h3 className="text-sm font-semibold leading-5 text-foreground">Payment</h3>
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <label htmlFor="paymentMethod" className="text-xs font-medium text-muted-foreground">
-            Payment method
-          </label>
+          <label htmlFor="paymentMethod" className="text-xs font-medium text-muted-foreground">Payment method</label>
           <Select
             value={values.paymentMethod}
             disabled={values.fulfillmentType === 'delivery'}
             onValueChange={(value) => onPaymentMethodChange(value as 'cash' | 'transfer')}
           >
-            <SelectTrigger
-              id="paymentMethod"
-              className={fieldClass(activeGuideField === 'paymentMethod')}
-            >
+            <SelectTrigger id="paymentMethod" className={fieldClass(activeGuideField === 'paymentMethod')}>
               <SelectValue placeholder="Choose method" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem
-                value="cash"
-                disabled={!isCashAllowedForFulfillment(values.fulfillmentType || 'pickup')}
-              >
-                Cash
-              </SelectItem>
+              <SelectItem value="cash" disabled={!isCashAllowedForFulfillment(values.fulfillmentType || 'pickup')}>Cash</SelectItem>
               <SelectItem value="transfer">Transfer</SelectItem>
             </SelectContent>
           </Select>
-          {values.fulfillmentType === 'delivery' && (
-            <p className="text-2xs text-muted-foreground">
-              Delivery orders are bank transfer only.
-            </p>
-          )}
-          {errors.paymentMethod && (
-            <p className="text-xs text-destructive">{errors.paymentMethod}</p>
-          )}
+          {values.fulfillmentType === 'delivery' && <p className="text-2xs text-muted-foreground">Delivery orders are bank transfer only.</p>}
+          {errors.paymentMethod && <p className="text-xs text-destructive">{errors.paymentMethod}</p>}
         </div>
+
         <div className="space-y-1.5">
-          <label htmlFor="paymentStatus" className="text-xs font-medium text-muted-foreground">
-            Payment status
-          </label>
-          <Select
-            value={values.paymentStatus}
-            onValueChange={(value) =>
-              onPaymentStatusChange(value as 'unpaid' | 'partial' | 'paid')
-            }
-          >
-            <SelectTrigger
-              id="paymentStatus"
-              className={fieldClass(activeGuideField === 'paymentStatus')}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unpaid">Unpaid</SelectItem>
-              <SelectItem value="partial">Partial</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-            </SelectContent>
-          </Select>
+          <span className="text-xs font-medium text-muted-foreground">Payment status</span>
+          <div className="flex h-11 items-center rounded-full border border-border bg-background px-4 text-sm font-medium">Unpaid</div>
+          <p className="text-2xs text-muted-foreground">Confirm the full payment when you Process Order before production starts.</p>
         </div>
       </div>
-      {values.paymentStatus === 'partial' && (
-        <div className="space-y-1.5">
-          <label htmlFor="depositAmount" className="text-xs font-medium text-muted-foreground">
-            Deposit amount (IDR)
-          </label>
-          <input
-            id="depositAmount"
-            type="text"
-            inputMode="numeric"
-            value={values.depositAmount}
-            onChange={(event) => onCurrencyFieldChange('depositAmount', event.target.value)}
-            className={fieldClass(activeGuideField === 'depositAmount')}
-            placeholder="e.g. 200000"
-          />
-          {errors.depositAmount && (
-            <p className="text-xs text-destructive">{errors.depositAmount}</p>
-          )}
-        </div>
-      )}
     </section>
   )
 }
