@@ -77,7 +77,7 @@ export const useTopBarController = ({
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const canSwitchBranch = true;
   const branchDisplayLabel =
-    activeBranch === "All" && (userRole === "admin" || userRole === "florist")
+    activeBranch === "All" && userRole === "florist"
       ? "Select branch"
       : activeBranch;
 
@@ -154,10 +154,7 @@ export const useTopBarController = ({
     searchEnabled: showSearch && Boolean(onSearchQueryChange),
     today,
     branches: getBranchFilterOptions({ branches: settingsBranches }).filter(
-      (branch) =>
-        userRole === "admin" || userRole === "florist"
-          ? branch !== "All"
-          : true,
+      (branch) => userRole === "florist" ? branch !== "All" : true,
     ),
     userName,
     roleLabel: getRoleLabel(userRole),
