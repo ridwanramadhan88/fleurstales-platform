@@ -3,6 +3,7 @@ import {
   getFinanceWorkspaceModules,
 } from './financeWorkspaceDomain'
 
+// Regression boundary: the Finance workspace is intentionally Finance-only.
 describe('finance workspace privacy', () => {
   it('keeps non-Finance roles out of Finance', () => {
     expect(getFinanceWorkspaceModules('owner')).toEqual([])
