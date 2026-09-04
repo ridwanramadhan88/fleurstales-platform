@@ -59,8 +59,8 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'orders.edit', label:'Edit Active Orders', description:'Edit operational order details before workflow locks apply.', parentSection:'orders', group:'Orders' },
   { id:'orders.assign', label:'Assign Florists', description:'Assign or reassign a florist to an order.', parentSection:'orders', group:'Orders' },
   { id:'orders.advance_status', label:'Advance Order Status', description:'Move an order through its permitted fulfillment workflow.', parentSection:'orders', group:'Orders' },
-  { id:'orders.submit_change_request', label:'Request Locked Changes', description:'Submit edit or cancellation requests for Finance review.', parentSection:'orders', group:'Orders' },
-  { id:'orders.resolve_change_request', label:'Resolve Order Change Requests', description:'Approve or reject locked-order change requests.', parentSection:'finance', group:'Orders' },
+  { id:'orders.submit_change_request', label:'Request Locked Changes', description:'Submit edit or cancellation requests for locked orders.', parentSection:'orders', group:'Orders' },
+  { id:'orders.resolve_change_request', label:'Resolve Order Change Requests', description:'Approve or reject locked-order change requests.', parentSection:'orders', group:'Orders' },
   { id:'finance.view_order_verification', label:'View Order Reconciliation', description:'View paid orders and their production completion state.', parentSection:'finance', group:'Finance' },
   { id:'finance.verify_order', label:'Legacy Order Verification', description:'Deprecated. New order payments post when Admin starts Processing.', parentSection:'finance', group:'Finance' },
   { id:'finance.view_payroll', label:'View Payroll', description:'View payroll proposals.', parentSection:'finance', group:'Finance' },
@@ -96,7 +96,7 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
 const allFalse = () => Object.fromEntries(CAPABILITY_REGISTRY.map(({id}) => [id, false])) as Record<ActionCapability, boolean>
 const withEnabled = (...ids: ActionCapability[]) => ({ ...allFalse(), ...Object.fromEntries(ids.map((id)=>[id,true])) })
 const OWNER_DEFAULT_CAPABILITIES = CAPABILITY_REGISTRY
-  .filter((definition) => definition.group !== 'Finance' && definition.id !== 'orders.resolve_change_request')
+  .filter((definition) => definition.group !== 'Finance')
   .map((definition) => definition.id)
 
 export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
@@ -115,7 +115,7 @@ export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
   'orders.assign': ['owner','admin'],
   'orders.advance_status': ['owner','admin'],
   'orders.submit_change_request': ['owner','admin'],
-  'orders.resolve_change_request': ['finance'],
+  'orders.resolve_change_request': ['owner','finance'],
   'finance.view_order_verification': ['finance'],
   'finance.verify_order': [],
   'finance.view_payroll': ['finance'],
