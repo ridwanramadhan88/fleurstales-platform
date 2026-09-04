@@ -103,12 +103,12 @@ export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
   owner: withEnabled(...OWNER_DEFAULT_CAPABILITIES),
   admin: withEnabled('orders.read_all','orders.create','orders.edit','orders.assign','orders.advance_status','orders.submit_change_request'),
   finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry'),
-  hr: withEnabled('hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
+  hr: withEnabled('orders.read_all','hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
 }
 
 export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
-  'orders.read_all': ['owner','admin','finance'],
+  'orders.read_all': ['owner','admin','finance','hr'],
   'orders.read_assigned': ['owner','florist'],
   'orders.create': ['owner','admin'],
   'orders.edit': ['owner','admin'],
