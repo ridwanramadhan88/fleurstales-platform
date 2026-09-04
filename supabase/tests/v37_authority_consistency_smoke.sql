@@ -61,12 +61,21 @@ end $$;
 
 do $$
 declare
-  v_hr_source text;
+  v_hr_wrapper_source text;
+  v_hr_internal_source text;
 begin
-  select pg_get_functiondef('public.save_hr_operational_state(bigint,jsonb)'::regprocedure) into v_hr_source;
-  if position('employeePointEntries' in v_hr_source)=0
-     or position('employee_point_events' in v_hr_source)=0 then
-    raise exception 'Generic HR save does not project normalized employee-point authority';
+  select pg_get_functiondef('public.save_hr_operational_state(bigint,jsonb)'::regprocedure)
+  into v_hr_wrapper_source;
+  if position('save_hr_operational_state_unchecked' in v_hr_wrapper_source)=0
+     or position('mutation_conflict_circuit_is_blocked' in v_hr_wrapper_source)=0 then
+    raise exception 'Guarded HR save lost delegation or conflict circuit';
+  end if;
+
+  select pg_get_functiondef('public.save_hr_operational_state_unchecked(bigint,jsonb)'::regprocedure)
+  into v_hr_internal_source;
+  if position('employeePointEntries' in v_hr_internal_source)=0
+     or position('employee_point_events' in v_hr_internal_source)=0 then
+    raise exception 'HR authority no longer projects normalized employee-point events';
   end if;
 end $$;
 
