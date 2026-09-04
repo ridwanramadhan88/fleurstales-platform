@@ -162,7 +162,7 @@ jobs:
           fi
           echo "STOREFRONT_DEPLOYMENT_URL=$deployment_url" >> "$GITHUB_ENV"
           npx -y vercel@59.11.2 inspect "$deployment_url" --wait --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
-          npx -y vercel@59.11.2 --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" curl / --deployment "$deployment_url" >/dev/null
+          npx -y vercel@59.11.2 curl / --deployment "$deployment_url" >/dev/null
           echo "Storefront staged: $deployment_url"
 
       - name: Stage Business OS with production environment
@@ -179,7 +179,7 @@ jobs:
           fi
           echo "OS_DEPLOYMENT_URL=$deployment_url" >> "$GITHUB_ENV"
           npx -y vercel@59.11.2 inspect "$deployment_url" --wait --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
-          npx -y vercel@59.11.2 --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" curl / --deployment "$deployment_url" >/dev/null
+          npx -y vercel@59.11.2 curl / --deployment "$deployment_url" >/dev/null
           echo "Business OS staged: $deployment_url"
 
       - name: Install PostgreSQL client
@@ -210,14 +210,14 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OS_PROJECT_ID }}
         run: |
           npx -y vercel@59.11.2 promote "$OS_DEPLOYMENT_URL" --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
-          npx -y vercel@59.11.2 --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" curl / --deployment "$OS_DEPLOYMENT_URL" >/dev/null
+          npx -y vercel@59.11.2 curl / --deployment "$OS_DEPLOYMENT_URL" >/dev/null
 
       - name: Promote exact Storefront deployment
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STOREFRONT_PROJECT_ID }}
         run: |
           npx -y vercel@59.11.2 promote "$STOREFRONT_DEPLOYMENT_URL" --yes --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
-          npx -y vercel@59.11.2 --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" curl / --deployment "$STOREFRONT_DEPLOYMENT_URL" >/dev/null
+          npx -y vercel@59.11.2 curl / --deployment "$STOREFRONT_DEPLOYMENT_URL" >/dev/null
 
       - name: Release summary
         shell: bash
