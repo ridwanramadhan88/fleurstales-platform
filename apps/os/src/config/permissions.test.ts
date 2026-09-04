@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { canAccessSection, canEditSection } from './permissions'
 import type { UserRole } from '../store/userStore'
 
-describe('settings section access', () => {
+describe('section access', () => {
   it('grants Owner full access to Settings', () => {
     expect(canAccessSection('owner', 'settings')).toBe(true)
     expect(canEditSection('owner', 'settings')).toBe(true)
@@ -15,4 +15,18 @@ describe('settings section access', () => {
       expect(canEditSection(role, 'settings')).toBe(false)
     },
   )
+
+  it('gives HR read-only access to Orders and Customers', () => {
+    expect(canAccessSection('hr', 'orders')).toBe(true)
+    expect(canEditSection('hr', 'orders')).toBe(false)
+    expect(canAccessSection('hr', 'customers')).toBe(true)
+    expect(canEditSection('hr', 'customers')).toBe(false)
+  })
+
+  it('keeps Finance Orders and Customers read-only', () => {
+    expect(canAccessSection('finance', 'orders')).toBe(true)
+    expect(canEditSection('finance', 'orders')).toBe(false)
+    expect(canAccessSection('finance', 'customers')).toBe(true)
+    expect(canEditSection('finance', 'customers')).toBe(false)
+  })
 })
