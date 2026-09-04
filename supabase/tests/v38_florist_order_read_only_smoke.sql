@@ -3,7 +3,8 @@ do $$
 declare
   v_allowed_roles text[];
   v_enabled boolean;
-  v_source text;
+  v_wrapper_source text;
+  v_internal_source text;
 begin
   select allowed_roles into v_allowed_roles
   from private.action_capability_registry
@@ -28,10 +29,19 @@ begin
 
   select pg_get_functiondef(
     'public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)'::regprocedure
-  ) into v_source;
+  ) into v_wrapper_source;
 
-  if position('FLORIST_ORDER_READ_ONLY' in v_source) = 0 then
-    raise exception 'Public Order writer does not reject Florist mutations';
+  if position('save_order_operational_state_unchecked' in v_wrapper_source) = 0
+     or position('mutation_conflict_circuit_is_blocked' in v_wrapper_source) = 0 then
+    raise exception 'Guarded public Order writer lost delegation or conflict circuit';
+  end if;
+
+  select pg_get_functiondef(
+    'public.save_order_operational_state_unchecked(text,integer,integer,jsonb,jsonb,jsonb)'::regprocedure
+  ) into v_internal_source;
+
+  if position('FLORIST_ORDER_READ_ONLY' in v_internal_source) = 0 then
+    raise exception 'Unchecked Order authority does not reject Florist mutations';
   end if;
 
   if has_function_privilege(
@@ -40,6 +50,14 @@ begin
     'EXECUTE'
   ) then
     raise exception 'Authenticated can execute the V3.7 internal writer directly';
+  end if;
+
+  if has_function_privilege(
+    'authenticated',
+    'public.save_order_operational_state_unchecked(text,integer,integer,jsonb,jsonb,jsonb)',
+    'EXECUTE'
+  ) then
+    raise exception 'Authenticated can bypass the guarded Order writer';
   end if;
 
   if not has_function_privilege(
