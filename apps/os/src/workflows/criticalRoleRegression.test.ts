@@ -31,10 +31,7 @@ afterEach(() => {
 })
 
 describe('critical role workflow regression coverage', () => {
-
-
-
-  it('Finance verifies an eligible paid order and creates the commercial lock', () => {
+  it('Finance cannot use the retired second order-verification workflow', () => {
     useOrdersStore.setState({
       orders: [makeOrder({
         orderNumber: 'FINANCE-FLOW',
@@ -53,14 +50,11 @@ describe('critical role workflow regression coverage', () => {
       actor: finance,
     })
 
-    expect(result.allowed).toBe(true)
-    expect(useOrdersStore.getState().orders[0]).toMatchObject({
-      financeVerified: true,
-      financeVerifiedBy: finance.name,
-    })
+    expect(result.allowed).toBe(false)
+    expect(useOrdersStore.getState().orders[0].financeVerified).toBe(false)
   })
 
-  it('Admin cannot directly edit a Finance-verified locked order', () => {
+  it('Admin cannot directly edit a Finance-verified locked legacy order', () => {
     useOrdersStore.setState({
       orders: [makeOrder({
         orderNumber: 'LOCKED-FLOW',
