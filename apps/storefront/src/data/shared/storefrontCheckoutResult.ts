@@ -5,6 +5,9 @@ const STOREFRONT_NAVIGATION_EVENT = 'fleurstales:storefront-navigation'
 
 let latestCreatedOrder: CreateStorefrontOrderResult | null = null
 
+export const buildStorefrontTrackingPath = (orderNumber: string, publicTrackingId: string): string =>
+  `/track/${encodeURIComponent(orderNumber)}?key=${encodeURIComponent(publicTrackingId)}`
+
 export const rememberStorefrontCheckoutResult = (
   repository: StorefrontCheckoutRepository,
 ): StorefrontCheckoutRepository => ({
@@ -13,7 +16,7 @@ export const rememberStorefrontCheckoutResult = (
     const result = await repository.createOrder(input)
     latestCreatedOrder = result
     if (result.publicTrackingId && typeof window !== 'undefined') {
-      const path = `/order/${encodeURIComponent(result.publicTrackingId)}`
+      const path = buildStorefrontTrackingPath(result.orderNumber, result.publicTrackingId)
       queueMicrotask(() => {
         window.dispatchEvent(new CustomEvent(STOREFRONT_NAVIGATION_EVENT, { detail: { path } }))
       })
