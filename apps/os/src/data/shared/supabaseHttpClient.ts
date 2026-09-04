@@ -42,6 +42,15 @@ const buildQuery = (options: SupabaseSelectOptions = {}): string => {
   return params.toString()
 }
 
+// These mutation entrypoints were renamed after a production conflict storm.
+// Keeping the mapping here means every current caller uses the guarded RPCs,
+// while stale browser tabs that still call the retired names are rejected by
+// Postgres before they can execute the expensive mutation logic.
+const GUARDED_RPC_NAMES: Record<string, string> = {
+  save_hr_operational_state: 'save_hr_operational_state_guarded',
+  save_order_operational_state: 'save_order_operational_state_guarded',
+}
+
 export class SupabaseHttpClient {
   constructor(
     private readonly config: SupabasePublicConfig,
@@ -117,7 +126,8 @@ export class SupabaseHttpClient {
   }
 
   async rpc<T>(functionName: string, args: Record<string, Json | undefined>): Promise<T> {
-    return this.request<T>(`/rest/v1/rpc/${functionName}`, {
+    const rpcName = GUARDED_RPC_NAMES[functionName] ?? functionName
+    return this.request<T>(`/rest/v1/rpc/${rpcName}`, {
       method: 'POST',
       body: JSON.stringify(args),
     })

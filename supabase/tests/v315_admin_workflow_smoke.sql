@@ -4,7 +4,8 @@ do $$
 declare
   v_runtime_source text;
   v_create_source text;
-  v_save_source text;
+  v_save_wrapper_source text;
+  v_save_internal_source text;
   v_trigger_source text;
 begin
   if not has_function_privilege('authenticated','public.set_staff_runtime_context(text,text,date)','EXECUTE')
@@ -20,6 +21,11 @@ begin
   if not has_function_privilege('authenticated','public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE')
      or has_function_privilege('anon','public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE') then
     raise exception 'Order-state RPC grants are incorrect';
+  end if;
+
+  if has_function_privilege('authenticated','public.save_order_operational_state_unchecked(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE')
+     or has_function_privilege('anon','public.save_order_operational_state_unchecked(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE') then
+    raise exception 'Authenticated clients can bypass the guarded order-state wrapper';
   end if;
 
   if has_function_privilege('authenticated','private.on_order_created_event()','EXECUTE')
@@ -41,11 +47,18 @@ begin
     raise exception 'Internal-order confirmation wrapper is incomplete';
   end if;
 
-  select pg_get_functiondef('public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)'::regprocedure) into v_save_source;
-  if position('save_order_operational_state_v37_internal' in v_save_source)=0
-     or position('ORDER_STATUS_SEQUENCE_REQUIRED' in v_save_source)=0
-     or position('Ready for reconciliation' in v_save_source)=0 then
-    raise exception 'Order sequence or Finance handoff wrapper is incomplete';
+  select pg_get_functiondef('public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)'::regprocedure) into v_save_wrapper_source;
+  if position('save_order_operational_state_unchecked' in v_save_wrapper_source)=0
+     or position('mutation_conflict_circuit_is_blocked' in v_save_wrapper_source)=0 then
+    raise exception 'Guarded order-state wrapper lost delegation or conflict circuit';
+  end if;
+
+  select pg_get_functiondef('public.save_order_operational_state_unchecked(text,integer,integer,jsonb,jsonb,jsonb)'::regprocedure) into v_save_internal_source;
+  if position('save_order_operational_state_v37_internal' in v_save_internal_source)=0 then
+    raise exception 'Unchecked order authority lost v37 delegation';
+  end if;
+  if position('ORDER_STATUS_SEQUENCE_REQUIRED' in v_save_internal_source)=0 then
+    raise exception 'Unchecked order authority lost status sequencing';
   end if;
 
   select pg_get_functiondef('private.on_order_created_event()'::regprocedure) into v_trigger_source;

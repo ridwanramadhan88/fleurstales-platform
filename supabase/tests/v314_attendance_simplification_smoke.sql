@@ -1,9 +1,11 @@
 -- Attendance simplification authority and compatibility checks.
+-- Full CI marker: this contract must be replayed against the complete local database.
 
 do $$
 declare
   v_self_source text;
-  v_hr_source text;
+  v_hr_wrapper_source text;
+  v_hr_internal_source text;
 begin
   if not has_function_privilege('authenticated','public.save_my_attendance_record(jsonb)','EXECUTE')
      or has_function_privilege('anon','public.save_my_attendance_record(jsonb)','EXECUTE') then
@@ -25,16 +27,24 @@ begin
   end if;
 
   select pg_get_functiondef('public.save_hr_operational_state(bigint,jsonb)'::regprocedure)
-  into v_hr_source;
-  if position('ATTENDANCE_SELF_SERVICE_RECORD_SERVER_OWNED' in v_hr_source)=0
-     or position('checkInLocation' in v_hr_source)=0
-     or position('checkOutLocation' in v_hr_source)=0
-     or position('save_hr_operational_state_v36_internal' in v_hr_source)=0 then
-    raise exception 'HR wrapper lost immutable evidence or established authority delegation';
+  into v_hr_wrapper_source;
+  if position('save_hr_operational_state_unchecked' in v_hr_wrapper_source)=0
+     or position('mutation_conflict_circuit_is_blocked' in v_hr_wrapper_source)=0 then
+    raise exception 'HR public wrapper lost guarded delegation or conflict circuit';
+  end if;
+
+  select pg_get_functiondef('public.save_hr_operational_state_unchecked(bigint,jsonb)'::regprocedure)
+  into v_hr_internal_source;
+  if position('ATTENDANCE_SELF_SERVICE_RECORD_SERVER_OWNED' in v_hr_internal_source)=0
+     or position('checkInLocation' in v_hr_internal_source)=0
+     or position('checkOutLocation' in v_hr_internal_source)=0
+     or position('save_hr_operational_state_v36_internal' in v_hr_internal_source)=0 then
+    raise exception 'HR internal mutation lost immutable evidence or established authority delegation';
   end if;
 
   if has_function_privilege('authenticated','public.save_my_attendance_record_v310_internal(jsonb)','EXECUTE')
-     or has_function_privilege('authenticated','public.save_hr_operational_state_v36_internal(bigint,jsonb)','EXECUTE') then
+     or has_function_privilege('authenticated','public.save_hr_operational_state_v36_internal(bigint,jsonb)','EXECUTE')
+     or has_function_privilege('authenticated','public.save_hr_operational_state_unchecked(bigint,jsonb)','EXECUTE') then
     raise exception 'Authenticated clients can bypass attendance authority wrappers';
   end if;
 end $$;
