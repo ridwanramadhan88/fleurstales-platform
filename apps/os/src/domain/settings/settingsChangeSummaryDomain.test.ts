@@ -48,9 +48,9 @@ describe('summarizeActionPermissions', () => {
   it('reports capability toggles by role and label', () => {
     const after = {
       ...DEFAULT_ACTION_PERMISSIONS,
-      admin: { ...DEFAULT_ACTION_PERMISSIONS.admin, 'finance.verify_order': true },
+      admin: { ...DEFAULT_ACTION_PERMISSIONS.admin, 'orders.assign': false },
     }
     const summary = summarizeActionPermissions(DEFAULT_ACTION_PERMISSIONS, after)
-    expect(summary).toContain('Admin — Reconcile Orders: Enabled')
+    expect(summary).toContain('Admin — Assign Florists: Disabled')
   })
 })
