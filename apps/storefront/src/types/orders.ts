@@ -278,6 +278,14 @@ export interface OrderTableRow {
    * slot, and to tell whether that completion happened after the original
    * scheduled slot (late). */
   completedAt?: string
+  /** Finance-only reconciliation identifier, persisted through a dedicated RPC. */
+  financeReferenceCode?: string
+  /** Customer-facing reason recorded when a pending storefront order is rejected. */
+  cancellationReason?: string
+  /** Staff display label responsible for the customer-facing cancellation. */
+  cancelledBy?: string
+  /** ISO timestamp of the customer-facing cancellation. */
+  cancelledAt?: string
   /** Whether Finance has verified this order. Once true, the order is
    * locked: only Finance/Owner can edit or void it directly, and revenue
    * only counts this order as "confirmed" (see revenueDomain). Admin can
