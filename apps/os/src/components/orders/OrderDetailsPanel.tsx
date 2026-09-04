@@ -12,6 +12,7 @@ import { OrderDetailsItemsSection } from './OrderDetailsItemsSection'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { AppSheet } from '../ui/app-sheet'
 import { AssignFloristDialog } from './AssignFloristDialog'
+import { StaffReviewHistory } from '../customers/StaffReviewHistory'
 
 export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   const { order, onClose, activities, isOrderFuture, showFloristAssignment, floristDialogMode, onCancelFloristAssignment, onFloristAssigned } = viewModel
@@ -38,6 +39,11 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
               <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Customer &amp; delivery</p>
               <OrderDetailsDeliverySection viewModel={viewModel} />
             </div>
+            <StaffReviewHistory
+              orderId={order.id}
+              title="Customer review"
+              emptyLabel="No review submitted for this order."
+            />
           </div>
 
           <div className="space-y-3 sm:col-span-2">
