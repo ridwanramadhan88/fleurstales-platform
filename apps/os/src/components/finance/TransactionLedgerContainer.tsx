@@ -4,8 +4,14 @@ import {
   type TransactionLedgerProps,
 } from './TransactionLedger'
 import { useTransactionLedgerController } from './TransactionLedgerController'
+import { FinanceCashFlowOverview } from './FinanceCashFlowOverview'
 
 export const TransactionLedgerContainer: FC<TransactionLedgerProps> = (props) => {
   const viewModel = useTransactionLedgerController(props)
-  return <TransactionLedger {...viewModel} />
+  return (
+    <div className="space-y-8">
+      <FinanceCashFlowOverview />
+      <TransactionLedger {...viewModel} />
+    </div>
+  )
 }
