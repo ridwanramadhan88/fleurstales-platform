@@ -39,6 +39,28 @@ The browser/UI guard is not authoritative. The database must reject an Admin mut
 
 Production Admin sessions still require a valid dated working schedule and operational branch. That context exists to authorize Order processing; it must not be reused as a read filter.
 
+### Related branch-rule audit
+
+Keep as operational/session rules:
+
+- internal/manual Order quote and creation must match Admin operational branch
+- generic Order mutation writer must reject another branch
+- atomic Process Order and payment-confirm-for-processing are protected by the central Order mutation trigger
+- Storefront confirm/cancel by Admin are protected by the same trigger
+- runtime staff branch and staff-profile branch reporting remain session context, not read authorization
+
+Do not use Admin branch as a read restriction in:
+
+- Order row RLS/helper visibility
+- Order Details / order history
+- Customers / customer history
+- Reviews
+- payment-event/activity reads attached to readable Orders
+- notifications and alerts
+- branch selector / dashboard browsing
+
+`get_operational_roster(date, branch)` may still accept an explicit branch filter chosen by the reader; it does not authorize from Admin's runtime branch and therefore is not a branch-scope restriction.
+
 ### Other roles
 
 - Owner: company-wide read according to configured section/capability access.
