@@ -1,23 +1,6 @@
 /**
  * @file OrderFinanceReviewSheet.tsx
- * @description Read-only order detail view opened from Finance's
- * verification queues (OrderVerificationQueue) when a queue row
- * is clicked. Visually mirrors OrderDetailsPanel (the same critical
- * summary, status stepper, product/fulfillment info, notes, and activity
- * timeline) but every field is display-only — no edit controls, no way to
- * change status/payment/notes/etc. The only mutations available are the
- * Verify / Needs correction actions in the footer, which call the
- * exact same store mutators as the queue row's own buttons, so Finance can
- * inspect the full order and decide without closing the sheet first.
- *
- * Composed from focused sub-sections (each independently readable and
- * testable), previously all inline in this one file:
- * - `OrderFinanceReviewSheetHeader`   — critical summary + verification banner.
- * - `OrderFinanceReviewSheetStepper`  — horizontal fulfillment-pipeline stepper.
- * - `OrderFinanceReviewSheetDetails`  — status/payment, source/schedule, notes.
- * - `OrderFinanceReviewProductSummary` — line-item photos, variants, SKUs, and totals.
- * - `OrderFinanceReviewSheetTimeline` — vertical activity timeline.
- * - `OrderFinanceReviewSheetFooter`   — Close / Needs correction / Verify.
+ * @description Read-only Finance review surface with a narrow reconciliation-code editor.
  */
 
 import type { FC } from "react";
@@ -30,23 +13,11 @@ import { OrderFinanceReviewSheetDetails } from "./OrderFinanceReviewSheetDetails
 import { OrderFinanceReviewSheetTimeline } from "./OrderFinanceReviewSheetTimeline";
 import { OrderFinanceReviewSheetFooter } from "./OrderFinanceReviewSheetFooter";
 
-/**
- * @description Read-only detail sheet for a single order, shown when a
- * Finance verification queue row is clicked. Every field is display-only —
- * the only mutations available are the Verify / Needs correction
- * actions surfaced in the footer, identical in effect to the queue row's
- * own buttons, so Finance can decide right after reviewing the full order
- * without closing the sheet first.
- */
 export interface OrderFinanceReviewSheetProps {
   order: OrderTableRow;
   onClose: () => void;
-  /** Whether the current user can verify/reject/mark-for-review directly (Finance/Owner). */
   canVerify: boolean;
-  /** Display name of the current user, used as the verifying actor. */
   actorName: string;
-  /** Role of the current user — passed through to the authoritative
-   * `canVerifyOrderFinance` gate. */
   userRole: UserRole;
 }
 
@@ -58,6 +29,9 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
   itemDisplays,
   actionType,
   actionNote,
+  financeReferenceDraft,
+  financeReferenceBusy,
+  financeReferenceDirty,
   isOrderFuture,
   urgency,
   wasRejected,
@@ -73,15 +47,15 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
   onStartAction,
   onConfirmAction,
   onVerifyOrder,
+  onFinanceReferenceChange,
+  onSaveFinanceReference,
 }) => {
-  const paidAmount =
-    order.paidAmountIdr ??
-    (order.paymentStatus === "paid" ? order.totalIdr : 0);
+  const paidAmount = order.paidAmountIdr ?? (order.paymentStatus === "paid" ? order.totalIdr : 0);
   const hasPaymentMismatch =
     (order.paymentStatus === "paid" && paidAmount !== order.totalIdr) ||
-    (order.paymentStatus === "partial" &&
-      (paidAmount <= 0 || paidAmount >= order.totalIdr)) ||
+    (order.paymentStatus === "partial" && (paidAmount <= 0 || paidAmount >= order.totalIdr)) ||
     (order.paymentStatus === "unpaid" && paidAmount > 0);
+
   return (
     <div
       className="fixed inset-0 z-40 flex items-end justify-center bg-black/32 backdrop-blur-[2px] sm:items-center sm:p-4"
@@ -114,15 +88,23 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
               order={order}
               productDisplay={productDisplay}
               itemDisplays={itemDisplays}
+              canVerify={canVerify}
+              financeReferenceDraft={financeReferenceDraft}
+              financeReferenceBusy={financeReferenceBusy}
+              financeReferenceDirty={financeReferenceDirty}
+              onFinanceReferenceChange={onFinanceReferenceChange}
+              onSaveFinanceReference={onSaveFinanceReference}
             />
             <details className="sm:col-span-2 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
               <summary className="cursor-pointer text-sm font-semibold h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap">Status timeline and activity</summary>
-              <div className="mt-3"><OrderFinanceReviewSheetTimeline
-                order={order}
-                isOrderFuture={isOrderFuture}
-                timelineRows={timelineRows}
-                lastIndex={lastIndex}
-              /></div>
+              <div className="mt-3">
+                <OrderFinanceReviewSheetTimeline
+                  order={order}
+                  isOrderFuture={isOrderFuture}
+                  timelineRows={timelineRows}
+                  lastIndex={lastIndex}
+                />
+              </div>
             </details>
           </div>
         </div>

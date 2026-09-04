@@ -6,21 +6,29 @@ import { formatIdrCurrency } from '../../lib/formatters'
 import type { OrderFinanceReviewSheetViewModel } from './OrderFinanceReviewSheetController'
 import { OrderFinanceReviewProductSummary } from './OrderFinanceReviewProductSummary'
 
-/**
- * @description Read-only order fields: status/payment strip, florist,
- * source/fulfillment/schedule, greeting card, promo code, and internal note.
- * Product line details are rendered by OrderFinanceReviewProductSummary.
- */
-
 type OrderFinanceReviewSheetDetailsProps = Pick<
   OrderFinanceReviewSheetViewModel,
-  'order' | 'productDisplay' | 'itemDisplays'
+  | 'order'
+  | 'productDisplay'
+  | 'itemDisplays'
+  | 'canVerify'
+  | 'financeReferenceDraft'
+  | 'financeReferenceBusy'
+  | 'financeReferenceDirty'
+  | 'onFinanceReferenceChange'
+  | 'onSaveFinanceReference'
 >
 
 export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsProps> = ({
   order,
   productDisplay,
   itemDisplays,
+  canVerify,
+  financeReferenceDraft,
+  financeReferenceBusy,
+  financeReferenceDirty,
+  onFinanceReferenceChange,
+  onSaveFinanceReference,
 }) => {
   const paidAmount = order.paidAmountIdr ?? (order.paymentStatus === 'paid' ? order.totalIdr : 0)
   const remainingBalance = Math.max(0, order.totalIdr - paidAmount)
@@ -35,19 +43,16 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
 
   return (
     <div className="space-y-3 sm:col-span-3">
-      {/* Keep the decision-critical payment data together. */}
       <section className="space-y-3 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <CreditCard className="size-3.5" />
-            </span>
-            <div>
-              <p className="text-2xs font-semibold text-muted-foreground">Payment details</p>
-              <p className="text-sm font-semibold leading-5 text-foreground">
-                {paymentMethod === 'transfer' ? 'Bank transfer' : paymentMethod === 'cash' ? 'Cash' : 'Method not recorded'}
-              </p>
-            </div>
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <CreditCard className="size-3.5" />
+          </span>
+          <div>
+            <p className="text-2xs font-semibold text-muted-foreground">Payment details</p>
+            <p className="text-sm font-semibold leading-5 text-foreground">
+              {paymentMethod === 'transfer' ? 'Bank transfer' : paymentMethod === 'cash' ? 'Cash' : 'Method not recorded'}
+            </p>
           </div>
         </div>
 
@@ -65,6 +70,38 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
             <p className="mt-0.5 text-xs font-semibold text-foreground">{formatIdrCurrency(remainingBalance)}</p>
           </div>
         </div>
+
+        {canVerify && (
+          <label className="block rounded-lg border border-border/70 bg-background p-2.5">
+            <span className="text-2xs font-semibold text-muted-foreground">Kode Rekonsiliasi</span>
+            <div className="mt-1.5 flex gap-2">
+              <input
+                value={financeReferenceDraft}
+                onChange={(event) => onFinanceReferenceChange(event.target.value)}
+                onBlur={() => { if (financeReferenceDirty) void onSaveFinanceReference() }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter') return
+                  event.preventDefault()
+                  if (financeReferenceDirty) void onSaveFinanceReference()
+                }}
+                maxLength={64}
+                placeholder="TRX-2026-001"
+                autoComplete="off"
+                className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-card px-3 text-sm font-medium uppercase outline-none transition focus:border-foreground/35 focus:ring-2 focus:ring-foreground/10"
+              />
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => { void onSaveFinanceReference() }}
+                disabled={financeReferenceBusy || !financeReferenceDirty}
+                className="h-10 rounded-lg bg-foreground px-4 text-xs font-semibold text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {financeReferenceBusy ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+            <span className="mt-1.5 block text-2xs text-muted-foreground">Saved only on blur, Enter, or Save — not on every keystroke.</span>
+          </label>
+        )}
 
         {(latestPayment?.reference || latestPayment?.note) && (
           <div className="grid gap-2 text-xs sm:grid-cols-2">
@@ -103,108 +140,85 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
       <details className="rounded-xl border border-border bg-card p-3 shadow-ios-sm">
         <summary className="cursor-pointer text-sm font-semibold h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap">Fulfillment and order details</summary>
         <div className="mt-3 space-y-3">
-      {/* Florist */}
-      <section className="space-y-2.5 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <User className="size-3.5" />
-          </span>
-          <div className="min-w-0 leading-tight">
-            <p className="text-2xs font-semibold text-muted-foreground">Florist</p>
-            <p className="truncate text-sm font-medium text-foreground/90">
-              {order.florist ?? (
-                <span className="font-normal text-muted-foreground">Not assigned</span>
-              )}
-            </p>
-          </div>
-        </div>
-      </section>
+          <section className="space-y-2.5 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <User className="size-3.5" />
+              </span>
+              <div className="min-w-0 leading-tight">
+                <p className="text-2xs font-semibold text-muted-foreground">Florist</p>
+                <p className="truncate text-sm font-medium text-foreground/90">
+                  {order.florist ?? <span className="font-normal text-muted-foreground">Not assigned</span>}
+                </p>
+              </div>
+            </div>
+          </section>
 
-      {/* Source / fulfillment / schedule */}
-      <section className="space-y-3 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              {order.source === 'whatsapp' ? (
-                <MessageCircle className="size-3.5" />
-              ) : (
-                <Smartphone className="size-3.5" />
-              )}
-            </span>
-            <div className="min-w-0 leading-tight">
-              <p className="text-2xs font-semibold text-muted-foreground">Source</p>
-              <p className="truncate text-sm font-medium text-foreground/90">
-                {SOURCE_LABELS[order.source]}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              {order.fulfillment === 'delivery' ? (
-                <Truck className="size-3.5" />
-              ) : (
-                <MapPin className="size-3.5" />
-              )}
-            </span>
-            <div className="min-w-0 leading-tight">
-              <p className="text-2xs font-semibold text-muted-foreground">Fulfillment</p>
-              <p className="truncate text-sm font-medium text-foreground/90">
-                {order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}
-              </p>
-            </div>
-          </div>
-          <div className="col-span-2 flex items-start gap-2">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <Clock className="size-3.5" />
-            </span>
-            <div className="min-w-0 space-y-2 leading-tight">
-              {order.fulfillment === 'pickup' ? (
-                <>
-                  <div>
-                    <p className="text-2xs font-semibold text-muted-foreground">Requested pickup</p>
-                    <p className="text-sm font-medium text-foreground/90">{getRequestedPickupLabel(order) ?? '—'}</p>
-                  </div>
-                  {order.status === 'picked_up' ? (
-                    <div>
-                      <p className="text-2xs font-semibold text-muted-foreground">Actual pickup</p>
-                      <p className="text-sm font-medium text-foreground/90">{getActualPickupLabel(order) ?? '—'}</p>
-                    </div>
-                  ) : null}
-                </>
-              ) : (
-                <div>
-                  <p className="text-2xs font-semibold text-muted-foreground">Delivery schedule</p>
-                  <p className="text-sm font-medium text-foreground/90">{getDisplayScheduleLabel(order) ?? '—'}</p>
+          <section className="space-y-3 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  {order.source === 'whatsapp' ? <MessageCircle className="size-3.5" /> : <Smartphone className="size-3.5" />}
+                </span>
+                <div className="min-w-0 leading-tight">
+                  <p className="text-2xs font-semibold text-muted-foreground">Source</p>
+                  <p className="truncate text-sm font-medium text-foreground/90">{SOURCE_LABELS[order.source]}</p>
                 </div>
-              )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  {order.fulfillment === 'delivery' ? <Truck className="size-3.5" /> : <MapPin className="size-3.5" />}
+                </span>
+                <div className="min-w-0 leading-tight">
+                  <p className="text-2xs font-semibold text-muted-foreground">Fulfillment</p>
+                  <p className="truncate text-sm font-medium text-foreground/90">{order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}</p>
+                </div>
+              </div>
+              <div className="col-span-2 flex items-start gap-2">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <Clock className="size-3.5" />
+                </span>
+                <div className="min-w-0 space-y-2 leading-tight">
+                  {order.fulfillment === 'pickup' ? (
+                    <>
+                      <div>
+                        <p className="text-2xs font-semibold text-muted-foreground">Requested pickup</p>
+                        <p className="text-sm font-medium text-foreground/90">{getRequestedPickupLabel(order) ?? '—'}</p>
+                      </div>
+                      {order.status === 'picked_up' ? (
+                        <div>
+                          <p className="text-2xs font-semibold text-muted-foreground">Actual pickup</p>
+                          <p className="text-sm font-medium text-foreground/90">{getActualPickupLabel(order) ?? '—'}</p>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div>
+                      <p className="text-2xs font-semibold text-muted-foreground">Delivery schedule</p>
+                      <p className="text-sm font-medium text-foreground/90">{getDisplayScheduleLabel(order) ?? '—'}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* Greeting card / gift message (read-only) */}
-      <section className="rounded-xl border border-border bg-card p-3 shadow-ios-sm">
-        <p className="text-2xs font-semibold text-muted-foreground">Greeting card message</p>
-        <p className="mt-0.5 text-sm text-foreground/90 sm:text-sm">
-          {order.greetingMessage ?? order.giftMessage ?? 'No greeting message for this order.'}
-        </p>
-      </section>
+          <section className="rounded-xl border border-border bg-card p-3 shadow-ios-sm">
+            <p className="text-2xs font-semibold text-muted-foreground">Greeting card message</p>
+            <p className="mt-0.5 text-sm text-foreground/90 sm:text-sm">{order.greetingMessage ?? order.giftMessage ?? 'No greeting message for this order.'}</p>
+          </section>
 
-      {/* Promo code */}
-      {order.promoCode && (
-        <section className="rounded-xl border border-primary/20 bg-primary/10 p-3 shadow-ios-sm">
-          <p className="text-2xs font-semibold text-primary/70">Promo code applied</p>
-          <p className="mt-0.5 text-sm font-semibold text-primary">{order.promoCode}</p>
-        </section>
-      )}
+          {order.promoCode && (
+            <section className="rounded-xl border border-primary/20 bg-primary/10 p-3 shadow-ios-sm">
+              <p className="text-2xs font-semibold text-primary/70">Promo code applied</p>
+              <p className="mt-0.5 text-sm font-semibold text-primary">{order.promoCode}</p>
+            </section>
+          )}
 
-      {/* Order note (read-only) */}
-      <section className="rounded-xl border border-border bg-card p-3 shadow-ios-sm">
-        <p className="text-2xs font-semibold text-muted-foreground">Order note</p>
-        <p className="mt-0.5 text-sm text-foreground/90 sm:text-sm">
-          {order.orderNote ?? order.internalNote ?? 'No order note for this order.'}
-        </p>
-      </section>
+          <section className="rounded-xl border border-border bg-card p-3 shadow-ios-sm">
+            <p className="text-2xs font-semibold text-muted-foreground">Order note</p>
+            <p className="mt-0.5 text-sm text-foreground/90 sm:text-sm">{order.orderNote ?? order.internalNote ?? 'No order note for this order.'}</p>
+          </section>
         </div>
       </details>
     </div>

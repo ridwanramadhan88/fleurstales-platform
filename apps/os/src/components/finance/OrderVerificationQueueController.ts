@@ -11,34 +11,25 @@ import {
   isRejectedByFinance,
 } from '../../domain/orderBusinessRules'
 import { getLocalDateString, nowInJakarta, toJakarta } from '../orders/orderTableFormatters'
-import type {
-  OrderVerificationQueueProps,
-} from './OrderVerificationQueue'
+import type { OrderVerificationQueueProps } from './OrderVerificationQueue'
 import type { FinanceOrderStatusFilter } from './FinanceOrderFilterBar'
 import type { FinanceDateScopeId } from './FinanceDateScopeTabs'
 import { toast } from '../../hooks/use-toast'
 
-const isWithinCompletionRange = (
-  order: OrderTableRow,
-  range?: DateRange,
-): boolean => {
+const isWithinCompletionRange = (order: OrderTableRow, range?: DateRange): boolean => {
   if (!range || (!range.from && !range.to)) return true
   if (!order.completedAt) return false
-
   const completedAt = toJakarta(new Date(order.completedAt))
-
   if (range.from) {
     const from = new Date(range.from)
     from.setHours(0, 0, 0, 0)
     if (completedAt < from) return false
   }
-
   if (range.to) {
     const to = new Date(range.to)
     to.setHours(23, 59, 59, 999)
     if (completedAt > to) return false
   }
-
   return true
 }
 
@@ -51,28 +42,24 @@ const startOfWeekMonday = (date: Date): Date => {
   return result
 }
 
-const isWithinCompletionScope = (
-  order: OrderTableRow,
-  scope: FinanceDateScopeId,
-  dateRange?: DateRange,
-): boolean => {
+const isWithinCompletionScope = (order: OrderTableRow, scope: FinanceDateScopeId, dateRange?: DateRange): boolean => {
   if (scope === 'all') return true
   if (scope === 'custom') return isWithinCompletionRange(order, dateRange)
   if (!order.completedAt) return false
-
   const completedAt = toJakarta(new Date(order.completedAt))
   const completedDateStr = getLocalDateString(completedAt)
   const now = nowInJakarta()
   const todayStr = getLocalDateString(now)
-
   if (scope === 'today') return completedDateStr === todayStr
-
   const weekStart = startOfWeekMonday(now)
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 6)
   weekEnd.setHours(23, 59, 59, 999)
   return completedAt >= weekStart && completedAt <= weekEnd
 }
+
+const orderSearchText = (order: OrderTableRow): string =>
+  `${order.orderNumber} ${order.customerName} ${order.productName ?? ''} ${order.branch} ${order.financeReferenceCode ?? ''}`.toLowerCase()
 
 export interface FinanceQueueRow {
   order: OrderTableRow
@@ -123,20 +110,13 @@ export interface OrderVerificationQueueViewModel {
   onBulkVerify: () => void
   onSelectOrder: (order: OrderTableRow | null) => void
   onToggleOrderSelected: (orderNumber: string, checked: boolean) => void
-  onOpenVerificationAction: (
-    orderNumber: string,
-    type: 'correction',
-  ) => void
+  onOpenVerificationAction: (orderNumber: string, type: 'correction') => void
   onVerificationActionNoteChange: (note: string) => void
   onCloseVerificationAction: () => void
   onConfirmVerificationAction: (orderNumber: string) => void
   onVerifyOrder: (orderNumber: string) => void
   onApproveChangeRequest: (orderNumber: string, actorName: string, note: string) => void
-  onRejectChangeRequest: (
-    orderNumber: string,
-    actorName: string,
-    note?: string,
-  ) => void
+  onRejectChangeRequest: (orderNumber: string, actorName: string, note?: string) => void
 }
 
 export const useOrderVerificationQueueController = ({
@@ -157,18 +137,14 @@ export const useOrderVerificationQueueController = ({
   const branchId = useUserStore((state) => state.branchId)
   const actor = { employeeId, name: actorName, role: userRole, branchId }
 
-  const [verificationActionOrderNumber, setVerificationActionOrderNumber] = useState<
-    string | null
-  >(null)
+  const [verificationActionOrderNumber, setVerificationActionOrderNumber] = useState<string | null>(null)
   const [verificationActionType, setVerificationActionType] = useState<'correction' | null>(null)
   const [verificationActionNote, setVerificationActionNote] = useState('')
   const [reviewingOrder, setReviewingOrder] = useState<OrderTableRow | null>(null)
   const [statusFilter, setStatusFilter] = useState<FinanceOrderStatusFilter>('pending')
   const [dateScope, setDateScope] = useState<FinanceDateScopeId>('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
-  const [selectedOrderNumbers, setSelectedOrderNumbers] = useState<Set<string>>(
-    new Set(),
-  )
+  const [selectedOrderNumbers, setSelectedOrderNumbers] = useState<Set<string>>(new Set())
   const [isBulkSelectMode, setIsBulkSelectMode] = useState(false)
 
   const closeVerificationAction = () => {
@@ -177,27 +153,16 @@ export const useOrderVerificationQueueController = ({
     setVerificationActionNote('')
   }
 
-  const finishedOrders = useMemo(
-    () => orders.filter(isOrderFinished),
-    [orders],
-  )
-
+  const finishedOrders = useMemo(() => orders.filter(isOrderFinished), [orders])
   const dateScopedOrders = useMemo(
-    () =>
-      finishedOrders.filter((order) =>
-        isWithinCompletionScope(order, dateScope, dateRange),
-      ),
+    () => finishedOrders.filter((order) => isWithinCompletionScope(order, dateScope, dateRange)),
     [finishedOrders, dateScope, dateRange],
   )
 
   const searchScopedOrders = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     if (!query) return dateScopedOrders
-    return dateScopedOrders.filter((order) =>
-      `${order.orderNumber} ${order.customerName} ${order.productName ?? ''} ${order.branch}`
-        .toLowerCase()
-        .includes(query),
-    )
+    return dateScopedOrders.filter((order) => orderSearchText(order).includes(query))
   }, [dateScopedOrders, searchQuery])
 
   const statusCounts = useMemo(() => {
@@ -215,28 +180,24 @@ export const useOrderVerificationQueueController = ({
   }, [searchScopedOrders])
 
   const filteredFinishedOrders = useMemo(
-    () =>
-      searchScopedOrders
-        .filter((order) => {
-          if (statusFilter === 'all') return true
-          if (statusFilter === 'pending') return isPendingFinanceVerification(order)
-          if (statusFilter === 'verified') return Boolean(order.financeVerified)
-          if (statusFilter === 'rejected') return isRejectedByFinance(order)
-          return isMarkedForFinanceReview(order)
-        })
-        .sort((a, b) => {
-          const aTime = a.completedAt ? Date.parse(a.completedAt) : 0
-          const bTime = b.completedAt ? Date.parse(b.completedAt) : 0
-          return aTime - bTime || a.orderNumber.localeCompare(b.orderNumber)
-        }),
+    () => searchScopedOrders
+      .filter((order) => {
+        if (statusFilter === 'all') return true
+        if (statusFilter === 'pending') return isPendingFinanceVerification(order)
+        if (statusFilter === 'verified') return Boolean(order.financeVerified)
+        if (statusFilter === 'rejected') return isRejectedByFinance(order)
+        return isMarkedForFinanceReview(order)
+      })
+      .sort((a, b) => {
+        const aTime = a.completedAt ? Date.parse(a.completedAt) : 0
+        const bTime = b.completedAt ? Date.parse(b.completedAt) : 0
+        return aTime - bTime || a.orderNumber.localeCompare(b.orderNumber)
+      }),
     [searchScopedOrders, statusFilter],
   )
 
   const selectableOrderNumbers = useMemo(
-    () =>
-      filteredFinishedOrders
-        .filter(isPendingFinanceVerification)
-        .map((order) => order.orderNumber),
+    () => filteredFinishedOrders.filter(isPendingFinanceVerification).map((order) => order.orderNumber),
     [filteredFinishedOrders],
   )
 
@@ -249,23 +210,16 @@ export const useOrderVerificationQueueController = ({
     return next
   }, [selectedOrderNumbers, selectableOrderNumbers])
 
-  const allSelectableChosen =
-    selectableOrderNumbers.length > 0 &&
-    selectableOrderNumbers.every((orderNumber) => activeSelection.has(orderNumber))
+  const allSelectableChosen = selectableOrderNumbers.length > 0 && selectableOrderNumbers.every((orderNumber) => activeSelection.has(orderNumber))
 
-  const ordersWithRequests = useMemo(
-    () => {
-      const query = searchQuery.trim().toLowerCase()
-      return orders.filter((order) => {
-        if (!order.pendingChangeRequest) return false
-        if (!query) return true
-        return `${order.orderNumber} ${order.customerName} ${order.productName ?? ''} ${order.branch}`
-          .toLowerCase()
-          .includes(query)
-      })
-    },
-    [orders, searchQuery],
-  )
+  const ordersWithRequests = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return orders.filter((order) => {
+      if (!order.pendingChangeRequest) return false
+      if (!query) return true
+      return orderSearchText(order).includes(query)
+    })
+  }, [orders, searchQuery])
 
   const queueRows = filteredFinishedOrders.map((order) => ({
     order,
@@ -296,11 +250,7 @@ export const useOrderVerificationQueueController = ({
     activeSelection.forEach((orderNumber) => {
       const order = orders.find((item) => item.orderNumber === orderNumber)
       if (!order) return
-      const result = verifyOrderFinance({
-        orderNumber,
-        expectedRevision: order.revision ?? 1,
-        actor,
-      })
+      const result = verifyOrderFinance({ orderNumber, expectedRevision: order.revision ?? 1, actor })
       if (!result.allowed) failedOrderNumbers.add(orderNumber)
     })
     setSelectedOrderNumbers(failedOrderNumbers)
@@ -357,12 +307,7 @@ export const useOrderVerificationQueueController = ({
     onConfirmVerificationAction: (orderNumber) => {
       const order = orders.find((item) => item.orderNumber === orderNumber)
       if (!order) return
-      const input = {
-        orderNumber,
-        expectedRevision: order.revision ?? 1,
-        actor,
-        note: verificationActionNote.trim() || undefined,
-      }
+      const input = { orderNumber, expectedRevision: order.revision ?? 1, actor, note: verificationActionNote.trim() || undefined }
       const result = verificationActionType === 'correction' ? rejectOrderFinance(input) : null
       if (result && !result.allowed) {
         toast({ title: 'Order was not returned', description: result.reason, variant: 'destructive' })
