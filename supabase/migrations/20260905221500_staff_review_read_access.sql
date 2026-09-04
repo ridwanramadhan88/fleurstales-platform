@@ -22,9 +22,9 @@ set revision = revision + 1,
     updated_at = now()
 where id = 'primary';
 
--- The legacy row-scope helper hard-coded HR out of Orders. HR is now a
--- company-wide read-only observer like Finance. Admin keeps branch scoping and
--- Florist remains assigned-order-only.
+-- Order read scope stays driven by the backend capability matrix. Staff with
+-- orders.read_all can read their configured scope; Admin remains branch-scoped.
+-- The assigned-order capability remains the only path for Florist reads.
 create or replace function private.can_read_order_row(
   p_branch_id text,
   p_florist_employee_id text
@@ -40,15 +40,14 @@ declare
   v_branch_id text := private.current_staff_branch_id();
   v_employee_id text := private.current_staff_employee_id();
 begin
-  if v_role in ('owner', 'finance', 'hr') then
+  if private.has_action_permission('orders.read_all') then
+    if v_role = 'admin' then
+      return v_branch_id is not null and v_branch_id = p_branch_id;
+    end if;
     return true;
   end if;
 
-  if v_role = 'admin' then
-    return v_branch_id is not null and v_branch_id = p_branch_id;
-  end if;
-
-  if v_role = 'florist' then
+  if private.has_action_permission('orders.read_assigned') then
     return v_branch_id is not null
       and v_branch_id = p_branch_id
       and v_employee_id is not null
@@ -61,25 +60,26 @@ $$;
 revoke execute on function private.can_read_order_row(text, text) from public, anon;
 grant execute on function private.can_read_order_row(text, text) to authenticated;
 
--- CRM remains read-only for Finance/HR and editable only through the existing
--- mutation boundaries. These policies only widen SELECT visibility.
+-- CRM visibility follows the authoritative section permission instead of a
+-- hard-coded role list. Mutation authority remains unchanged.
 drop policy if exists customers_crm_read on public.customers;
 create policy customers_crm_read on public.customers
 for select to authenticated
-using (private.has_staff_role(array['owner','admin','finance','hr']));
+using (private.has_section_access('customers', 'view'));
 
 drop policy if exists customer_addresses_crm_read on public.customer_addresses;
 create policy customer_addresses_crm_read on public.customer_addresses
 for select to authenticated
-using (private.has_staff_role(array['owner','admin','finance','hr']));
+using (private.has_section_access('customers', 'view'));
 
--- Order rows/items/activities already delegate to can_read_order_row. Payment
--- events had an additional hard-coded role gate, so include HR there as well.
+-- Payment-event reads require the configured all-orders capability and then
+-- reuse the same row-scope helper. This intentionally excludes assigned-only
+-- Florist access while allowing Owner/Admin/Finance/HR according to config.
 drop policy if exists order_payments_staff_read on public.order_payment_events;
 create policy order_payments_staff_read on public.order_payment_events
 for select to authenticated
 using (
-  private.has_staff_role(array['owner','admin','finance','hr'])
+  private.has_action_permission('orders.read_all')
   and exists (
     select 1
     from public.orders o
@@ -99,14 +99,17 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_role text := private.current_staff_role();
   v_reviews jsonb;
 begin
   if (select auth.uid()) is null then
     raise exception 'AUTH_REQUIRED' using errcode = '42501';
   end if;
 
-  if v_role not in ('owner', 'admin', 'finance', 'hr') then
+  -- A review combines CRM identity with order history. Requiring both configured
+  -- read capabilities keeps the RPC aligned with the same backend permission
+  -- matrix used by the Customers and Orders workspaces.
+  if not private.has_section_access('customers', 'view')
+    or not private.has_action_permission('orders.read_all') then
     raise exception 'STAFF_REVIEW_READ_NOT_PERMITTED' using errcode = '42501';
   end if;
 
@@ -161,6 +164,7 @@ begin
     join public.orders o on o.id = r.order_id
     where (p_order_id is null or r.order_id = p_order_id)
       and (p_customer_id is null or r.customer_id = p_customer_id)
+      and private.can_read_order_row(o.branch_id, o.florist_assigned_employee_id)
   ) s;
 
   return jsonb_build_object('reviews', v_reviews);
