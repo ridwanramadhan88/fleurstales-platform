@@ -26,6 +26,7 @@ assert(!branches.includes("role === 'admin' || role === 'florist'"), 'Admin bran
 assert(topBar.includes('userRole === "florist" ? branch !== "All" : true'), 'Top bar does not expose All as a browsing filter for Admin.')
 assert(sidebar.includes("userRole === 'florist' ? branch !== 'All' : true"), 'Desktop sidebar does not expose All as a browsing filter for Admin.')
 assert(readScopeMigration.includes('enforce_admin_order_mutation_branch'), 'Admin order mutation branch trigger is missing.')
+assert(readScopeMigration.includes("v_role is distinct from 'admin'"), 'Admin order mutation trigger is not null-safe for non-staff/service writers.')
 assert(readScopeMigration.includes('ORDER_OUTSIDE_BRANCH_SCOPE'), 'Admin order mutation branch rejection is missing.')
 assert(!queue.includes("new Date().toISOString().slice(0, 10)"), 'Admin dashboard still uses UTC for today.')
 assert(queue.includes('getLocalDateString(nowInJakarta())'), 'Admin dashboard does not use Jakarta business date.')
