@@ -18,7 +18,7 @@ import {
   type FloristAssignmentOption,
   type FloristScheduleStatus,
 } from '../../domain/floristAssignmentDomain'
-import { confirmOrderPaymentForProcessing } from '../../data/orderPaymentProcessing'
+import { processOrderForProduction } from '../../data/orderPaymentProcessing'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
@@ -63,7 +63,6 @@ export const AssignFloristDialog: FC<{
   const defaults = useHrStore((state) => state.employeeDefaultSchedules)
   const overrides = useHrStore((state) => state.scheduleOverrides)
   const orders = useOrdersStore((state) => state.orders)
-  const assignAndProcess = useOrdersStore((state) => state.assignFloristAndStartProcessing)
   const reassignFlorist = useOrdersStore((state) => state.reassignFlorist)
   const scheduling = useSettingsStore((state) => state.getSchedulingSettingsForDate)
   const branches = useSettingsStore((state) => state.branches)
@@ -111,48 +110,52 @@ export const AssignFloristDialog: FC<{
   const selected = options.find((item) => item.employeeId === selectedId)
 
   const assign = async (allowScheduleOverride: boolean) => {
-    if (!selectedId || paymentBusy) return
+    if (!selectedId || !selected || paymentBusy) return
     setPaymentBusy(true)
     try {
-      let commandOrder = order
-      if (mode === 'assign-and-process') {
-        if (order.paymentMethod === 'transfer' && !financeAccountId) {
-          toast({ title: 'Receiving account required', description: 'Select the account that received this payment.', variant: 'destructive' })
+      if (mode === 'reassign') {
+        const result = reassignFlorist({
+          orderNumber: order.orderNumber,
+          expectedRevision: order.revision ?? 1,
+          floristEmployeeId: selectedId,
+          allowScheduleOverride,
+          actor,
+        })
+        if (!result.allowed) {
+          toast({ title: 'Florist was not assigned', description: result.reason, variant: 'destructive' })
           return
         }
-        if (order.paymentMethod !== 'transfer' && order.paymentMethod !== 'cash') {
-          toast({ title: 'Payment method required', description: 'Set Cash or Transfer on the order before starting production.', variant: 'destructive' })
-          return
-        }
-
-        const payment = await confirmOrderPaymentForProcessing(
-          order,
-          order.paymentMethod === 'cash' ? 'cash:main' : financeAccountId,
-        )
-        commandOrder = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
-          ?? { ...order, revision: payment.revision, paymentStatus: 'paid', paidAmountIdr: payment.paidAmountIdr }
-      }
-
-      const command = mode === 'reassign' ? reassignFlorist : assignAndProcess
-      const result = command({
-        orderNumber: commandOrder.orderNumber,
-        expectedRevision: commandOrder.revision ?? 1,
-        floristEmployeeId: selectedId,
-        allowScheduleOverride,
-        actor,
-      })
-      if (!result.allowed) {
-        toast({ title: 'Florist was not assigned', description: result.reason, variant: 'destructive' })
+        toast({ title: 'Assigned florist updated', description: `Assigned to ${result.order.florist}.` })
+        onAssigned(result.order)
         return
       }
 
-      toast({
-        title: mode === 'reassign' ? 'Assigned florist updated' : `${result.order.orderNumber} moved to Processing`,
-        description: mode === 'reassign'
-          ? `Assigned to ${result.order.florist}.`
-          : `Full payment verified and assigned to ${result.order.florist}${allowScheduleOverride ? ' with a schedule override' : ''}.`,
+      if (order.paymentMethod === 'transfer' && !financeAccountId) {
+        toast({ title: 'Receiving account required', description: 'Select the account that received this payment.', variant: 'destructive' })
+        return
+      }
+      if (order.paymentMethod !== 'transfer' && order.paymentMethod !== 'cash') {
+        toast({ title: 'Payment method required', description: 'Set Cash or Transfer on the order before starting production.', variant: 'destructive' })
+        return
+      }
+
+      const processedOrder = await processOrderForProduction({
+        order,
+        financeAccountId: order.paymentMethod === 'cash' ? 'cash:main' : financeAccountId,
+        floristEmployeeId: selectedId,
+        assignmentDate: moment.date,
+        assignmentTime: moment.time,
+        allowScheduleOverride,
+        scheduledBranchId: selected.branchId,
+        shiftStart: selected.shiftStart,
+        shiftEnd: selected.shiftEnd,
       })
-      onAssigned(result.order)
+
+      toast({
+        title: `${processedOrder.orderNumber} moved to Processing`,
+        description: `Full payment verified and assigned to ${processedOrder.florist}${allowScheduleOverride ? ' with a schedule override' : ''}.`,
+      })
+      onAssigned(processedOrder)
     } catch (error) {
       toast({
         title: mode === 'reassign' ? 'Florist was not assigned' : 'Order was not started',
