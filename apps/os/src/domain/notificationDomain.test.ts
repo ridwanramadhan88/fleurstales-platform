@@ -45,7 +45,7 @@ describe('role notification visibility', () => {
     expect(visible.map((item) => item.kind)).toEqual(expected)
   })
 
-  it('respects the active branch and keeps global schedule releases', () => {
+  it('keeps Admin notification reads company-wide even while browsing one branch', () => {
     const visible = getVisibleNotifications({
       notifications: [
         makeNotification('finance_rejected', { id: 'kdm', branch: 'Kedamaian' }),
@@ -56,7 +56,7 @@ describe('role notification visibility', () => {
       branch: 'Kedamaian',
       now: NOW,
     })
-    expect(visible.map((item) => item.id)).toEqual(['kdm', 'global'])
+    expect(visible.map((item) => item.id)).toEqual(['kdm', 'phm', 'global'])
   })
 })
 
