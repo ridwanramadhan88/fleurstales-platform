@@ -39,11 +39,17 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
               <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Customer &amp; delivery</p>
               <OrderDetailsDeliverySection viewModel={viewModel} />
             </div>
-            <StaffReviewHistory
-              orderId={order.id}
-              title="Customer review"
-              emptyLabel="No review submitted for this order."
-            />
+            {order.id ? (
+              <StaffReviewHistory
+                orderId={order.id}
+                title="Customer review"
+                emptyLabel="No review submitted for this order."
+              />
+            ) : (
+              <section className="rounded-xl bg-card p-4 text-xs text-muted-foreground ring-1 ring-border/70">
+                Review history is unavailable for this legacy order.
+              </section>
+            )}
           </div>
 
           <div className="space-y-3 sm:col-span-2">
