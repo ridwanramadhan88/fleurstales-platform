@@ -60,7 +60,7 @@ describe('FinanceRefundQueue', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Completed (1)' }))
     expect(screen.getByText('Cancelled after payment')).toBeInTheDocument()
-    expect(screen.getByText('Finance')).toBeInTheDocument()
+    expect(screen.getAllByText('Finance')).toHaveLength(2)
   })
 
   it('completes a pending refund through the guarded command', () => {
