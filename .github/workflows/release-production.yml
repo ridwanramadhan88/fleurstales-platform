@@ -153,7 +153,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          output="$(npx -y vercel@59.11.2 deploy --prod --skip-domain --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN")"
+          output="$(npx -y vercel@59.11.2 deploy --prod --skip-domain --no-wait --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN")"
           deployment_url="$(printf '%s\n' "$output" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n1)"
           if [[ -z "$deployment_url" ]]; then
             echo "::error::Could not capture Storefront staged deployment URL."
@@ -170,7 +170,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          output="$(npx -y vercel@59.11.2 deploy --prod --skip-domain --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN")"
+          output="$(npx -y vercel@59.11.2 deploy --prod --skip-domain --no-wait --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN")"
           deployment_url="$(printf '%s\n' "$output" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n1)"
           if [[ -z "$deployment_url" ]]; then
             echo "::error::Could not capture Business OS staged deployment URL."
