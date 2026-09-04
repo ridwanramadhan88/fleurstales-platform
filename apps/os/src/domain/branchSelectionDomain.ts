@@ -1,8 +1,15 @@
 import type { BranchFilter } from '../types/orders'
 import type { UserRole } from '../store/userStore'
 
+/**
+ * Roles whose branch selector changes their operational runtime context.
+ * Admin is intentionally excluded: an Admin's operational branch is fixed by
+ * the dated schedule/runtime context, while the shared branch selector is only
+ * a company-wide browsing filter for them. Florist still uses the selector as
+ * an operational override because assigned work may be cross-branch.
+ */
 export const isOperationalBranchRole = (role: UserRole): boolean =>
-  role === 'admin' || role === 'florist'
+  role === 'florist'
 
 export const getBranchSwitchDecision = ({
   role,
@@ -17,6 +24,8 @@ export const getBranchSwitchDecision = ({
   requiresConfirmation: boolean
   reason?: string
 } => {
+  // Owner/Admin/Finance/HR branch selection is a read filter. Admin mutation
+  // authority is enforced separately against the dated operational branch.
   if (!isOperationalBranchRole(role)) {
     return { allowed: true, requiresConfirmation: false }
   }
@@ -27,24 +36,6 @@ export const getBranchSwitchDecision = ({
       requiresConfirmation: false,
       reason: 'Select one active branch for operational work.',
     }
-  }
-
-  if (role === 'admin') {
-    if (!scheduledBranchId) {
-      return {
-        allowed: false,
-        requiresConfirmation: false,
-        reason: 'Admin requires a dated branch assignment before operational work.',
-      }
-    }
-    if (targetBranch !== scheduledBranchId) {
-      return {
-        allowed: false,
-        requiresConfirmation: false,
-        reason: `Admin operations are locked to today's scheduled branch: ${scheduledBranchId}.`,
-      }
-    }
-    return { allowed: true, requiresConfirmation: false }
   }
 
   if (scheduledBranchId === targetBranch) {
