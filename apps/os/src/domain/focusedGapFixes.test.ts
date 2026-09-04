@@ -23,21 +23,31 @@ describe('focused workflow gap fixes', () => {
     })).toEqual({ allowed: false, reason: 'Florists cannot create orders.' })
   })
 
-  it('gives Owner edit access to every section by default', () => {
-    expect(Object.values(DEFAULT_ROLE_SECTION_ACCESS.owner).every((level) => level === 'edit')).toBe(true)
+  it('keeps Owner out of the Finance section by default', () => {
+    expect(DEFAULT_ROLE_SECTION_ACCESS.owner.finance).toBe('none')
+    expect(DEFAULT_ROLE_SECTION_ACCESS.finance.finance).toBe('edit')
   })
 
-  it('cancels only a pending Refund and returns payment to Paid while preserving history fields', () => {
-    const result = cancelOrderRefund({
-      order: makeOrder({ paymentStatus: 'refund_pending', paidAmountIdr: 100_000, refundAmountIdr: 100_000, refundReason: 'Duplicate', refundInitiatedBy: 'Finance', refundInitiatedAt: '2026-07-14T00:00:00Z' }),
+  it('allows only Finance to cancel a pending refund and preserves history fields', () => {
+    const order = makeOrder({ paymentStatus: 'refund_pending', paidAmountIdr: 100_000, refundAmountIdr: 100_000, refundReason: 'Duplicate', refundInitiatedBy: 'Finance', refundInitiatedAt: '2026-07-14T00:00:00Z' })
+    const denied = cancelOrderRefund({
+      order,
       actor: { name: 'Owner', role: 'owner' },
+      reason: 'Customer asked to continue the Order',
+      cancelledAt: '2026-07-14T01:00:00Z',
+    })
+    expect(denied.allowed).toBe(false)
+
+    const result = cancelOrderRefund({
+      order,
+      actor: { name: 'Finance', role: 'finance' },
       reason: 'Customer asked to continue the Order',
       cancelledAt: '2026-07-14T01:00:00Z',
     })
     expect(result.allowed).toBe(true)
     if (result.allowed) expect(result.order).toMatchObject({
       paymentStatus: 'paid',
-      refundCancelledBy: 'Owner',
+      refundCancelledBy: 'Finance',
       refundCancellationReason: 'Customer asked to continue the Order',
     })
   })
