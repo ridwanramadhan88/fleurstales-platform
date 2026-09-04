@@ -148,7 +148,6 @@ jobs:
           fi
 
       - name: Stage Storefront with production environment
-        working-directory: apps/storefront
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STOREFRONT_PROJECT_ID }}
         shell: bash
@@ -166,7 +165,6 @@ jobs:
           echo "Storefront staged: $deployment_url"
 
       - name: Stage Business OS with production environment
-        working-directory: apps/os
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OS_PROJECT_ID }}
         shell: bash
@@ -207,7 +205,6 @@ jobs:
           npx -y supabase@2.109.1 functions deploy staff-login --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Promote exact Business OS deployment
-        working-directory: apps/os
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_OS_PROJECT_ID }}
         run: |
@@ -215,7 +212,6 @@ jobs:
           npx -y vercel@59.11.2 curl / --deployment "$OS_DEPLOYMENT_URL" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN" >/dev/null
 
       - name: Promote exact Storefront deployment
-        working-directory: apps/storefront
         env:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STOREFRONT_PROJECT_ID }}
         run: |
