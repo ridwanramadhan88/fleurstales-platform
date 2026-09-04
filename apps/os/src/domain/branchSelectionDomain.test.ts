@@ -1,35 +1,40 @@
 import { describe, expect, it } from 'vitest'
-import { getBranchSwitchDecision } from './branchSelectionDomain'
+import { getBranchSwitchDecision, isOperationalBranchRole } from './branchSelectionDomain'
 
-describe('operational branch selection', () => {
-  it('keeps the Admin scheduled branch as the only operational branch', () => {
+describe('branch selection semantics', () => {
+  it('lets Admin browse any branch or All without changing operational authority', () => {
     expect(getBranchSwitchDecision({ role:'admin', scheduledBranchId:'Kedamaian', targetBranch:'Kedamaian' }))
       .toEqual({ allowed:true, requiresConfirmation:false })
     expect(getBranchSwitchDecision({ role:'admin', scheduledBranchId:'Kedamaian', targetBranch:'Pahoman' }))
-      .toMatchObject({ allowed:false, requiresConfirmation:false })
+      .toEqual({ allowed:true, requiresConfirmation:false })
+    expect(getBranchSwitchDecision({ role:'admin', scheduledBranchId:'Kedamaian', targetBranch:'All' }))
+      .toEqual({ allowed:true, requiresConfirmation:false })
+    expect(isOperationalBranchRole('admin')).toBe(false)
   })
 
-  it('blocks Admin operational work without a dated branch assignment', () => {
-    const result = getBranchSwitchDecision({ role:'admin', scheduledBranchId:undefined, targetBranch:'Kedamaian' })
-    expect(result).toMatchObject({ allowed:false, requiresConfirmation:false })
-    expect(result.reason).toContain('dated branch assignment')
+  it('allows Admin browsing even without a dated branch assignment', () => {
+    expect(getBranchSwitchDecision({ role:'admin', scheduledBranchId:undefined, targetBranch:'All' }))
+      .toEqual({ allowed:true, requiresConfirmation:false })
   })
 
-  it('keeps the existing Florist override confirmation', () => {
+  it('keeps the Florist operational override confirmation', () => {
     const result = getBranchSwitchDecision({ role:'florist', scheduledBranchId:'Kedamaian', targetBranch:'Pahoman' })
     expect(result).toMatchObject({ allowed:true, requiresConfirmation:true })
     expect(result.reason).toContain('scheduled at Kedamaian')
+    expect(isOperationalBranchRole('florist')).toBe(true)
   })
 
-  it('does not allow branch-scoped roles to use All as an operational branch', () => {
-    expect(getBranchSwitchDecision({ role:'admin', scheduledBranchId:'Kedamaian', targetBranch:'All' }))
+  it('does not allow Florist to use All as an operational branch', () => {
+    expect(getBranchSwitchDecision({ role:'florist', scheduledBranchId:'Kedamaian', targetBranch:'All' }))
       .toMatchObject({ allowed:false, requiresConfirmation:false })
   })
 
-  it('keeps Owner and Finance unrestricted', () => {
+  it('keeps Owner, Finance, and HR browsing unrestricted', () => {
     expect(getBranchSwitchDecision({ role:'owner', scheduledBranchId:undefined, targetBranch:'All' }))
       .toEqual({ allowed:true, requiresConfirmation:false })
     expect(getBranchSwitchDecision({ role:'finance', scheduledBranchId:undefined, targetBranch:'Pahoman' }))
+      .toEqual({ allowed:true, requiresConfirmation:false })
+    expect(getBranchSwitchDecision({ role:'hr', scheduledBranchId:undefined, targetBranch:'All' }))
       .toEqual({ allowed:true, requiresConfirmation:false })
   })
 })
