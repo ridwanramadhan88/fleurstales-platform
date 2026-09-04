@@ -17,14 +17,8 @@ import type { PayrollScheduleAdjustmentRecord } from '../store/payrollStore'
 import { getOrderPriority } from './ordersDomain'
 import { getLowStockItems, getExpiredStock } from './stockDomain'
 
-/**
- * @description Severity buckets for alerts.
- */
 export type AlertSeverity = 'critical' | 'warning' | 'info'
 
-/**
- * @description Normalised alert kind identifiers used across modules.
- */
 export type AlertKind =
   | 'order_late'
   | 'order_due_soon'
@@ -48,98 +42,50 @@ export type AlertKind =
   | 'payroll_approved'
   | 'payroll_paid'
 
-/**
- * @description Single alert item used by UI components.
- * UI should treat this as a business event and only render title/message.
- */
 export interface AlertItem {
-  /** Stable id for React rendering. */
   id: string
-  /** Short human-readable title. */
   title: string
-  /** Optional supporting message. */
   message?: string
-  /** Severity bucket. */
   severity: AlertSeverity
-  /** Normalised alert kind. */
   kind: AlertKind
-  /** Branch associated with this alert; omitted for cross-branch/HR alerts. */
   branch?: BranchId
-  /** Order number this alert refers to, when applicable. */
   orderNumber?: string
-  /** Destination opened when the notification is selected. */
   target?: 'order' | 'finance_order_verification' | 'finance_payroll' | 'hr_attendance' | 'hr_reports' | 'hr_payroll' | 'my_schedule'
-  /** Optional record identifier for the destination. */
   targetId?: string
 }
 
-/**
- * @description Buckets for time-based order alerts.
- */
 export interface OrderAlertBuckets {
-  /** Orders considered late (deadline passed). */
   late: OrderTableRow[]
-  /** Orders considered at risk / due soon (within the next time window). */
   dueSoon: OrderTableRow[]
 }
 
-/**
- * @description Buckets for stock-based alerts.
- */
 export interface StockAlertBuckets {
-  /** Items where available quantity is at/below threshold. */
   lowStock: StockItem[]
-  /** Items that are already expired. */
   expiredStock: StockItem[]
 }
 
-/**
- * @description Derives time-based alert buckets for a list of orders using Orders domain priority.
- * - late: getOrderPriority(order) === 'late'
- * - dueSoon: getOrderPriority(order) === 'due_soon'
- * - normal orders are ignored here.
- */
 export const getOrderAlerts = (orders: OrderTableRow[]): OrderAlertBuckets => {
   const late: OrderTableRow[] = []
   const dueSoon: OrderTableRow[] = []
 
   orders.forEach((order) => {
     const priority = getOrderPriority(order)
-    if (priority === 'late') {
-      late.push(order)
-    } else if (priority === 'due_soon') {
-      dueSoon.push(order)
-    }
+    if (priority === 'late') late.push(order)
+    else if (priority === 'due_soon') dueSoon.push(order)
   })
 
   return { late, dueSoon }
 }
 
-/**
- * @description Derives low-stock and expired-stock alert buckets from stock items.
- * Uses stockDomain helpers for low-stock and expiry detection.
- */
-export const getStockAlerts = (items: StockItem[]): StockAlertBuckets => {
-  const lowStock = getLowStockItems(items)
-  const expiredStock = getExpiredStock(items)
+export const getStockAlerts = (items: StockItem[]): StockAlertBuckets => ({
+  lowStock: getLowStockItems(items),
+  expiredStock: getExpiredStock(items),
+})
 
-  return {
-    lowStock,
-    expiredStock,
-  }
-}
-
-/**
- * @description Input context for aggregating system alerts.
- */
 export interface SystemAlertsContext {
-  /** All orders known to the system (raw rows). */
   orders: OrderTableRow[]
-  /** All stock items known to the system. */
   stockItems: StockItem[]
-  /** Optional branch filter for branch-scoped alerts. */
   branch?: BranchId | 'All'
-  /** Current user role to adapt which alerts are relevant. */
   role: UserRole
   attendance?: AttendanceRecord[]
   attendanceReviewCases?: AttendanceReviewCase[]
@@ -151,15 +97,9 @@ export interface SystemAlertsContext {
 }
 
 /**
- * @description Aggregates cross-module alerts (orders + stock + HR/system)
- * into a single flat list of AlertItems.
- *
- * Rules:
- * - HR role: returns HR-specific alerts only.
- * - Other roles: combine order alerts and stock alerts using the same
- *   business rules as Orders and Stock domains.
- *
- * The function is pure and never mutates store or UI state.
+ * Aggregates role-relevant system alerts. Admin's branch selector is only a
+ * browsing filter and must not narrow awareness; actual order mutations are
+ * branch-scoped by the order authorization/database boundaries.
  */
 export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
   const {
@@ -209,7 +149,6 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
   if (role === 'admin') {
     const rejected = orders
       .filter((order) => order.financeVerificationStatus === 'rejected')
-      .filter((order) => !branch || branch === 'All' || order.branch === branch)
       .map((order) => ({
         id: `finance-rejected-${order.orderNumber}-${order.financeVerificationAt ?? 'current'}`,
         kind: 'finance_rejected' as const,
