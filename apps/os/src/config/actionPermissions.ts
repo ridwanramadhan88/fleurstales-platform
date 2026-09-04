@@ -61,8 +61,8 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'orders.advance_status', label:'Advance Order Status', description:'Move an order through its permitted fulfillment workflow.', parentSection:'orders', group:'Orders' },
   { id:'orders.submit_change_request', label:'Request Locked Changes', description:'Submit edit or cancellation requests for Finance review.', parentSection:'orders', group:'Orders' },
   { id:'orders.resolve_change_request', label:'Resolve Order Change Requests', description:'Approve or reject locked-order change requests.', parentSection:'finance', group:'Orders' },
-  { id:'finance.view_order_verification', label:'View Order Reconciliation', description:'Open the completed-order reconciliation workspace.', parentSection:'finance', group:'Finance' },
-  { id:'finance.verify_order', label:'Reconcile Orders', description:'Reconcile completed orders.', parentSection:'finance', group:'Finance' },
+  { id:'finance.view_order_verification', label:'View Order Reconciliation', description:'View paid orders and their production completion state.', parentSection:'finance', group:'Finance' },
+  { id:'finance.verify_order', label:'Legacy Order Verification', description:'Deprecated. New order payments post when Admin starts Processing.', parentSection:'finance', group:'Finance' },
   { id:'finance.view_payroll', label:'View Payroll', description:'View payroll proposals.', parentSection:'finance', group:'Finance' },
   { id:'finance.approve_employee_payroll', label:'Approve Employee Payroll', description:'Approve one employee payroll.', parentSection:'finance', group:'Finance' },
   { id:'finance.approve_all_payroll', label:'Approve All Payroll', description:'Approve remaining payroll items.', parentSection:'finance', group:'Finance' },
@@ -71,9 +71,9 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'finance.adjust_payroll_schedule', label:'Adjust Payroll Schedule', description:'Adjust a future payroll cycle schedule before approval/payment.', parentSection:'finance', group:'Finance' },
   { id:'finance.view_refunds', label:'View Refunds', description:'Open the refund workspace.', parentSection:'finance', group:'Finance' },
   { id:'finance.approve_refund', label:'Manage Refunds', description:'Initiate, complete, or cancel refunds from the Finance workflow.', parentSection:'finance', group:'Finance' },
-  { id:'finance.view_ledger', label:'View Transactions', description:'Read transaction entries.', parentSection:'finance', group:'Finance' },
-  { id:'finance.create_ledger_entry', label:'Create Transactions', description:'Add Money In or Money Out.', parentSection:'finance', group:'Finance' },
-  { id:'finance.edit_ledger_entry', label:'Edit Manual Transactions', description:'Edit manual ledger entries. Automatic entries stay read-only.', parentSection:'finance', group:'Finance' },
+  { id:'finance.view_ledger', label:'View Transactions', description:'Read transaction entries and account balances.', parentSection:'finance', group:'Finance' },
+  { id:'finance.create_ledger_entry', label:'Create Transactions', description:'Add Money In, Money Out, opening balance, adjustment, or transfer entries.', parentSection:'finance', group:'Finance' },
+  { id:'finance.edit_ledger_entry', label:'Edit Posted Transactions', description:'Edit posted ledger entries through the audited Finance command.', parentSection:'finance', group:'Finance' },
   { id:'hr.view_employees', label:'View Employees', description:'Open employee records.', parentSection:'hr', group:'HR' },
   { id:'hr.create_employee', label:'Create Employees', description:'Create a staff account.', parentSection:'hr', group:'HR' },
   { id:'hr.edit_employee', label:'Edit Employees', description:'Edit staff profile and role.', parentSection:'hr', group:'HR' },
@@ -95,11 +95,14 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
 
 const allFalse = () => Object.fromEntries(CAPABILITY_REGISTRY.map(({id}) => [id, false])) as Record<ActionCapability, boolean>
 const withEnabled = (...ids: ActionCapability[]) => ({ ...allFalse(), ...Object.fromEntries(ids.map((id)=>[id,true])) })
+const OWNER_DEFAULT_CAPABILITIES = CAPABILITY_REGISTRY
+  .filter((definition) => definition.group !== 'Finance' && definition.id !== 'orders.resolve_change_request')
+  .map((definition) => definition.id)
 
 export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
-  owner: withEnabled(...CAPABILITY_REGISTRY.map(({ id }) => id)),
+  owner: withEnabled(...OWNER_DEFAULT_CAPABILITIES),
   admin: withEnabled('orders.read_all','orders.create','orders.edit','orders.assign','orders.advance_status','orders.submit_change_request'),
-  finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.verify_order','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry'),
+  finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry'),
   hr: withEnabled('hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
 }
@@ -112,20 +115,20 @@ export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
   'orders.assign': ['owner','admin'],
   'orders.advance_status': ['owner','admin'],
   'orders.submit_change_request': ['owner','admin'],
-  'orders.resolve_change_request': ['owner','finance'],
-  'finance.view_order_verification': ['owner','finance'],
-  'finance.verify_order': ['owner','finance'],
-  'finance.view_payroll': ['owner','finance'],
-  'finance.approve_employee_payroll': ['owner','finance'],
-  'finance.approve_all_payroll': ['owner','finance'],
-  'finance.reject_employee_payroll': ['owner','finance'],
-  'finance.record_final_payment': ['owner','finance'],
-  'finance.adjust_payroll_schedule': ['owner','finance'],
-  'finance.view_refunds': ['owner','finance'],
-  'finance.approve_refund': ['owner','finance'],
-  'finance.view_ledger': ['owner','finance'],
-  'finance.create_ledger_entry': ['owner','finance'],
-  'finance.edit_ledger_entry': ['owner','finance'],
+  'orders.resolve_change_request': ['finance'],
+  'finance.view_order_verification': ['finance'],
+  'finance.verify_order': [],
+  'finance.view_payroll': ['finance'],
+  'finance.approve_employee_payroll': ['finance'],
+  'finance.approve_all_payroll': ['finance'],
+  'finance.reject_employee_payroll': ['finance'],
+  'finance.record_final_payment': ['finance'],
+  'finance.adjust_payroll_schedule': ['finance'],
+  'finance.view_refunds': ['finance'],
+  'finance.approve_refund': ['finance'],
+  'finance.view_ledger': ['finance'],
+  'finance.create_ledger_entry': ['finance'],
+  'finance.edit_ledger_entry': ['finance'],
   'hr.view_employees': ['owner','hr'],
   'hr.create_employee': ['owner','hr'],
   'hr.edit_employee': ['owner','hr'],
@@ -169,7 +172,9 @@ export const guardActionPermissions = (
   const next = structuredClone(matrix)
   for (const role of Object.keys(next) as UserRole[]) {
     for (const definition of CAPABILITY_REGISTRY) {
-      if (!isCapabilityEligibleForRole(role, definition.id) || !canAccessSection(role, definition.parentSection, sectionPermissions)) next[role][definition.id] = false
+      if (!isCapabilityEligibleForRole(role, definition.id) || !canAccessSection(role, definition.parentSection, sectionPermissions)) {
+        next[role][definition.id] = false
+      }
     }
   }
   for (const definition of CAPABILITY_REGISTRY.filter((item)=>item.group==='Settings')) {
