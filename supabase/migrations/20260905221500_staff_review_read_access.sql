@@ -22,6 +22,72 @@ set revision = revision + 1,
     updated_at = now()
 where id = 'primary';
 
+-- The legacy row-scope helper hard-coded HR out of Orders. HR is now a
+-- company-wide read-only observer like Finance. Admin keeps branch scoping and
+-- Florist remains assigned-order-only.
+create or replace function private.can_read_order_row(
+  p_branch_id text,
+  p_florist_employee_id text
+)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_role text := private.current_staff_role();
+  v_branch_id text := private.current_staff_branch_id();
+  v_employee_id text := private.current_staff_employee_id();
+begin
+  if v_role in ('owner', 'finance', 'hr') then
+    return true;
+  end if;
+
+  if v_role = 'admin' then
+    return v_branch_id is not null and v_branch_id = p_branch_id;
+  end if;
+
+  if v_role = 'florist' then
+    return v_branch_id is not null
+      and v_branch_id = p_branch_id
+      and v_employee_id is not null
+      and v_employee_id = p_florist_employee_id;
+  end if;
+
+  return false;
+end;
+$$;
+revoke execute on function private.can_read_order_row(text, text) from public, anon;
+grant execute on function private.can_read_order_row(text, text) to authenticated;
+
+-- CRM remains read-only for Finance/HR and editable only through the existing
+-- mutation boundaries. These policies only widen SELECT visibility.
+drop policy if exists customers_crm_read on public.customers;
+create policy customers_crm_read on public.customers
+for select to authenticated
+using (private.has_staff_role(array['owner','admin','finance','hr']));
+
+drop policy if exists customer_addresses_crm_read on public.customer_addresses;
+create policy customer_addresses_crm_read on public.customer_addresses
+for select to authenticated
+using (private.has_staff_role(array['owner','admin','finance','hr']));
+
+-- Order rows/items/activities already delegate to can_read_order_row. Payment
+-- events had an additional hard-coded role gate, so include HR there as well.
+drop policy if exists order_payments_staff_read on public.order_payment_events;
+create policy order_payments_staff_read on public.order_payment_events
+for select to authenticated
+using (
+  private.has_staff_role(array['owner','admin','finance','hr'])
+  and exists (
+    select 1
+    from public.orders o
+    where o.id = order_id
+      and private.can_read_order_row(o.branch_id, o.florist_assigned_employee_id)
+  )
+);
+
 create or replace function public.get_staff_reviews(
   p_order_id text default null,
   p_customer_id text default null
