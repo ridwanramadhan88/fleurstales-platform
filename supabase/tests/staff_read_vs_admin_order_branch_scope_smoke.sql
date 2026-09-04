@@ -53,8 +53,9 @@ begin
   if position('current_staff_role' in v_source)=0
      or position('current_staff_branch_id' in v_source)=0
      or position('ORDER_OUTSIDE_BRANCH_SCOPE' in v_source)=0
-     or position('admin' in lower(v_source))=0 then
-    raise exception 'Admin order mutation branch trigger lost its authoritative guard';
+     or position('admin' in lower(v_source))=0
+     or position('is distinct from' in lower(v_source))=0 then
+    raise exception 'Admin order mutation branch trigger lost its authoritative/null-safe guard';
   end if;
 
   -- Orders RLS must continue delegating row visibility to the helper.
