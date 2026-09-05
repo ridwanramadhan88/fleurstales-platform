@@ -94,7 +94,7 @@ describe('finished-order edit governance', () => {
     const result = store.finalizeUnlockedEdit({
       orderNumber: 'A',
       expectedRevision: store.findOrder('A')?.revision ?? 1,
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { employeeId: 'admin-a', name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
     })
 
     expect(result.allowed).toBe(true)
@@ -109,7 +109,7 @@ describe('finished-order edit governance', () => {
     const result = store.finalizeUnlockedEdit({
       orderNumber: 'A',
       expectedRevision: store.findOrder('A')?.revision ?? 1,
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { employeeId: 'admin-a', name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
     })
 
     expect(result.allowed).toBe(false)
