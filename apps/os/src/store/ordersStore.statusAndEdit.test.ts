@@ -32,6 +32,7 @@ const updateStatus = (
   options: {
     role?: UserRole
     name?: string
+    branchId?: string
     source?: 'workflow' | 'edit' | 'undo'
     completedAtOverride?: string
     undoOf?: {
@@ -40,19 +41,22 @@ const updateStatus = (
       originalSource: 'workflow' | 'edit'
     }
   } = {},
-) =>
-  useOrdersStore.getState().updateOrderStatus({
+) => {
+  const role = options.role ?? 'admin'
+  return useOrdersStore.getState().updateOrderStatus({
     orderNumber,
     status,
     actor: {
       name: options.name ?? 'Admin A',
-      role: options.role ?? 'admin',
+      role,
+      branchId: options.branchId ?? (role === 'admin' ? 'Kedamaian' : undefined),
     },
     expectedRevision: useOrdersStore.getState().orders.find((order) => order.orderNumber === orderNumber)?.revision ?? 1,
     source: options.source ?? 'workflow',
     completedAtOverride: options.completedAtOverride,
     undoOf: options.undoOf,
   })
+}
 
 describe('updateOrderStatus', () => {
   it('blocks Confirmed to Processing when no florist is assigned', () => {
@@ -86,8 +90,6 @@ describe('updateOrderStatus', () => {
     const order = useOrdersStore.getState().orders.find((o) => o.orderNumber === 'A')
     expect(order?.completedAt).toBeDefined()
   })
-
-
 
   it('does not stamp completedAt when an order is only ready', () => {
     seed([makeOrder({ orderNumber: 'READY', status: 'processing', fulfillment: 'pickup', completedAt: undefined })])
@@ -143,7 +145,6 @@ describe('updateOrderStatus', () => {
     expect(useOrdersStore.getState().orders[0].status).toBe('processing')
   })
 
-
   it('rejects a forward jump and leaves the persisted order unchanged', () => {
     seed([makeOrder({ orderNumber: 'A', status: 'processing', fulfillment: 'delivery' })])
 
@@ -167,7 +168,7 @@ describe('finalizeUnlockedEdit (edit flow regression)', () => {
   it('clears editUnlocked after the edit is saved', () => {
     seed([makeOrder({ orderNumber: 'A', status: 'delivered', editUnlocked: true })])
 
-    useOrdersStore.getState().finalizeUnlockedEdit({ orderNumber:'A', expectedRevision:useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1, actor:{ name:'Admin A', role:'admin' } })
+    useOrdersStore.getState().finalizeUnlockedEdit({ orderNumber:'A', expectedRevision:useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1, actor:{ name:'Admin A', role:'admin', branchId:'Kedamaian' } })
 
     expect(
       useOrdersStore.getState().orders.find((o) => o.orderNumber === 'A')?.editUnlocked,
@@ -185,7 +186,7 @@ describe('finalizeUnlockedEdit (edit flow regression)', () => {
       }),
     ])
 
-    useOrdersStore.getState().finalizeUnlockedEdit({ orderNumber:'A', expectedRevision:useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1, actor:{ name:'Admin A', role:'admin' } })
+    useOrdersStore.getState().finalizeUnlockedEdit({ orderNumber:'A', expectedRevision:useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1, actor:{ name:'Admin A', role:'admin', branchId:'Kedamaian' } })
 
     const order = useOrdersStore.getState().orders.find((o) => o.orderNumber === 'A')
     expect(order?.financeVerified).toBe(false)
@@ -209,7 +210,7 @@ describe('verify -> edit request -> approve -> finalize (full change-request lif
       expectedRevision: useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1,
       type: 'edit',
       reason: 'Wrong greeting card message',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
     })
     expect(
       useOrdersStore.getState().orders.find((o) => o.orderNumber === 'A')?.pendingChangeRequest,
@@ -222,7 +223,7 @@ describe('verify -> edit request -> approve -> finalize (full change-request lif
     expect(order?.financeVerified).toBe(true) // still true until the edit is actually saved
 
     // Admin saves the edit through the normal edit form -> finalize runs.
-    useOrdersStore.getState().finalizeUnlockedEdit({ orderNumber:'A', expectedRevision:useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1, actor:{ name:'Admin A', role:'admin' } })
+    useOrdersStore.getState().finalizeUnlockedEdit({ orderNumber:'A', expectedRevision:useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1, actor:{ name:'Admin A', role:'admin', branchId:'Kedamaian' } })
     order = useOrdersStore.getState().orders.find((o) => o.orderNumber === 'A')
     expect(order?.editUnlocked).toBe(false)
     expect(order?.financeVerified).toBe(false)
@@ -236,7 +237,7 @@ describe('verify -> edit request -> approve -> finalize (full change-request lif
       expectedRevision: useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1,
       type: 'cancel',
       reason: 'Customer refused delivery',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
     })
     useOrdersStore.getState().approveChangeRequest({ orderNumber:'A', expectedRevision:useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1, actor:{ name:'Owner A', role:'owner' }, note:'Owner approved after review' })
 
@@ -253,7 +254,7 @@ describe('verify -> edit request -> approve -> finalize (full change-request lif
       expectedRevision: useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1,
       type: 'edit',
       reason: 'Wrong flowers',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
     })
     useOrdersStore.getState().rejectChangeRequest({ orderNumber:'A', expectedRevision:useOrdersStore.getState().orders.find((o)=>o.orderNumber==='A')?.revision ?? 1, actor:{ name:'Finance A', role:'finance' }, note:'Insufficient evidence' })
 
