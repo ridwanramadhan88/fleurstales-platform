@@ -6,7 +6,7 @@
  * anonymous tracking RPC used by the Storefront.
  */
 
-import { next } from '@vercel/functions'
+import { next } from '@vercel/edge'
 
 const CRAWLER_UA = /facebookexternalhit|WhatsApp|Twitterbot|Slackbot|LinkedInBot|TelegramBot/i
 
