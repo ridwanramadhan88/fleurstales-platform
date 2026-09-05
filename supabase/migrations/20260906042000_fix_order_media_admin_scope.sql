@@ -2,6 +2,8 @@
 -- Admins and owners can read/advance orders across branches, so Storage media
 -- writes must use the same authorization boundary instead of the retired
 -- operational-branch equality check.
+-- Full database replay is required because this helper is authoritative for
+-- both transfer-proof and finished-product Storage writes.
 
 begin;
 
