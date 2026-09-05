@@ -1,11 +1,12 @@
-import type { FC } from 'react'
-import { CheckCircle2, Clock3 } from 'lucide-react'
+import type { FC, KeyboardEvent } from 'react'
+import { CheckCircle2, Clock3, ExternalLink } from 'lucide-react'
 import { formatIdrCurrency } from '../../lib/formatters'
 import { useSettingsStore } from '../../store/settingsStore'
 import type { FinanceQueueRow } from './OrderVerificationQueueController'
 
 interface OrderVerificationQueueRowProps {
   row: FinanceQueueRow
+  onOpen: () => void
 }
 
 const paymentMethodLabel = (method: FinanceQueueRow['paymentMethod']): string => {
@@ -28,7 +29,7 @@ const formatPaidAt = (value: string): string => {
   })
 }
 
-export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ row }) => {
+export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ row, onOpen }) => {
   const bankAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
   const accountLabel = row.accountId === 'cash:main'
     ? 'Cash'
@@ -38,8 +39,21 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ 
   const complete = row.status === 'complete'
   const refunded = row.order.paymentStatus === 'refunded' || Boolean(row.order.refundCompletedAt)
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    onOpen()
+  }
+
   return (
-    <article className="rounded-xl bg-surface-card px-4 py-3.5 shadow-ios-sm ring-1 ring-border/60">
+    <article
+      role="button"
+      tabIndex={0}
+      aria-label={`Open finance evidence for ${row.order.orderNumber}`}
+      onClick={onOpen}
+      onKeyDown={handleKeyDown}
+      className="cursor-pointer rounded-xl bg-surface-card px-4 py-3.5 shadow-ios-sm ring-1 ring-border/60 transition hover:bg-surface-panel hover:ring-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -81,6 +95,9 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ 
           <p className="mt-1 text-base font-semibold text-foreground">
             {formatIdrCurrency(row.paymentAmountIdr)}
           </p>
+          <span className="mt-2 inline-flex items-center gap-1.5 text-2xs font-semibold text-primary">
+            View evidence <ExternalLink className="size-3" />
+          </span>
         </div>
       </div>
     </article>
