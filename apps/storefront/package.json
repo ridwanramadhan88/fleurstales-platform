@@ -35,7 +35,7 @@
     "check:parity": "node scripts/check-cross-build-parity.mjs"
   },
   "dependencies": {
-    "@vercel/functions": "^3.9.5",
+    "@vercel/edge": "^1.1.1",
     "@radix-ui/react-accordion": "^1.2.8",
     "@radix-ui/react-alert-dialog": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.2.3",
