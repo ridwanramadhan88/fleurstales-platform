@@ -4,6 +4,7 @@ import { OrderChangeRequestModal } from './OrderChangeRequestModal'
 import { OrderStatusStepper } from './OrderStatusStepper'
 import { OrderRefundPanel } from './OrderRefundPanel'
 import { OrderRefundDialog } from './OrderRefundDialog'
+import { OrderPaymentProofFinanceCard } from './OrderPaymentProofFinanceCard'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 
 interface OrderDetailsFinanceSectionProps {
@@ -15,6 +16,7 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
 }) => {
   const {
     order,
+    currentUserRole,
     isOrderFuture,
     canResolveRequest,
     isTerminalIssue,
@@ -38,16 +40,16 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
 
   return (
     <>
-        {/* Pending change request banner: shown to Finance/Owner when Admin
-            has submitted an edit or cancellation request on this
-            (already-verified) order, awaiting approve/reject. Also shows a
-            plain read-only notice to everyone else while it's pending. */}
         <OrderChangeRequestBanner
           request={order.pendingChangeRequest}
           canResolveRequest={canResolveRequest}
           onApprove={onApproveRequest}
           onReject={onRejectRequest}
         />
+
+        {currentUserRole === 'finance' && order.paymentMethod === 'transfer' && (
+          <OrderPaymentProofFinanceCard paymentProofPath={order.paymentProofUrl} />
+        )}
 
         {order.financeVerificationStatus === 'rejected' && (
           <section className="mb-3 space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3.5 py-3">
@@ -84,8 +86,6 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
           </section>
         )}
 
-        {/* Request-reason modal: Admin fills a required reason before
-            submitting an edit/cancellation request on a finished order. */}
         <OrderChangeRequestModal
           mode={isRequestModalOpen}
           reason={requestReason}
@@ -113,7 +113,6 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
           onCancel={onCloseRefundDialog}
           onConfirm={onSubmitRefundAction}
         />
-
     </>
   )
 }
