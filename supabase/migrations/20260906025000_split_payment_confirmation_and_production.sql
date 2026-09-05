@@ -145,7 +145,7 @@ begin
   from public.staff_access_profiles
   where employee_id=v_employee_id and is_active=true
   limit 1;
-  v_actor_name := coalesce(nullif(trim(v_actor_name,'')),v_role,'Admin');
+  v_actor_name := coalesce(nullif(trim(v_actor_name),''),v_role,'Admin');
 
   update public.orders
   set status='processing',
