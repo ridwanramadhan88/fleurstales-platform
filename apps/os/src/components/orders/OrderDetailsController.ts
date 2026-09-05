@@ -1,24 +1,10 @@
 /**
- * @file OrderDetailsController.ts
- * @description Controller hook for OrderDetailsPanel. Owns every Zustand
- * store subscription and mutating store call that used to live directly in
- * the component, plus all local UI state, derived/computed values, and
- * event handlers. The component itself becomes a pure function of the
- * single view-model object this hook returns — it never imports a
- * `store/*` hook or calls a mutating store action directly.
- *
- * Extraction is a straight move, not a rewrite: every handler's body below
- * is byte-for-byte the same logic that used to sit inline in
- * OrderDetailsPanel.tsx, just relocated. See the focused orderTable* helper modules for the
- * shared domain helpers this calls into (unchanged, still pure).
+ * Controller hook for OrderDetailsPanel. Store subscriptions and mutating
+ * actions stay here so the panel remains a view over one view model.
  */
 
 import { useMemo } from 'react'
-import type {
-  OrderFulfillment,
-  OrderStatus,
-  OrderTableRow,
-} from '../../types/orders'
+import type { OrderFulfillment, OrderStatus, OrderTableRow } from '../../types/orders'
 import { useOrderRuntimeStore, type OrderActivityEvent } from '../../store/orderRuntimeStore'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useCatalogStore } from '../../store/catalogStore'
@@ -39,12 +25,14 @@ import {
   isTerminalIssueOrder,
 } from '../../domain/orderBusinessRules'
 import { useDismissableModal } from '../../hooks/useDismissableModal'
-import {
-  getOrderUrgency,
-  isFutureOrder,
-} from './orderTableFormatters'
+import { getOrderUrgency, isFutureOrder } from './orderTableFormatters'
 import { getNextStatus } from './orderTableWorkflow'
-import { buildReadyForPickupMessage, buildWhatsAppLink } from './orderTableWhatsApp'
+import {
+  buildReadyForDeliveryMessage,
+  buildReadyForPickupMessage,
+  buildReviewRequestMessage,
+  buildWhatsAppLink,
+} from './orderTableWhatsApp'
 import { EMPTY_ACTIVITIES } from './orderTableSharedConstants'
 import { useOrderDetailsActions } from './useOrderDetailsActions'
 import { useOrderDetailsChangeRequest } from './useOrderDetailsChangeRequest'
@@ -90,7 +78,7 @@ export interface OrderDetailsViewModel {
   isEditing: boolean
   setIsEditing: (value: boolean) => void
   draft: OrderEditDraft
-  actionModal: 'ready' | 'delivering' | null
+  actionModal: 'ready' | 'delivering' | 'review' | null
   addressCopied: boolean
   detailsCopied: boolean
   showPaymentGate: boolean
@@ -149,24 +137,15 @@ export interface OrderDetailsViewModel {
   onCancelFinishPhotoDialog: () => void
 }
 
-export const useOrderDetailsController = ({
-  order,
-  onClose,
-  formatter,
-}: UseOrderDetailsControllerParams): OrderDetailsViewModel => {
+export const useOrderDetailsController = ({ order, onClose, formatter }: UseOrderDetailsControllerParams): OrderDetailsViewModel => {
   const catalogProducts = useCatalogStore((state) => state.products)
   const itemDisplays = useMemo(
     () => Object.fromEntries(
-      (order.items ?? []).map((item) => [
-        item.id,
-        resolveOrderProductDisplay(catalogProducts, item),
-      ]),
+      (order.items ?? []).map((item) => [item.id, resolveOrderProductDisplay(catalogProducts, item)]),
     ),
     [catalogProducts, order.items],
   )
-  const firstItemDisplay = order.items?.[0]
-    ? itemDisplays[order.items[0].id]
-    : undefined
+  const firstItemDisplay = order.items?.[0] ? itemDisplays[order.items[0].id] : undefined
   const productDisplay = firstItemDisplay ?? resolveOrderProductDisplay(catalogProducts, order)
   const customers = useCustomerStore((state) => state.customers)
   const customerWhatsappNumber = useMemo(
@@ -174,9 +153,7 @@ export const useOrderDetailsController = ({
     [customers, order],
   )
 
-  const activities = useOrderRuntimeStore(
-    (state) => state.activities[order.orderNumber] ?? EMPTY_ACTIVITIES,
-  )
+  const activities = useOrderRuntimeStore((state) => state.activities[order.orderNumber] ?? EMPTY_ACTIVITIES)
   const addActivity = useOrderRuntimeStore((state) => state.addActivity)
   const updateOrderStatus = useOrdersStore((state) => state.updateOrderStatus)
   const currentUserName = useUserStore((state) => state.name)
@@ -186,27 +163,16 @@ export const useOrderDetailsController = ({
   const permissions = useSettingsStore((state) => state.permissions)
   const actionPermissions = useSettingsStore((state) => state.actionPermissions)
   const hasOrdersEditAccess = canEditSection(userRole, 'orders', permissions)
-  const actor = {
-    employeeId: currentUserEmployeeId,
-    name: currentUserName,
-    role: userRole,
-    branchId: currentUserBranchId,
-  }
+  const actor = { employeeId: currentUserEmployeeId, name: currentUserName, role: userRole, branchId: currentUserBranchId }
 
   const locked = isOrderLocked(order)
-  const canEdit =
-    hasOrdersEditAccess &&
-    canDirectlyEditOrder(order, userRole) &&
-    authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'details' }).allowed
+  const canEdit = hasOrdersEditAccess && canDirectlyEditOrder(order, userRole)
+    && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'details' }).allowed
   const canAdvance = authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'status' }).allowed
   const canVerify = canVerifyOrder(userRole)
     && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'finance_decision' }).allowed
-  const canVerifyThisOrder =
-    canVerify &&
-    canViewOrder(order, actor, permissions, actionPermissions) &&
-    isPendingFinanceVerification(order)
-  const canRequestChange =
-    locked && !canEdit && canSubmitChangeRequest(userRole)
+  const canVerifyThisOrder = canVerify && canViewOrder(order, actor, permissions, actionPermissions) && isPendingFinanceVerification(order)
+  const canRequestChange = locked && !canEdit && canSubmitChangeRequest(userRole)
     && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'change_request' }).allowed
   const canResolveRequest = canResolveChangeRequest(userRole)
     && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'change_request_resolution' }).allowed
@@ -216,106 +182,47 @@ export const useOrderDetailsController = ({
   const isOrderFuture = isFutureOrder(order)
   const urgency = getOrderUrgency(order)
   const isPendingStorefrontConfirmation = Boolean(
-    order.source === 'customer_app' &&
-    order.status === 'pending_verification' &&
-    (userRole === 'admin' || userRole === 'owner') &&
-    canAdvance,
+    order.source === 'customer_app' && order.status === 'pending_verification'
+    && (userRole === 'admin' || userRole === 'owner') && canAdvance,
   )
 
   useDismissableModal(true, onClose)
 
-  const editing = useOrderDetailsEditing({
-    order,
-    canEdit,
-    actor,
-    productDisplay,
-    addActivity,
-    onClose,
-  })
-
-  const finance = useOrderDetailsFinance({
-    order,
-    canVerifyThisOrder,
-    actor,
-    addActivity,
-  })
-
+  const editing = useOrderDetailsEditing({ order, canEdit, actor, productDisplay, addActivity, onClose })
+  const finance = useOrderDetailsFinance({ order, canVerifyThisOrder, actor, addActivity })
   const refund = useOrderDetailsRefund({ order, actor, addActivity })
-
   const changeRequest = useOrderDetailsChangeRequest({
-    order,
-    canRequestChange,
-    canResolveRequest,
-    actor,
-    addActivity,
-    setIsEditing: editing.setIsEditing,
+    order, canRequestChange, canResolveRequest, actor, addActivity, setIsEditing: editing.setIsEditing,
   })
-
-  const actions = useOrderDetailsActions({
-    order,
-    canAdvance,
-    nextStatus,
-    updateOrderStatus,
-    addActivity,
-    actor,
-  })
-
+  const actions = useOrderDetailsActions({ order, canAdvance, nextStatus, updateOrderStatus, addActivity, actor })
   const storefrontConfirmation = useOrderStorefrontConfirmation({
-    order,
-    customerWhatsappNumber,
-    enabled: isPendingStorefrontConfirmation,
+    order, customerWhatsappNumber, enabled: isPendingStorefrontConfirmation,
   })
 
   const isTerminalIssue = isTerminalIssueOrder(order)
   const readyMessage = actions.readyTrackingUrl
-    ? buildReadyForPickupMessage(order.customerName, productDisplay.name, order.branch, actions.readyTrackingUrl)
+    ? actions.actionModal === 'review'
+      ? buildReviewRequestMessage(order.customerName, order.orderNumber, actions.readyTrackingUrl)
+      : order.fulfillment === 'pickup'
+        ? buildReadyForPickupMessage(order.customerName, productDisplay.name, order.branch, actions.readyTrackingUrl)
+        : buildReadyForDeliveryMessage(order.customerName, productDisplay.name, actions.readyTrackingUrl)
     : ''
   const whatsAppLink = readyMessage ? buildWhatsAppLink(customerWhatsappNumber, readyMessage) : ''
 
   return {
-    order,
-    formatter,
-    onClose,
-    productDisplay,
-    itemDisplays,
-    customerWhatsappNumber,
-    activities,
-    nextStatus,
-    isOrderFuture,
-    urgency,
-    currentUserRole: userRole,
-    isCancellable: actions.isCancellable,
-    isTerminalIssue,
-    isPendingStorefrontConfirmation,
-    readyMessage,
-    whatsAppLink,
-    canEdit,
-    canVerify,
-    canVerifyThisOrder,
-    canRequestChange,
-    canResolveRequest,
-    hasPendingRequest,
-    locked,
-    canManageRefund: refund.canManageRefund,
-    canCompleteRefund: refund.canCompleteRefund,
-    canCancelRefund: refund.canCancelRefund,
-    canResubmitFinance: finance.canResubmitFinance,
-    isEditing: editing.isEditing,
-    setIsEditing: editing.setIsEditing,
-    draft: editing.draft,
-    actionModal: actions.actionModal,
-    addressCopied: actions.addressCopied,
-    detailsCopied: actions.detailsCopied,
-    showPaymentGate: actions.showPaymentGate,
-    showFinishPhotoDialog: actions.showFinishPhotoDialog,
-    showFloristAssignment: actions.showFloristAssignment,
-    floristDialogMode: actions.floristDialogMode,
-    isRequestModalOpen: changeRequest.isRequestModalOpen,
-    requestReason: changeRequest.requestReason,
-    setRequestReason: changeRequest.setRequestReason,
-    refundDialogMode: refund.refundDialogMode,
-    refundReason: refund.refundReason,
-    resubmissionNote: finance.resubmissionNote,
+    order, formatter, onClose, productDisplay, itemDisplays, customerWhatsappNumber, activities, nextStatus,
+    isOrderFuture, urgency, currentUserRole: userRole, isCancellable: actions.isCancellable, isTerminalIssue,
+    isPendingStorefrontConfirmation, readyMessage, whatsAppLink, canEdit, canVerify, canVerifyThisOrder,
+    canRequestChange, canResolveRequest, hasPendingRequest, locked,
+    canManageRefund: refund.canManageRefund, canCompleteRefund: refund.canCompleteRefund,
+    canCancelRefund: refund.canCancelRefund, canResubmitFinance: finance.canResubmitFinance,
+    isEditing: editing.isEditing, setIsEditing: editing.setIsEditing, draft: editing.draft,
+    actionModal: actions.actionModal, addressCopied: actions.addressCopied, detailsCopied: actions.detailsCopied,
+    showPaymentGate: actions.showPaymentGate, showFinishPhotoDialog: actions.showFinishPhotoDialog,
+    showFloristAssignment: actions.showFloristAssignment, floristDialogMode: actions.floristDialogMode,
+    isRequestModalOpen: changeRequest.isRequestModalOpen, requestReason: changeRequest.requestReason,
+    setRequestReason: changeRequest.setRequestReason, refundDialogMode: refund.refundDialogMode,
+    refundReason: refund.refundReason, resubmissionNote: finance.resubmissionNote,
     setRefundReason: refund.setRefundReason,
     storefrontDecisionBusy: storefrontConfirmation.storefrontDecisionBusy,
     storefrontPreviewLoading: storefrontConfirmation.storefrontPreviewLoading,
@@ -324,34 +231,20 @@ export const useOrderDetailsController = ({
     setStorefrontCancelReason: storefrontConfirmation.setStorefrontCancelReason,
     storefrontPreviewModal: storefrontConfirmation.storefrontPreviewModal,
     storefrontPreviewMessage: storefrontConfirmation.storefrontPreviewMessage,
-    onDraftChange: editing.onDraftChange,
-    onFulfillmentChange: editing.onFulfillmentChange,
-    onCancelOrder: actions.onCancelOrder,
-    onVerifyOrder: finance.onVerifyOrder,
-    onResubmitFinance: finance.onResubmitFinance,
-    setResubmissionNote: finance.setResubmissionNote,
-    onApproveRequest: changeRequest.onApproveRequest,
-    onRejectRequest: changeRequest.onRejectRequest,
-    onOpenRequestModal: changeRequest.onOpenRequestModal,
-    onCloseRequestModal: changeRequest.onCloseRequestModal,
-    onSubmitChangeRequest: changeRequest.onSubmitChangeRequest,
-    onCancelEdit: editing.onCancelEdit,
-    onSaveChanges: editing.onSaveChanges,
-    onMoveToNextStatus: actions.onMoveToNextStatus,
-    onCancelPaymentGate: actions.onCancelPaymentGate,
-    onOpenFloristReassignment: actions.onOpenFloristReassignment,
-    onCancelFloristAssignment: actions.onCancelFloristAssignment,
-    onFloristAssigned: actions.onFloristAssigned,
-    onMarkPaidAndContinue: actions.onMarkPaidAndContinue,
-    onOpenInitiateRefund: refund.openInitiateRefund,
-    onOpenCompleteRefund: refund.openCompleteRefund,
-    onOpenCancelRefund: refund.openCancelRefund,
-    onCloseRefundDialog: refund.closeRefundDialog,
-    onSubmitRefundAction: refund.submitRefundAction,
-    onCloseActionModal: actions.onCloseActionModal,
-    onCopyAddress: actions.onCopyAddress,
-    onCopyOrderDetails: actions.onCopyOrderDetails,
-    onOpenStorefrontCancel: storefrontConfirmation.onOpenStorefrontCancel,
+    onDraftChange: editing.onDraftChange, onFulfillmentChange: editing.onFulfillmentChange,
+    onCancelOrder: actions.onCancelOrder, onVerifyOrder: finance.onVerifyOrder,
+    onResubmitFinance: finance.onResubmitFinance, setResubmissionNote: finance.setResubmissionNote,
+    onApproveRequest: changeRequest.onApproveRequest, onRejectRequest: changeRequest.onRejectRequest,
+    onOpenRequestModal: changeRequest.onOpenRequestModal, onCloseRequestModal: changeRequest.onCloseRequestModal,
+    onSubmitChangeRequest: changeRequest.onSubmitChangeRequest, onCancelEdit: editing.onCancelEdit,
+    onSaveChanges: editing.onSaveChanges, onMoveToNextStatus: actions.onMoveToNextStatus,
+    onCancelPaymentGate: actions.onCancelPaymentGate, onOpenFloristReassignment: actions.onOpenFloristReassignment,
+    onCancelFloristAssignment: actions.onCancelFloristAssignment, onFloristAssigned: actions.onFloristAssigned,
+    onMarkPaidAndContinue: actions.onMarkPaidAndContinue, onOpenInitiateRefund: refund.openInitiateRefund,
+    onOpenCompleteRefund: refund.openCompleteRefund, onOpenCancelRefund: refund.openCancelRefund,
+    onCloseRefundDialog: refund.closeRefundDialog, onSubmitRefundAction: refund.submitRefundAction,
+    onCloseActionModal: actions.onCloseActionModal, onCopyAddress: actions.onCopyAddress,
+    onCopyOrderDetails: actions.onCopyOrderDetails, onOpenStorefrontCancel: storefrontConfirmation.onOpenStorefrontCancel,
     onCloseStorefrontCancel: storefrontConfirmation.onCloseStorefrontCancel,
     onOpenStorefrontConfirmPreview: storefrontConfirmation.onOpenStorefrontConfirmPreview,
     onCloseStorefrontPreview: storefrontConfirmation.onCloseStorefrontPreview,
