@@ -1,17 +1,20 @@
-import { useMemo, useState, type FC } from 'react'
-import { Pencil, ReceiptText, Search } from 'lucide-react'
+import { useMemo, useState, type FC, type KeyboardEvent } from 'react'
+import { ExternalLink, Pencil, ReceiptText, Search } from 'lucide-react'
 import type {
   FinanceCategory,
   FinanceTransaction,
   FinanceTransactionType,
 } from '../../store/financeStoreTypes'
 import { useFinanceStore } from '../../store/financeStore'
+import { useOrdersStore } from '../../store/ordersStore'
+import { useUserStore } from '../../store/userStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import {
   getFinanceCategoryLabel,
 } from '../../domain/financeTransactionCategoryDomain'
 import type { TransactionLedgerViewModel } from './TransactionLedgerController'
 import { StatusChip } from '../ui/chip'
+import { OrderFinanceReviewSheetContainer } from './OrderFinanceReviewSheetContainer'
 
 type SourceTab = 'all' | 'orders' | 'payroll' | 'refunds' | 'manual' | 'cashflow'
 type PeriodFilter = 'all' | 'today' | '30d'
@@ -54,20 +57,39 @@ const TransactionRow: FC<{
   transaction: FinanceTransaction
   canEdit: boolean
   accountLabel: string
-}> = ({ transaction, canEdit, accountLabel }) => {
+  onOpenOrder?: () => void
+}> = ({ transaction, canEdit, accountLabel, onOpenOrder }) => {
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const scope = transaction.scope ?? (transaction.branch === 'All' ? 'company' : 'branch')
   const editable = canEdit && transaction.status === 'verified' && transaction.source !== 'transfer'
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!onOpenOrder || (event.key !== 'Enter' && event.key !== ' ')) return
+    event.preventDefault()
+    onOpenOrder()
+  }
+
   return (
-    <article className="rounded-xl border border-border/60 bg-card px-4 py-3">
+    <article
+      role={onOpenOrder ? 'button' : undefined}
+      tabIndex={onOpenOrder ? 0 : undefined}
+      aria-label={onOpenOrder ? `Open order ${transaction.orderNumber} finance evidence` : undefined}
+      onClick={onOpenOrder}
+      onKeyDown={handleKeyDown}
+      className={`rounded-xl border border-border/60 bg-card px-4 py-3 ${onOpenOrder ? 'cursor-pointer transition hover:bg-surface-panel hover:border-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30' : ''}`}
+    >
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate text-sm font-semibold">{transaction.name ?? transaction.description}</p>
             <StatusChip tone="neutral">{sourceLabel(transaction)}</StatusChip>
             {transaction.status !== 'verified' && <StatusChip tone="warning">{transaction.status}</StatusChip>}
+            {onOpenOrder && (
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold text-primary">
+                View order evidence <ExternalLink className="size-3" />
+              </span>
+            )}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {getFinanceCategoryLabel(transaction.category, customCategories, categoryOverrides)} · {accountLabel} · {scope === 'company' ? 'Company-wide' : transaction.branch} · {transaction.method}
@@ -77,6 +99,7 @@ const TransactionRow: FC<{
               day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
             })} · {statusLabel(transaction)}
           </p>
+          {transaction.orderNumber && <p className="mt-1 text-xs font-medium text-foreground/80">Order {transaction.orderNumber}</p>}
           {transaction.adjustmentReason && <p className="mt-1 text-xs text-muted-foreground">Reason: {transaction.adjustmentReason}</p>}
           {transaction.editHistory?.length ? <p className="mt-1 text-2xs text-muted-foreground">Edited {transaction.editHistory.length}× · latest correction retained in audit history</p> : null}
         </div>
@@ -87,7 +110,10 @@ const TransactionRow: FC<{
           {editable && (
             <button
               type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent('finance-edit-posted-transaction', { detail: transaction.id }))}
+              onClick={(event) => {
+                event.stopPropagation()
+                window.dispatchEvent(new CustomEvent('finance-edit-posted-transaction', { detail: transaction.id }))
+              }}
               className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold"
             >
               <Pencil className="size-3.5" aria-hidden="true" /> Edit
@@ -108,6 +134,9 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const paymentAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
+  const orders = useOrdersStore((state) => state.orders)
+  const actorName = useUserStore((state) => state.name)
+  const userRole = useUserStore((state) => state.role)
   const [sourceTab, setSourceTab] = useState<SourceTab>('all')
   const [search, setSearch] = useState('')
   const [direction, setDirection] = useState<'all' | FinanceTransactionType>('all')
@@ -115,6 +144,7 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
   const [branch, setBranch] = useState<string>(defaultBranch ?? 'All')
   const [account, setAccount] = useState<string>('All')
   const [period, setPeriod] = useState<PeriodFilter>('all')
+  const [reviewingOrderNumber, setReviewingOrderNumber] = useState<string | null>(null)
 
   const accountLabels = useMemo(() => new Map<string,string>([
     ...paymentAccounts.map((item) => [item.id, `${item.bankName} · ${item.accountNumber}`] as [string,string]),
@@ -147,13 +177,17 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
       .sort((a, b) => businessDate(b).localeCompare(businessDate(a)) || b.createdAt.localeCompare(a.createdAt))
   }, [transactions, sourceTab, search, direction, category, branch, account, period, today, thirtyDaysAgo, customCategories, categoryOverrides, accountLabels])
 
+  const reviewingOrder = reviewingOrderNumber
+    ? orders.find((order) => order.orderNumber === reviewingOrderNumber) ?? null
+    : null
+
   if (!isVisible) return null
 
   return (
     <section className="space-y-5" aria-label="Transaction ledger">
       <header>
         <h2 className="text-lg font-semibold">Transactions</h2>
-        <p className="text-sm text-muted-foreground">Money In/Out history by account. Finance can correct posted rows with an audited reason.</p>
+        <p className="text-sm text-muted-foreground">Money In/Out history by account. Click linked order transactions to inspect payment proof and supporting order evidence.</p>
       </header>
 
       <div className="no-scrollbar flex gap-1 overflow-x-auto border-b border-border pt-1">
@@ -187,7 +221,32 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
       {visible.length === 0 ? (
         <div className="flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-border"><ReceiptText className="size-5 text-muted-foreground" /><p className="mt-2 font-semibold">No transactions in this view</p></div>
       ) : (
-        <div className="space-y-2">{visible.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} canEdit={canEditManual} accountLabel={accountLabels.get(transaction.accountId ?? 'legacy:unassigned') ?? transaction.accountId ?? 'Legacy / unassigned'} />)}</div>
+        <div className="space-y-2">
+          {visible.map((transaction) => {
+            const linkedOrder = transaction.orderNumber
+              ? orders.find((order) => order.orderNumber === transaction.orderNumber)
+              : undefined
+            return (
+              <TransactionRow
+                key={transaction.id}
+                transaction={transaction}
+                canEdit={canEditManual}
+                accountLabel={accountLabels.get(transaction.accountId ?? 'legacy:unassigned') ?? transaction.accountId ?? 'Legacy / unassigned'}
+                onOpenOrder={linkedOrder ? () => setReviewingOrderNumber(linkedOrder.orderNumber) : undefined}
+              />
+            )
+          })}
+        </div>
+      )}
+
+      {reviewingOrder && (
+        <OrderFinanceReviewSheetContainer
+          order={reviewingOrder}
+          onClose={() => setReviewingOrderNumber(null)}
+          canVerify={false}
+          actorName={actorName}
+          userRole={userRole}
+        />
       )}
     </section>
   )
