@@ -116,7 +116,7 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
   const [reviewMessage, setReviewMessage] = useState<string | null>(null)
 
   const TRACKING_LINK_UNAVAILABLE_MESSAGE =
-    'This tracking link is no longer available. It may be incorrect, or it may have expired (links are valid for 14 days after the order is placed).'
+    'This tracking link is no longer available. It may be incorrect, or it may have expired (links remain available for 14 days after the order is completed or closed).'
 
   const loadDetails = async (id: string) => {
     const result = await getPublicOrderTracking(id)
