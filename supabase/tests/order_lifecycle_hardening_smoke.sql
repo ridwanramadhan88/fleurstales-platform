@@ -1,6 +1,6 @@
 -- Order lifecycle hardening contract: secure universal tracking, terminal expiry,
 -- mandatory lifecycle evidence, private Finance-only transfer proof reads,
--- separate payment confirmation/production commands, and branch-aware media writes.
+-- separate payment confirmation/production commands, and permission-aligned media writes.
 
 do $$
 declare
@@ -93,7 +93,7 @@ begin
 
   -- Storage policies run this helper as the authenticated caller. If EXECUTE
   -- is missing, every authorized Owner/Admin upload is rejected before the
-  -- helper can evaluate its role/capability/branch checks.
+  -- helper can evaluate the same order-read + advance-status boundary.
   if not has_function_privilege('authenticated','private.can_write_order_media_object(text)','EXECUTE')
      or has_function_privilege('anon','private.can_write_order_media_object(text)','EXECUTE') then
     raise exception 'Lifecycle media policy helper grants are incorrect';
@@ -144,18 +144,19 @@ begin
   end if;
 
   select pg_get_functiondef('private.can_write_order_media_object(text)'::regprocedure) into v_source;
-  if position('current_staff_branch_id' in v_source)=0
+  if position('current_staff_branch_id' in v_source)>0
+     or position('can_read_order_row' in v_source)=0
      or position('orders.advance_status' in v_source)=0
      or position('owner' in lower(v_source))=0
      or position('admin' in lower(v_source))=0 then
-    raise exception 'Lifecycle media Storage writes are not role/branch/capability-aware';
+    raise exception 'Lifecycle media Storage writes are not aligned with role/order-read/capability authorization';
   end if;
 
   select with_check into v_policy
   from pg_policies
   where schemaname='storage' and tablename='objects' and policyname='order_payment_proofs_storage_insert';
   if v_policy is null or position('can_write_order_media_object' in v_policy)=0 then
-    raise exception 'Payment proof upload policy lost order/branch authorization';
+    raise exception 'Payment proof upload policy lost order authorization';
   end if;
 
   select qual into v_policy
