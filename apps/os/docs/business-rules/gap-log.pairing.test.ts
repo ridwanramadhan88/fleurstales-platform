@@ -88,7 +88,7 @@ describe('§22 (second half) — updatePayment now reconciles paidAmountIdr (res
       orderNumber: 'A',
       expectedRevision: 1,
       paymentStatus: 'unpaid',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
     })
 
     const order = useOrdersStore.getState().orders.find((o) => o.orderNumber === 'A')
@@ -104,7 +104,7 @@ describe('§22 (second half) — updatePayment now reconciles paidAmountIdr (res
       orderNumber: 'A',
       expectedRevision: 1,
       paymentStatus: 'paid',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
       paidAmountIdr: 999_999,
     })
 
@@ -123,7 +123,7 @@ describe('§4 — cancellation paths share the guarded status command (resolved 
       orderNumber: 'A',
       expectedRevision: 1,
       status: 'cancelled',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
       source: 'workflow',
     })
 
@@ -206,7 +206,7 @@ describe('§11 — cancellation and refund remain separate decisions', () => {
       orderNumber: 'A',
       expectedRevision: 1,
       status: 'cancelled',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
       source: 'workflow',
     })
 
