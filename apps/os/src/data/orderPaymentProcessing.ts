@@ -2,6 +2,7 @@ import type { OrderTableRow } from '../types/orders'
 import { bootstrapSharedData } from './shared/bootstrap'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
+import { removeOrderPaymentProof } from './orderMediaUpload'
 import { useOrdersStore } from '../store/ordersStore'
 import { useFinanceStore } from '../store/financeStore'
 import { useUserStore } from '../store/userStore'
@@ -151,19 +152,27 @@ export const processOrderForProduction = async (
     return result.order
   }
 
-  await getClient().rpc('process_order_for_production_with_proof', {
-    p_order_id: order.id,
-    p_expected_revision: order.revision ?? 1,
-    p_finance_account_id: input.financeAccountId,
-    p_florist_employee_id: input.floristEmployeeId,
-    p_assignment_date: input.assignmentDate,
-    p_assignment_time: input.assignmentTime ?? null,
-    p_allow_schedule_override: input.allowScheduleOverride,
-    p_scheduled_branch_id: input.scheduledBranchId ?? null,
-    p_shift_start: input.shiftStart ?? null,
-    p_shift_end: input.shiftEnd ?? null,
-    p_payment_proof_path: input.paymentProofPath ?? order.paymentProofUrl ?? null,
-  })
+  const proofPath = input.paymentProofPath ?? order.paymentProofUrl ?? undefined
+  const isNewProof = Boolean(input.paymentProofPath && input.paymentProofPath !== order.paymentProofUrl)
+
+  try {
+    await getClient().rpc('process_order_for_production_with_proof', {
+      p_order_id: order.id,
+      p_expected_revision: order.revision ?? 1,
+      p_finance_account_id: input.financeAccountId,
+      p_florist_employee_id: input.floristEmployeeId,
+      p_assignment_date: input.assignmentDate,
+      p_assignment_time: input.assignmentTime ?? null,
+      p_allow_schedule_override: input.allowScheduleOverride,
+      p_scheduled_branch_id: input.scheduledBranchId ?? null,
+      p_shift_start: input.shiftStart ?? null,
+      p_shift_end: input.shiftEnd ?? null,
+      p_payment_proof_path: proofPath ?? null,
+    })
+  } catch (error) {
+    if (isNewProof && proofPath) await removeOrderPaymentProof(proofPath).catch(() => undefined)
+    throw error
+  }
 
   const refreshed = await refreshBusinessOsOrdersFromRemote()
   if (!refreshed) throw new Error('Order was processed, but the latest order could not be reloaded.')
