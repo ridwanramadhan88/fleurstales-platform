@@ -1,10 +1,11 @@
 import type { FC } from 'react'
-import { AlertTriangle, Clock, CreditCard, MapPin, MessageCircle, Smartphone, Truck, User } from 'lucide-react'
+import { AlertTriangle, Clock, CreditCard, ImageIcon, MapPin, MessageCircle, Smartphone, Truck, User } from 'lucide-react'
 import { SOURCE_LABELS } from '../orders/orderTableLabels'
 import { getActualPickupLabel, getDisplayScheduleLabel, getRequestedPickupLabel } from '../orders/orderTableFormatters'
 import { formatIdrCurrency } from '../../lib/formatters'
 import type { OrderFinanceReviewSheetViewModel } from './OrderFinanceReviewSheetController'
 import { OrderFinanceReviewProductSummary } from './OrderFinanceReviewProductSummary'
+import { OrderPaymentProofFinanceCard } from '../orders/OrderPaymentProofFinanceCard'
 
 type OrderFinanceReviewSheetDetailsProps = Pick<
   OrderFinanceReviewSheetViewModel,
@@ -49,12 +50,26 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
             <CreditCard className="size-3.5" />
           </span>
           <div>
-            <p className="text-2xs font-semibold text-muted-foreground">Payment details</p>
+            <p className="text-2xs font-semibold text-muted-foreground">Payment evidence</p>
             <p className="text-sm font-semibold leading-5 text-foreground">
               {paymentMethod === 'transfer' ? 'Bank transfer' : paymentMethod === 'cash' ? 'Cash' : 'Method not recorded'}
             </p>
           </div>
         </div>
+
+        {paymentMethod === 'transfer' ? (
+          order.paymentProofUrl ? (
+            <OrderPaymentProofFinanceCard paymentProofPath={order.paymentProofUrl} />
+          ) : (
+            <div className="flex items-start gap-2 rounded-lg bg-warning/10 px-2.5 py-2 text-warning">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <div>
+                <p className="text-xs font-semibold">Bukti transfer is missing</p>
+                <p className="mt-0.5 text-2xs text-warning/90">This transfer was recorded without the expected private payment proof.</p>
+              </div>
+            </div>
+          )
+        ) : null}
 
         <div className="grid grid-cols-3 gap-2 rounded-lg bg-surface-panel p-2.5">
           <div>
@@ -131,15 +146,32 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
         )}
       </section>
 
-      <OrderFinanceReviewProductSummary
-        order={order}
-        productDisplay={productDisplay}
-        itemDisplays={itemDisplays}
-      />
-
       <details className="rounded-xl border border-border bg-card p-3 shadow-ios-sm">
-        <summary className="cursor-pointer text-sm font-semibold h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap">Fulfillment and order details</summary>
+        <summary className="cursor-pointer text-sm font-semibold h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap">Order details & finished product</summary>
         <div className="mt-3 space-y-3">
+          <OrderFinanceReviewProductSummary
+            order={order}
+            productDisplay={productDisplay}
+            itemDisplays={itemDisplays}
+          />
+
+          {order.finishPhotoUrl && (
+            <section className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
+                  <ImageIcon className="size-3.5" />
+                </span>
+                <div>
+                  <p className="text-2xs font-semibold text-muted-foreground">Finished product photo</p>
+                  <p className="text-sm font-medium text-foreground">Customer-ready result</p>
+                </div>
+              </div>
+              <a href={order.finishPhotoUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border border-border bg-muted/20">
+                <img src={order.finishPhotoUrl} alt={`Finished product for ${order.orderNumber}`} className="max-h-[28rem] w-full object-contain" />
+              </a>
+            </section>
+          )}
+
           <section className="space-y-2.5 rounded-xl border border-border bg-card p-3 shadow-ios-sm">
             <div className="flex items-center gap-2">
               <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
