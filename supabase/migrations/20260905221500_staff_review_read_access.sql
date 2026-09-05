@@ -6,8 +6,8 @@ begin;
 
 -- Extend the authoritative role domain before changing HR section rows. The
 -- V3.3 guard otherwise coerces HR Orders/Customers back to `none` on write.
--- This expands read eligibility only; Admin/Owner mutation capabilities remain
--- governed separately by their action-capability registry entries.
+-- Preserve the Finance-only boundary introduced immediately before this
+-- migration: Owner/Admin are not eligible for the Finance workspace.
 create or replace function private.section_role_eligible(p_role text,p_section text)
 returns boolean
 language sql
@@ -16,7 +16,7 @@ security definer
 set search_path=''
 as $$
   select case p_role
-    when 'owner' then p_section in ('dashboard','orders','stock','catalog','customers','revenue','finance','hr','scheduling','settings')
+    when 'owner' then p_section in ('dashboard','orders','stock','catalog','customers','revenue','hr','scheduling','settings')
     when 'admin' then p_section in ('dashboard','orders','stock','catalog','customers')
     when 'finance' then p_section in ('dashboard','orders','stock','catalog','customers','revenue','finance')
     when 'hr' then p_section in ('dashboard','orders','customers','hr','scheduling')
