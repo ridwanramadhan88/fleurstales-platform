@@ -4,12 +4,43 @@
 
 begin;
 
+-- Extend the authoritative role domain before changing HR section rows. The
+-- V3.3 guard otherwise coerces HR Orders/Customers back to `none` on write.
+-- This expands read eligibility only; Admin/Owner mutation capabilities remain
+-- governed separately by their action-capability registry entries.
+create or replace function private.section_role_eligible(p_role text,p_section text)
+returns boolean
+language sql
+immutable
+security definer
+set search_path=''
+as $$
+  select case p_role
+    when 'owner' then p_section in ('dashboard','orders','stock','catalog','customers','revenue','finance','hr','scheduling','settings')
+    when 'admin' then p_section in ('dashboard','orders','stock','catalog','customers')
+    when 'finance' then p_section in ('dashboard','orders','stock','catalog','customers','revenue','finance')
+    when 'hr' then p_section in ('dashboard','orders','customers','hr','scheduling')
+    when 'florist' then p_section='dashboard'
+    else false
+  end
+$$;
+revoke execute on function private.section_role_eligible(text,text) from public,anon,authenticated;
+
+-- `orders.read_all` is a read capability. Add HR to its safe role family while
+-- leaving every Order mutation capability unchanged.
+update private.action_capability_registry
+set allowed_roles = array['owner','admin','finance','hr']::text[]
+where capability = 'orders.read_all';
+
 -- HR joins the existing read-only Orders and Customers surfaces. Owner/Admin/
 -- Finance already have these sections. Keep HR at view level only.
-update private.role_section_permissions
-set access_level = 'view', updated_at = now()
-where role = 'hr'
-  and section in ('orders', 'customers');
+insert into private.role_section_permissions(role, section, access_level, updated_at)
+values
+  ('hr', 'orders', 'view', now()),
+  ('hr', 'customers', 'view', now())
+on conflict (role, section) do update
+set access_level = excluded.access_level,
+    updated_at = excluded.updated_at;
 
 insert into private.role_action_permissions(role, capability, enabled, updated_at)
 values ('hr', 'orders.read_all', true, now())
