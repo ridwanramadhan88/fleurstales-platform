@@ -29,11 +29,11 @@ describe('UX integrity regression matrix', () => {
     expect([...primary, ...secondary].sort()).toEqual([...accessible].sort())
   })
 
-  it('keeps branch-scoped Admin workflows blocked without a current assignment', () => {
+  it('keeps Admin reads company-wide while mutations stay blocked without a current assignment', () => {
     const order = makeOrder({ branch: 'Kedamaian', orderNumber: 'KDM-OFF-SHIFT' })
     const actor = { employeeId: 'admin-off', name: 'Admin Off Shift', role: 'admin' as const }
 
-    expect(canViewOrder(order, actor, DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    expect(canViewOrder(order, actor, DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
     expect(canCreateOrderForBranch({
       actor,
       branch: 'Kedamaian',
@@ -45,16 +45,27 @@ describe('UX integrity regression matrix', () => {
     })
   })
 
-  it('keeps Owner and Finance cross-branch while Admin remains branch-scoped', () => {
+  it('keeps Owner, Admin, Finance, and HR company-wide for reads while Admin creation stays branch-scoped', () => {
     const order = makeOrder({ branch: 'Pahoman', orderNumber: 'PHM-SCOPE' })
+    const admin = {
+      employeeId: 'admin-kdm',
+      name: 'Admin Kedamaian',
+      role: 'admin' as const,
+      branchId: 'Kedamaian',
+    }
 
     expect(canViewOrder(order, { name: 'Owner', role: 'owner' }, DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
     expect(canViewOrder(order, { name: 'Finance', role: 'finance' }, DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
-    expect(canViewOrder(order, {
-      employeeId: 'admin-kdm',
-      name: 'Admin Kedamaian',
-      role: 'admin',
-      branchId: 'Kedamaian',
-    }, DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    expect(canViewOrder(order, { name: 'HR', role: 'hr' }, DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
+    expect(canViewOrder(order, admin, DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
+    expect(canCreateOrderForBranch({
+      actor: admin,
+      branch: 'Pahoman',
+      orderType: 'admin_created',
+      permissions: DEFAULT_ROLE_SECTION_ACCESS,
+    })).toEqual({
+      allowed: false,
+      reason: 'You cannot create an order outside your assigned branch.',
+    })
   })
 })
