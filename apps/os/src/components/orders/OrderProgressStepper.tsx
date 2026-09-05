@@ -1,4 +1,5 @@
-import { useCallback, useLayoutEffect, useRef, useState, type FC } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FC } from "react";
+import { CheckCircle2 } from "lucide-react";
 import type { OrderStatus } from "../../types/orders";
 import { cn } from "../../lib/utils";
 import { STATUS_ICONS, STATUS_STAGE_STYLE } from "./orderTableLabels";
@@ -20,6 +21,20 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
   const trackRef = useRef<HTMLDivElement>(null);
   const stageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [trackOffset, setTrackOffset] = useState(0);
+  const previousIndexRef = useRef(currentIndex);
+  const [poppedIndex, setPoppedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const previousIndex = previousIndexRef.current;
+    previousIndexRef.current = currentIndex;
+    if (currentIndex <= previousIndex) return undefined;
+    // The dot that just transitioned into "done" (every index the stepper
+    // advanced past, in case of a multi-step jump) gets a transient pop.
+    const justCompletedIndex = currentIndex - 1;
+    setPoppedIndex(justCompletedIndex);
+    const timeout = window.setTimeout(() => setPoppedIndex(null), 250);
+    return () => window.clearTimeout(timeout);
+  }, [currentIndex]);
 
   const centerCurrentStage = useCallback(() => {
     const viewport = viewportRef.current;
@@ -59,6 +74,9 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
       )}
       aria-label={ariaLabel}
     >
+      <span className="pointer-events-none absolute right-4 top-2.5 z-10 text-xs text-muted-foreground">
+        Step {currentIndex + 1} of {options.length}
+      </span>
       <div className="overflow-visible [clip-path:inset(-0.75rem_0_-2rem_0)]">
         <div
           ref={trackRef}
@@ -77,13 +95,14 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
               : index === currentIndex
                 ? "current"
                 : "upcoming";
-          const Icon = STATUS_ICONS[option.id];
+          const Icon = state === "done" ? CheckCircle2 : STATUS_ICONS[option.id];
+          const justPopped = poppedIndex === index;
           const nodeClass =
             state === "current"
-              ? `relative z-10 flex size-9 items-center justify-center rounded-full text-white ${style.currentDot}${style.pulse ? " animate-pulse" : ""}`
+              ? `relative z-10 flex size-9 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.currentDot}${style.pulse ? " animate-pulse" : ""}`
               : state === "done"
-                ? `relative z-10 flex size-9 items-center justify-center rounded-full text-white ${style.doneDot}`
-                : "relative z-10 flex size-9 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground";
+                ? `relative z-10 flex size-9 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.doneDot}${justPopped ? " animate-dot-pop" : ""}`
+                : "relative z-10 flex size-9 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-all duration-300 ease-out";
           const labelClass =
             state === "current"
               ? `mt-2 w-full px-1 text-center text-xs font-semibold leading-4 ${style.currentText}`
@@ -102,8 +121,12 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
               {index < options.length - 1 && (
                 <span
                   aria-hidden="true"
-                  className={`absolute left-[calc(50%+22px)] top-[17px] h-0.5 w-[calc(100%-44px)] rounded-full ${index < currentIndex ? "bg-success/70" : "bg-border"}`}
-                />
+                  className="absolute left-[calc(50%+22px)] top-[17px] h-0.5 w-[calc(100%-44px)] overflow-hidden rounded-full bg-border"
+                >
+                  <span
+                    className={`block h-full w-full origin-left rounded-full bg-success/70 transition-transform duration-500 ease-out ${index < currentIndex ? "scale-x-100" : "scale-x-0"}`}
+                  />
+                </span>
               )}
               <span className={nodeClass}>
                 <Icon className="size-4" />

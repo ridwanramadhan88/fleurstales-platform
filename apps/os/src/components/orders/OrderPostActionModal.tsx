@@ -1,18 +1,22 @@
 /**
  * @file OrderPostActionModal.tsx
  * @description Follow-up action modal shown right after advancing an order
- * to "Ready" (send the WhatsApp pickup notice) or "Delivering" (copy the
- * delivery address for the courier), used by OrderDetailsPanel. Stops
- * propagation on its own clicks so interacting with it never bubbles up and
- * closes the details panel underneath.
+ * to "Ready" (send the WhatsApp pickup notice, with a preview of the finish
+ * photo) or "Delivering" (copy the delivery address for the courier), used
+ * by OrderDetailsPanel. Also doubles as the preview-before-send step for the
+ * storefront confirm/reject decision ('confirm' / 'reject' kinds) — the
+ * message is built and shown first, and the actual WhatsApp send only
+ * happens when "Send WhatsApp" is clicked here. Stops propagation on its own
+ * clicks so interacting with it never bubbles up and closes the details
+ * panel underneath.
  */
 
 import type { FC } from 'react'
-import { CheckCheck, Copy, MessageCircle, Truck } from 'lucide-react'
+import { CheckCheck, CheckCircle2, Copy, MessageCircle, Truck, XCircle } from 'lucide-react'
 
 export interface OrderPostActionModalProps {
   /** Which follow-up to show; modal is not rendered when null. */
-  kind: 'ready' | 'delivering' | null
+  kind: 'ready' | 'delivering' | 'confirm' | 'reject' | null
   onClose: () => void
   /** Customer's WhatsApp number, if known — used for the WhatsApp link/subtitle. */
   customerWhatsappNumber: string | undefined
@@ -20,10 +24,17 @@ export interface OrderPostActionModalProps {
   readyMessage: string
   /** WhatsApp deep link for the ready message. */
   whatsAppLink: string
+  /** Public URL of the order's finish photo, shown above the ready message. */
+  finishPhotoUrl?: string
   /** Delivery address to display/copy for the courier, if any. */
   deliveryAddress: string | undefined
   addressCopied: boolean
   onCopyAddress: () => void
+  /** Composed confirm/reject WhatsApp text, shown before it's sent. */
+  previewMessage?: string
+  /** True while the confirm/reject send is in flight. */
+  previewSending?: boolean
+  onSendPreviewWhatsApp?: () => void
 }
 
 export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
@@ -32,9 +43,13 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
   customerWhatsappNumber,
   readyMessage,
   whatsAppLink,
+  finishPhotoUrl,
   deliveryAddress,
   addressCopied,
   onCopyAddress,
+  previewMessage,
+  previewSending,
+  onSendPreviewWhatsApp,
 }) => {
   if (!kind) return null
 
@@ -68,6 +83,11 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
                 </p>
               </div>
             </div>
+            {finishPhotoUrl && (
+              <div className="mb-3 aspect-[4/5] w-full max-w-[160px] overflow-hidden rounded-xl bg-muted ring-1 ring-border/70">
+                <img src={finishPhotoUrl} alt="Order finish photo" className="h-full w-full object-cover" />
+              </div>
+            )}
             <div className="rounded-lg bg-surface-panel px-3 py-2.5 text-sm text-foreground/90">
               {readyMessage}
             </div>
@@ -91,7 +111,7 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
               </a>
             </div>
           </>
-        ) : (
+        ) : kind === 'delivering' ? (
           <>
             <div className="mb-3 flex items-center gap-2">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
@@ -134,6 +154,51 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
                     Copy address
                   </>
                 )}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mb-3 flex items-center gap-2">
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  kind === 'confirm' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
+                }`}
+              >
+                {kind === 'confirm' ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
+              </span>
+              <div>
+                <h3 className="text-base font-semibold leading-6 text-foreground">
+                  {kind === 'confirm' ? 'Order confirmed — notify customer' : 'Order rejected — notify customer'}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Send the WhatsApp message below
+                  {customerWhatsappNumber ? ` · ${customerWhatsappNumber}` : ''}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-lg bg-surface-panel px-3 py-2.5 text-sm text-foreground/90">
+              {previewMessage}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={previewSending}
+                className="inline-flex cursor-pointer items-center justify-center rounded-full text-sm font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={onSendPreviewWhatsApp}
+                disabled={previewSending}
+                className={`inline-flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full px-5 text-sm font-medium text-white shadow-ios-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  kind === 'confirm' ? 'bg-success hover:bg-success' : 'bg-destructive hover:bg-destructive'
+                }`}
+              >
+                <MessageCircle className="size-3.5" />
+                {previewSending ? 'Sending…' : 'Send WhatsApp'}
               </button>
             </div>
           </>

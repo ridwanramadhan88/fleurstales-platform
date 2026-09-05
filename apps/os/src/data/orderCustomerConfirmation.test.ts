@@ -8,8 +8,8 @@ describe('customer storefront tracking links', () => {
   })
 
   it('builds customer-facing order links on the canonical production alias', () => {
-    expect(buildOrderTrackingUrl('d2cf177c-3e6c-44d0-9d07-e28f161bd2f2')).toBe(
-      'https://fleurstales-storefront.vercel.app/order/d2cf177c-3e6c-44d0-9d07-e28f161bd2f2',
+    expect(buildOrderTrackingUrl('KDM-2026-0010', 'd2cf177c-3e6c-44d0-9d07-e28f161bd2f2', 'confirmed')).toBe(
+      'https://fleurstales-storefront.vercel.app/track/KDM-2026-0010?key=d2cf177c-3e6c-44d0-9d07-e28f161bd2f2&v=confirmed',
     )
   })
 })

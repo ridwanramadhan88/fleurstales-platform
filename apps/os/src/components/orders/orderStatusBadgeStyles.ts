@@ -10,10 +10,11 @@ import {
   UserCheck,
   XCircle,
 } from 'lucide-react'
-import type { OrderStatus, PaymentStatus } from '../../types/orders'
+import type { OrderFulfillment, OrderStatus, PaymentStatus } from '../../types/orders'
 import type { OrderUrgency } from '../../domain/ordersDomain'
 import type { ChipTone } from '../ui/chip'
-import { STATUS_LABELS } from './orderStatusLabels'
+import { STATUS_LABELS, getOrderStatusOptionsForFulfillment } from './orderStatusLabels'
+import { isWorkflowHappyPathStatus } from '../../domain/orderBusinessRules'
 
 /**
  * @file orderStatusBadgeStyles.ts
@@ -233,3 +234,37 @@ export const QUICK_ACTION_BUTTON_STYLE: Record<OrderStatus, QuickActionButtonSty
  */
 export const getQuickActionLabel = (status: OrderStatus): string =>
   QUICK_ACTION_BUTTON_STYLE[status].isFinishStep ? 'Finished' : STATUS_LABELS[status]
+
+/**
+ * @description Three-tier color escalation for the quick-advance button as
+ * an order gets further along its pipeline (progress = position of
+ * `nextStatus` within the happy-path pipeline, 0 at Pending, 1 at the
+ * terminal step). The terminal step itself keeps its existing solid style —
+ * this only re-buckets the non-terminal "info" tone into low/mid/high
+ * success tones, using only existing design tokens.
+ */
+const PROGRESS_BUTTON_TIER = {
+  low: 'border border-info/30 bg-info/10 text-info hover:bg-info/10',
+  mid: 'border border-success/20 bg-success/5 text-success/90 hover:bg-success/10',
+  high: 'border border-success/40 bg-success/15 text-success hover:bg-success/20',
+} as const
+
+export const getQuickActionButtonClassName = (
+  fulfillment: OrderFulfillment,
+  nextStatus: OrderStatus,
+): string => {
+  const style = QUICK_ACTION_BUTTON_STYLE[nextStatus]
+  if (style.isFinishStep) return style.className
+
+  const pipeline = getOrderStatusOptionsForFulfillment(fulfillment).filter((option) =>
+    isWorkflowHappyPathStatus(option.id),
+  )
+  const stepIndex = pipeline.findIndex((option) => option.id === nextStatus)
+  const totalSteps = pipeline.length
+  if (stepIndex < 0 || totalSteps <= 1) return style.className
+
+  const progress = stepIndex / (totalSteps - 1)
+  if (progress < 0.34) return PROGRESS_BUTTON_TIER.low
+  if (progress < 0.67) return PROGRESS_BUTTON_TIER.mid
+  return PROGRESS_BUTTON_TIER.high
+}

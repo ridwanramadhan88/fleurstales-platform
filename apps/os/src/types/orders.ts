@@ -254,6 +254,16 @@ export interface OrderTableRow {
   requestedPickupTime?: string
   /** Actual timestamp recorded only when a pickup order enters picked_up. */
   actualPickedUpAt?: string
+  /** Public Supabase Storage URL of the mandatory "order finished" photo,
+   * captured before the order can advance into Ready. */
+  finishPhotoUrl?: string
+  /** Display name of the staff member who captured the finish photo. */
+  finishPhotoUploadedBy?: string
+  /** ISO timestamp of when the finish photo was uploaded. */
+  finishPhotoUploadedAt?: string
+  /** Public Supabase Storage URL of the bukti transfer screenshot, required
+   * before a transfer-paid order can be marked paid. Cash orders never set this. */
+  paymentProofUrl?: string
   /** Optional shared order note for special requests and order instructions. */
   orderNote?: string
   /** @deprecated Legacy persisted alias. Migrated to orderNote on hydration. */

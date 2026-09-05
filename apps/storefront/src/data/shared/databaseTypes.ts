@@ -318,6 +318,10 @@ export interface OrderRow {
   requested_pickup_date: string | null
   requested_pickup_time: string | null
   actual_picked_up_at: string | null
+  finish_photo_url: string | null
+  finish_photo_uploaded_by: string | null
+  finish_photo_uploaded_at: string | null
+  payment_proof_url: string | null
   order_note: string | null
   greeting_message: string | null
   greeting_card_name: string | null

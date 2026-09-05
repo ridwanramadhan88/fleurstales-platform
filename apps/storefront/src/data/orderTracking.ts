@@ -64,6 +64,7 @@ export interface PublicOrderTrackingDetails {
   discountIdr: number
   totalIdr: number
   cancellationReason?: string | null
+  finishPhotoUrl?: string | null
   reviewSubmitted?: boolean
   reviewQuestions?: PublicReviewQuestion[]
   review?: PublicSubmittedReview | null

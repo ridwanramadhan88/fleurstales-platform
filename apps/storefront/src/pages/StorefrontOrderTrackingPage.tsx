@@ -115,10 +115,13 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
   const [reviewBusy, setReviewBusy] = useState(false)
   const [reviewMessage, setReviewMessage] = useState<string | null>(null)
 
+  const TRACKING_LINK_UNAVAILABLE_MESSAGE =
+    'This tracking link is no longer available. It may be incorrect, or it may have expired (links are valid for 14 days after the order is placed).'
+
   const loadDetails = async (id: string) => {
     const result = await getPublicOrderTracking(id)
     setDetails(result)
-    if (!result) throw new Error('Order not found. Check that you opened the complete tracking link.')
+    if (!result) throw new Error(TRACKING_LINK_UNAVAILABLE_MESSAGE)
     return result
   }
 
@@ -136,7 +139,7 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
         if (!active) return
         setDetails(result)
         if (!result) {
-          setError('Order not found. Check that you opened the complete tracking link.')
+          setError(TRACKING_LINK_UNAVAILABLE_MESSAGE)
           return
         }
         if (orderNumber && result.orderNumber.toUpperCase() !== orderNumber.toUpperCase()) {
@@ -254,6 +257,17 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                     </div>
                     <div className="mt-6"><StatusTimeline status={details.status} fulfillment={details.fulfillment} /></div>
                   </div>
+
+                  {details.finishPhotoUrl && details.status !== 'pending_verification' && details.status !== 'confirmed' && details.status !== 'processing' ? (
+                    <div className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
+                      <img
+                        src={details.finishPhotoUrl}
+                        alt="Order finish photo"
+                        className="mx-auto aspect-[4/5] w-full max-w-[320px] rounded-2xl object-cover shadow-ios-sm ring-1 ring-border"
+                      />
+                      <p className="mt-3 text-center sf-type-2 text-black/60">Pesanan sudah selesai dibuat 🌸</p>
+                    </div>
+                  ) : null}
 
                   {details.cancellationReason ? (
                     <div className="rounded-[var(--sf-radius-card)] border border-red-800/15 bg-red-800/[0.05] p-5">
