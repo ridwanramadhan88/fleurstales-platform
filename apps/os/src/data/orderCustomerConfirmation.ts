@@ -3,7 +3,7 @@ import { bootstrapSharedData } from './shared/bootstrap'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
 
-const STOREFRONT_ORIGIN = 'https://fleurstales-storefront-rid5.vercel.app'
+const STOREFRONT_ORIGIN = 'https://fleurstales-storefront.vercel.app'
 
 export const getStorefrontOrigin = (): string => STOREFRONT_ORIGIN
 
