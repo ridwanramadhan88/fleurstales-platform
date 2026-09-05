@@ -150,4 +150,12 @@ begin
      or position('payment_proof_url' in v_source)=0 then
     raise exception 'Atomic Process Order wrapper lost proof validation/attachment or core processing call';
   end if;
+
+  -- The proof attachment itself fires orders_bump_revision. The wrapper must
+  -- capture that new revision and pass it into the core command; delegating
+  -- with p_expected_revision deterministically self-conflicts every transfer.
+  if lower(v_source) !~ 'returning[[:space:]]+revision[[:space:]]+into[[:space:]]+v_processing_revision'
+     or lower(v_source) !~ 'process_order_for_production[[:space:]]*\([[:space:]]*p_order_id[[:space:]]*,[[:space:]]*v_processing_revision' then
+    raise exception 'Process Order proof wrapper does not delegate with the post-proof revision';
+  end if;
 end $$;
