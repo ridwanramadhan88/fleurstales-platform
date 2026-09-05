@@ -176,14 +176,21 @@ export const refreshBusinessOsOrdersFromRemote = async (): Promise<boolean> => {
     const mapped = orders.map((order) =>
       withWorkflowMetadata(sharedOrderToOrderTableRow(order), workflowById.get(order.id)),
     )
+
+    // A remote hydrate is not a local mutation. Tear down the previous
+    // revision-writer subscription before replacing the Zustand snapshot;
+    // otherwise the stale bridge observes newer server revisions as local
+    // edits and writes them back using its old confirmed revisions. That
+    // creates REVISION_CONFLICT bursts and unnecessary database CPU.
+    stopBusinessOsOrderBridge()
+    const generation = syncGeneration
+
     useOrdersStore.setState((state) => ({
       ...state,
       orders: mapped,
       lastSequence: deriveInitialSequences(mapped),
     }))
 
-    stopBusinessOsOrderBridge()
-    const generation = syncGeneration
     const confirmedRevisions = new Map(mapped.map((order) => [order.id ?? order.orderNumber, order.revision ?? 1]))
     const inFlight = new Set<string>()
 
