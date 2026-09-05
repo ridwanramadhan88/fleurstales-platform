@@ -30,8 +30,33 @@ export const buildOrderTrackingUrl = (
 ): string =>
   `${getStorefrontOrigin()}/track/${encodeURIComponent(orderNumber)}?key=${encodeURIComponent(publicTrackingId)}&v=${moment}`
 
+const getOrderProductSummary = (order: OrderTableRow): string => {
+  const items = order.items ?? []
+  if (items.length === 0) return order.productName ?? order.productId ?? 'Pesanan bunga'
+
+  const first = items[0]
+  const firstName = first.productNameSnapshot
+    ?? first.productName
+    ?? order.productName
+    ?? first.productId
+    ?? 'Pesanan bunga'
+
+  return items.length > 1 ? `${firstName} +${items.length - 1} item` : firstName
+}
+
 export const buildOrderConfirmedMessage = (order: OrderTableRow, trackingUrl: string): string =>
-  `Hi kak ${order.customerName}, pesanan ${order.orderNumber} sudah kami konfirmasi dan akan segera diproses. Status pesanan bisa dicek di ${trackingUrl}`
+  [
+    `Hi kak ${order.customerName},`,
+    '',
+    `Pesanan: ${getOrderProductSummary(order)}`,
+    `No Pesanan: ${order.orderNumber}`,
+    'sudah kami konfirmasi',
+    '',
+    'Segera lakukan pembayaran',
+    '',
+    'Status pesanan bisa dicek di',
+    trackingUrl,
+  ].join('\n')
 
 export const buildOrderCancelledMessage = (
   order: OrderTableRow,
