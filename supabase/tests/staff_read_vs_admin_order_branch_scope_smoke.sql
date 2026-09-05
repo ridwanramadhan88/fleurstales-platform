@@ -28,6 +28,19 @@ begin
     raise exception 'HR company-wide order read capability is missing';
   end if;
 
+  -- This migration follows the Finance-only hardening migration and must never
+  -- widen that authority domain while extending HR read eligibility.
+  if private.section_role_eligible('owner','finance')
+     or private.section_role_eligible('admin','finance')
+     or not private.section_role_eligible('finance','finance') then
+    raise exception 'Staff read migration regressed the Finance-only workspace boundary';
+  end if;
+  if private.section_access_for_role('owner','finance') <> 'none'
+     or private.section_access_for_role('admin','finance') <> 'none'
+     or private.section_access_for_role('finance','finance') <> 'edit' then
+    raise exception 'Effective Finance workspace access no longer matches the Finance-only boundary';
+  end if;
+
   select pg_get_functiondef('private.can_read_order_row(text,text)'::regprocedure) into v_source;
   if position('orders.read_all' in v_source)=0
      or position('orders.read_assigned' in v_source)=0
