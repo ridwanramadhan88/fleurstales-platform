@@ -1,5 +1,6 @@
 -- Fleurstales V3.11 focused production-hardening smoke checks.
--- Run after all migrations through 20260726090000.
+-- Run after all migrations through 20260726090000. Later migrations may
+-- intentionally strengthen or supersede specific authorization semantics.
 
 do $$
 declare
@@ -71,9 +72,19 @@ begin
   if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='staff_roster_refresh_events') then
     raise exception 'Roster refresh events are not published to Realtime';
   end if;
+
+  -- Notifications are read/awareness surfaces. Later staff-read hardening makes
+  -- Admin notification visibility company-wide; branch ownership belongs at
+  -- the authoritative Order mutation boundary instead.
   select pg_get_functiondef('private.can_read_staff_notification(public.staff_notifications)'::regprocedure) into v_source;
-  if position('current_staff_branch_id' in v_source)=0 then
-    raise exception 'Admin notification reads are not runtime-branch aware';
+  if position('notification_kind_allowed_for_role' in v_source)=0 then
+    raise exception 'Admin notification reads lost role/capability filtering';
+  end if;
+  if position('current_staff_branch_id' in v_source)>0 then
+    raise exception 'Admin notification reads were re-narrowed to runtime branch';
+  end if;
+  if to_regprocedure('private.enforce_admin_order_mutation_branch()') is null then
+    raise exception 'Admin operational branch authority is missing from Order mutation boundary';
   end if;
 end $$;
 

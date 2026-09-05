@@ -22,6 +22,14 @@ describe('action permissions', () => {
     expect(hasActionPermission('florist','orders.advance_status',matrix,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
   })
 
+  it('lets HR read all orders without granting operational order actions', () => {
+    expect(hasActionPermission('hr','orders.read_all',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
+    expect(hasActionPermission('hr','orders.create',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    expect(hasActionPermission('hr','orders.edit',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    expect(hasActionPermission('hr','orders.assign',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    expect(hasActionPermission('hr','orders.advance_status',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+  })
+
   it('blocks actions when parent section access is removed', () => {
     const sections=structuredClone(DEFAULT_ROLE_SECTION_ACCESS)
     sections.finance.finance='none'

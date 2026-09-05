@@ -23,6 +23,7 @@ import type { OrderTableRow, OrderStatus } from '../../types/orders'
 import { StatusChip, type ChipTone } from '../ui/chip'
 import { AppSheet } from '../ui/app-sheet'
 import { normalizeWhatsappNumber } from '../../lib/formatters'
+import { StaffReviewHistory } from './StaffReviewHistory'
 
 /**
  * @description Props for the CustomerProfileDrawer component.
@@ -37,7 +38,7 @@ export interface CustomerProfileDrawerProps {
   /** Called when drawer should close. */
   onClose: () => void
   /** Called when staff wants to assign a promo to this customer. */
-  onAssignPromo: () => void
+  onAssignPromo?: () => void
 }
 
 /** Tone + label per order status, for the order history list. */
@@ -228,6 +229,12 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
               </p>
             </div>
           </section>
+
+          <StaffReviewHistory
+            customerId={customer.id}
+            title="Review history"
+            emptyLabel="No reviews from this customer yet."
+          />
           </div>
 
           <section className={`space-y-2 rounded-xl px-4 py-3.5 ${orders.length > 0 ? 'bg-muted' : 'bg-muted/20 ring-1 ring-border/30'}`}>
@@ -284,14 +291,16 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
             >
               Close
             </button>
-            <button
-              type="button"
-              onClick={onAssignPromo}
-              className="tap-scale inline-flex cursor-pointer items-center rounded-full bg-primary text-sm font-medium text-white shadow-ios-sm hover:bg-primary/90 sm:min-h-11 sm:text-xs rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
-            >
-              <Ticket className="size-3.5" />
-              Assign promo
-            </button>
+            {onAssignPromo && (
+              <button
+                type="button"
+                onClick={onAssignPromo}
+                className="tap-scale inline-flex cursor-pointer items-center rounded-full bg-primary text-sm font-medium text-white shadow-ios-sm hover:bg-primary/90 sm:min-h-11 sm:text-xs rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+              >
+                <Ticket className="size-3.5" />
+                Assign promo
+              </button>
+            )}
           </div>
         </footer>
     </AppSheet>

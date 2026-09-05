@@ -77,7 +77,7 @@ describe('updateOrderDetails — authoritative persistence', () => {
     const result = useOrdersStore.getState().updateOrderDetails({
       orderNumber: 'A',
       expectedRevision: 1,
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
       patch: {
         customerName: 'Updated Customer',
         productName: 'Updated custom bouquet',
@@ -129,7 +129,7 @@ describe('updateOrderDetails — authoritative persistence', () => {
     const result = useOrdersStore.getState().updateOrderDetails({
       orderNumber: 'CONTACT',
       expectedRevision: 1,
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
       patch: {
         customerName: 'New Name',
         customerSnapshot: {
@@ -179,7 +179,7 @@ describe('updateOrderDetails — authoritative persistence', () => {
     const result = useOrdersStore.getState().updateOrderDetails({
       orderNumber: 'A',
       expectedRevision: 1,
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
       patch: { orderNote: 'Corrected note' },
     })
 
@@ -202,7 +202,7 @@ describe('updateOrderDetails — authoritative persistence', () => {
     const result = useOrdersStore.getState().updateOrderDetails({
       orderNumber: 'A',
       expectedRevision: 1,
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
       patch: { internalNote: 'Should not save' },
     })
 

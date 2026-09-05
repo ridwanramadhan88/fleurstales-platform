@@ -48,6 +48,7 @@ export const getVisibleNotifications = ({
     .filter((notification) => isNotificationRelevantToRole(notification, role))
     .filter(
       (notification) =>
+        role === 'admin' ||
         branch === 'All' ||
         !notification.branch ||
         notification.branch === branch,

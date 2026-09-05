@@ -209,7 +209,6 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
   if (role === 'admin') {
     const rejected = orders
       .filter((order) => order.financeVerificationStatus === 'rejected')
-      .filter((order) => !branch || branch === 'All' || order.branch === branch)
       .map((order) => ({
         id: `finance-rejected-${order.orderNumber}-${order.financeVerificationAt ?? 'current'}`,
         kind: 'finance_rejected' as const,

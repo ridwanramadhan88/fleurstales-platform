@@ -100,7 +100,7 @@ export const useDesktopSidebarController = ({
     ...props,
     onBranchChange,
     branches: getBranchFilterOptions({ branches: settingsBranches }).filter((branch) =>
-      (userRole === 'admin' || userRole === 'florist') ? branch !== 'All' : true,
+      userRole === 'florist' ? branch !== 'All' : true,
     ),
     storeName,
     storeLogoUrl: storeProfile.logoUrl,
