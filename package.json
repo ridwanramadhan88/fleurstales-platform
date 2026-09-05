@@ -23,7 +23,7 @@
     "check:shared-parity": "node scripts/check-shared-parity.mjs",
     "check:storefront": "npm run check --workspace=fleurstales-storefront",
     "check:os": "npm run check --workspace=fleurstales-os",
-    "check:supabase-security": "node scripts/check-supabase-security.mjs",
+    "check:supabase-security": "node scripts/check-supabase-security.mjs && node scripts/check-release-safety.mjs",
     "check:v36": "node scripts/check-v36-integrity.mjs",
     "check:v37": "node scripts/check-v37-authority.mjs",
     "check:v38": "node scripts/check-v38-florist-readonly.mjs",

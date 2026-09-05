@@ -78,10 +78,11 @@ const ORDER_ACTIVITY_KINDS = new Set<OrderActivityKind>([
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 let realtimeChannel: RealtimeChannel | undefined
-let orderRefreshQueued = false
+let orderRefreshTimer: ReturnType<typeof setTimeout> | undefined
 let rosterRefreshQueued = false
 let notificationRefreshQueued = false
 let notificationRefreshTimer: ReturnType<typeof setTimeout> | undefined
+let auditRefreshTimer: ReturnType<typeof setTimeout> | undefined
 
 const notificationFromRow = (row: StaffNotificationRow): NotificationRecord | null => {
   if (!DISPLAY_KINDS.has(row.kind as AlertKind)) return null
@@ -179,13 +180,28 @@ const queueRosterRefresh = (): void => {
   })
 }
 
+// Supabase can emit several row events for one logical Order mutation. A
+// microtask only coalesces callbacks from the same JS turn, so network events
+// arriving milliseconds apart used to trigger repeated full Order hydrations.
+// Debounce the burst instead; the latest authoritative snapshot is all we need.
 const queueOrderRefresh = (): void => {
-  if (orderRefreshQueued) return
-  orderRefreshQueued = true
-  queueMicrotask(() => {
-    orderRefreshQueued = false
+  if (orderRefreshTimer) clearTimeout(orderRefreshTimer)
+  orderRefreshTimer = setTimeout(() => {
+    orderRefreshTimer = undefined
     void refreshBusinessOsOrdersFromRemote().then(() => hydrateServerOrderActivities()).catch(() => undefined)
-  })
+  }, 150)
+}
+
+// Security audit hydration is Owner-only and can return up to 1000 rows. It is
+// intentionally not refreshed once per business_activity row; one trailing
+// refresh is sufficient for a burst and avoids turning event fan-out into an
+// expensive audit-query fan-out.
+const queueAuditRefresh = (): void => {
+  if (auditRefreshTimer) clearTimeout(auditRefreshTimer)
+  auditRefreshTimer = setTimeout(() => {
+    auditRefreshTimer = undefined
+    void hydrateSecurityAuditFromSupabase().catch(() => undefined)
+  }, 500)
 }
 
 // employee_point_events and the operational-domain business_activities rows
@@ -259,7 +275,7 @@ export const startRealtimeSupabaseSync = (): void => {
       }
       if (row.entity_type === 'authorization') void refreshAuthorizationRuntime().catch(() => undefined)
       if (row.entity_type === 'internal_settings') void hydrateInternalSettingsFromSupabase().catch(() => undefined)
-      void hydrateSecurityAuditFromSupabase().catch(() => undefined)
+      queueAuditRefresh()
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, (payload) => {
       const row = ((payload.new && Object.keys(payload.new).length ? payload.new : payload.old) ?? {}) as { id?: string }
@@ -294,6 +310,10 @@ export const stopRealtimeSupabaseSync = (): void => {
   if (notificationRefreshTimer) clearTimeout(notificationRefreshTimer)
   notificationRefreshTimer = undefined
   notificationRefreshQueued = false
+  if (orderRefreshTimer) clearTimeout(orderRefreshTimer)
+  orderRefreshTimer = undefined
+  if (auditRefreshTimer) clearTimeout(auditRefreshTimer)
+  auditRefreshTimer = undefined
   if (operationalHydrateTimer) clearTimeout(operationalHydrateTimer)
   operationalHydrateTimer = undefined
   operationalHydrateQueued = false
