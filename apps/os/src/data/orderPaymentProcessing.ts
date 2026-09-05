@@ -28,6 +28,8 @@ export interface ProcessOrderForProductionInput {
   scheduledBranchId?: string
   shiftStart?: string
   shiftEnd?: string
+  /** Private `order-payment-proofs` Storage object path. Required for transfer. */
+  paymentProofPath?: string
 }
 
 const getClient = () => {
@@ -39,6 +41,7 @@ const getClient = () => {
 const confirmLocalPaymentForProcessing = (
   order: OrderTableRow,
   financeAccountId: string,
+  paymentProofPath?: string,
 ): ProcessPaymentResult => {
   const current = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber) ?? order
   const user = useUserStore.getState()
@@ -48,6 +51,9 @@ const confirmLocalPaymentForProcessing = (
     role: user.role,
     branchId: user.branchId,
   }
+  if (current.paymentMethod === 'transfer' && !paymentProofPath && !current.paymentProofUrl) {
+    throw new Error('Upload bukti transfer before starting production.')
+  }
   const result = useOrdersStore.getState().updatePayment({
     orderNumber: current.orderNumber,
     expectedRevision: current.revision ?? 1,
@@ -55,6 +61,7 @@ const confirmLocalPaymentForProcessing = (
     paidAmountIdr: current.totalIdr,
     totalIdr: current.totalIdr,
     paymentMethod: current.paymentMethod,
+    paymentProofUrl: paymentProofPath ?? current.paymentProofUrl,
     note: 'Full payment confirmed before Processing.',
     idempotencyKey: `process-payment:${current.id ?? current.orderNumber}:${current.revision ?? 1}`,
     actor,
@@ -100,7 +107,7 @@ export const confirmOrderPaymentForProcessing = async (
   if (!financeAccountId) throw new Error('Receiving account is required.')
 
   if (!isSharedBackendConfigured()) {
-    return confirmLocalPaymentForProcessing(order, financeAccountId)
+    return confirmLocalPaymentForProcessing(order, financeAccountId, order.paymentProofUrl)
   }
 
   const result = await getClient().rpc<ProcessPaymentResult>('confirm_order_payment_for_processing', {
@@ -119,9 +126,12 @@ export const processOrderForProduction = async (
   const { order } = input
   if (!order.id) throw new Error('Order id is missing.')
   if (!input.financeAccountId) throw new Error('Receiving account is required.')
+  if (order.paymentMethod === 'transfer' && !input.paymentProofPath && !order.paymentProofUrl) {
+    throw new Error('Upload bukti transfer before starting production.')
+  }
 
   if (!isSharedBackendConfigured()) {
-    const payment = confirmLocalPaymentForProcessing(order, input.financeAccountId)
+    const payment = confirmLocalPaymentForProcessing(order, input.financeAccountId, input.paymentProofPath)
     const current = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
       ?? { ...order, revision: payment.revision, paymentStatus: 'paid' as const, paidAmountIdr: payment.paidAmountIdr }
     const user = useUserStore.getState()
@@ -141,7 +151,7 @@ export const processOrderForProduction = async (
     return result.order
   }
 
-  await getClient().rpc('process_order_for_production', {
+  await getClient().rpc('process_order_for_production_with_proof', {
     p_order_id: order.id,
     p_expected_revision: order.revision ?? 1,
     p_finance_account_id: input.financeAccountId,
@@ -152,6 +162,7 @@ export const processOrderForProduction = async (
     p_scheduled_branch_id: input.scheduledBranchId ?? null,
     p_shift_start: input.shiftStart ?? null,
     p_shift_end: input.shiftEnd ?? null,
+    p_payment_proof_path: input.paymentProofPath ?? order.paymentProofUrl ?? null,
   })
 
   const refreshed = await refreshBusinessOsOrdersFromRemote()
