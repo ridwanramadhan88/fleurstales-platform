@@ -6,6 +6,7 @@ import {
   getStorefrontOrigin,
 } from './orderCustomerConfirmation'
 
+// Release regression coverage for the post-payment/confirmation hotfix.
 describe('customer storefront tracking links', () => {
   it('uses the canonical public Storefront origin', () => {
     expect(getStorefrontOrigin()).toBe('https://fleurstales-storefront.vercel.app')
