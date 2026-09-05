@@ -19,6 +19,13 @@ export interface ProcessPaymentResult {
   ledgerTransactionId?: string
 }
 
+interface ProcessProductionResult extends ProcessPaymentResult {
+  status: 'processing'
+  floristEmployeeId: string
+  floristName: string
+  paymentProofPath?: string | null
+}
+
 export interface ProcessOrderForProductionInput {
   order: OrderTableRow
   financeAccountId: string
@@ -154,9 +161,10 @@ export const processOrderForProduction = async (
 
   const proofPath = input.paymentProofPath ?? order.paymentProofUrl ?? undefined
   const isNewProof = Boolean(input.paymentProofPath && input.paymentProofPath !== order.paymentProofUrl)
+  let command: ProcessProductionResult
 
   try {
-    await getClient().rpc('process_order_for_production_with_proof', {
+    command = await getClient().rpc<ProcessProductionResult>('process_order_for_production_with_proof', {
       p_order_id: order.id,
       p_expected_revision: order.revision ?? 1,
       p_finance_account_id: input.financeAccountId,
@@ -175,8 +183,30 @@ export const processOrderForProduction = async (
   }
 
   const refreshed = await refreshBusinessOsOrdersFromRemote()
-  if (!refreshed) throw new Error('Order was processed, but the latest order could not be reloaded.')
-  const next = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
-  if (!next) throw new Error('Order was processed, but it is missing from the refreshed Orders list.')
-  return next
+  if (refreshed) {
+    const next = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
+    if (next) return next
+  }
+
+  // The RPC is the commit boundary. A refresh problem after it succeeds must
+  // not turn a successful Process Order into a UI failure or delete its proof.
+  return {
+    ...order,
+    revision: command.revision,
+    status: 'processing',
+    paymentStatus: 'paid',
+    paidAmountIdr: command.paidAmountIdr,
+    paymentProofUrl: proofPath,
+    florist: command.floristName,
+    floristAssignedEmployeeId: command.floristEmployeeId,
+    floristAssignedAt: command.paymentVerifiedAt,
+    floristAssignedForDate: input.assignmentDate,
+    floristAssignedForTime: input.assignmentTime,
+    floristScheduleOverride: input.allowScheduleOverride,
+    floristScheduledBranchId: input.scheduledBranchId,
+    floristScheduledShiftStart: input.shiftStart,
+    floristScheduledShiftEnd: input.shiftEnd,
+    processingStartedAt: command.paymentVerifiedAt,
+    updatedAt: command.paymentVerifiedAt,
+  }
 }
