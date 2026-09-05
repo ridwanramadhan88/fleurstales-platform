@@ -66,6 +66,14 @@ begin
     raise exception 'Atomic Process Order with proof grants are incorrect';
   end if;
 
+  -- Storage policies run this helper as the authenticated caller. If EXECUTE
+  -- is missing, every authorized Owner/Admin upload is rejected before the
+  -- helper can evaluate its role/capability/branch checks.
+  if not has_function_privilege('authenticated','private.can_write_order_media_object(text)','EXECUTE')
+     or has_function_privilege('anon','private.can_write_order_media_object(text)','EXECUTE') then
+    raise exception 'Lifecycle media policy helper grants are incorrect';
+  end if;
+
   select pg_get_functiondef('public.verify_order_tracking_access(text,text)'::regprocedure) into v_source;
   if position('tracking_expires_at' in v_source)=0
      or position('normalize_whatsapp' in v_source)=0
