@@ -53,7 +53,7 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
           Order Reconciliation
         </h1>
         <p className="mt-1 text-sm leading-5 text-muted-foreground">
-          Paid orders appear here automatically when payment is confirmed before Processing.
+          Paid orders appear here automatically as soon as Admin confirms payment.
         </p>
       </header>
     )}
@@ -73,7 +73,7 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
       <div className="flex justify-end">
         <InfoDisclosure title="How reconciliation works" className="hidden sm:block">
           <p className="max-w-md">
-            Payment is posted once, when Admin confirms full payment during Process Order. This list is read-only: In Progress means production is still active, while Complete means the order workflow has ended.
+            Payment is posted once when Admin confirms full payment and records the receiving account. Click any order to inspect payment proof and supporting order evidence. In Progress means the order workflow is still active, while Complete means it has ended.
           </p>
         </InfoDisclosure>
       </div>
@@ -100,14 +100,18 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
           <div className="space-y-1">
             <p className="text-sm font-semibold leading-5 text-foreground">No paid orders in this view</p>
             <p className="max-w-sm text-xs text-muted-foreground">
-              Orders appear after Admin confirms full payment and starts Processing. Try another date range or status filter.
+              Orders appear after Admin confirms full payment. Try another date range or status filter.
             </p>
           </div>
         </div>
       ) : (
         <div className="space-y-2">
           {queueRows.map((row) => (
-            <OrderVerificationQueueRow key={row.transactionId} row={row} />
+            <OrderVerificationQueueRow
+              key={row.transactionId}
+              row={row}
+              onOpen={() => onSelectOrder(row.order)}
+            />
           ))}
         </div>
       )}
