@@ -98,16 +98,31 @@ export interface SubmitReviewResult {
   } | null
 }
 
+const trackingDetailsCache = new Map<string, PublicOrderTrackingDetails>()
+const reviewSyncFallbackIds = new Set<string>()
+
 const getPublicClient = () => {
   const shared = bootstrapSharedData()
   if (!shared.enabled) throw new Error('Order tracking is unavailable right now.')
   return shared.repositories.client
 }
 
-export const getPublicOrderTracking = async (trackingId: string): Promise<PublicOrderTrackingDetails | null> =>
-  getPublicClient().rpc<PublicOrderTrackingDetails | null>('get_order_public_status', {
-    p_tracking_id: trackingId,
-  })
+export const getPublicOrderTracking = async (trackingId: string): Promise<PublicOrderTrackingDetails | null> => {
+  try {
+    const result = await getPublicClient().rpc<PublicOrderTrackingDetails | null>('get_order_public_status', {
+      p_tracking_id: trackingId,
+    })
+    if (result) {
+      trackingDetailsCache.set(trackingId, result)
+      reviewSyncFallbackIds.delete(trackingId)
+    }
+    return result
+  } catch (cause) {
+    const cached = trackingDetailsCache.get(trackingId)
+    if (reviewSyncFallbackIds.has(trackingId) && cached?.reviewSubmitted) return cached
+    throw cause
+  }
+}
 
 export const searchPublicOrderStatus = async (orderNumber: string): Promise<PublicOrderStatusSummary | null> =>
   getPublicClient().rpc<PublicOrderStatusSummary | null>('search_order_public_status', {
@@ -127,9 +142,40 @@ export const submitPublicOrderReview = async (
   trackingId: string,
   answers: Array<{ questionId: string; score: number }>,
   note?: string,
-): Promise<SubmitReviewResult> =>
-  getPublicClient().rpc<SubmitReviewResult>('submit_order_review', {
+): Promise<SubmitReviewResult> => {
+  const result = await getPublicClient().rpc<SubmitReviewResult>('submit_order_review', {
     p_tracking_id: trackingId,
     p_answers: answers,
     p_note: note?.trim() || null,
   })
+
+  const cached = trackingDetailsCache.get(trackingId)
+  if (cached) {
+    const submittedAt = new Date().toISOString()
+    const questionById = new Map((cached.reviewQuestions ?? []).map((question) => [question.id, question.question]))
+    trackingDetailsCache.set(trackingId, {
+      ...cached,
+      reviewSubmitted: true,
+      reviewQuestions: [],
+      review: {
+        note: note?.trim() || null,
+        submittedAt,
+        answers: answers.map((answer) => ({
+          ...answer,
+          question: questionById.get(answer.questionId) ?? answer.questionId,
+        })),
+      },
+      reviewReward: result.reward
+        ? {
+            percentOff: result.reward.percentOff,
+            minOrderIdr: result.reward.minOrderIdr,
+            status: result.reward.status,
+            issuedAt: submittedAt,
+          }
+        : cached.reviewReward,
+    })
+    reviewSyncFallbackIds.add(trackingId)
+  }
+
+  return result
+}
