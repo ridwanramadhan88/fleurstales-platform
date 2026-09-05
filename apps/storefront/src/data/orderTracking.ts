@@ -107,19 +107,27 @@ const getPublicClient = () => {
   return shared.repositories.client
 }
 
+const getCommittedReviewFallback = (trackingId: string): PublicOrderTrackingDetails | null => {
+  if (!reviewSyncFallbackIds.has(trackingId)) return null
+  const cached = trackingDetailsCache.get(trackingId)
+  return cached?.reviewSubmitted ? cached : null
+}
+
 export const getPublicOrderTracking = async (trackingId: string): Promise<PublicOrderTrackingDetails | null> => {
   try {
     const result = await getPublicClient().rpc<PublicOrderTrackingDetails | null>('get_order_public_status', {
       p_tracking_id: trackingId,
     })
+    const fallback = getCommittedReviewFallback(trackingId)
+    if (fallback && !result?.reviewSubmitted) return fallback
     if (result) {
       trackingDetailsCache.set(trackingId, result)
       reviewSyncFallbackIds.delete(trackingId)
     }
     return result
   } catch (cause) {
-    const cached = trackingDetailsCache.get(trackingId)
-    if (reviewSyncFallbackIds.has(trackingId) && cached?.reviewSubmitted) return cached
+    const fallback = getCommittedReviewFallback(trackingId)
+    if (fallback) return fallback
     throw cause
   }
 }
