@@ -18,16 +18,30 @@ jobs:
           ref: hotfix/canonical-storefront-tracking-url
           fetch-depth: 0
 
-      - name: Inspect staged patch chunks
+      - name: Locate extra base64 character
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          allowed = set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r')
-          for path in sorted(Path('.github/patches').glob('orderlifecycle.gz.b64.part*')):
-              data = path.read_text()
-              bad = [(i, repr(ch), ord(ch)) for i, ch in enumerate(data) if ch not in allowed]
-              print(path.name, 'length=', len(data), 'invalid=', bad[:20])
+          import base64, hashlib
+
+          parts = [Path(f'.github/patches/orderlifecycle.gz.b64.part0{i}').read_text() for i in range(4)]
+          target = '6d18bd976778c7393950ebdd37b4047c6e4bb8591b226b96c5de49991d611095'
+          suspect = parts[1]
+          prefix = parts[0]
+          suffix = parts[2] + parts[3]
+          for i in range(len(suspect)):
+              candidate = prefix + suspect[:i] + suspect[i+1:] + suffix
+              try:
+                  raw = base64.b64decode(candidate, validate=True)
+              except Exception:
+                  continue
+              if hashlib.sha256(raw).hexdigest() == target:
+                  print('MATCH_INDEX', i)
+                  print('MATCH_CHAR', repr(suspect[i]))
+                  print('CONTEXT', repr(suspect[max(0, i-12):i+13]))
+                  raise SystemExit(0)
+          print('NO_MATCH')
+          raise SystemExit(1)
           PY
-          exit 1
