@@ -9,11 +9,20 @@ const assert = (condition, message) => {
 }
 
 // This contract intentionally runs in global CI before production release.
-const [middleware, storefrontPackage, mediaBootstrap, conflictGuard] = await Promise.all([
+const [
+  middleware,
+  storefrontPackage,
+  mediaBootstrap,
+  conflictGuard,
+  orderBridge,
+  realtimeSync,
+] = await Promise.all([
   read('apps/storefront/middleware.ts'),
   read('apps/storefront/package.json'),
   read('supabase/migrations/20260906010000_order_lifecycle_photos.sql'),
   read('supabase/migrations/20260906023000_revision_conflict_cpu_guard.sql'),
+  read('apps/os/src/data/shared/orderBridge.ts'),
+  read('apps/os/src/data/realtimeSupabaseSync.ts'),
 ])
 
 // Vercel's current framework-agnostic Routing Middleware helper lives in
@@ -61,6 +70,32 @@ assert(orderPreflight >= 0 && orderWriter > orderPreflight, 'Order conflict fast
 assert(
   conflictGuard.includes("v_profile.role='admin'") && conflictGuard.includes('private.current_staff_branch_id()'),
   'Order conflict fast-fail must preserve the Admin runtime-branch boundary.',
+)
+
+// Remote Order hydration must unsubscribe the previous local-mutation bridge
+// before replacing Zustand state. Otherwise newer server revisions are seen by
+// the stale bridge as local edits and immediately written back with old
+// expected revisions, producing the same-second conflict fan-out seen in prod.
+const stopOldBridge = orderBridge.indexOf('stopBusinessOsOrderBridge()')
+const applyRemoteOrders = orderBridge.indexOf('useOrdersStore.setState')
+assert(
+  stopOldBridge >= 0 && applyRemoteOrders > stopOldBridge,
+  'Order refresh must stop the stale mutation bridge before applying remote state.',
+)
+
+// Realtime bursts should collapse to trailing refreshes instead of one full
+// Order/audit hydration per row event.
+assert(
+  realtimeSync.includes('let orderRefreshTimer:') && realtimeSync.includes('}, 150)'),
+  'Order Realtime refresh must remain debounced.',
+)
+assert(
+  realtimeSync.includes('const queueAuditRefresh') && realtimeSync.includes('}, 500)'),
+  'Owner audit Realtime refresh must remain debounced.',
+)
+assert(
+  realtimeSync.includes('queueAuditRefresh()'),
+  'Business activity events must enqueue, not directly fan out, audit hydration.',
 )
 
 console.log('Release safety contracts passed.')
