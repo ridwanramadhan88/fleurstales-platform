@@ -24,7 +24,7 @@ describe('submitChangeRequest', () => {
       expectedRevision: store.findOrder('A')?.revision ?? 1,
       type: 'edit',
       reason: 'Wrong flower color',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
     })
 
     const order = store.findOrder('A')
@@ -54,7 +54,7 @@ describe('submitChangeRequest', () => {
       expectedRevision: store.findOrder('A')?.revision ?? 1,
       type: 'cancel',
       reason: 'Customer changed their mind',
-      actor: { name: 'Admin B', role: 'admin' },
+      actor: { name: 'Admin B', role: 'admin', branchId: 'Kedamaian' },
     })
 
     const order = store.findOrder('A')
@@ -75,7 +75,7 @@ describe('submitChangeRequest', () => {
       expectedRevision: store.findOrder('A')?.revision ?? 1,
       type: 'edit',
       reason: 'Wrong item',
-      actor: { name: 'Admin A', role: 'admin' },
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
     })
 
     expect(store.findOrder('B')?.pendingChangeRequest).toBeUndefined()
@@ -134,7 +134,6 @@ describe('approveChangeRequest', () => {
     expect(store.findOrder('A')?.status).toBe('delivered')
   })
 
-
   it('rejects approval by a role that cannot resolve change requests', () => {
     const store = buildActions([
       makeOrder({
@@ -150,7 +149,7 @@ describe('approveChangeRequest', () => {
       }),
     ])
 
-    const approved = store.approveChangeRequest({ orderNumber:'A', expectedRevision:store.findOrder('A')?.revision ?? 1, actor:{ name:'Admin B', role:'admin' } })
+    const approved = store.approveChangeRequest({ orderNumber:'A', expectedRevision:store.findOrder('A')?.revision ?? 1, actor:{ name:'Admin B', role:'admin', branchId:'Kedamaian' } })
 
     expect(approved.allowed).toBe(false)
     expect(store.findOrder('A')?.status).toBe('delivered')
