@@ -29,22 +29,46 @@ export const StaffReviewHistory: FC<StaffReviewHistoryProps> = ({
 
   useEffect(() => {
     let active = true
-    setLoading(true)
-    setError(null)
+    let inFlight = false
 
-    void getStaffReviews({ orderId, customerId })
-      .then((result) => {
-        if (active) setReviews(result)
-      })
-      .catch((cause) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load customer reviews.')
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
+    const loadReviews = (showLoading: boolean) => {
+      if (inFlight) return
+      inFlight = true
+      if (showLoading) {
+        setLoading(true)
+        setError(null)
+      }
+
+      void getStaffReviews({ orderId, customerId })
+        .then((result) => {
+          if (!active) return
+          setReviews(result)
+          setError(null)
+        })
+        .catch((cause) => {
+          if (active && showLoading) {
+            setError(cause instanceof Error ? cause.message : 'Unable to load customer reviews.')
+          }
+        })
+        .finally(() => {
+          inFlight = false
+          if (active && showLoading) setLoading(false)
+        })
+    }
+
+    const refreshReviews = () => loadReviews(false)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshReviews()
+    }
+
+    loadReviews(true)
+    window.addEventListener('focus', refreshReviews)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       active = false
+      window.removeEventListener('focus', refreshReviews)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [orderId, customerId])
 
