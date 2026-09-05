@@ -5,11 +5,7 @@ export const BRANCH_LOCATION_LINKS: Record<string, string> = {
   Kedamaian: 'https://maps.app.goo.gl/AW6UF3Lr6SrFWxYBA',
 }
 
-/**
- * @description Normalizes a local Indonesian WhatsApp number (e.g.
- * "0819 7777 8888") into the digits-only, country-code-prefixed format
- * wa.me expects (e.g. "6281977778888").
- */
+/** Normalize Indonesian WhatsApp numbers into wa.me digits. */
 export const toWhatsAppPhoneDigits = (rawPhone: string): string => {
   const digits = digitsOnly(rawPhone)
   if (digits.startsWith('62')) return digits
@@ -17,12 +13,6 @@ export const toWhatsAppPhoneDigits = (rawPhone: string): string => {
   return digits
 }
 
-/**
- * @description Builds the "your order is ready for pickup" WhatsApp message
- * text, per the required copy/template. `trackingUrl` is the canonical
- * `/track/...` link (with the `v=ready` cache-buster) so the customer can see
- * the finish photo without waiting for a fresh WhatsApp link preview.
- */
 export const buildReadyForPickupMessage = (
   customerName: string,
   productName: string,
@@ -30,14 +20,24 @@ export const buildReadyForPickupMessage = (
   trackingUrl: string,
 ): string => {
   const locationLink = BRANCH_LOCATION_LINKS[branch] ?? ''
-  return `Hi kak ${customerName}, Orderan kakak ${productName} sudah ready yaa 🌸\nLihat hasilnya & lacak pesanan di sini: ${trackingUrl}\nUntuk alamat pick up di ${branch} ${locationLink}`
+  return `Hi kak ${customerName}, Orderan kakak ${productName} sudah ready yaa 🌸\nLihat foto hasil & lacak pesanan di sini: ${trackingUrl}\nUntuk alamat pick up di ${branch} ${locationLink}`
 }
 
-/**
- * @description Builds a wa.me deep link that pre-fills the given message. If
- * no WhatsApp number is known, falls back to the generic WhatsApp compose link
- * (opens the app so staff can still pick the contact manually).
- */
+export const buildReadyForDeliveryMessage = (
+  customerName: string,
+  productName: string,
+  trackingUrl: string,
+): string =>
+  `Hi kak ${customerName}, Orderan kakak ${productName} sudah ready yaa 🌸\nLihat foto hasil & lacak pesanan di sini: ${trackingUrl}\nPesanan akan lanjut ke proses delivery sesuai jadwal ya kak.`
+
+export const buildReviewRequestMessage = (
+  customerName: string,
+  orderNumber: string,
+  trackingUrl: string,
+): string =>
+  `Hi kak ${customerName}, pesanan ${orderNumber} sudah selesai 🌸\nTerima kasih sudah order di Fleurs Tales. Kalau berkenan, boleh kasih review lewat link ini ya kak: ${trackingUrl}`
+
+/** Build a WhatsApp deep link with a pre-filled message. */
 export const buildWhatsAppLink = (phone: string | undefined, message: string): string => {
   const encoded = encodeURIComponent(message)
   if (!phone) return `https://wa.me/?text=${encoded}`
