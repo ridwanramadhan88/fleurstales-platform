@@ -34,10 +34,18 @@ export const getFutureProcessingKind = (
  * for the exact pipelines). Delivery orders pass through an extra
  * "delivering" leg before finishing; only future (not-today) orders get a
  * "Confirm" step between Pending and Processing.
+ *
+ * Storefront orders waiting for verification deliberately have no generic
+ * quick-advance target. They must be confirmed through the dedicated order
+ * confirmation flow so the customer WhatsApp + secure tracking link cannot
+ * be bypassed from a table/card quick action.
  */
 export const getNextStatus = (
-  order: Pick<OrderTableRow, 'status' | 'fulfillment' | 'scheduleDate' | 'scheduleLabel'>,
+  order: Pick<OrderTableRow, 'status' | 'fulfillment' | 'scheduleDate' | 'scheduleLabel'>
+    & Partial<Pick<OrderTableRow, 'source'>>,
 ): OrderStatus | null => {
+  if (order.source === 'customer_app' && order.status === 'pending_verification') return null
+
   const pipeline: OrderStatus[] = getOrderStatusOptionsForFulfillment(
     order.fulfillment,
     isFutureOrder(order as OrderTableRow),
