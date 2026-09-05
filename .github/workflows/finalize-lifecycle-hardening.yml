@@ -1,0 +1,113 @@
+name: Finalize lifecycle hardening
+
+on:
+  push:
+    branches:
+      - hotfix/canonical-storefront-tracking-url
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: startsWith(github.event.head_commit.message, '[finalize-lifecycle-hardening]')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: hotfix/canonical-storefront-tracking-url
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Harden quick-advance finish photo flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/os/src/components/orders/OrdersTableViewController.ts')
+          text = path.read_text()
+
+          old = "import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'\n"
+          new = old + "import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'\n"
+          assert old in text and "attachOrderFinishPhoto" not in text
+          text = text.replace(old, new, 1)
+
+          old = "  onFinishPhotoUploaded: (finishPhotoUrl: string) => void\n"
+          new = "  onFinishPhotoUploaded: (finishPhotoUrl: string) => Promise<void>\n"
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = "  const setOrderFinishPhoto = useOrdersStore((state) => state.setOrderFinishPhoto)\n"
+          assert old in text
+          text = text.replace(old, '', 1)
+
+          old = '''    onFinishPhotoUploaded: (finishPhotoUrl) => {
+      if (!finishPhotoGate) return
+      const { order, nextStatus } = finishPhotoGate
+      const result = setOrderFinishPhoto({
+        orderNumber: order.orderNumber,
+        expectedRevision: order.revision ?? 1,
+        finishPhotoUrl,
+        finishPhotoUploadedBy: actor.name,
+        actor,
+      })
+      setFinishPhotoGate(null)
+      if (!result.allowed) {
+        toast({ title: 'Photo was not saved', description: result.reason, variant: 'destructive' })
+        return
+      }
+      runAdvance(result.order, nextStatus)
+    },
+'''
+          new = '''    onFinishPhotoUploaded: async (finishPhotoUrl) => {
+      if (!finishPhotoGate) return
+      const { order, nextStatus } = finishPhotoGate
+      try {
+        const persistedOrder = await attachOrderFinishPhoto(order, finishPhotoUrl, actor.name)
+        setFinishPhotoGate(null)
+        runAdvance(persistedOrder, nextStatus)
+      } catch (error) {
+        toast({
+          title: 'Photo was not saved',
+          description: error instanceof Error ? error.message : 'Please try again.',
+          variant: 'destructive',
+        })
+        throw error
+      }
+    },
+'''
+          assert old in text
+          text = text.replace(old, new, 1)
+          path.write_text(text)
+
+          types = Path('apps/os/src/store/ordersStoreTypes.ts')
+          text = types.read_text()
+          text = text.replace(
+            '/** Public Supabase Storage URL of the uploaded bukti transfer screenshot. */\n  paymentProofUrl?: string',
+            '/** Private order-payment-proofs Storage object path. */\n  paymentProofUrl?: string',
+          )
+          types.write_text(text)
+          PY
+
+      - name: Refresh npm lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts
+
+      - name: Commit generated changes and remove helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/finalize-lifecycle-hardening.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: finalize lifecycle media hardening'
+          git push origin HEAD:hotfix/canonical-storefront-tracking-url
