@@ -17,6 +17,13 @@ begin
     raise exception 'HR read-only Orders/Customers access is missing';
   end if;
 
+  -- Check effective section access as well as raw rows. Role-domain eligibility
+  -- guards can otherwise silently coerce or mask a configured `view` row.
+  if not private.has_section_access_for_role('hr','orders','view')
+     or not private.has_section_access_for_role('hr','customers','view') then
+    raise exception 'HR effective Orders/Customers read domain is missing';
+  end if;
+
   if not private.has_action_permission_for_role('hr','orders.read_all') then
     raise exception 'HR company-wide order read capability is missing';
   end if;
