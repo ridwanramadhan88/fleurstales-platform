@@ -1,11 +1,9 @@
 /**
  * @file OrderFinishPhotoDialog.tsx
  * @description Mandatory "order finished" photo, required before an order
- * can advance into Ready. Adapted from ImageDropInput.tsx: mobile gets two
- * explicit capture buttons (camera vs. library — some devices hide the
- * gallery option when `capture` is set on a single input), desktop keeps the
- * existing drag-and-drop zone. Output is a 4:5 crop, same zoom/pan editor as
- * the catalog image flow.
+ * can advance into Ready. Mobile gets camera/library capture and desktop gets
+ * drag/drop. Upload + authoritative order attachment are treated as one user
+ * confirmation; attachment failure is surfaced without closing the dialog.
  */
 
 import type { ChangeEvent, FC } from 'react'
@@ -27,7 +25,7 @@ export interface OrderFinishPhotoDialogProps {
   open: boolean
   orderId: string
   onCancel: () => void
-  onUploaded: (finishPhotoUrl: string) => void
+  onUploaded: (finishPhotoUrl: string) => Promise<void> | void
 }
 
 const MAX_SOURCE_FILE_BYTES = 10 * 1024 * 1024
@@ -118,16 +116,16 @@ export const OrderFinishPhotoDialog: FC<OrderFinishPhotoDialogProps> = ({ open, 
       const dataUrl = exportFinishPhoto(exportCanvasRef.current)
       const blob = dataUrlToBlob(dataUrl)
       const finishPhotoUrl = await uploadOrderFinishPhoto(orderId, blob)
-      onUploaded(finishPhotoUrl)
+      await onUploaded(finishPhotoUrl)
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not upload this photo.')
+      setError(nextError instanceof Error ? nextError.message : 'Could not save this photo.')
     } finally {
       setUploading(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel() }}>
+    <Dialog open={open} onOpenChange={(next) => { if (!next && !uploading) onCancel() }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Crop className="size-4" /> Photo the finished order</DialogTitle>
@@ -153,7 +151,7 @@ export const OrderFinishPhotoDialog: FC<OrderFinishPhotoDialogProps> = ({ open, 
                   <Slider value={[offsetY]} min={-1} max={1} step={0.01} onValueChange={([next]) => setOffsetY(next)} aria-label="Vertical crop position" />
                 </div>
               </div>
-              <button type="button" onClick={() => { setSourceUrl(null); setSourceImage(null) }} className="text-xs font-medium text-muted-foreground underline">
+              <button type="button" disabled={uploading} onClick={() => { setSourceUrl(null); setSourceImage(null) }} className="text-xs font-medium text-muted-foreground underline disabled:opacity-50">
                 Choose a different photo
               </button>
             </>
@@ -202,9 +200,9 @@ export const OrderFinishPhotoDialog: FC<OrderFinishPhotoDialogProps> = ({ open, 
 
         <canvas ref={exportCanvasRef} className="hidden" />
         <DialogFooter>
-          <button type="button" onClick={onCancel} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium">Cancel</button>
-          <button type="button" onClick={handleConfirm} disabled={!sourceImage || uploading} className="rounded-full bg-primary text-sm font-medium text-primary-foreground disabled:opacity-50 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">
-            {uploading ? 'Uploading…' : 'Use this photo'}
+          <button type="button" onClick={onCancel} disabled={uploading} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium disabled:opacity-50">Cancel</button>
+          <button type="button" onClick={() => { void handleConfirm() }} disabled={!sourceImage || uploading} className="rounded-full bg-primary text-sm font-medium text-primary-foreground disabled:opacity-50 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">
+            {uploading ? 'Saving…' : 'Use this photo'}
           </button>
         </DialogFooter>
       </DialogContent>
