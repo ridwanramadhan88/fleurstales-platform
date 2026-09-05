@@ -65,6 +65,7 @@ const TransactionRow: FC<{
   const editable = canEdit && transaction.status === 'verified' && transaction.source !== 'transfer'
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.currentTarget !== event.target) return
     if (!onOpenOrder || (event.key !== 'Enter' && event.key !== ' ')) return
     event.preventDefault()
     onOpenOrder()
