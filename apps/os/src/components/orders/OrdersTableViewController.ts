@@ -21,6 +21,7 @@ import { deleteOrderDraft, useOrderDrafts, type SavedOrderDraft } from './orderD
 import { advanceOrderStatus, getNextStatus } from './orderTableWorkflow'
 import { buildReadyForPickupMessage, buildWhatsAppLink } from './orderTableWhatsApp'
 import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'
+import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
 import type { OrderStatusFilter, OrdersTableViewProps } from './OrdersTableView'
 import type { SortDirection } from './orderTableColumns'
 import { getOrderStatusGroup } from '../../domain/orderGroupingDomain'
@@ -83,7 +84,7 @@ export interface OrdersTableViewModel {
   onCancelPaymentGate: () => void
   onMarkPaidAndContinue: (paymentProofUrl?: string) => void
   onCancelFinishPhotoDialog: () => void
-  onFinishPhotoUploaded: (finishPhotoUrl: string) => void
+  onFinishPhotoUploaded: (finishPhotoUrl: string) => Promise<void>
   onCloseActionModal: () => void
   onCancelProcessingAssignment: () => void
   onProcessingAssigned: (order: OrderTableRow) => void
@@ -108,9 +109,6 @@ export const useOrdersTableViewController = ({
     initialSelectedOrderNumber ?? null,
   )
 
-  // Opens the details panel for a deep-linked order (e.g. from clicking a
-  // notification) whenever a new value comes in, then tells the caller it
-  // has been consumed so it can clear it and avoid re-triggering.
   useEffect(() => {
     if (!initialSelectedOrderNumber) return
     setSelectedOrderNumber(initialSelectedOrderNumber)
@@ -141,7 +139,6 @@ export const useOrdersTableViewController = ({
   const localOrders = useOrdersStore((state) => state.orders)
   const updateOrderStatus = useOrdersStore((state) => state.updateOrderStatus)
   const updatePayment = useOrdersStore((state) => state.updatePayment)
-  const setOrderFinishPhoto = useOrdersStore((state) => state.setOrderFinishPhoto)
   const addActivity = useOrderRuntimeStore((state) => state.addActivity)
   const currentUserName = useUserStore((state) => state.name)
   const currentUserRole = useUserStore((state) => state.role)
@@ -241,13 +238,9 @@ export const useOrdersTableViewController = ({
           ? group !== 'finished'
           : group === statusGroupFilter
 
-    const matchesStatus =
-      statusFilter === 'all' || order.status === statusFilter
-
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
     const query = searchQuery.trim().toLowerCase()
-    if (!query) {
-      return matchesGroup && matchesStatus
-    }
+    if (!query) return matchesGroup && matchesStatus
 
     return (
       matchesGroup &&
@@ -439,22 +432,12 @@ export const useOrdersTableViewController = ({
       runAdvance(payment.order, nextStatus)
     },
     onCancelFinishPhotoDialog: () => setFinishPhotoGate(null),
-    onFinishPhotoUploaded: (finishPhotoUrl) => {
+    onFinishPhotoUploaded: async (finishPhotoUrl) => {
       if (!finishPhotoGate) return
       const { order, nextStatus } = finishPhotoGate
-      const result = setOrderFinishPhoto({
-        orderNumber: order.orderNumber,
-        expectedRevision: order.revision ?? 1,
-        finishPhotoUrl,
-        finishPhotoUploadedBy: actor.name,
-        actor,
-      })
+      const persistedOrder = await attachOrderFinishPhoto(order, finishPhotoUrl, actor.name)
       setFinishPhotoGate(null)
-      if (!result.allowed) {
-        toast({ title: 'Photo was not saved', description: result.reason, variant: 'destructive' })
-        return
-      }
-      runAdvance(result.order, nextStatus)
+      runAdvance(persistedOrder, nextStatus)
     },
     onCancelProcessingAssignment: () => setProcessingAssignment(null),
     onProcessingAssigned: (assignedOrder) => {
