@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   finalize:
-    if: startsWith(github.event.head_commit.message, '[finalize-lifecycle-hardening]')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -29,24 +28,19 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-
           path = Path('apps/os/src/components/orders/OrdersTableViewController.ts')
           text = path.read_text()
-
           old = "import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'\n"
           new = old + "import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'\n"
           assert old in text and "attachOrderFinishPhoto" not in text
           text = text.replace(old, new, 1)
-
           old = "  onFinishPhotoUploaded: (finishPhotoUrl: string) => void\n"
           new = "  onFinishPhotoUploaded: (finishPhotoUrl: string) => Promise<void>\n"
           assert old in text
           text = text.replace(old, new, 1)
-
           old = "  const setOrderFinishPhoto = useOrdersStore((state) => state.setOrderFinishPhoto)\n"
           assert old in text
           text = text.replace(old, '', 1)
-
           old = '''    onFinishPhotoUploaded: (finishPhotoUrl) => {
       if (!finishPhotoGate) return
       const { order, nextStatus } = finishPhotoGate
@@ -73,11 +67,7 @@ jobs:
         setFinishPhotoGate(null)
         runAdvance(persistedOrder, nextStatus)
       } catch (error) {
-        toast({
-          title: 'Photo was not saved',
-          description: error instanceof Error ? error.message : 'Please try again.',
-          variant: 'destructive',
-        })
+        toast({ title: 'Photo was not saved', description: error instanceof Error ? error.message : 'Please try again.', variant: 'destructive' })
         throw error
       }
     },
@@ -85,10 +75,8 @@ jobs:
           assert old in text
           text = text.replace(old, new, 1)
           path.write_text(text)
-
           types = Path('apps/os/src/store/ordersStoreTypes.ts')
-          text = types.read_text()
-          text = text.replace(
+          text = types.read_text().replace(
             '/** Public Supabase Storage URL of the uploaded bukti transfer screenshot. */\n  paymentProofUrl?: string',
             '/** Private order-payment-proofs Storage object path. */\n  paymentProofUrl?: string',
           )
@@ -96,10 +84,7 @@ jobs:
           PY
 
       - name: Refresh npm lockfile
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm install --package-lock-only --ignore-scripts
+        run: npm install --package-lock-only --ignore-scripts
 
       - name: Commit generated changes and remove helper
         shell: bash
