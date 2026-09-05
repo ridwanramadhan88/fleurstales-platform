@@ -107,8 +107,9 @@ interface AttachFinishPhotoResult {
 }
 
 /**
- * Persist an already-uploaded finish photo immediately. If the authoritative
- * write fails, the just-uploaded object is removed so Storage cannot orphan it.
+ * Persist an already-uploaded finish photo immediately. The object is removed
+ * only if the authoritative RPC itself fails. Once the RPC commits, a later
+ * refresh failure must never delete the now-referenced Storage object.
  */
 export const attachOrderFinishPhoto = async (
   order: OrderTableRow,
@@ -133,22 +134,24 @@ export const attachOrderFinishPhoto = async (
     return result.order
   }
 
+  const shared = bootstrapSharedData(browserSupabaseTokenProvider)
+  if (!shared.enabled) throw new Error('Supabase is not configured.')
+
   try {
-    const shared = bootstrapSharedData(browserSupabaseTokenProvider)
-    if (!shared.enabled) throw new Error('Supabase is not configured.')
     await shared.repositories.client.rpc<AttachFinishPhotoResult>('attach_order_finish_photo', {
       p_order_id: order.id,
       p_expected_revision: order.revision ?? 1,
       p_finish_photo_url: finishPhotoUrl,
       p_uploaded_by: uploadedBy,
     })
-    const refreshed = await refreshBusinessOsOrdersFromRemote()
-    if (!refreshed) throw new Error('Finish photo was saved, but the latest order could not be reloaded.')
-    const next = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
-    if (!next) throw new Error('Finish photo was saved, but the order is missing from the refreshed list.')
-    return next
   } catch (error) {
     await removeOrderFinishPhoto(finishPhotoUrl).catch(() => undefined)
     throw error
   }
+
+  const refreshed = await refreshBusinessOsOrdersFromRemote()
+  if (!refreshed) throw new Error('Finish photo was saved, but the latest order could not be reloaded.')
+  const next = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
+  if (!next) throw new Error('Finish photo was saved, but the order is missing from the refreshed list.')
+  return next
 }
