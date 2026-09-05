@@ -172,7 +172,7 @@ export interface UpdatePaymentInput {
   paymentMethod?: PaymentMethod
   reference?: string
   proofId?: string
-  /** Public Supabase Storage URL of the uploaded bukti transfer screenshot. */
+  /** Private `order-payment-proofs` Storage object path. */
   paymentProofUrl?: string
   note?: string
   idempotencyKey?: string
