@@ -5,7 +5,6 @@ import type {
   OrderStatus,
   OrderTableRow,
   PaymentMethod,
-  PaymentStatus,
 } from '../../types/orders'
 import type { OrderActivityEvent } from '../../store/orderRuntimeStore'
 import type { OrderActor } from '../../domain/orderBusinessRules'
@@ -13,7 +12,7 @@ import { useOrdersStore } from '../../store/ordersStore'
 import type { resolveOrderProductDisplay } from '../../domain/catalogDomain'
 import { sanitizeCurrency } from '../../lib/formatters'
 import { toast } from '../../hooks/use-toast'
-import { PAYMENT_STATUS_LABELS, STATUS_LABELS, getOrderStatusOptionsForFulfillment } from './orderTableLabels'
+import { STATUS_LABELS, getOrderStatusOptionsForFulfillment } from './orderTableLabels'
 import {
   formatOrderScheduleLabel,
   getOrderTimeString,
@@ -30,7 +29,6 @@ export interface OrderEditDraft {
   source: OrderSource
   fulfillment: OrderFulfillment
   status: OrderStatus
-  paymentStatus: PaymentStatus
   paymentMethod: PaymentMethod | ''
   totalIdrText: string
   scheduleDate: string
@@ -51,7 +49,6 @@ export const buildDraftFromOrder = (order: OrderTableRow): OrderEditDraft => ({
   source: order.source,
   fulfillment: order.fulfillment,
   status: order.status,
-  paymentStatus: order.paymentStatus,
   paymentMethod: order.paymentMethod ?? '',
   totalIdrText: order.totalIdr.toString(),
   scheduleDate: parseOrderDateString(order) ?? '',
@@ -126,19 +123,6 @@ export const useOrderDetailsEditing = ({
       draft.scheduleTime,
     )
 
-    if (
-      draft.paymentStatus === 'refund_pending' ||
-      draft.paymentStatus === 'refunded'
-    ) {
-      toast({
-        title: 'Changes were not saved',
-        description:
-          'Refund states can only be changed through the dedicated Finance refund workflow.',
-        variant: 'destructive',
-      })
-      return
-    }
-
     const result = useOrdersStore.getState().updateOrderDetails({
       orderNumber: order.orderNumber,
       expectedRevision: order.revision ?? 1,
@@ -156,7 +140,6 @@ export const useOrderDetailsEditing = ({
         source: draft.source,
         fulfillment: draft.fulfillment,
         status: draft.status,
-        paymentStatus: draft.paymentStatus,
         paymentMethod: draft.paymentMethod || undefined,
         totalIdr: total,
         scheduleDate: draft.scheduleDate || undefined,
@@ -189,13 +172,6 @@ export const useOrderDetailsEditing = ({
     if (draft.status !== order.status) {
       changeMessages.push(
         `Status → ${STATUS_LABELS[draft.status]} (was ${STATUS_LABELS[order.status]})`,
-      )
-    }
-    if (draft.paymentStatus !== order.paymentStatus) {
-      changeMessages.push(
-        `Payment → ${PAYMENT_STATUS_LABELS[draft.paymentStatus]} (was ${
-          PAYMENT_STATUS_LABELS[order.paymentStatus]
-        })`,
       )
     }
     if (draft.fulfillment !== order.fulfillment) {

@@ -2,7 +2,6 @@ import type { OrderTableRow } from '../types/orders'
 import { bootstrapSharedData } from './shared/bootstrap'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
-import { removeOrderPaymentProof } from './orderMediaUpload'
 import { useOrdersStore } from '../store/ordersStore'
 import { useFinanceStore } from '../store/financeStore'
 import { useUserStore } from '../store/userStore'
@@ -17,18 +16,21 @@ export interface ProcessPaymentResult {
   financeAccountId: string
   paymentVerifiedAt: string
   ledgerTransactionId?: string
+  paymentProofPath?: string | null
 }
 
-interface ProcessProductionResult extends ProcessPaymentResult {
+interface ProcessProductionResult {
+  orderId: string
+  orderNumber: string
+  revision: number
   status: 'processing'
   floristEmployeeId: string
   floristName: string
-  paymentProofPath?: string | null
+  startedAt: string
 }
 
 export interface ProcessOrderForProductionInput {
   order: OrderTableRow
-  financeAccountId: string
   floristEmployeeId: string
   assignmentDate: string
   assignmentTime?: string
@@ -36,8 +38,6 @@ export interface ProcessOrderForProductionInput {
   scheduledBranchId?: string
   shiftStart?: string
   shiftEnd?: string
-  /** Private `order-payment-proofs` Storage object path. Required for transfer. */
-  paymentProofPath?: string
 }
 
 const getClient = () => {
@@ -60,7 +60,7 @@ const confirmLocalPaymentForProcessing = (
     branchId: user.branchId,
   }
   if (current.paymentMethod === 'transfer' && !paymentProofPath && !current.paymentProofUrl) {
-    throw new Error('Upload bukti transfer before starting production.')
+    throw new Error('Upload bukti transfer before confirming payment.')
   }
   const result = useOrdersStore.getState().updatePayment({
     orderNumber: current.orderNumber,
@@ -70,7 +70,7 @@ const confirmLocalPaymentForProcessing = (
     totalIdr: current.totalIdr,
     paymentMethod: current.paymentMethod,
     paymentProofUrl: paymentProofPath ?? current.paymentProofUrl,
-    note: 'Full payment confirmed before Processing.',
+    note: 'Full payment confirmed by admin.',
     idempotencyKey: `process-payment:${current.id ?? current.orderNumber}:${current.revision ?? 1}`,
     actor,
   })
@@ -104,27 +104,32 @@ const confirmLocalPaymentForProcessing = (
     financeAccountId,
     paymentVerifiedAt: paymentEvent?.occurredAt ?? new Date().toISOString(),
     ledgerTransactionId: paymentEvent?.ledgerTransactionId,
+    paymentProofPath: paymentProofPath ?? current.paymentProofUrl,
   }
 }
 
 export const confirmOrderPaymentForProcessing = async (
   order: OrderTableRow,
   financeAccountId: string,
+  paymentProofPath?: string,
 ): Promise<ProcessPaymentResult> => {
   if (!order.id) throw new Error('Order id is missing.')
   if (!financeAccountId) throw new Error('Receiving account is required.')
 
   if (!isSharedBackendConfigured()) {
-    return confirmLocalPaymentForProcessing(order, financeAccountId, order.paymentProofUrl)
+    return confirmLocalPaymentForProcessing(order, financeAccountId, paymentProofPath ?? order.paymentProofUrl)
   }
 
-  const result = await getClient().rpc<ProcessPaymentResult>('confirm_order_payment_for_processing', {
+  const result = await getClient().rpc<ProcessPaymentResult>('confirm_order_payment_with_proof', {
     p_order_id: order.id,
     p_expected_revision: order.revision ?? 1,
     p_finance_account_id: financeAccountId,
+    p_payment_proof_path: paymentProofPath ?? order.paymentProofUrl ?? null,
   })
-  const refreshed = await refreshBusinessOsOrdersFromRemote()
-  if (!refreshed) throw new Error('Payment was saved, but the latest order could not be reloaded.')
+
+  // The RPC is the commit boundary. A later refresh problem must not make the
+  // UI treat an already-confirmed payment as failed or delete its proof.
+  await refreshBusinessOsOrdersFromRemote().catch(() => false)
   return result
 }
 
@@ -133,19 +138,19 @@ export const processOrderForProduction = async (
 ): Promise<OrderTableRow> => {
   const { order } = input
   if (!order.id) throw new Error('Order id is missing.')
-  if (!input.financeAccountId) throw new Error('Receiving account is required.')
-  if (order.paymentMethod === 'transfer' && !input.paymentProofPath && !order.paymentProofUrl) {
-    throw new Error('Upload bukti transfer before starting production.')
+  if (order.paymentStatus !== 'paid' || (order.paidAmountIdr ?? 0) < order.totalIdr) {
+    throw new Error('Confirm payment before starting production.')
+  }
+  if (order.paymentMethod === 'transfer' && !order.paymentProofUrl) {
+    throw new Error('Bukti transfer is missing. Confirm payment first.')
   }
 
   if (!isSharedBackendConfigured()) {
-    const payment = confirmLocalPaymentForProcessing(order, input.financeAccountId, input.paymentProofPath)
-    const current = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber)
-      ?? { ...order, revision: payment.revision, paymentStatus: 'paid' as const, paidAmountIdr: payment.paidAmountIdr }
+    const current = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber) ?? order
     const user = useUserStore.getState()
     const result = useOrdersStore.getState().assignFloristAndStartProcessing({
       orderNumber: current.orderNumber,
-      expectedRevision: current.revision ?? payment.revision,
+      expectedRevision: current.revision ?? 1,
       floristEmployeeId: input.floristEmployeeId,
       allowScheduleOverride: input.allowScheduleOverride,
       actor: {
@@ -159,28 +164,17 @@ export const processOrderForProduction = async (
     return result.order
   }
 
-  const proofPath = input.paymentProofPath ?? order.paymentProofUrl ?? undefined
-  const isNewProof = Boolean(input.paymentProofPath && input.paymentProofPath !== order.paymentProofUrl)
-  let command: ProcessProductionResult
-
-  try {
-    command = await getClient().rpc<ProcessProductionResult>('process_order_for_production_with_proof', {
-      p_order_id: order.id,
-      p_expected_revision: order.revision ?? 1,
-      p_finance_account_id: input.financeAccountId,
-      p_florist_employee_id: input.floristEmployeeId,
-      p_assignment_date: input.assignmentDate,
-      p_assignment_time: input.assignmentTime ?? null,
-      p_allow_schedule_override: input.allowScheduleOverride,
-      p_scheduled_branch_id: input.scheduledBranchId ?? null,
-      p_shift_start: input.shiftStart ?? null,
-      p_shift_end: input.shiftEnd ?? null,
-      p_payment_proof_path: proofPath ?? null,
-    })
-  } catch (error) {
-    if (isNewProof && proofPath) await removeOrderPaymentProof(proofPath).catch(() => undefined)
-    throw error
-  }
+  const command = await getClient().rpc<ProcessProductionResult>('start_paid_order_production', {
+    p_order_id: order.id,
+    p_expected_revision: order.revision ?? 1,
+    p_florist_employee_id: input.floristEmployeeId,
+    p_assignment_date: input.assignmentDate,
+    p_assignment_time: input.assignmentTime ?? null,
+    p_allow_schedule_override: input.allowScheduleOverride,
+    p_scheduled_branch_id: input.scheduledBranchId ?? null,
+    p_shift_start: input.shiftStart ?? null,
+    p_shift_end: input.shiftEnd ?? null,
+  })
 
   const refreshed = await refreshBusinessOsOrdersFromRemote()
   if (refreshed) {
@@ -188,25 +182,20 @@ export const processOrderForProduction = async (
     if (next) return next
   }
 
-  // The RPC is the commit boundary. A refresh problem after it succeeds must
-  // not turn a successful Process Order into a UI failure or delete its proof.
   return {
     ...order,
     revision: command.revision,
     status: 'processing',
-    paymentStatus: 'paid',
-    paidAmountIdr: command.paidAmountIdr,
-    paymentProofUrl: proofPath,
     florist: command.floristName,
     floristAssignedEmployeeId: command.floristEmployeeId,
-    floristAssignedAt: command.paymentVerifiedAt,
+    floristAssignedAt: command.startedAt,
     floristAssignedForDate: input.assignmentDate,
     floristAssignedForTime: input.assignmentTime,
     floristScheduleOverride: input.allowScheduleOverride,
     floristScheduledBranchId: input.scheduledBranchId,
     floristScheduledShiftStart: input.shiftStart,
     floristScheduledShiftEnd: input.shiftEnd,
-    processingStartedAt: command.paymentVerifiedAt,
-    updatedAt: command.paymentVerifiedAt,
+    processingStartedAt: command.startedAt,
+    updatedAt: command.startedAt,
   }
 }

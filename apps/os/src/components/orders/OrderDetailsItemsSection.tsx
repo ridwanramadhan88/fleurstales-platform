@@ -1,6 +1,6 @@
 import type { FC } from 'react'
 import { CreditCard, Package2, User } from 'lucide-react'
-import type { OrderStatus, PaymentMethod, PaymentStatus } from '../../types/orders'
+import type { OrderStatus, PaymentMethod } from '../../types/orders'
 import {
   Select,
   SelectContent,
@@ -10,7 +10,6 @@ import {
 } from '../ui/select'
 import {
   PAYMENT_STATUS_LABELS,
-  PAYMENT_STATUS_OPTIONS,
   getOrderStatusOptionsForFulfillment,
 } from './orderTableLabels'
 import { formatIdrText } from './orderTableFormatters'
@@ -64,7 +63,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
     <>
       {isEditing ? (
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/10 bg-card px-4 py-3.5 shadow-ios-sm">
-          <div className="grid w-full gap-2 sm:grid-cols-3">
+          <div className="grid w-full gap-2 sm:grid-cols-2">
             <label className="space-y-1 text-2xs font-medium text-muted-foreground/80">
               Status
               <Select
@@ -82,26 +81,6 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                       </SelectItem>
                     ),
                   )}
-                </SelectContent>
-              </Select>
-            </label>
-            <label className="space-y-1 text-2xs font-medium text-muted-foreground/80">
-              Payment status
-              <Select
-                value={draft.paymentStatus}
-                onValueChange={(value) =>
-                  onDraftChange('paymentStatus', value as PaymentStatus)
-                }
-              >
-                <SelectTrigger className="h-10 rounded-xl bg-card px-3 text-xs ring-1 ring-border/70">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
                 </SelectContent>
               </Select>
             </label>
@@ -127,6 +106,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
               </Select>
             </label>
           </div>
+          <p className="w-full text-2xs text-muted-foreground">Payment status is controlled only by Konfirmasi Pembayaran and the refund workflow.</p>
         </section>
       ) : null}
 
@@ -243,41 +223,41 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
 
         {showTotalsBreakdown ? (
           <div className="ml-auto w-full max-w-xs space-y-1.5 text-xs">
-          <div className="flex justify-between gap-3 text-muted-foreground">
-            <span>Items subtotal</span>
-            <span>Rp {formatter.format(itemsSubtotalIdr)}</span>
-          </div>
-          {discountIdr > 0 && (
-            <div className="flex justify-between gap-3 text-success">
-              <span>Discount{order.promoCode ? ` · ${order.promoCode}` : ''}</span>
-              <span>−Rp {formatter.format(discountIdr)}</span>
-            </div>
-          )}
-          {deliveryFeeIdr > 0 && (
             <div className="flex justify-between gap-3 text-muted-foreground">
-              <span>Delivery fee</span>
-              <span>Rp {formatter.format(deliveryFeeIdr)}</span>
+              <span>Items subtotal</span>
+              <span>Rp {formatter.format(itemsSubtotalIdr)}</span>
             </div>
-          )}
-          <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-1.5 text-sm font-semibold text-foreground">
-            <span>Total</span>
-            {isEditing ? (
-              <div className="flex items-center gap-1">
-                <span>Rp</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={draft.totalIdrText}
-                  onChange={(event) =>
-                    onDraftChange('totalIdrText', formatIdrText(event.target.value))
-                  }
-                  className="h-9 w-28 rounded-lg border border-border bg-background px-3 text-right text-sm"
-                />
+            {discountIdr > 0 && (
+              <div className="flex justify-between gap-3 text-success">
+                <span>Discount{order.promoCode ? ` · ${order.promoCode}` : ''}</span>
+                <span>−Rp {formatter.format(discountIdr)}</span>
               </div>
-            ) : (
-              <span>Rp {formatter.format(order.totalIdr)}</span>
             )}
-          </div>
+            {deliveryFeeIdr > 0 && (
+              <div className="flex justify-between gap-3 text-muted-foreground">
+                <span>Delivery fee</span>
+                <span>Rp {formatter.format(deliveryFeeIdr)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-1.5 text-sm font-semibold text-foreground">
+              <span>Total</span>
+              {isEditing ? (
+                <div className="flex items-center gap-1">
+                  <span>Rp</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={draft.totalIdrText}
+                    onChange={(event) =>
+                      onDraftChange('totalIdrText', formatIdrText(event.target.value))
+                    }
+                    className="h-9 w-28 rounded-lg border border-border bg-background px-3 text-right text-sm"
+                  />
+                </div>
+              ) : (
+                <span>Rp {formatter.format(order.totalIdr)}</span>
+              )}
+            </div>
           </div>
         ) : null}
 

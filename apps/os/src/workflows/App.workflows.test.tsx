@@ -192,7 +192,7 @@ describe('critical application workflows', () => {
     expect(screen.queryByRole('button', { name: 'Order Reconciliation' })).not.toBeInTheDocument()
   })
 
-  it('advances an active cash order through the new Process Order payment gate', async () => {
+  it('confirms payment before separately assigning a florist and starting Processing', async () => {
     const scheduleDate = todayIsoDate()
     const created = useOrdersStore.getState().createOrder({
       branch: 'Kedamaian',
@@ -231,14 +231,37 @@ describe('critical application workflows', () => {
         name: 'Advance order to Processing',
       }),
     )
+
+    expect(await screen.findByRole('heading', { name: 'Konfirmasi Pembayaran' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Confirm PAID' }))
+
+    await vi.waitFor(() => {
+      expect(
+        useOrdersStore.getState().orders.find((order) => order.orderNumber === created.orderNumber),
+      ).toMatchObject({ status: 'confirmed', paymentStatus: 'paid', paidAmountIdr: 300_000 })
+    })
+    expect(screen.queryByRole('heading', { name: 'Process Order' })).not.toBeInTheDocument()
+
+    const paidOrderNumbers = await screen.findAllByText(created.orderNumber)
+    const paidOrderRow = paidOrderNumbers[0].closest('[role="button"]')
+    if (!(paidOrderRow instanceof HTMLElement)) {
+      throw new Error('Paid order row not found')
+    }
+    await user.click(
+      within(paidOrderRow).getByRole('button', {
+        name: 'Advance order to Processing',
+      }),
+    )
+
     expect(await screen.findByRole('heading', { name: 'Process Order' })).toBeInTheDocument()
     await user.click((await screen.findAllByRole('radio'))[0])
-    await user.click(screen.getByRole('button', { name: 'Confirm payment & start Processing' }))
+    await user.click(screen.getByRole('button', { name: 'Start Processing' }))
 
-    const advanced = useOrdersStore
-      .getState()
-      .orders.find((order) => order.orderNumber === created.orderNumber)
-    expect(advanced).toMatchObject({ status: 'processing', paymentStatus: 'paid', paidAmountIdr: 300_000 })
+    await vi.waitFor(() => {
+      expect(
+        useOrdersStore.getState().orders.find((order) => order.orderNumber === created.orderNumber),
+      ).toMatchObject({ status: 'processing', paymentStatus: 'paid', paidAmountIdr: 300_000 })
+    })
   })
 
   it('requires bank-transfer settlement before finishing a ready pickup', async () => {
