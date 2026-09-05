@@ -15,6 +15,7 @@ const [
   mediaBootstrap,
   conflictGuard,
   orderBridge,
+  storefrontOrderBridge,
   realtimeSync,
 ] = await Promise.all([
   read('apps/storefront/middleware.ts'),
@@ -22,6 +23,7 @@ const [
   read('supabase/migrations/20260906010000_order_lifecycle_photos.sql'),
   read('supabase/migrations/20260906023000_revision_conflict_cpu_guard.sql'),
   read('apps/os/src/data/shared/orderBridge.ts'),
+  read('apps/storefront/src/data/shared/orderBridge.ts'),
   read('apps/os/src/data/realtimeSupabaseSync.ts'),
 ])
 
@@ -81,6 +83,10 @@ const applyRemoteOrders = orderBridge.indexOf('useOrdersStore.setState')
 assert(
   stopOldBridge >= 0 && applyRemoteOrders > stopOldBridge,
   'Order refresh must stop the stale mutation bridge before applying remote state.',
+)
+assert(
+  storefrontOrderBridge === orderBridge,
+  'Shared Storefront/OS Order bridge parity must include the hydration feedback fix.',
 )
 
 // Realtime bursts should collapse to trailing refreshes instead of one full
