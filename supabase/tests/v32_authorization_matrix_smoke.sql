@@ -1,5 +1,7 @@
 -- Fleurstales V3.2 configurable authorization matrix smoke test.
 -- This runs as the migration/test owner and rolls back all temporary changes.
+-- Later authorization migrations intentionally extend some read-only role
+-- surfaces; mutation authority remains capability-gated.
 begin;
 
 do $$
@@ -25,8 +27,15 @@ begin
   if private.section_access_for_role('finance','finance') <> 'edit' then
     raise exception 'Finance role must own the Finance workspace';
   end if;
-  if private.section_access_for_role('hr','orders') <> 'none' then
-    raise exception 'HR must not receive Orders section access by default';
+
+  -- Current staff-read policy intentionally gives HR company-wide read-only
+  -- Orders + Customers visibility. This supersedes the original V3.2 default
+  -- while preserving the mutation boundary below.
+  if private.section_access_for_role('hr','orders') <> 'view' then
+    raise exception 'HR Orders access must be read-only';
+  end if;
+  if private.section_access_for_role('hr','customers') <> 'view' then
+    raise exception 'HR Customers access must be read-only';
   end if;
   if private.section_access_for_role('florist','orders') <> 'none' then
     raise exception 'Florist must not receive the full Orders workspace by default';
@@ -37,6 +46,14 @@ begin
   end if;
   if not private.has_action_permission_for_role('admin','orders.edit') then
     raise exception 'Admin orders.edit missing';
+  end if;
+  if not private.has_action_permission_for_role('hr','orders.read_all') then
+    raise exception 'HR company-wide Orders read capability missing';
+  end if;
+  if private.has_action_permission_for_role('hr','orders.edit')
+     or private.has_action_permission_for_role('hr','orders.assign')
+     or private.has_action_permission_for_role('hr','orders.advance_status') then
+    raise exception 'HR received Order mutation authority';
   end if;
   if private.has_action_permission_for_role('finance','finance.verify_order') then
     raise exception 'Legacy Finance order verification must remain retired';
