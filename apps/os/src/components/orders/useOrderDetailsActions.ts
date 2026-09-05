@@ -11,6 +11,7 @@ import { advanceOrderStatus } from './orderTableWorkflow'
 import { requestAppConfirmation } from '../ui/app-confirm'
 import { formatOrderHandoffText } from './orderHandoffText'
 import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'
+import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
 
 export const useOrderDetailsActions = ({
   order,
@@ -88,26 +89,10 @@ export const useOrderDetailsActions = ({
     runAdvance(order)
   }
 
-  const onFinishPhotoUploaded = (finishPhotoUrl: string) => {
-    const result = useOrdersStore.getState().setOrderFinishPhoto({
-      orderNumber: order.orderNumber,
-      expectedRevision: order.revision ?? 1,
-      finishPhotoUrl,
-      finishPhotoUploadedBy: actor.name,
-      actor,
-    })
+  const onFinishPhotoUploaded = async (finishPhotoUrl: string): Promise<void> => {
+    const persistedOrder = await attachOrderFinishPhoto(order, finishPhotoUrl, actor.name)
     setShowFinishPhotoDialog(false)
-    if (!result.allowed) {
-      toast({
-        title: 'Photo was not saved',
-        description: result.reason,
-        variant: 'destructive',
-      })
-      return
-    }
-    // 'ready' is never a payment-gated target (see orderPaymentGateDomain),
-    // so the order can always advance immediately once the photo is saved.
-    runAdvance(result.order)
+    runAdvance(persistedOrder)
   }
 
   const runAdvance = (startingOrder: OrderTableRow = order) => {
@@ -122,7 +107,7 @@ export const useOrderDetailsActions = ({
     })
     if (!advanced) return
 
-    if (nextStatus === 'ready' && order.fulfillment === 'pickup') {
+    if (nextStatus === 'ready' && startingOrder.fulfillment === 'pickup') {
       setAddressCopied(false)
       setReadyTrackingUrl(undefined)
       setActionModal('ready')
