@@ -8,6 +8,7 @@ const assert = (condition, message) => {
   if (!condition) throw new Error(message)
 }
 
+// This contract intentionally runs in global CI before production release.
 const [middleware, storefrontPackage, mediaBootstrap, conflictGuard] = await Promise.all([
   read('apps/storefront/middleware.ts'),
   read('apps/storefront/package.json'),
