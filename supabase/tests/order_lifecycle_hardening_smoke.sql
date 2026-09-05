@@ -1,6 +1,6 @@
 -- Order lifecycle hardening contract: secure universal tracking, terminal expiry,
--- mandatory lifecycle evidence, private Finance-only transfer proof reads, and
--- Admin branch-aware media writes.
+-- mandatory lifecycle evidence, private Finance-only transfer proof reads,
+-- separate payment confirmation/production commands, and branch-aware media writes.
 
 do $$
 declare
@@ -54,16 +54,41 @@ begin
      or has_function_privilege('anon','public.attach_order_finish_photo(text,integer,text,text)','EXECUTE') then
     raise exception 'Finish photo attachment grants are incorrect';
   end if;
+
   if not has_function_privilege(
        'authenticated',
-       'public.process_order_for_production_with_proof(text,integer,text,text,date,time without time zone,boolean,text,time without time zone,time without time zone,text)',
+       'public.confirm_order_payment_with_proof(text,integer,text,text)',
        'EXECUTE'
      ) or has_function_privilege(
        'anon',
+       'public.confirm_order_payment_with_proof(text,integer,text,text)',
+       'EXECUTE'
+     ) then
+    raise exception 'Payment confirmation with proof grants are incorrect';
+  end if;
+
+  if not has_function_privilege(
+       'authenticated',
+       'public.start_paid_order_production(text,integer,text,date,time without time zone,boolean,text,time without time zone,time without time zone)',
+       'EXECUTE'
+     ) or has_function_privilege(
+       'anon',
+       'public.start_paid_order_production(text,integer,text,date,time without time zone,boolean,text,time without time zone,time without time zone)',
+       'EXECUTE'
+     ) then
+    raise exception 'Paid-order production grants are incorrect';
+  end if;
+
+  if has_function_privilege(
+       'authenticated',
+       'public.process_order_for_production_with_proof(text,integer,text,text,date,time without time zone,boolean,text,time without time zone,time without time zone,text)',
+       'EXECUTE'
+     ) or not has_function_privilege(
+       'service_role',
        'public.process_order_for_production_with_proof(text,integer,text,text,date,time without time zone,boolean,text,time without time zone,time without time zone,text)',
        'EXECUTE'
      ) then
-    raise exception 'Atomic Process Order with proof grants are incorrect';
+    raise exception 'Legacy combined payment/production RPC is still exposed to authenticated staff';
   end if;
 
   -- Storage policies run this helper as the authenticated caller. If EXECUTE
@@ -142,20 +167,30 @@ begin
     raise exception 'Payment proof read policy is not Finance-only';
   end if;
 
+  select pg_get_functiondef('public.confirm_order_payment_with_proof(text,integer,text,text)'::regprocedure) into v_source;
+  if position('PAYMENT_PROOF_REQUIRED_FOR_TRANSFER' in v_source)=0
+     or position('confirm_order_payment_for_processing' in v_source)=0
+     or position('payment_proof_url' in v_source)=0 then
+    raise exception 'Payment confirmation command lost proof validation/attachment or Finance posting call';
+  end if;
+
+  select pg_get_functiondef(
+    'public.start_paid_order_production(text,integer,text,date,time without time zone,boolean,text,time without time zone,time without time zone)'::regprocedure
+  ) into v_source;
+  if position('PAYMENT_MUST_BE_CONFIRMED_BEFORE_PROCESSING' in v_source)=0
+     or position('florist_assigned_employee_id' in v_source)=0
+     or position('status=''processing''' in v_source)=0
+     or position('payment_status=''paid''' in v_source)>0 then
+    raise exception 'Production command no longer enforces paid-first florist-only processing';
+  end if;
+
+  -- Keep the retired combined wrapper internally valid for service-role
+  -- compatibility, but authenticated staff must never call it directly.
   select pg_get_functiondef(
     'public.process_order_for_production_with_proof(text,integer,text,text,date,time without time zone,boolean,text,time without time zone,time without time zone,text)'::regprocedure
   ) into v_source;
-  if position('PAYMENT_PROOF_REQUIRED_FOR_TRANSFER' in v_source)=0
-     or position('process_order_for_production' in v_source)=0
-     or position('payment_proof_url' in v_source)=0 then
-    raise exception 'Atomic Process Order wrapper lost proof validation/attachment or core processing call';
-  end if;
-
-  -- The proof attachment itself fires orders_bump_revision. The wrapper must
-  -- capture that new revision and pass it into the core command; delegating
-  -- with p_expected_revision deterministically self-conflicts every transfer.
   if lower(v_source) !~ 'returning[[:space:]]+revision[[:space:]]+into[[:space:]]+v_processing_revision'
      or lower(v_source) !~ 'process_order_for_production[[:space:]]*\([[:space:]]*p_order_id[[:space:]]*,[[:space:]]*v_processing_revision' then
-    raise exception 'Process Order proof wrapper does not delegate with the post-proof revision';
+    raise exception 'Retired combined wrapper lost its post-proof revision safety';
   end if;
 end $$;
