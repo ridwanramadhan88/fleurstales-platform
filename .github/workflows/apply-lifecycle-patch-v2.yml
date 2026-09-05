@@ -22,7 +22,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "80c474087f62c00dedd18128ba779b088894fd2253a689b972face682cdf01eb  .github/patches/orderlifecycle.patch" | sha256sum -c -
           git apply --check .github/patches/orderlifecycle.patch
           git apply .github/patches/orderlifecycle.patch
           rm -rf .github/patches
