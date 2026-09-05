@@ -21,7 +21,7 @@ import {
 describe('customer review tracking synchronization', () => {
   beforeEach(() => mocks.rpc.mockReset())
 
-  it('keeps a successful submitted review visible when the immediate tracking refresh fails', async () => {
+  it('keeps a committed review visible until the tracking backend confirms it', async () => {
     const trackingId = 'tracking-review-sync'
     const details: PublicOrderTrackingDetails = {
       orderNumber: 'KDM-2026-0013',
@@ -50,6 +50,7 @@ describe('customer review tracking synchronization', () => {
     mocks.rpc
       .mockResolvedValueOnce(details)
       .mockResolvedValueOnce(submitResult)
+      .mockResolvedValueOnce(details)
       .mockRejectedValueOnce(new Error('tracking refresh unavailable'))
 
     await expect(getPublicOrderTracking(trackingId)).resolves.toEqual(details)
@@ -62,18 +63,22 @@ describe('customer review tracking synchronization', () => {
       'Bagus',
     )).resolves.toEqual(submitResult)
 
-    const refreshed = await getPublicOrderTracking(trackingId)
-    expect(refreshed?.reviewSubmitted).toBe(true)
-    expect(refreshed?.reviewQuestions).toEqual([])
-    expect(refreshed?.review?.note).toBe('Bagus')
-    expect(refreshed?.review?.answers).toEqual([
+    const staleRefresh = await getPublicOrderTracking(trackingId)
+    expect(staleRefresh?.reviewSubmitted).toBe(true)
+    expect(staleRefresh?.reviewQuestions).toEqual([])
+    expect(staleRefresh?.review?.note).toBe('Bagus')
+    expect(staleRefresh?.review?.answers).toEqual([
       { questionId: 'quality', question: 'Kualitas produk', score: 4 },
       { questionId: 'service', question: 'Pelayanan', score: 5 },
     ])
-    expect(refreshed?.reviewReward).toMatchObject({
+    expect(staleRefresh?.reviewReward).toMatchObject({
       percentOff: 10,
       minOrderIdr: 300000,
       status: 'available',
     })
+
+    const failedRefresh = await getPublicOrderTracking(trackingId)
+    expect(failedRefresh?.reviewSubmitted).toBe(true)
+    expect(failedRefresh?.review?.note).toBe('Bagus')
   })
 })
