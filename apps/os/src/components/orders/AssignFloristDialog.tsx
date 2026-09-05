@@ -1,9 +1,11 @@
-import { useMemo, useState, type FC } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent, type FC } from 'react'
 import {
   AlertTriangle,
   CalendarClock,
   ChevronDown,
   CreditCard,
+  ImagePlus,
+  Trash2,
   UserRoundCheck,
   Users,
 } from 'lucide-react'
@@ -19,6 +21,8 @@ import {
   type FloristScheduleStatus,
 } from '../../domain/floristAssignmentDomain'
 import { processOrderForProduction } from '../../data/orderPaymentProcessing'
+import { removeOrderPaymentProof, uploadOrderPaymentProof } from '../../data/orderMediaUpload'
+import { dataUrlToBlob, PAYMENT_PROOF_MAX_BYTES, prepareUploadedPaymentProof } from '../../domain/paymentProofImageDomain'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
@@ -67,6 +71,7 @@ export const AssignFloristDialog: FC<{
   const scheduling = useSettingsStore((state) => state.getSchedulingSettingsForDate)
   const branches = useSettingsStore((state) => state.branches)
   const configuredPaymentAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
+  const proofInputRef = useRef<HTMLInputElement>(null)
 
   const eligiblePaymentAccounts = useMemo(
     () => configuredPaymentAccounts
@@ -84,6 +89,9 @@ export const AssignFloristDialog: FC<{
 
   const [financeAccountId, setFinanceAccountId] = useState(defaultPaymentAccountId)
   const [paymentBusy, setPaymentBusy] = useState(false)
+  const [proofPreparing, setProofPreparing] = useState(false)
+  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
+  const [paymentProofError, setPaymentProofError] = useState<string | null>(null)
   const moment = resolveFloristAssignmentMoment(order)
   const [selectedId, setSelectedId] = useState(order.floristAssignedEmployeeId ?? '')
   const [showAll, setShowAll] = useState(false)
@@ -109,9 +117,26 @@ export const AssignFloristDialog: FC<{
       )
   const selected = options.find((item) => item.employeeId === selectedId)
 
+  const handleProofInput = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setProofPreparing(true)
+    setPaymentProofError(null)
+    try {
+      setPaymentProofPreview(await prepareUploadedPaymentProof(file))
+    } catch (error) {
+      setPaymentProofPreview(null)
+      setPaymentProofError(error instanceof Error ? error.message : 'Could not prepare bukti transfer.')
+    } finally {
+      setProofPreparing(false)
+    }
+  }
+
   const assign = async (allowScheduleOverride: boolean) => {
-    if (!selectedId || !selected || paymentBusy) return
+    if (!selectedId || !selected || paymentBusy || proofPreparing) return
     setPaymentBusy(true)
+    let uploadedProofPath: string | undefined
     try {
       if (mode === 'reassign') {
         const result = reassignFlorist({
@@ -138,6 +163,14 @@ export const AssignFloristDialog: FC<{
         toast({ title: 'Payment method required', description: 'Set Cash or Transfer on the order before starting production.', variant: 'destructive' })
         return
       }
+      if (order.paymentMethod === 'transfer' && !paymentProofPreview && !order.paymentProofUrl) {
+        toast({ title: 'Bukti transfer required', description: 'Attach payment proof before starting production.', variant: 'destructive' })
+        return
+      }
+
+      if (order.paymentMethod === 'transfer' && paymentProofPreview) {
+        uploadedProofPath = await uploadOrderPaymentProof(order.id ?? order.orderNumber, dataUrlToBlob(paymentProofPreview))
+      }
 
       const processedOrder = await processOrderForProduction({
         order,
@@ -149,6 +182,7 @@ export const AssignFloristDialog: FC<{
         scheduledBranchId: selected.branchId,
         shiftStart: selected.shiftStart,
         shiftEnd: selected.shiftEnd,
+        paymentProofPath: uploadedProofPath ?? order.paymentProofUrl,
       })
 
       toast({
@@ -157,6 +191,7 @@ export const AssignFloristDialog: FC<{
       })
       onAssigned(processedOrder)
     } catch (error) {
+      if (uploadedProofPath) await removeOrderPaymentProof(uploadedProofPath).catch(() => undefined)
       toast({
         title: mode === 'reassign' ? 'Florist was not assigned' : 'Order was not started',
         description: error instanceof Error ? error.message : 'Please try again.',
@@ -168,7 +203,7 @@ export const AssignFloristDialog: FC<{
   }
 
   const confirm = () => {
-    if (!selected || paymentBusy) return
+    if (!selected || paymentBusy || proofPreparing) return
     if (!selected.isRecommended) {
       setPendingOverride(selected)
       return
@@ -178,9 +213,10 @@ export const AssignFloristDialog: FC<{
 
   const branchName = branches.find((branch) => branch.id === order.branch)?.name ?? order.branch
   const timing = moment.time ? `${moment.date} · ${moment.time}` : `${moment.date} · scheduled day`
+  const transferProofReady = Boolean(order.paymentProofUrl || paymentProofPreview)
   const paymentReady = mode === 'reassign'
     || order.paymentMethod === 'cash'
-    || (order.paymentMethod === 'transfer' && Boolean(financeAccountId))
+    || (order.paymentMethod === 'transfer' && Boolean(financeAccountId) && transferProofReady)
 
   return (
     <>
@@ -191,7 +227,7 @@ export const AssignFloristDialog: FC<{
         title={mode === 'reassign' ? 'Change assigned florist' : 'Process Order'}
         description={mode === 'reassign'
           ? 'Choose who should continue handling this order. The current status will not change.'
-          : 'Confirm full payment and the receiving account before production starts, then assign the florist.'}
+          : 'Confirm full payment, receiving account, and payment proof before production starts, then assign the florist.'}
         className="shrink-0 border-b border-border/70 px-5 pb-4 pt-5 sm:px-6 sm:pt-6"
         contentClassName="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-h-[calc(100dvh-3rem)] sm:p-0 md:min-h-[38rem]"
       >
@@ -219,16 +255,41 @@ export const AssignFloristDialog: FC<{
                     </div>
 
                     {order.paymentMethod === 'transfer' ? (
-                      <label className="mt-3 block space-y-1.5">
-                        <span className="text-xs font-medium text-muted-foreground">Received into</span>
-                        <select value={financeAccountId} onChange={(event) => setFinanceAccountId(event.target.value)} className="h-11 w-full rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-foreground/40">
-                          <option value="">Select receiving account</option>
-                          {eligiblePaymentAccounts.map((account) => (
-                            <option key={account.id} value={account.id}>{account.bankName} · {account.accountNumber}</option>
-                          ))}
-                        </select>
-                        {eligiblePaymentAccounts.length === 0 && <p className="text-xs text-destructive">No active payment account is available for this branch. Configure one in Settings first.</p>}
-                      </label>
+                      <div className="mt-3 space-y-3">
+                        <label className="block space-y-1.5">
+                          <span className="text-xs font-medium text-muted-foreground">Received into</span>
+                          <select value={financeAccountId} onChange={(event) => setFinanceAccountId(event.target.value)} className="h-11 w-full rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-foreground/40">
+                            <option value="">Select receiving account</option>
+                            {eligiblePaymentAccounts.map((account) => (
+                              <option key={account.id} value={account.id}>{account.bankName} · {account.accountNumber}</option>
+                            ))}
+                          </select>
+                          {eligiblePaymentAccounts.length === 0 && <p className="text-xs text-destructive">No active payment account is available for this branch. Configure one in Settings first.</p>}
+                        </label>
+
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-medium text-muted-foreground">Bukti transfer</span>
+                          {paymentProofPreview ? (
+                            <div className="flex items-start gap-3 rounded-xl bg-background/80 p-3 ring-1 ring-border/70">
+                              <img src={paymentProofPreview} alt="Bukti transfer preview" className="h-20 w-20 rounded-lg object-cover" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-success">Ready to attach on confirmation</p>
+                                <p className="mt-1 text-2xs text-muted-foreground">Nothing has been uploaded yet. The private file is uploaded only when Process Order is confirmed.</p>
+                              </div>
+                              <button type="button" onClick={() => setPaymentProofPreview(null)} className="flex size-9 items-center justify-center rounded-full text-destructive hover:bg-destructive/10" aria-label="Remove payment proof"><Trash2 className="size-4" /></button>
+                            </div>
+                          ) : order.paymentProofUrl ? (
+                            <div className="rounded-xl bg-background/80 p-3 text-xs text-success ring-1 ring-border/70">A private payment proof is already attached to this order.</div>
+                          ) : (
+                            <button type="button" onClick={() => proofInputRef.current?.click()} disabled={proofPreparing} className="flex h-20 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-background/70 text-xs font-semibold hover:border-primary/40 disabled:opacity-50">
+                              <ImagePlus className="size-4" /> {proofPreparing ? 'Preparing…' : 'Attach bukti transfer'}
+                            </button>
+                          )}
+                          <input ref={proofInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { void handleProofInput(event) }} />
+                          {paymentProofError && <p className="text-2xs text-destructive">{paymentProofError}</p>}
+                          <p className="text-2xs text-muted-foreground">Private Finance evidence · max {PAYMENT_PROOF_MAX_BYTES / 1024} KB after compression.</p>
+                        </div>
+                      </div>
                     ) : order.paymentMethod === 'cash' ? (
                       <div className="mt-3 rounded-lg bg-background/70 px-3 py-2 text-xs">
                         <span className="text-muted-foreground">Received into </span><strong>Cash</strong>
@@ -289,7 +350,7 @@ export const AssignFloristDialog: FC<{
 
           <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-surface-footer px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:pb-5">
             <button type="button" disabled={paymentBusy} onClick={onCancel} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium disabled:opacity-50">Cancel</button>
-            <button type="button" disabled={paymentBusy || !selectedId || !paymentReady || (mode === 'reassign' && selectedId === order.floristAssignedEmployeeId)} onClick={confirm} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground disabled:opacity-50">
+            <button type="button" disabled={paymentBusy || proofPreparing || !selectedId || !paymentReady || (mode === 'reassign' && selectedId === order.floristAssignedEmployeeId)} onClick={confirm} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground disabled:opacity-50">
               {paymentBusy ? 'Saving…' : mode === 'reassign' ? 'Save florist' : 'Confirm payment & start Processing'}
             </button>
           </div>

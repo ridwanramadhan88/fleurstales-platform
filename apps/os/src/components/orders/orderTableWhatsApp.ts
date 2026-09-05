@@ -19,15 +19,18 @@ export const toWhatsAppPhoneDigits = (rawPhone: string): string => {
 
 /**
  * @description Builds the "your order is ready for pickup" WhatsApp message
- * text, per the required copy/template.
+ * text, per the required copy/template. `trackingUrl` is the canonical
+ * `/track/...` link (with the `v=ready` cache-buster) so the customer can see
+ * the finish photo without waiting for a fresh WhatsApp link preview.
  */
 export const buildReadyForPickupMessage = (
   customerName: string,
   productName: string,
   branch: string,
+  trackingUrl: string,
 ): string => {
   const locationLink = BRANCH_LOCATION_LINKS[branch] ?? ''
-  return `Hi kak ${customerName}, Orderan kakak ${productName} sudah ready yaa. Untuk alamat pick up di ${branch} ${locationLink}`
+  return `Hi kak ${customerName}, Orderan kakak ${productName} sudah ready yaa 🌸\nLihat hasilnya & lacak pesanan di sini: ${trackingUrl}\nUntuk alamat pick up di ${branch} ${locationLink}`
 }
 
 /**

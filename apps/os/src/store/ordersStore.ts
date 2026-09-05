@@ -790,6 +790,7 @@ export const useOrdersStore = create<OrdersStoreState>()(
         paymentMethod,
         reference,
         proofId,
+        paymentProofUrl,
         note,
         idempotencyKey,
         actor,
@@ -838,7 +839,12 @@ export const useOrdersStore = create<OrdersStoreState>()(
         const nextOrder = finalizeOrderMutation({
           before: target!,
           after: appendPaymentEvent(
-            { ...target!, totalIdr: nextTotalIdr, paymentMethod: paymentMethod ?? target!.paymentMethod },
+            {
+              ...target!,
+              totalIdr: nextTotalIdr,
+              paymentMethod: paymentMethod ?? target!.paymentMethod,
+              paymentProofUrl: paymentProofUrl ?? target!.paymentProofUrl,
+            },
             posted.event,
           ),
           actor,
@@ -852,6 +858,38 @@ export const useOrdersStore = create<OrdersStoreState>()(
         }))
         emitOrderUpdated(nextOrder, `Payment updated by ${actor.name}`)
         evaluateOrderPriorityAndEmitAlerts(nextOrder)
+        return { allowed: true, order: nextOrder }
+      },
+
+      setOrderFinishPhoto: ({ orderNumber, expectedRevision, finishPhotoUrl, finishPhotoUploadedBy, actor }) => {
+        const target = get().orders.find((order) => order.orderNumber === orderNumber)
+        const denied = validateOrderCommand({
+          order: target,
+          actor,
+          expectedRevision,
+          kind: 'status',
+          permissions: useSettingsStore.getState().permissions,
+          action: 'order.finish_photo.set',
+        })
+        if (denied) return denied
+
+        const nextOrder = finalizeOrderMutation({
+          before: target!,
+          after: {
+            ...target!,
+            finishPhotoUrl,
+            finishPhotoUploadedBy,
+            finishPhotoUploadedAt: new Date().toISOString(),
+          },
+          actor,
+          action: 'order.finish_photo.set',
+        })
+        set((state) => ({
+          orders: state.orders.map((order) =>
+            order.orderNumber === orderNumber ? nextOrder : order,
+          ),
+        }))
+        emitOrderUpdated(nextOrder, `Finish photo added by ${actor.name}`)
         return { allowed: true, order: nextOrder }
       },
 

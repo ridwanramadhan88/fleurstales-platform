@@ -172,8 +172,18 @@ export interface UpdatePaymentInput {
   paymentMethod?: PaymentMethod
   reference?: string
   proofId?: string
+  /** Private `order-payment-proofs` Storage object path. */
+  paymentProofUrl?: string
   note?: string
   idempotencyKey?: string
+  actor: OrderActor
+}
+
+export interface SetOrderFinishPhotoInput {
+  orderNumber: string
+  expectedRevision: number
+  finishPhotoUrl: string
+  finishPhotoUploadedBy: string
   actor: OrderActor
 }
 
@@ -201,6 +211,7 @@ export interface OrdersStoreState {
   assignFloristAndStartProcessing: (input: AssignFloristAndStartProcessingInput) => OrderCommandResult
   reassignFlorist: (input: ReassignFloristInput) => OrderCommandResult
   updatePayment: (input: UpdatePaymentInput) => OrderCommandResult
+  setOrderFinishPhoto: (input: SetOrderFinishPhotoInput) => OrderCommandResult
   initiateRefund: (params: {
     orderNumber: string
     expectedRevision: number

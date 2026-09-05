@@ -1,9 +1,10 @@
 import type { FC } from 'react'
 import { ArrowRight, Check, Copy, X } from 'lucide-react'
 import { OrderPostActionModal } from './OrderPostActionModal'
+import { OrderFinishPhotoDialog } from './OrderFinishPhotoDialog'
 import {
-  QUICK_ACTION_BUTTON_STYLE,
   getQuickActionLabel,
+  getQuickActionButtonClassName,
 } from './orderTableLabels'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { OrderPaymentGateDialog } from './OrderPaymentGateDialog'
@@ -30,27 +31,36 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
     addressCopied,
     detailsCopied,
     showPaymentGate,
+    showFinishPhotoDialog,
     isPendingStorefrontConfirmation,
     storefrontDecisionBusy,
+    storefrontPreviewLoading,
     storefrontCancelOpen,
     storefrontCancelReason,
+    storefrontPreviewModal,
+    storefrontPreviewMessage,
     setStorefrontCancelReason,
     onCancelEdit,
     onSaveChanges,
     onMoveToNextStatus,
     onCancelPaymentGate,
     onMarkPaidAndContinue,
+    onFinishPhotoUploaded,
+    onCancelFinishPhotoDialog,
     onCloseActionModal,
     onCopyAddress,
     onCopyOrderDetails,
     onOpenStorefrontCancel,
     onCloseStorefrontCancel,
-    onConfirmStorefrontOrder,
+    onOpenStorefrontConfirmPreview,
+    onCloseStorefrontPreview,
+    onSendConfirmWhatsApp,
+    onSendRejectWhatsApp,
     onSubmitStorefrontCancel,
   } = viewModel
 
   const paymentBlocked = Boolean(nextStatus && shouldGateOrderAdvanceForPayment(order, nextStatus))
-  const decisionBusy = storefrontDecisionBusy !== null
+  const decisionBusy = storefrontDecisionBusy !== null || storefrontPreviewLoading
 
   return (
     <>
@@ -110,12 +120,12 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
               </button>
               <button
                 type="button"
-                onClick={() => { void onConfirmStorefrontOrder() }}
+                onClick={() => { void onOpenStorefrontConfirmPreview() }}
                 disabled={decisionBusy}
                 className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#16834b] px-[18px] text-sm font-medium text-white shadow-ios-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
               >
                 <Check className="size-3.5" />
-                {storefrontDecisionBusy === 'confirm' ? 'Confirming…' : 'Confirm & WhatsApp'}
+                {storefrontPreviewLoading ? 'Preparing…' : 'Confirm & WhatsApp'}
               </button>
             </>
           )}
@@ -126,7 +136,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
                 type="button"
                 onClick={onMoveToNextStatus}
                 title={paymentBlocked ? 'Payment confirmation required.' : `Advance to ${getQuickActionLabel(nextStatus)}`}
-                className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-[18px] whitespace-nowrap text-sm font-medium shadow-ios-sm transition hover:brightness-95 sm:min-h-10 sm:text-xs ${QUICK_ACTION_BUTTON_STYLE[nextStatus].className}`}
+                className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-[18px] whitespace-nowrap text-sm font-medium shadow-ios-sm transition hover:brightness-95 sm:min-h-10 sm:text-xs ${getQuickActionButtonClassName(order.fulfillment, nextStatus)}`}
               >
                 {getQuickActionLabel(nextStatus)}
                 <ArrowRight className="size-3.5 shrink-0" />
@@ -171,7 +181,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
               disabled={decisionBusy || !storefrontCancelReason.trim()}
               className="inline-flex h-10 items-center justify-center rounded-full bg-destructive px-4 text-sm font-medium text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {storefrontDecisionBusy === 'cancel' ? 'Rejecting…' : 'Reject & WhatsApp'}
+              {storefrontPreviewLoading ? 'Preparing…' : 'Continue'}
             </button>
           </div>
         </div>
@@ -187,15 +197,42 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
         />
       )}
 
+      {showFinishPhotoDialog && (
+        <OrderFinishPhotoDialog
+          open
+          orderId={order.id ?? order.orderNumber}
+          onCancel={onCancelFinishPhotoDialog}
+          onUploaded={onFinishPhotoUploaded}
+        />
+      )}
+
       <OrderPostActionModal
         kind={actionModal}
         onClose={onCloseActionModal}
         customerWhatsappNumber={customerWhatsappNumber}
         readyMessage={readyMessage}
         whatsAppLink={whatsAppLink}
+        finishPhotoUrl={order.finishPhotoUrl}
         deliveryAddress={order.deliveryAddress}
         addressCopied={addressCopied}
         onCopyAddress={onCopyAddress}
+      />
+
+      <OrderPostActionModal
+        kind={storefrontPreviewModal}
+        onClose={onCloseStorefrontPreview}
+        customerWhatsappNumber={customerWhatsappNumber}
+        readyMessage=""
+        whatsAppLink=""
+        deliveryAddress={undefined}
+        addressCopied={false}
+        onCopyAddress={() => undefined}
+        previewMessage={storefrontPreviewMessage}
+        previewSending={storefrontDecisionBusy !== null}
+        onSendPreviewWhatsApp={() => {
+          if (storefrontPreviewModal === 'confirm') void onSendConfirmWhatsApp()
+          else if (storefrontPreviewModal === 'reject') void onSendRejectWhatsApp()
+        }}
       />
     </>
   )

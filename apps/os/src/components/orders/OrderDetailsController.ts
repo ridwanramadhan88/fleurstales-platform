@@ -94,6 +94,7 @@ export interface OrderDetailsViewModel {
   addressCopied: boolean
   detailsCopied: boolean
   showPaymentGate: boolean
+  showFinishPhotoDialog: boolean
   showFloristAssignment: boolean
   floristDialogMode: 'assign-and-process' | 'reassign' | null
   isRequestModalOpen: 'edit' | 'cancel' | null
@@ -104,9 +105,12 @@ export interface OrderDetailsViewModel {
   resubmissionNote: string
   setRefundReason: (value: string) => void
   storefrontDecisionBusy: 'confirm' | 'cancel' | null
+  storefrontPreviewLoading: boolean
   storefrontCancelOpen: boolean
   storefrontCancelReason: string
   setStorefrontCancelReason: (value: string) => void
+  storefrontPreviewModal: 'confirm' | 'reject' | null
+  storefrontPreviewMessage: string
   onDraftChange: <K extends keyof OrderEditDraft>(field: K, value: OrderEditDraft[K]) => void
   onFulfillmentChange: (fulfillment: OrderFulfillment) => void
   onCancelOrder: () => void
@@ -136,8 +140,13 @@ export interface OrderDetailsViewModel {
   onCopyOrderDetails: () => void
   onOpenStorefrontCancel: () => void
   onCloseStorefrontCancel: () => void
-  onConfirmStorefrontOrder: () => void
+  onOpenStorefrontConfirmPreview: () => void
+  onCloseStorefrontPreview: () => void
+  onSendConfirmWhatsApp: () => void
+  onSendRejectWhatsApp: () => void
   onSubmitStorefrontCancel: () => void
+  onFinishPhotoUploaded: (finishPhotoUrl: string) => void
+  onCancelFinishPhotoDialog: () => void
 }
 
 export const useOrderDetailsController = ({
@@ -258,8 +267,10 @@ export const useOrderDetailsController = ({
   })
 
   const isTerminalIssue = isTerminalIssueOrder(order)
-  const readyMessage = buildReadyForPickupMessage(order.customerName, productDisplay.name, order.branch)
-  const whatsAppLink = buildWhatsAppLink(customerWhatsappNumber, readyMessage)
+  const readyMessage = actions.readyTrackingUrl
+    ? buildReadyForPickupMessage(order.customerName, productDisplay.name, order.branch, actions.readyTrackingUrl)
+    : ''
+  const whatsAppLink = readyMessage ? buildWhatsAppLink(customerWhatsappNumber, readyMessage) : ''
 
   return {
     order,
@@ -296,6 +307,7 @@ export const useOrderDetailsController = ({
     addressCopied: actions.addressCopied,
     detailsCopied: actions.detailsCopied,
     showPaymentGate: actions.showPaymentGate,
+    showFinishPhotoDialog: actions.showFinishPhotoDialog,
     showFloristAssignment: actions.showFloristAssignment,
     floristDialogMode: actions.floristDialogMode,
     isRequestModalOpen: changeRequest.isRequestModalOpen,
@@ -306,9 +318,12 @@ export const useOrderDetailsController = ({
     resubmissionNote: finance.resubmissionNote,
     setRefundReason: refund.setRefundReason,
     storefrontDecisionBusy: storefrontConfirmation.storefrontDecisionBusy,
+    storefrontPreviewLoading: storefrontConfirmation.storefrontPreviewLoading,
     storefrontCancelOpen: storefrontConfirmation.storefrontCancelOpen,
     storefrontCancelReason: storefrontConfirmation.storefrontCancelReason,
     setStorefrontCancelReason: storefrontConfirmation.setStorefrontCancelReason,
+    storefrontPreviewModal: storefrontConfirmation.storefrontPreviewModal,
+    storefrontPreviewMessage: storefrontConfirmation.storefrontPreviewMessage,
     onDraftChange: editing.onDraftChange,
     onFulfillmentChange: editing.onFulfillmentChange,
     onCancelOrder: actions.onCancelOrder,
@@ -338,7 +353,12 @@ export const useOrderDetailsController = ({
     onCopyOrderDetails: actions.onCopyOrderDetails,
     onOpenStorefrontCancel: storefrontConfirmation.onOpenStorefrontCancel,
     onCloseStorefrontCancel: storefrontConfirmation.onCloseStorefrontCancel,
-    onConfirmStorefrontOrder: storefrontConfirmation.onConfirmStorefrontOrder,
+    onOpenStorefrontConfirmPreview: storefrontConfirmation.onOpenStorefrontConfirmPreview,
+    onCloseStorefrontPreview: storefrontConfirmation.onCloseStorefrontPreview,
+    onSendConfirmWhatsApp: storefrontConfirmation.onSendConfirmWhatsApp,
+    onSendRejectWhatsApp: storefrontConfirmation.onSendRejectWhatsApp,
     onSubmitStorefrontCancel: storefrontConfirmation.onSubmitStorefrontCancel,
+    onFinishPhotoUploaded: actions.onFinishPhotoUploaded,
+    onCancelFinishPhotoDialog: actions.onCancelFinishPhotoDialog,
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { OrderStatus, OrderTableRow } from '../../types/orders'
 import type { OrderActivityEvent } from '../../store/orderRuntimeStore'
 import type { UpdateOrderStatusInput, UpdateOrderStatusResult } from '../../store/ordersStoreTypes'
@@ -10,6 +10,8 @@ import { toast } from '../../hooks/use-toast'
 import { advanceOrderStatus } from './orderTableWorkflow'
 import { requestAppConfirmation } from '../ui/app-confirm'
 import { formatOrderHandoffText } from './orderHandoffText'
+import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'
+import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
 
 export const useOrderDetailsActions = ({
   order,
@@ -30,11 +32,25 @@ export const useOrderDetailsActions = ({
   actor: OrderActor
 }) => {
   const [actionModal, setActionModal] = useState<'ready' | 'delivering' | null>(null)
+  const [readyTrackingUrl, setReadyTrackingUrl] = useState<string | undefined>(undefined)
   const [addressCopied, setAddressCopied] = useState(false)
   const [detailsCopied, setDetailsCopied] = useState(false)
   const [showPaymentGate, setShowPaymentGate] = useState(false)
+  const [showFinishPhotoDialog, setShowFinishPhotoDialog] = useState(false)
   const [floristDialogMode, setFloristDialogMode] = useState<'assign-and-process' | 'reassign' | null>(null)
   const isCancellable = canCancelOrder(order) && ['owner', 'admin', 'finance'].includes(actor.role)
+
+  useEffect(() => {
+    if (actionModal !== 'ready' || !order.id) return
+    let active = true
+    getOrderTrackingId(order.id)
+      .then((trackingId) => {
+        if (active) setReadyTrackingUrl(buildOrderTrackingUrl(order.orderNumber, trackingId, 'ready'))
+      })
+      .catch(() => { /* best-effort — the WhatsApp message still sends without the link if this fails */ })
+    return () => { active = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actionModal, order.id])
 
   const onCancelOrder = async () => {
     if (!canAdvance || !isCancellable || order.status === 'cancelled') return
@@ -62,11 +78,21 @@ export const useOrderDetailsActions = ({
       setFloristDialogMode('assign-and-process')
       return
     }
+    if (nextStatus === 'ready' && !order.finishPhotoUrl) {
+      setShowFinishPhotoDialog(true)
+      return
+    }
     if (shouldGateOrderAdvanceForPayment(order, nextStatus)) {
       setShowPaymentGate(true)
       return
     }
     runAdvance(order)
+  }
+
+  const onFinishPhotoUploaded = async (finishPhotoUrl: string): Promise<void> => {
+    const persistedOrder = await attachOrderFinishPhoto(order, finishPhotoUrl, actor.name)
+    setShowFinishPhotoDialog(false)
+    runAdvance(persistedOrder)
   }
 
   const runAdvance = (startingOrder: OrderTableRow = order) => {
@@ -81,8 +107,9 @@ export const useOrderDetailsActions = ({
     })
     if (!advanced) return
 
-    if (nextStatus === 'ready' && order.fulfillment === 'pickup') {
+    if (nextStatus === 'ready' && startingOrder.fulfillment === 'pickup') {
       setAddressCopied(false)
+      setReadyTrackingUrl(undefined)
       setActionModal('ready')
     } else if (nextStatus === 'delivering') {
       setAddressCopied(false)
@@ -90,13 +117,22 @@ export const useOrderDetailsActions = ({
     }
   }
 
-  const onMarkPaidAndContinue = () => {
+  const onMarkPaidAndContinue = (paymentProofUrl?: string) => {
     if (!nextStatus) return
+    if (order.paymentMethod === 'transfer' && !(paymentProofUrl ?? order.paymentProofUrl)) {
+      toast({
+        title: 'Payment was not updated',
+        description: 'Upload bukti transfer before marking this order as paid.',
+        variant: 'destructive',
+      })
+      return
+    }
     const payment = useOrdersStore.getState().updatePayment({
       orderNumber: order.orderNumber,
       expectedRevision: order.revision ?? 1,
       paymentStatus: 'paid',
       paidAmountIdr: order.totalIdr,
+      paymentProofUrl,
       actor,
     })
     if (!payment.allowed) {
@@ -128,14 +164,18 @@ export const useOrderDetailsActions = ({
 
   return {
     actionModal,
+    readyTrackingUrl,
     addressCopied,
     detailsCopied,
     showPaymentGate,
+    showFinishPhotoDialog,
     showFloristAssignment: floristDialogMode !== null,
     floristDialogMode,
     isCancellable,
     onCancelOrder,
     onMoveToNextStatus,
+    onFinishPhotoUploaded,
+    onCancelFinishPhotoDialog: () => setShowFinishPhotoDialog(false),
     onCancelPaymentGate: () => setShowPaymentGate(false),
     onOpenFloristReassignment: () => setFloristDialogMode('reassign'),
     onCancelFloristAssignment: () => setFloristDialogMode(null),

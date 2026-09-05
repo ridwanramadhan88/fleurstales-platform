@@ -3,6 +3,7 @@ import { CheckCheck, Copy, MessageCircle, Truck } from 'lucide-react'
 import { OrderDetailsPanelController } from './OrderDetailsPanelController'
 import type { OrdersTableViewModel } from './OrdersTableViewController'
 import { OrderPaymentGateDialog } from './OrderPaymentGateDialog'
+import { OrderFinishPhotoDialog } from './OrderFinishPhotoDialog'
 import { AssignFloristDialog } from './AssignFloristDialog'
 
 interface OrdersTableModalsProps {
@@ -14,12 +15,15 @@ export const OrdersTableModals: FC<OrdersTableModalsProps> = ({ viewModel }) => 
     selectedOrder,
     formatter,
     paymentGate,
+    finishPhotoGate,
     actionModalData,
     processingAssignment,
     addressCopied,
     onCloseDetails,
     onCancelPaymentGate,
     onMarkPaidAndContinue,
+    onCancelFinishPhotoDialog,
+    onFinishPhotoUploaded,
     onCloseActionModal,
     onCancelProcessingAssignment,
     onProcessingAssigned,
@@ -51,6 +55,15 @@ export const OrdersTableModals: FC<OrdersTableModalsProps> = ({ viewModel }) => 
           formatter={formatter}
           onCancel={onCancelPaymentGate}
           onMarkPaidAndContinue={onMarkPaidAndContinue}
+        />
+      )}
+
+      {finishPhotoGate && (
+        <OrderFinishPhotoDialog
+          open
+          orderId={finishPhotoGate.order.id ?? finishPhotoGate.order.orderNumber}
+          onCancel={onCancelFinishPhotoDialog}
+          onUploaded={onFinishPhotoUploaded}
         />
       )}
 

@@ -20,6 +20,8 @@ import { getEtaTimestamp } from './orderTableSorting'
 import { deleteOrderDraft, useOrderDrafts, type SavedOrderDraft } from './orderDraftStore'
 import { advanceOrderStatus, getNextStatus } from './orderTableWorkflow'
 import { buildReadyForPickupMessage, buildWhatsAppLink } from './orderTableWhatsApp'
+import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'
+import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
 import type { OrderStatusFilter, OrdersTableViewProps } from './OrdersTableView'
 import type { SortDirection } from './orderTableColumns'
 import { getOrderStatusGroup } from '../../domain/orderGroupingDomain'
@@ -61,6 +63,10 @@ export interface OrdersTableViewModel {
     order: OrderTableRow
     nextStatus: OrderStatus
   } | null
+  finishPhotoGate: {
+    order: OrderTableRow
+    nextStatus: OrderStatus
+  } | null
   actionModalData: OrdersActionModalData | null
   processingAssignment: OrderTableRow | null
   addressCopied: boolean
@@ -76,7 +82,9 @@ export interface OrdersTableViewModel {
   onCloseDetails: () => void
   onQuickAdvance: (order: OrderTableRow) => void
   onCancelPaymentGate: () => void
-  onMarkPaidAndContinue: () => void
+  onMarkPaidAndContinue: (paymentProofUrl?: string) => void
+  onCancelFinishPhotoDialog: () => void
+  onFinishPhotoUploaded: (finishPhotoUrl: string) => Promise<void>
   onCloseActionModal: () => void
   onCancelProcessingAssignment: () => void
   onProcessingAssigned: (order: OrderTableRow) => void
@@ -101,9 +109,6 @@ export const useOrdersTableViewController = ({
     initialSelectedOrderNumber ?? null,
   )
 
-  // Opens the details panel for a deep-linked order (e.g. from clicking a
-  // notification) whenever a new value comes in, then tells the caller it
-  // has been consumed so it can clear it and avoid re-triggering.
   useEffect(() => {
     if (!initialSelectedOrderNumber) return
     setSelectedOrderNumber(initialSelectedOrderNumber)
@@ -118,9 +123,14 @@ export const useOrdersTableViewController = ({
   }, [initialStatusGroupFilter])
   const [actionModal, setActionModal] = useState<'ready' | 'delivering' | null>(null)
   const [actionOrder, setActionOrder] = useState<OrderTableRow | null>(null)
+  const [readyTrackingUrl, setReadyTrackingUrl] = useState<string | undefined>(undefined)
   const [addressCopied, setAddressCopied] = useState(false)
   const [processingAssignment, setProcessingAssignment] = useState<OrderTableRow | null>(null)
   const [paymentGate, setPaymentGate] = useState<{
+    order: OrderTableRow
+    nextStatus: OrderStatus
+  } | null>(null)
+  const [finishPhotoGate, setFinishPhotoGate] = useState<{
     order: OrderTableRow
     nextStatus: OrderStatus
   } | null>(null)
@@ -156,6 +166,10 @@ export const useOrdersTableViewController = ({
       setProcessingAssignment(order)
       return
     }
+    if (next === 'ready' && !order.finishPhotoUrl) {
+      setFinishPhotoGate({ order, nextStatus: next })
+      return
+    }
     const advanced = advanceOrderStatus({
       order,
       nextStatus: next,
@@ -168,6 +182,7 @@ export const useOrdersTableViewController = ({
 
     if (next === 'ready' && order.fulfillment === 'pickup') {
       setAddressCopied(false)
+      setReadyTrackingUrl(undefined)
       setActionOrder(order)
       setActionModal('ready')
     } else if (next === 'delivering') {
@@ -176,6 +191,18 @@ export const useOrdersTableViewController = ({
       setActionModal('delivering')
     }
   }
+
+  useEffect(() => {
+    if (actionModal !== 'ready' || !actionOrder?.id) return
+    let active = true
+    getOrderTrackingId(actionOrder.id)
+      .then((trackingId) => {
+        if (active) setReadyTrackingUrl(buildOrderTrackingUrl(actionOrder.orderNumber, trackingId, 'ready'))
+      })
+      .catch(() => { /* best-effort — the WhatsApp message still sends without the link if this fails */ })
+    return () => { active = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actionModal, actionOrder?.id])
 
   const allOrders: OrderTableRow[] = localOrders.filter((order) =>
     canViewOrder(order, actor, permissions, actionPermissions),
@@ -211,13 +238,9 @@ export const useOrdersTableViewController = ({
           ? group !== 'finished'
           : group === statusGroupFilter
 
-    const matchesStatus =
-      statusFilter === 'all' || order.status === statusFilter
-
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
     const query = searchQuery.trim().toLowerCase()
-    if (!query) {
-      return matchesGroup && matchesStatus
-    }
+    if (!query) return matchesGroup && matchesStatus
 
     return (
       matchesGroup &&
@@ -271,25 +294,22 @@ export const useOrdersTableViewController = ({
       ? getNextStatus(order)
       : null
 
+  const readyMessage = actionOrder && readyTrackingUrl
+    ? buildReadyForPickupMessage(actionOrder.customerName, getProductName(actionOrder), actionOrder.branch, readyTrackingUrl)
+    : ''
   const actionModalData =
     actionModal && actionOrder
       ? {
           kind: actionModal,
           order: actionOrder,
           customerWhatsappNumber: getCustomerWhatsappNumber(getCustomerContactForOrder(customers, actionOrder)) || undefined,
-          readyMessage: buildReadyForPickupMessage(
-            actionOrder.customerName,
-            getProductName(actionOrder),
-            actionOrder.branch,
-          ),
-          whatsAppLink: buildWhatsAppLink(
-            getCustomerWhatsappNumber(getCustomerContactForOrder(customers, actionOrder)) || undefined,
-            buildReadyForPickupMessage(
-              actionOrder.customerName,
-              getProductName(actionOrder),
-              actionOrder.branch,
-            ),
-          ),
+          readyMessage,
+          whatsAppLink: readyMessage
+            ? buildWhatsAppLink(
+                getCustomerWhatsappNumber(getCustomerContactForOrder(customers, actionOrder)) || undefined,
+                readyMessage,
+              )
+            : '',
         }
       : null
 
@@ -360,6 +380,7 @@ export const useOrdersTableViewController = ({
     hasOrdersEditAccess,
     currentUserRole,
     paymentGate,
+    finishPhotoGate,
     actionModalData,
     processingAssignment,
     addressCopied,
@@ -388,14 +409,19 @@ export const useOrdersTableViewController = ({
       runAdvance(order, next)
     },
     onCancelPaymentGate: () => setPaymentGate(null),
-    onMarkPaidAndContinue: () => {
+    onMarkPaidAndContinue: (paymentProofUrl) => {
       if (!paymentGate) return
       const { order, nextStatus } = paymentGate
+      if (order.paymentMethod === 'transfer' && !(paymentProofUrl ?? order.paymentProofUrl)) {
+        toast({ title: 'Payment was not updated', description: 'Upload bukti transfer before marking this order as paid.', variant: 'destructive' })
+        return
+      }
       const payment = updatePayment({
         orderNumber: order.orderNumber,
         expectedRevision: order.revision ?? 1,
         paymentStatus: 'paid',
         paidAmountIdr: order.totalIdr,
+        paymentProofUrl,
         actor,
       })
       if (!payment.allowed) {
@@ -404,6 +430,14 @@ export const useOrdersTableViewController = ({
       }
       setPaymentGate(null)
       runAdvance(payment.order, nextStatus)
+    },
+    onCancelFinishPhotoDialog: () => setFinishPhotoGate(null),
+    onFinishPhotoUploaded: async (finishPhotoUrl) => {
+      if (!finishPhotoGate) return
+      const { order, nextStatus } = finishPhotoGate
+      const persistedOrder = await attachOrderFinishPhoto(order, finishPhotoUrl, actor.name)
+      setFinishPhotoGate(null)
+      runAdvance(persistedOrder, nextStatus)
     },
     onCancelProcessingAssignment: () => setProcessingAssignment(null),
     onProcessingAssigned: (assignedOrder) => {

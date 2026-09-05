@@ -3,12 +3,32 @@ import { bootstrapSharedData } from './shared/bootstrap'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
 
-const STOREFRONT_ORIGIN = 'https://fleurstales-storefront-rid5.vercel.app'
+const STOREFRONT_ORIGIN = 'https://fleurstales-storefront.vercel.app'
 
 export const getStorefrontOrigin = (): string => STOREFRONT_ORIGIN
 
-export const buildOrderTrackingUrl = (publicTrackingId: string): string =>
-  `${getStorefrontOrigin()}/order/${encodeURIComponent(publicTrackingId)}`
+/**
+ * Moments at which a tracking link is (re-)sent to the customer. Each is
+ * appended as `&v=<moment>` — a distinct value per moment, and every send at
+ * the same moment reuses that same value. To WhatsApp's link-preview
+ * crawler, only a *new* `v` value looks like a new URL (bypassing its
+ * ~week-long per-URL preview cache); a link resent unchanged still shows the
+ * dedicated inline preview instead of the destination just spamming plain
+ * text, since no host serves an og:image for a URL WhatsApp never
+ * (re-)crawled.
+ */
+export type OrderTrackingMoment = 'confirmed' | 'ready' | 'finished'
+
+/**
+ * Canonical customer-facing tracking link. `/order/:trackingId` is
+ * deprecated — this is the only shape sent to customers going forward.
+ */
+export const buildOrderTrackingUrl = (
+  orderNumber: string,
+  publicTrackingId: string,
+  moment: OrderTrackingMoment,
+): string =>
+  `${getStorefrontOrigin()}/track/${encodeURIComponent(orderNumber)}?key=${encodeURIComponent(publicTrackingId)}&v=${moment}`
 
 export const buildOrderConfirmedMessage = (order: OrderTableRow, trackingUrl: string): string =>
   `Hi kak ${order.customerName}, pesanan ${order.orderNumber} sudah kami konfirmasi dan akan segera diproses. Status pesanan bisa dicek di ${trackingUrl}`
@@ -72,6 +92,14 @@ export const cancelPendingStorefrontOrder = async (
     p_reason: reason.trim(),
   })
   await refreshAfterCommand()
+  return result
+}
+
+/** Staff-side lookup of an order's tracking key, for previewing the
+ * customer-facing link before a confirm/reject decision is actually sent. */
+export const getOrderTrackingId = async (orderId: string): Promise<string> => {
+  const result = await getClient().rpc<string | null>('get_order_tracking_id', { p_order_id: orderId })
+  if (!result) throw new Error('This order does not have a tracking link yet.')
   return result
 }
 

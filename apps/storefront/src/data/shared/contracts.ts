@@ -318,6 +318,10 @@ export interface SharedOrder {
   requestedPickupDate?: string
   requestedPickupTime?: string
   actualPickedUpAt?: string
+  finishPhotoUrl?: string
+  finishPhotoUploadedBy?: string
+  finishPhotoUploadedAt?: string
+  paymentProofUrl?: string
   orderNote?: string
   greetingMessage?: string
   greetingCardName?: string
