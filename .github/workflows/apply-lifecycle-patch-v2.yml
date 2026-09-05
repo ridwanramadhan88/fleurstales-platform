@@ -1,0 +1,35 @@
+name: Apply lifecycle patch v2
+
+on:
+  push:
+    branches:
+      - hotfix/canonical-storefront-tracking-url
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: startsWith(github.event.head_commit.message, '[apply-lifecycle-patch-v2]')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: hotfix/canonical-storefront-tracking-url
+          fetch-depth: 0
+
+      - name: Apply lifecycle patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "80c474087f62c00dedd18128ba779b088894fd2253a689b972face682cdf01eb  .github/patches/orderlifecycle.patch" | sha256sum -c -
+          git apply --check .github/patches/orderlifecycle.patch
+          git apply .github/patches/orderlifecycle.patch
+          rm -rf .github/patches
+          rm -f .github/workflows/apply-lifecycle-patch.yml
+          rm -f .github/workflows/apply-lifecycle-patch-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: add order lifecycle progress UX"
+          git push origin HEAD:hotfix/canonical-storefront-tracking-url
