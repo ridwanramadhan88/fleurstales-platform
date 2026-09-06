@@ -22,6 +22,8 @@ import { STATUS_LABELS, getOrderStatusOptionsForFulfillment } from '../orders/or
 import { EMPTY_ACTIVITIES } from '../orders/orderTableSharedConstants'
 import { getDisplayScheduleLabel, getOrderUrgency, isFutureOrder } from '../orders/orderTableFormatters'
 import { saveOrderFinanceReference } from '../../data/orderCustomerConfirmation'
+import { decideOrderFinanceReconciliation } from '../../data/orderFinanceReconciliation'
+import { isSharedBackendConfigured } from '../../api/remoteSession'
 
 export interface FinanceReviewTimelineRow {
   id: OrderStatus
@@ -42,6 +44,7 @@ export interface OrderFinanceReviewSheetViewModel {
   financeReferenceDraft: string
   financeReferenceBusy: boolean
   financeReferenceDirty: boolean
+  decisionBusy: boolean
   isOrderFuture: boolean
   urgency: ReturnType<typeof getOrderUrgency>
   wasRejected: boolean
@@ -109,6 +112,7 @@ export const useOrderFinanceReviewSheetController = ({
   const [financeReferenceBusy, setFinanceReferenceBusy] = useState(false)
   const [savedFinanceReference, setSavedFinanceReference] = useState(order.financeReferenceCode ?? '')
   const [financeReferenceRevision, setFinanceReferenceRevision] = useState(order.revision ?? 1)
+  const [decisionBusy, setDecisionBusy] = useState(false)
 
   useEffect(() => {
     const next = order.financeReferenceCode ?? ''
@@ -188,7 +192,7 @@ export const useOrderFinanceReviewSheetController = ({
     normalizeFinanceReference(financeReferenceDraft) !== normalizeFinanceReference(savedFinanceReference)
 
   const saveFinanceReference = async (): Promise<void> => {
-    if (!canVerify || financeReferenceBusy || !financeReferenceDirty) return
+    if (!canVerify || financeReferenceBusy || decisionBusy || !financeReferenceDirty) return
     setFinanceReferenceBusy(true)
     try {
       const result = await saveOrderFinanceReference(
@@ -211,6 +215,48 @@ export const useOrderFinanceReviewSheetController = ({
     }
   }
 
+  const runFinanceDecision = async (decision: 'verify' | 'reject', note?: string): Promise<void> => {
+    if (!canVerify || decisionBusy || financeReferenceBusy) return
+    setDecisionBusy(true)
+    try {
+      if (isSharedBackendConfigured()) {
+        await decideOrderFinanceReconciliation(
+          { ...order, revision: financeReferenceRevision },
+          decision,
+          note,
+        )
+      } else {
+        const input = {
+          orderNumber: order.orderNumber,
+          expectedRevision: financeReferenceRevision,
+          actor,
+          note: note?.trim() || undefined,
+        }
+        const result = decision === 'verify'
+          ? verifyOrderFinance(input)
+          : rejectOrderFinance(input)
+        if (!result.allowed) throw new Error(result.reason)
+      }
+
+      toast({
+        title: decision === 'verify' ? 'Payment reconciled' : 'Payment returned for correction',
+        description: decision === 'verify'
+          ? 'This payment is now included in Finance balance and revenue.'
+          : 'The payment remains excluded from balance and revenue until Finance reconciles it.',
+      })
+      closeAction()
+      onClose()
+    } catch (error) {
+      toast({
+        title: decision === 'verify' ? 'Order was not reconciled' : 'Correction request was not sent',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setDecisionBusy(false)
+    }
+  }
+
   return {
     order,
     onClose,
@@ -223,6 +269,7 @@ export const useOrderFinanceReviewSheetController = ({
     financeReferenceDraft,
     financeReferenceBusy,
     financeReferenceDirty,
+    decisionBusy,
     isOrderFuture,
     urgency,
     wasRejected,
@@ -239,31 +286,8 @@ export const useOrderFinanceReviewSheetController = ({
     onFinanceReferenceChange: (value) => setFinanceReferenceDraft(value.toUpperCase()),
     onSaveFinanceReference: saveFinanceReference,
     onConfirmAction: () => {
-      const input = {
-        orderNumber: order.orderNumber,
-        expectedRevision: order.revision ?? 1,
-        actor,
-        note: actionNote.trim() || undefined,
-      }
-      const result = actionType === 'correction' ? rejectOrderFinance(input) : null
-      if (result && !result.allowed) {
-        toast({ title: 'Order was not returned', description: result.reason, variant: 'destructive' })
-        return
-      }
-      closeAction()
-      onClose()
+      if (actionType === 'correction') void runFinanceDecision('reject', actionNote)
     },
-    onVerifyOrder: () => {
-      const result = verifyOrderFinance({
-        orderNumber: order.orderNumber,
-        expectedRevision: order.revision ?? 1,
-        actor,
-      })
-      if (!result.allowed) {
-        toast({ title: 'Order was not verified', description: result.reason, variant: 'destructive' })
-        return
-      }
-      onClose()
-    },
+    onVerifyOrder: () => { void runFinanceDecision('verify') },
   }
 }
