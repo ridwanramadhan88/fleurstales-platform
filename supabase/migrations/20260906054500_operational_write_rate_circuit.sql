@@ -167,10 +167,10 @@ begin
       using errcode='40001';
   end if;
 
-  -- Ten accepted full HR writes inside five seconds is already far beyond a
-  -- normal human workflow. Block that session/scope for two minutes instead of
-  -- letting a valid-revision feedback loop consume CPU indefinitely.
-  if not private.consume_mutation_rate_budget(v_scope, 10, 5, 120) then
+  -- The browser writer is already debounced at 350 ms. Fifteen accepted full
+  -- HR writes in five seconds is above expected interactive behavior while
+  -- still catching a continuous valid-revision feedback loop quickly.
+  if not private.consume_mutation_rate_budget(v_scope, 15, 5, 60) then
     raise exception 'MUTATION_RATE_CIRCUIT_OPEN:hr' using errcode='42501';
   end if;
 
@@ -248,9 +248,8 @@ begin
       using errcode='40001';
   end if;
 
-  -- Order editing can legitimately be busier than HR, but twenty accepted
-  -- full-state saves for the same order in five seconds is still a feedback loop.
-  if not private.consume_mutation_rate_budget(v_scope, 20, 5, 120) then
+  -- Order state can legitimately be busier than HR, so keep a wider budget.
+  if not private.consume_mutation_rate_budget(v_scope, 25, 5, 60) then
     raise exception 'MUTATION_RATE_CIRCUIT_OPEN:order' using errcode='42501';
   end if;
 
