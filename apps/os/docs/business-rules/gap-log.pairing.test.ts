@@ -220,8 +220,8 @@ describe('§11 — cancellation and refund remain separate decisions', () => {
   })
 })
 
-describe('§13 — Process Order payment confirmation posts the financial truth', () => {
-  it('posts one verified payment at confirmation time and does not require Finance re-verification', async () => {
+describe('§13 — Admin payment confirmation waits for Finance reconciliation', () => {
+  it('records one pending payment at confirmation, then Finance finalizes that same ledger entry', async () => {
     useFinanceStore.setState({ transactions: [] })
     useUserStore.setState({
       role: 'admin',
@@ -250,26 +250,29 @@ describe('§13 — Process Order payment confirmation posts the financial truth'
       paidAmountIdr: 200_000,
       financeAccountId: 'cash:main',
     })
-    const posted = useFinanceStore.getState().transactions
-    expect(posted).toHaveLength(1)
-    expect(posted[0]).toMatchObject({
+    const pending = useFinanceStore.getState().transactions
+    expect(pending).toHaveLength(1)
+    expect(pending[0]).toMatchObject({
       orderNumber: 'A',
       category: 'order_payment',
       source: 'order_payment',
-      status: 'verified',
+      status: 'pending',
       amount: 200_000,
       accountId: 'cash:main',
       transactionDate: payment.paymentVerifiedAt,
     })
 
     const paidOrder = useOrdersStore.getState().orders[0]
-    const legacyVerification = useOrdersStore.getState().verifyOrderFinance({
+    const reconciliation = useOrdersStore.getState().verifyOrderFinance({
       orderNumber: 'A',
       expectedRevision: paidOrder.revision ?? 2,
       actor: { employeeId: 'finance-1', name: 'Finance Tester', role: 'finance' },
     })
-    expect(legacyVerification.allowed).toBe(false)
+
+    expect(reconciliation.allowed).toBe(true)
     expect(useFinanceStore.getState().transactions).toHaveLength(1)
+    expect(useFinanceStore.getState().transactions[0].status).toBe('verified')
+    expect(useOrdersStore.getState().orders[0].financeVerified).toBe(true)
   })
 })
 
