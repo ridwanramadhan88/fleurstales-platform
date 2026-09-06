@@ -163,33 +163,24 @@ begin
   );
 end;
 $function$;
+revoke execute on function private.resolve_voucher_discount(jsonb,bigint,text)
+  from public, anon, authenticated;
 
--- The catalog Storefront quote has historically resolved vouchers inline and
--- skipped that work entirely when p_promo_code was blank. Wrap the current
--- cash-flow/review-reward quote so the customer-specific resolver participates
--- in the actual Storefront path without weakening the private CRM boundary.
-alter function public.quote_storefront_checkout(
-  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
-) rename to quote_storefront_checkout_pre_customer_auto_promo;
-revoke execute on function public.quote_storefront_checkout_pre_customer_auto_promo(
-  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
-) from public, anon, authenticated, service_role;
-
-create or replace function public.quote_storefront_checkout(
-  p_idempotency_key text,
+-- Catalog Storefront checkout has a separate authoritative resolver that
+-- validates the branch, schedule, live product/variant prices and voucher.
+-- Wire the blank-code customer assignment into that resolver itself so both
+-- quote_storefront_checkout() and create_storefront_order() share exactly the
+-- same decision. This preserves the existing idempotency path in final order
+-- creation and does not add another public CRM/customer lookup surface.
+create or replace function private.resolve_checkout_quote(
   p_customer jsonb,
   p_branch_id text,
   p_fulfillment text,
   p_schedule_date date,
-  p_schedule_time time without time zone,
+  p_schedule_time time,
   p_items jsonb,
-  p_delivery_address text default null,
-  p_delivery_instructions text default null,
-  p_order_note text default null,
-  p_greeting_message text default null,
-  p_greeting_card_name text default null,
-  p_payment_method text default 'transfer',
-  p_promo_code text default null
+  p_payment_method text,
+  p_promo_code text
 )
 returns jsonb
 language plpgsql
@@ -197,153 +188,200 @@ security definer
 set search_path = ''
 as $function$
 declare
-  v_quote jsonb;
+  v_branch public.branches%rowtype;
+  v_item jsonb;
+  v_product public.products%rowtype;
+  v_variant public.product_variants%rowtype;
+  v_qty integer;
+  v_subtotal bigint := 0;
+  v_delivery bigint := 0;
+  v_discount bigint := 0;
+  v_code text := upper(trim(coalesce(p_promo_code, '')));
+  v_voucher jsonb;
+  v_customer public.customers%rowtype;
+  v_normalized text := private.normalize_whatsapp(p_customer->>'whatsappNumber');
+  v_spend bigint := 0;
+  v_count integer := 0;
+  v_segments jsonb;
+  v_is_vip boolean := false;
+  v_customer_found boolean := false;
+  v_eligible boolean := false;
+  v_percent integer := 0;
+  v_message text;
+  v_day_key text;
+  v_hours jsonb;
   v_auto_promo jsonb;
-  v_items_subtotal bigint := 0;
-  v_delivery_fee bigint := 0;
-  v_existing_discount bigint := 0;
-  v_auto_discount bigint := 0;
 begin
-  v_quote := public.quote_storefront_checkout_pre_customer_auto_promo(
-    p_idempotency_key,
-    p_customer,
-    p_branch_id,
-    p_fulfillment,
-    p_schedule_date,
-    p_schedule_time,
-    p_items,
-    p_delivery_address,
-    p_delivery_instructions,
-    p_order_note,
-    p_greeting_message,
-    p_greeting_card_name,
-    p_payment_method,
-    p_promo_code
-  );
-
-  -- A code typed by the customer remains authoritative. This also preserves
-  -- the existing validation/message behavior for explicit all/vip/selected
-  -- vouchers.
-  if nullif(trim(coalesce(p_promo_code, '')), '') is not null then
-    return v_quote;
+  if nullif(trim(coalesce(p_customer->>'name', '')), '') is null then
+    raise exception 'Customer name is required.' using errcode = '22023';
+  end if;
+  if length(v_normalized) < 8 or length(v_normalized) > 15 then
+    raise exception 'A valid WhatsApp number is required.' using errcode = '22023';
   end if;
 
-  v_items_subtotal := coalesce((v_quote->>'itemsSubtotalIdr')::bigint, 0);
-  v_delivery_fee := coalesce((v_quote->>'deliveryFeeIdr')::bigint, 0);
-  v_existing_discount := coalesce((v_quote->>'discountIdr')::bigint, 0);
-  v_auto_promo := private.resolve_voucher_discount(p_customer, v_items_subtotal, null);
-
-  if coalesce((v_auto_promo->>'promoAccepted')::boolean, false) is not true then
-    return v_quote;
+  select * into v_branch
+  from public.branches
+  where id = p_branch_id and is_active = true;
+  if not found then
+    raise exception 'Selected branch is unavailable.' using errcode = '22023';
   end if;
 
-  v_auto_discount := coalesce((v_auto_promo->>'discountIdr')::bigint, 0);
-
-  -- Review rewards are already resolved by the wrapped quote. Keep whichever
-  -- automatic benefit is better; ties keep the review reward so its one-time
-  -- redemption behavior stays deterministic.
-  if v_auto_discount <= v_existing_discount then
-    return v_quote;
+  if p_fulfillment not in ('delivery', 'pickup') then
+    raise exception 'Invalid fulfillment type.' using errcode = '22023';
+  end if;
+  if p_payment_method not in ('transfer', 'cash') then
+    raise exception 'Invalid payment method.' using errcode = '22023';
+  end if;
+  if p_fulfillment = 'delivery' and p_payment_method = 'cash' then
+    raise exception 'Cash payment is only available for pickup orders.' using errcode = '22023';
+  end if;
+  if p_payment_method = 'transfer' and not exists (
+    select 1
+    from public.public_payment_accounts account
+    where account.is_active = true
+      and account.is_customer_visible = true
+      and (cardinality(account.branch_ids) = 0 or p_branch_id = any(account.branch_ids))
+  ) then
+    raise exception 'Bank transfer is unavailable for this branch.' using errcode = '22023';
   end if;
 
-  return (v_quote - 'reviewRewardPercentOff' - 'reviewRewardMinOrderIdr')
-    || jsonb_build_object(
-      'discountIdr', v_auto_discount,
-      'totalIdr', greatest(0, v_items_subtotal - v_auto_discount + v_delivery_fee),
-      'promoCode', nullif(trim(v_auto_promo->>'promoCode'), ''),
-      'promoAccepted', true,
-      'promoMessage', v_auto_promo->>'promoMessage',
-      'reviewRewardApplied', false
-    );
-end;
-$function$;
-revoke execute on function public.quote_storefront_checkout(
-  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
-) from public, authenticated;
-grant execute on function public.quote_storefront_checkout(
-  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
-) to anon, service_role;
+  if p_schedule_date is null or p_schedule_time is null then
+    raise exception 'Schedule date and time are required.' using errcode = '22023';
+  end if;
+  if p_schedule_date < timezone('Asia/Jakarta', now())::date then
+    raise exception 'Schedule date cannot be in the past.' using errcode = '22023';
+  end if;
 
--- Enforce the same automatic selection at final order creation. The browser
--- normally snapshots the quoted promo code, but the server must not rely on a
--- client race or stale UI state for customer-assigned eligibility.
-alter function public.create_storefront_order(
-  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
-) rename to create_storefront_order_pre_customer_auto_promo;
-revoke execute on function public.create_storefront_order_pre_customer_auto_promo(
-  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
-) from public, anon, authenticated, service_role;
+  v_day_key := lower(trim(to_char(p_schedule_date, 'FMDay')));
+  v_hours := v_branch.opening_hours->v_day_key;
+  if v_hours is null or coalesce((v_hours->>'isOpen')::boolean, false) = false then
+    raise exception 'Selected branch is closed on this date.' using errcode = '22023';
+  end if;
+  if p_schedule_time < (v_hours->>'opensAt')::time
+    or p_schedule_time > (v_hours->>'closesAt')::time then
+    raise exception 'Selected time is outside branch opening hours.' using errcode = '22023';
+  end if;
 
-create or replace function public.create_storefront_order(
-  p_idempotency_key text,
-  p_customer jsonb,
-  p_branch_id text,
-  p_fulfillment text,
-  p_schedule_date date,
-  p_schedule_time time without time zone,
-  p_items jsonb,
-  p_delivery_address text default null,
-  p_delivery_instructions text default null,
-  p_order_note text default null,
-  p_greeting_message text default null,
-  p_greeting_card_name text default null,
-  p_payment_method text default 'transfer',
-  p_promo_code text default null
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $function$
-declare
-  v_effective_promo_code text := nullif(trim(coalesce(p_promo_code, '')), '');
-  v_quote jsonb;
-begin
-  if v_effective_promo_code is null then
-    v_quote := public.quote_storefront_checkout(
-      p_idempotency_key,
-      p_customer,
-      p_branch_id,
-      p_fulfillment,
-      p_schedule_date,
-      p_schedule_time,
-      p_items,
-      p_delivery_address,
-      p_delivery_instructions,
-      p_order_note,
-      p_greeting_message,
-      p_greeting_card_name,
-      p_payment_method,
-      null
-    );
+  if jsonb_typeof(p_items) <> 'array'
+    or jsonb_array_length(p_items) < 1
+    or jsonb_array_length(p_items) > 20 then
+    raise exception 'Order must contain between 1 and 20 items.' using errcode = '22023';
+  end if;
 
-    if coalesce((v_quote->>'promoAccepted')::boolean, false)
-      and nullif(trim(v_quote->>'promoCode'), '') is not null then
-      v_effective_promo_code := v_quote->>'promoCode';
+  for v_item in select value from jsonb_array_elements(p_items) loop
+    v_qty := coalesce((v_item->>'quantity')::integer, 0);
+    if v_qty < 1 or v_qty > 99 then
+      raise exception 'Item quantity must be between 1 and 99.' using errcode = '22023';
+    end if;
+
+    select * into v_product
+    from public.products
+    where id = nullif(v_item->>'productId', '') and is_active = true;
+    if not found then
+      raise exception 'A selected product is unavailable.' using errcode = '22023';
+    end if;
+
+    select * into v_variant
+    from public.product_variants
+    where id = nullif(v_item->>'variantId', '')
+      and product_id = v_product.id
+      and status = 'active';
+    if not found then
+      raise exception 'A selected product variant is unavailable.' using errcode = '22023';
+    end if;
+
+    v_subtotal := v_subtotal + (v_variant.price_idr * v_qty);
+  end loop;
+
+  v_delivery := case when p_fulfillment = 'delivery' then v_branch.delivery_fee_idr else 0 end;
+
+  if v_code = '' then
+    -- No code was typed. Only a privately matched customer-specific assignment
+    -- is eligible for automatic application.
+    v_auto_promo := private.resolve_voucher_discount(p_customer, v_subtotal, null);
+    if coalesce((v_auto_promo->>'promoAccepted')::boolean, false) then
+      v_code := coalesce(v_auto_promo->>'promoCode', '');
+      v_discount := coalesce((v_auto_promo->>'discountIdr')::bigint, 0);
+      v_message := v_auto_promo->>'promoMessage';
+    end if;
+  else
+    -- Preserve the existing explicit-code validation and customer eligibility
+    -- behavior exactly for all/vip/selected vouchers.
+    select value into v_voucher
+    from private.operational_domain_state s,
+      lateral jsonb_array_elements(coalesce(s.snapshot->'vouchers', '[]'::jsonb)) e(value)
+    where s.domain = 'vouchers'
+      and upper(trim(value->>'code')) = v_code
+    limit 1;
+
+    if v_voucher is null then
+      v_message := 'Voucher code was not found.';
+    elsif coalesce((v_voucher->>'isActive')::boolean, false) = false then
+      v_message := 'Voucher is inactive.';
+    elsif nullif(v_voucher->>'startDate', '') is not null
+      and timezone('Asia/Jakarta', now())::date < (v_voucher->>'startDate')::date then
+      v_message := 'Voucher is not active yet.';
+    elsif nullif(v_voucher->>'endDate', '') is not null
+      and timezone('Asia/Jakarta', now())::date > (v_voucher->>'endDate')::date then
+      v_message := 'Voucher has expired.';
+    elsif v_subtotal < coalesce((v_voucher->>'minOrderIdr')::bigint, 0) then
+      v_message := 'Order minimum has not been reached.';
+    else
+      select * into v_customer
+      from public.customers
+      where normalized_whatsapp_number = v_normalized
+      limit 1;
+      v_customer_found := found;
+
+      if v_customer_found then
+        select coalesce(sum(total_idr), 0), count(*)
+        into v_spend, v_count
+        from public.orders
+        where customer_id = v_customer.id
+          and status not in ('cancelled', 'failed')
+          and payment_status <> 'refunded';
+      end if;
+
+      select customer_segments
+      into v_segments
+      from private.internal_settings_state
+      where id = 'primary';
+
+      v_is_vip := case coalesce(v_segments->>'mode', 'either')
+        when 'spend' then v_spend >= coalesce((v_segments->>'minLifetimeSpend')::bigint, 1000000)
+        when 'orders' then v_count >= coalesce((v_segments->>'minOrderCount')::integer, 5)
+        else v_spend >= coalesce((v_segments->>'minLifetimeSpend')::bigint, 1000000)
+          or v_count >= coalesce((v_segments->>'minOrderCount')::integer, 5)
+      end;
+
+      v_eligible := case coalesce(v_voucher->>'eligibility', 'all')
+        when 'all' then true
+        when 'vip' then v_is_vip
+        when 'selected' then v_customer_found
+          and coalesce(v_voucher->'selectedCustomerIds', '[]'::jsonb) ? v_customer.id
+        else false
+      end;
+
+      if not v_eligible then
+        v_message := 'Voucher is unavailable for this order.';
+      else
+        v_percent := greatest(0, least(100, coalesce((v_voucher->>'percentOff')::integer, 0)));
+        v_discount := round(v_subtotal * v_percent / 100.0)::bigint;
+        v_message := 'Voucher applied.';
+      end if;
     end if;
   end if;
 
-  return public.create_storefront_order_pre_customer_auto_promo(
-    p_idempotency_key,
-    p_customer,
-    p_branch_id,
-    p_fulfillment,
-    p_schedule_date,
-    p_schedule_time,
-    p_items,
-    p_delivery_address,
-    p_delivery_instructions,
-    p_order_note,
-    p_greeting_message,
-    p_greeting_card_name,
-    p_payment_method,
-    v_effective_promo_code
+  return jsonb_build_object(
+    'itemsSubtotalIdr', v_subtotal,
+    'deliveryFeeIdr', v_delivery,
+    'discountIdr', v_discount,
+    'totalIdr', greatest(0, v_subtotal - v_discount + v_delivery),
+    'promoCode', case when v_code = '' then null else v_code end,
+    'promoAccepted', v_code <> '' and v_discount > 0,
+    'promoMessage', v_message
   );
 end;
 $function$;
-revoke execute on function public.create_storefront_order(
-  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
-) from public, authenticated;
-grant execute on function public.create_storefront_order(
-  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
-) to anon, service_role;
+revoke execute on function private.resolve_checkout_quote(jsonb,text,text,date,time,jsonb,text,text)
+  from public, anon, authenticated;
