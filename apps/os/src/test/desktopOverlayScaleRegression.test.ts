@@ -24,9 +24,10 @@ describe('desktop and tablet overlay scale', () => {
     const assignFlorist = read('src/components/orders/AssignFloristDialog.tsx')
     const catalogForm = read('src/components/catalog/CatalogItemFormSheet.tsx')
 
-    expect(newOrder).toContain('sm:max-w-5xl')
-    expect(newOrder).toContain('md:max-w-6xl')
-    expect(orderDetails).toContain('size="workspace"')
+    expect(newOrder).toContain('sm:max-w-3xl')
+    expect(newOrder).toContain('lg:max-w-5xl')
+    expect(orderDetails).toContain('size="standard"')
+    expect(orderDetails).toContain('lg:max-w-5xl')
     expect(financeReview).toContain('md:max-w-6xl')
     expect(customer).toContain('side="responsiveRight"')
     expect(customer).toContain('size="wide"')

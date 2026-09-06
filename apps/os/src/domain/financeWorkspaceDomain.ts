@@ -7,14 +7,17 @@ export type FinanceWorkspaceModule =
   | 'payroll'
   | 'refunds'
   | 'ledger'
+  | 'balance'
 
-const MODULE_ORDER: FinanceWorkspaceModule[] = ['order_verification','ledger','payroll','refunds']
+const MODULE_ORDER: FinanceWorkspaceModule[] = ['order_verification','ledger','balance','payroll','refunds']
 
 const CAPABILITY_BY_MODULE: Record<FinanceWorkspaceModule, Parameters<typeof hasActionPermission>[1]> = {
   order_verification: 'finance.view_order_verification',
   payroll: 'finance.view_payroll',
   refunds: 'finance.view_refunds',
   ledger: 'finance.view_ledger',
+  // Balance shares the ledger capability: same roles, no permission-matrix change.
+  balance: 'finance.view_ledger',
 }
 
 export const getFinanceWorkspaceModules = (

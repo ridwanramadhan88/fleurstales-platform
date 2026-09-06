@@ -1,16 +1,14 @@
 import type { FC } from 'react'
-import { ArrowRight, ClipboardList } from 'lucide-react'
+import { ClipboardList } from 'lucide-react'
 import { StatusChip } from '../ui/chip'
 import {
   ORDER_CARD_BG,
   PAYMENT_CHIP_TONE,
   PAYMENT_STATUS_LABELS,
-  QUICK_ACTION_BUTTON_STYLE,
   STATUS_GROUP_FROM_STATUS,
   STATUS_ICONS,
   STATUS_LABELS,
   URGENCY_CHIP,
-  getQuickActionLabel,
 } from './orderTableLabels'
 import {
   getDisplayScheduleLabel,
@@ -19,7 +17,6 @@ import {
   isPaymentOverdue,
 } from './orderTableFormatters'
 import type { OrdersTableViewModel } from './OrdersTableViewController'
-import { shouldGateOrderAdvanceForPayment } from '../../domain/orderPaymentGateDomain'
 import { shouldHighlightReadyPayment } from '../../domain/orderPaymentGateDomain'
 
 type CardRefSetter = (key: string) => (node: HTMLElement | null) => void
@@ -40,9 +37,7 @@ export const OrdersMobileCards: FC<OrdersMobileCardsProps> = ({
     formatter,
     emptyStateMessage,
     getProductName,
-    getNextStatusForOrder,
     onOpenDetails,
-    onQuickAdvance,
   } = viewModel
 
   return (
@@ -60,8 +55,6 @@ export const OrdersMobileCards: FC<OrdersMobileCardsProps> = ({
             isPaymentOverdue(order) ||
             shouldHighlightReadyPayment(order)
           const highlightPayment = shouldHighlightReadyPayment(order)
-          const cardNextStatus = getNextStatusForOrder(order)
-          const paymentBlocked = Boolean(cardNextStatus && shouldGateOrderAdvanceForPayment(order, cardNextStatus))
 
           return (
             <div
@@ -141,47 +134,24 @@ export const OrdersMobileCards: FC<OrdersMobileCardsProps> = ({
                   <span className="truncate">{STATUS_LABELS[order.status]} · {order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}</span>
                 </div>
 
-                <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                  {getDisplayScheduleLabel(order) && (
-                    <StatusChip
-                      tone={
-                        isFutureCustomOrder ? 'info' : URGENCY_CHIP[urgency].tone
-                      }
-                      showDot={false}
-                      className="px-2 py-0.5 text-xs"
-                    >
-                      {getDisplayScheduleLabel(order)}
-                    </StatusChip>
-                  )}
-                  {/* One-tap quick advance, so staff on a phone don't have to
-                      open the full details panel just to bump an order along
-                      (bug 5 — previously only the desktop table would have
-                      had this). Colored to match the status it advances
-                      into; the terminal step shows "Finished" with a check
-                      instead of the raw delivered/picked-up status name. */}
-                  {cardNextStatus && (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onQuickAdvance(order)
-                      }}
-                      title={paymentBlocked ? 'Payment confirmation required.' : `Advance to ${getQuickActionLabel(cardNextStatus)}`}
-                      aria-label={`Advance order to ${getQuickActionLabel(cardNextStatus)}`}
-                      className={`inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition hover:brightness-95 ${QUICK_ACTION_BUTTON_STYLE[cardNextStatus].className}`}
-                    >
-                      {getQuickActionLabel(cardNextStatus)}
-                      <ArrowRight className="size-3.5 shrink-0" />
-                    </button>
-                  )}
-                </div>
+                {getDisplayScheduleLabel(order) && (
+                  <StatusChip
+                    tone={
+                      isFutureCustomOrder ? 'info' : URGENCY_CHIP[urgency].tone
+                    }
+                    showDot={false}
+                    className="shrink-0 px-2 py-0.5 text-xs"
+                  >
+                    {getDisplayScheduleLabel(order)}
+                  </StatusChip>
+                )}
               </div>
             </div>
           )
         })}
 
         {displayedOrderCount === 0 && (
-          <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-xl bg-surface-card px-6 py-8 text-center ring-1 ring-border">
+          <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-card px-6 py-8 text-center shadow-ios-sm ring-1 ring-border/60">
             <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <ClipboardList className="size-5" />
             </span>

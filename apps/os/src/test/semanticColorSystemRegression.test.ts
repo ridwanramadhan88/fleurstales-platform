@@ -4,17 +4,18 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string) => readFileSync(path, 'utf8')
 
 describe('semantic color system regression', () => {
-  it('keeps Customers and Catalog neutral while Orders uses restrained semantic summary surfaces', () => {
+  it('keeps Customers and Catalog neutral while Orders keeps semantics in accents, not fills', () => {
     const orders = read('src/components/orders/OrdersTabHeader.tsx')
     const customers = read('src/components/customers/CustomersTabContent.tsx')
     const catalog = read('src/components/catalog/CatalogTabContent.tsx')
 
-    expect(orders).toContain("success: 'bg-surface-success ring-success/25'")
-    expect(orders).toContain("warning: 'bg-surface-warning ring-warning/25'")
-    expect(orders).toContain("info: 'bg-surface-info ring-info/25'")
-    expect(orders).toContain("neutral: 'bg-card ring-border'")
-    expect(customers.match(/bg-card p-3 ring-1 ring-border\/70/g)?.length).toBeGreaterThanOrEqual(4)
-    expect(catalog).toContain("'bg-card ring-1 ring-border/70'")
+    expect(orders).toContain("const surfaceClass = 'bg-surface-card ring-border/60'")
+    expect(orders).toContain("neutral: 'text-foreground'")
+    expect(orders).toContain("success: 'text-success'")
+    expect(orders).toContain("warning: 'text-warning'")
+    expect(orders).toContain("info: 'text-info'")
+    expect(customers.match(/rounded-2xl bg-surface-card p-4 shadow-ios-sm ring-1 ring-border\/60/g)?.length).toBeGreaterThanOrEqual(4)
+    expect(catalog).toContain("'bg-surface-card shadow-ios-sm ring-1 ring-border/60'")
     expect(orders).not.toContain('bg-success/10 ring-success/30')
     expect(customers).not.toContain('bg-warning/10 p-3 ring-1 ring-warning/20')
   })
@@ -26,16 +27,16 @@ describe('semantic color system regression', () => {
     expect(catalog).toContain('text-muted-foreground')
     expect(catalog).toContain('bg-warning/5 ring-2 ring-warning/45')
     expect(catalog).toContain('bg-info/5 ring-2 ring-info/45')
-    expect(customers).toContain('text-xl font-semibold text-warning')
+    expect(customers).toContain('font-semibold tabular-nums text-warning')
     expect(customers).toContain('Lifetime revenue</p>')
-    expect(customers).toContain('text-xl font-semibold text-foreground')
+    expect(customers).toContain('font-semibold tabular-nums text-foreground')
   })
 
   it('keeps the shared top-bar search neutral until focus', () => {
     const topBar = read('src/components/dashboard/TopBar.tsx')
 
-    expect(topBar).toContain('border border-border/80 bg-card')
-    expect(topBar).toContain('focus:border-foreground/25')
+    expect(topBar).toContain('border border-border/70 bg-card')
+    expect(topBar).toContain('focus:border-primary/40')
     expect(topBar).not.toContain('focus:border-primary/45 focus:ring-2 focus:ring-primary/20')
   })
 })

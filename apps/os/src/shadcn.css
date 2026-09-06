@@ -6,14 +6,21 @@
 
 
 :root {
-  /* Fleurstales OS — clean Apple-inspired system palette */
+  /* Fleurstales OS — clean Apple-inspired system palette.
+     Radius ladder (use only these, no arbitrary rounded-[…]):
+     - pill = rounded-full → buttons, text inputs, selects, chips, segmented tabs
+     - card = rounded-2xl (16px) → cards, stat cards, form sections
+     - inner = rounded-xl (12px) → popovers, menus, nested rows, icon tiles
+     - overlay = rounded-2xl (20px desktop / top-only mobile sheet) → sheets, dialogs
+     Shadow ladder: ios-sm = cards, ios = popovers/sticky chrome, ios-lg = sheets/dialogs.
+     Type: Title 28/34 semibold, Section 17 semibold, Body 15, Footnote 13, Caption 12. */
   --background: 240 6% 96%;
 
   /* Cool neutral material hierarchy, similar to macOS/iOS grouped surfaces. */
   --surface-page: 240 6% 96%;
   --surface-card: 0 0% 100%;
   --surface-panel: 240 5% 94%;
-  --surface-track: 240 5% 91%;
+  --surface-track: 240 5% 94%;
   --surface-selected: 211 100% 50%;
   --surface-footer: 0 0% 100%;
   --surface-popover: 0 0% 100%;
@@ -81,7 +88,7 @@
   --surface-page: 240 3% 5%;
   --surface-card: 240 3% 11%;
   --surface-panel: 240 3% 17%;
-  --surface-track: 240 3% 23%;
+  --surface-track: 240 3% 21%;
   --surface-selected: 211 100% 55%;
   --surface-footer: 240 3% 11%;
   --surface-popover: 240 3% 12%;
@@ -319,6 +326,28 @@ textarea:focus-visible {
   backdrop-filter: saturate(1.65) blur(22px);
 }
 
+/* --- Apple shadow lock ---------------------------------------------------
+   Raw `shadow-lg` / `shadow-sm` still appear in older call sites. Remap them
+   onto the iOS ladder so every depth looks intentional even before each file
+   is migrated to `shadow-ios-sm / ios / ios-lg` explicitly. */
+.shadow-sm {
+  box-shadow:
+    0 1px 2px hsl(var(--shadow-color) / 0.06),
+    0 8px 22px -14px hsl(var(--shadow-color) / 0.20) !important;
+}
+.shadow-lg {
+  box-shadow:
+    0 2px 5px hsl(var(--shadow-color) / 0.08),
+    0 18px 42px -20px hsl(var(--shadow-color) / 0.24) !important;
+}
+
+/* --- Apple control lock --------------------------------------------------
+   One height / radius per control kind (44pt touch minimum for primary):
+   - pill buttons & text inputs: h-11 rounded-full
+   - selects & date/time triggers: h-11 rounded-full
+   - compact/quiet actions: h-9 rounded-full
+   Keep these in sync with `components/ui/button.tsx` sizes. */
+
 :root:not(.dark) input,
 :root:not(.dark) select,
 :root:not(.dark) textarea {
@@ -469,55 +498,9 @@ input:-webkit-autofill:active {
 /* --- Dark mode legibility pass ------------------------------------------------
    Keep semantic utility colors readable against dark cards. Tailwind's light
    50/100 surfaces are intentionally remapped to translucent color washes,
-   while 600-950 text colors become brighter foreground tones. */
-.dark {
-  --background: 240 3% 5%;
-  --surface-page: 240 3% 5%;
-  --surface-card: 240 3% 11%;
-  --surface-panel: 240 3% 17%;
-  --surface-track: 240 3% 23%;
-  --surface-selected: 211 100% 55%;
-  --surface-footer: 240 3% 11%;
-  --surface-popover: 240 3% 12%;
-  --surface-neutral-badge: 240 3% 24%;
-  --surface-warning: 35 34% 15%;
-  --surface-success: 135 28% 14%;
-  --surface-info: 211 31% 16%;
-  --surface-error: 4 31% 16%;
-  --foreground: 240 5% 96%;
-  --card: 240 3% 11%;
-  --card-foreground: 240 5% 96%;
-  --popover: 240 3% 12%;
-  --popover-foreground: 240 5% 96%;
-  --primary: 211 100% 55%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 240 3% 17%;
-  --secondary-foreground: 240 5% 95%;
-  --muted: 240 3% 17%;
-  --muted-foreground: 240 4% 68%;
-  --accent: 211 42% 20%;
-  --accent-foreground: 211 100% 70%;
-  --destructive: 4 100% 64%;
-  --destructive-foreground: 0 0% 100%;
-  --success: 135 63% 49%;
-  --success-foreground: 135 40% 8%;
-  --warning: 35 100% 58%;
-  --warning-foreground: 35 40% 8%;
-  --info: 211 100% 65%;
-  --info-foreground: 211 40% 8%;
-  --border: 240 3% 24%;
-  --input: 240 3% 20%;
-  --ring: 211 100% 58%;
-  --sidebar-background: 240 3% 8%;
-  --sidebar-foreground: 240 4% 78%;
-  --sidebar-primary: 211 100% 55%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 211 32% 18%;
-  --sidebar-accent-foreground: 211 100% 72%;
-  --sidebar-border: 240 3% 21%;
-  --sidebar-ring: 211 100% 58%;
-  --shadow-color: 240 100% 2%;
-}
+   while 600-950 text colors become brighter foreground tones.
+   NOTE: .dark tokens are defined once near the top of this file — do not
+   duplicate the block here, or light/dark will drift apart again. */
 
 .dark .glass-surface,
 .dark .glass-surface-strong {

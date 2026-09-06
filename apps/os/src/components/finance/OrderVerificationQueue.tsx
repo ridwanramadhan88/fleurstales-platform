@@ -8,6 +8,8 @@ import { FinanceOrderFilterBar } from './FinanceOrderFilterBar'
 import { OrderVerificationQueueRow } from './OrderVerificationQueueRow'
 import type { OrderVerificationQueueViewModel } from './OrderVerificationQueueController'
 import { InfoDisclosure } from '../ui/info-disclosure'
+import { InfoHint } from '../ui/info-hint'
+import { FinanceModuleHeader } from './FinanceModuleHeader'
 
 export interface OrderVerificationQueueProps {
   /** Orders already scoped to the active branch. */
@@ -48,14 +50,14 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
 }) => (
   <section aria-label="Order reconciliation" className="space-y-6">
     {showHeading && (
-      <header className="space-y-1">
-        <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
-          Order Reconciliation
-        </h1>
-        <p className="mt-1 text-sm leading-5 text-muted-foreground">
-          Paid orders appear here automatically as soon as Admin confirms payment.
-        </p>
-      </header>
+      <FinanceModuleHeader
+        title="Order Reconciliation"
+        hint={
+          <InfoHint label="About order reconciliation">
+            Paid orders appear here automatically as soon as Admin confirms payment.
+          </InfoHint>
+        }
+      />
     )}
 
     {ordersWithRequests.length > 0 && (
@@ -93,7 +95,7 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
       />
 
       {queueRows.length === 0 ? (
-        <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-card px-6 py-8 text-center shadow-ios-sm">
+        <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-card px-6 py-8 text-center shadow-ios-sm ring-1 ring-border/60">
           <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <ClipboardCheck className="size-5" />
           </span>

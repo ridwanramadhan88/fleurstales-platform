@@ -91,7 +91,7 @@ const SidebarNavButton: FC<{
   return (
     <button
       type="button"
-      className={`group flex h-11 w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium transition-colors ${
+      className={`group flex h-10 w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
         active
           ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-none'
           : disabled
@@ -158,7 +158,7 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
           type="button"
           onClick={onToggleBranchMenu}
           disabled={!canSwitchBranch}
-          className={`flex h-11 w-full items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-transparent px-3 text-left transition ${
+          className={`flex h-11 w-full items-center gap-2 whitespace-nowrap rounded-full border border-border/60 bg-transparent px-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
             canSwitchBranch ? 'hover:bg-muted/60' : 'cursor-not-allowed opacity-70'
           }`}
           aria-haspopup="listbox"
@@ -180,7 +180,7 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
         </button>
 
         {canSwitchBranch && branchMenuOpen && (
-          <div className="animate-pop-in absolute left-0 top-full z-30 mt-1.5 w-full rounded-xl border border-border/60 bg-surface-popover p-1 text-xs text-foreground shadow-lg">
+          <div className="animate-pop-in absolute left-0 top-full z-30 mt-1.5 w-full rounded-xl border border-border/60 bg-surface-popover p-1 text-xs text-foreground shadow-ios">
             <p className="px-2.5 py-1 text-2xs font-semibold text-muted-foreground">
               Branch
             </p>

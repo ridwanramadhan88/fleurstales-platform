@@ -69,19 +69,19 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
     <div
       ref={viewportRef}
       className={cn(
-        "relative touch-pan-y rounded-xl border border-border bg-card shadow-ios-sm",
+        "relative touch-pan-y rounded-2xl bg-surface-card ring-1 ring-border/60",
         className,
       )}
       aria-label={ariaLabel}
     >
-      <span className="pointer-events-none absolute right-4 top-2.5 z-10 text-xs text-muted-foreground">
+      <span className="sr-only">
         Step {currentIndex + 1} of {options.length}
       </span>
       <div className="overflow-visible [clip-path:inset(-0.75rem_0_-2rem_0)]">
         <div
           ref={trackRef}
           data-progress-track
-          className="grid min-w-[30rem] items-start px-5 py-3.5 will-change-transform sm:min-w-0 sm:px-6"
+          className="grid w-full min-w-0 items-start px-2 py-3.5 will-change-transform sm:px-4"
           style={{
             gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
             transform: `translate3d(-${trackOffset}px, 0, 0)`,
@@ -99,16 +99,16 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
           const justPopped = poppedIndex === index;
           const nodeClass =
             state === "current"
-              ? `relative z-10 flex size-9 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.currentDot}${style.pulse ? " animate-pulse" : ""}`
+              ? `relative z-10 flex size-11 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.currentDot}${style.pulse ? " animate-pulse" : ""}`
               : state === "done"
-                ? `relative z-10 flex size-9 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.doneDot}${justPopped ? " animate-dot-pop" : ""}`
-                : "relative z-10 flex size-9 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-all duration-300 ease-out";
+                ? `relative z-10 flex size-11 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.doneDot}${justPopped ? " animate-dot-pop" : ""}`
+                : "relative z-10 flex size-11 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-all duration-300 ease-out";
           const labelClass =
             state === "current"
-              ? `mt-2 w-full px-1 text-center text-xs font-semibold leading-4 ${style.currentText}`
+              ? `mt-2 w-full px-1 text-center text-xs font-semibold leading-4 sm:text-sm ${style.currentText}`
               : state === "done"
-                ? "mt-2 w-full px-1 text-center text-xs font-medium leading-4 text-foreground"
-                : "mt-2 w-full px-1 text-center text-xs font-medium leading-4 text-muted-foreground";
+                ? "mt-2 w-full px-1 text-center text-xs font-medium leading-4 text-foreground sm:text-sm"
+                : "mt-2 w-full px-1 text-center text-xs font-medium leading-4 text-muted-foreground sm:text-sm";
 
           return (
             <div
@@ -121,7 +121,7 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
               {index < options.length - 1 && (
                 <span
                   aria-hidden="true"
-                  className="absolute left-[calc(50%+22px)] top-[17px] h-0.5 w-[calc(100%-44px)] overflow-hidden rounded-full bg-border"
+                  className="absolute left-[calc(50%+27px)] top-[21px] h-0.5 w-[calc(100%-54px)] overflow-hidden rounded-full bg-border"
                 >
                   <span
                     className={`block h-full w-full origin-left rounded-full bg-success/70 transition-transform duration-500 ease-out ${index < currentIndex ? "scale-x-100" : "scale-x-0"}`}
@@ -129,7 +129,7 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
                 </span>
               )}
               <span className={nodeClass}>
-                <Icon className="size-4" />
+                <Icon className="size-5" />
               </span>
               <span className={labelClass}>{option.label}</span>
             </div>

@@ -67,7 +67,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
           id={id}
           type="button"
           className={cn(
-            'flex w-full items-center justify-between border border-border bg-background text-left text-sm text-foreground shadow-none outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40 h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap',
+            'flex h-11 w-full items-center justify-between gap-1.5 whitespace-nowrap rounded-full border border-border/70 bg-card px-4 text-left text-sm text-foreground shadow-none outline-none transition hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25',
             !value && 'text-muted-foreground',
             className,
           )}
@@ -171,7 +171,7 @@ export const MonthPickerField: React.FC<MonthPickerFieldProps> = ({
           type="button"
           aria-label={`Select month: ${value ? formatDisplayMonth(value) : placeholder}`}
           className={cn(
-            'flex w-full items-center justify-between border border-border bg-background text-left text-sm text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40 h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap',
+            'flex h-11 w-full items-center justify-between gap-1.5 whitespace-nowrap rounded-full border border-border/70 bg-card px-4 text-left text-sm text-foreground outline-none transition hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25',
             !value && 'text-muted-foreground',
             className,
           )}
@@ -203,7 +203,7 @@ export const MonthPickerField: React.FC<MonthPickerFieldProps> = ({
           })}
         </div>
         <div className="mt-4 border-t border-border pt-3 text-right">
-          <button type="button" onClick={chooseCurrentMonth} className="text-sm font-semibold text-primary hover:bg-accent rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">This month</button>
+          <button type="button" onClick={chooseCurrentMonth} className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-primary transition hover:bg-accent">This month</button>
         </div>
       </PopoverContent>
     </Popover>
@@ -272,7 +272,7 @@ const TimeScrollWheel: React.FC<{
   return (
     <div className="relative">
       <div
-        className="pointer-events-none absolute inset-x-0 top-1/2 z-0 -translate-y-1/2 rounded-sm bg-surface-panel ring-1 ring-border/70"
+        className="pointer-events-none absolute inset-x-0 top-1/2 z-0 -translate-y-1/2 rounded-xl bg-surface-panel ring-1 ring-border/70"
         style={{ height: WHEEL_ROW_HEIGHT }}
       />
       <div
@@ -348,7 +348,7 @@ export const TimeSelectField: React.FC<TimeSelectFieldProps> = ({
           type="button"
           disabled={disabled || slots.length === 0}
           className={cn(
-            'flex w-full items-center justify-between border border-border bg-background text-left text-sm text-foreground shadow-none outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40 h-9 rounded-full px-3.5 gap-1.5 whitespace-nowrap',
+            'flex h-11 w-full items-center justify-between gap-1.5 whitespace-nowrap rounded-full border border-border/70 bg-card px-4 text-left text-sm text-foreground shadow-none outline-none transition hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25',
             !value && 'text-muted-foreground',
             (disabled || slots.length === 0) && 'cursor-not-allowed opacity-50',
             className,
@@ -359,7 +359,7 @@ export const TimeSelectField: React.FC<TimeSelectFieldProps> = ({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[9rem] p-2"
+        className="w-52 p-3"
         align="start"
         onCloseAutoFocus={(event) => {
           event.preventDefault()
@@ -368,8 +368,8 @@ export const TimeSelectField: React.FC<TimeSelectFieldProps> = ({
       >
         <TimeScrollWheel highlighted={draftValue || selected} onHighlight={setDraftValue} onCommit={handleCommit} slots={slots} />
         <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
-          <button type="button" className="text-sm text-muted-foreground rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap" onClick={() => setOpen(false)}>Cancel</button>
-          <button type="button" className="bg-primary text-sm font-semibold text-primary-foreground rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap" onClick={() => handleCommit(draftValue || selected)}>Use {draftValue || selected}</button>
+          <button type="button" className="inline-flex h-9 shrink-0 items-center rounded-full px-3 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground" onClick={() => setOpen(false)}>Cancel</button>
+          <button type="button" className="inline-flex h-9 min-w-0 flex-1 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90" onClick={() => handleCommit(draftValue || selected)}>Use {draftValue || selected}</button>
         </div>
       </PopoverContent>
     </Popover>

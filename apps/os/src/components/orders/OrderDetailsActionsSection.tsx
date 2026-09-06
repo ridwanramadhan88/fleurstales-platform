@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { ArrowRight, Check, Copy, X } from 'lucide-react'
 import { OrderPostActionModal } from './OrderPostActionModal'
 import { OrderFinishPhotoDialog } from './OrderFinishPhotoDialog'
-import { getQuickActionLabel, getQuickActionButtonClassName } from './orderTableLabels'
+import { getQuickActionLabel, getQuickActionButtonClassName } from './orderStatusBadgeStyles'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { OrderPaymentGateDialog } from './OrderPaymentGateDialog'
 import { AppDialog } from '../ui/app-dialog'
@@ -62,7 +62,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
 
   return (
     <>
-      <section className="safe-area-bottom z-20 isolate -mx-5 -mb-4 flex shrink-0 items-center justify-between gap-2 border-t border-border/45 bg-surface-footer px-5 pt-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:rounded-b-3xl sm:px-5">
+      <section className="safe-area-bottom z-20 isolate -mx-5 -mb-4 flex shrink-0 items-center justify-between gap-2 border-t border-border/45 bg-surface-footer px-5 pt-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:rounded-b-2xl sm:px-5">
         <div className="flex items-center gap-2">
           {isEditing ? (
             <button type="button" onClick={onCancelEdit} className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted sm:text-xs">Cancel edit</button>
@@ -88,7 +88,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
               <button type="button" onClick={onOpenStorefrontCancel} disabled={decisionBusy} className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full border border-destructive/25 px-[18px] text-sm font-medium text-destructive transition hover:bg-destructive/8 disabled:opacity-50 sm:text-xs">
                 <X className="size-3.5" /> Reject
               </button>
-              <button type="button" onClick={() => { void onOpenStorefrontConfirmPreview() }} disabled={decisionBusy} className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#16834b] px-[18px] text-sm font-medium text-white shadow-ios-sm transition hover:brightness-95 disabled:opacity-60 sm:text-xs">
+              <button type="button" onClick={() => { void onOpenStorefrontConfirmPreview() }} disabled={decisionBusy} className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-success px-[18px] text-sm font-medium text-success-foreground shadow-ios-sm transition hover:brightness-95 disabled:opacity-60 sm:text-xs">
                 <Check className="size-3.5" /> {storefrontPreviewLoading ? 'Preparing…' : 'Confirm & WhatsApp'}
               </button>
             </>

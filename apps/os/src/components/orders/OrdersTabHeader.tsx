@@ -42,20 +42,17 @@ const SummaryCard: FC<{
     warning: 'text-warning',
     info: 'text-info',
   }[tone]
-  const surfaceClass = {
-    neutral: 'bg-card ring-border',
-    success: 'bg-surface-success ring-success/25',
-    warning: 'bg-surface-warning ring-warning/25',
-    info: 'bg-surface-info ring-info/25',
-  }[tone]
+  // One white card material everywhere — semantics live in the icon/value
+  // accent, never in the card fill (matches OverviewStatCard).
+  const surfaceClass = 'bg-surface-card ring-border/60'
 
   return (
-    <div className={`min-w-0 rounded-xl p-3 shadow-ios-sm ring-1 sm:p-4 ${surfaceClass}`}>
+    <div className={`min-w-0 rounded-2xl p-4 shadow-ios-sm ring-1 sm:p-4 ${surfaceClass}`}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="text-2xs font-semibold text-muted-foreground">{label}</p>
         <Icon className={`size-4 shrink-0 ${accentClass}`} />
       </div>
-      <p className={`mt-1 text-xl font-semibold ${accentClass}`}>{value}</p>
+      <p className={`mt-1 text-xl font-semibold tabular-nums ${accentClass}`}>{value}</p>
     </div>
   )
 }
@@ -100,7 +97,7 @@ export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
       )}
     </header>
 
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <SummaryCard label="Active orders" value={orderCounts.active} tone="info" icon={Workflow} />
       <SummaryCard label="Completed" value={orderCounts.completed} tone="success" icon={CheckCircle2} />
       <SummaryCard label="Drafts" value={draftCount} tone="neutral" icon={FilePenLine} />

@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { CreditCard, Package2, User } from 'lucide-react'
+import { Package2 } from 'lucide-react'
 import type { OrderStatus, PaymentMethod } from '../../types/orders'
 import {
   Select,
@@ -63,14 +63,14 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
     <>
       {isEditing ? (
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/10 bg-card px-4 py-3.5 shadow-ios-sm">
-          <div className="grid w-full gap-2 sm:grid-cols-2">
+          <div className="grid w-full gap-2 sm:grid-cols-[repeat(2,minmax(0,1fr))]">
             <label className="space-y-1 text-2xs font-medium text-muted-foreground/80">
               Status
               <Select
                 value={draft.status}
                 onValueChange={(value) => onDraftChange('status', value as OrderStatus)}
               >
-                <SelectTrigger className="h-10 rounded-xl bg-card px-3 text-xs ring-1 ring-border/70">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -95,7 +95,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                   )
                 }
               >
-                <SelectTrigger className="h-10 rounded-xl bg-card px-3 text-xs ring-1 ring-border/70">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -111,7 +111,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
       ) : null}
 
       {!isEditing && Boolean(order.paymentHistory?.length) && (
-        <section className="space-y-2 border-b border-border/70 bg-transparent pb-4 pt-1 sm:rounded-xl sm:bg-card sm:px-3 sm:py-3 sm:ring-1 sm:ring-border/70">
+        <section className="space-y-2 px-0 py-1 sm:px-1">
           <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground/80">
             Payment history
           </p>
@@ -154,20 +154,15 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
         </section>
       )}
 
-      <section className="space-y-5 rounded-2xl border border-border/40 bg-card p-4 shadow-ios-sm sm:p-5">
+      <section className="space-y-5 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <Package2 className="size-3.5" />
-            </span>
-            <p className="text-sm font-semibold leading-5 text-foreground">Order summary</p>
-          </div>
+          <p className="text-sm font-semibold leading-5 text-foreground">Order summary</p>
           {!isEditing && (
             <p className="text-sm font-semibold leading-5 text-foreground">Rp {formatter.format(order.totalIdr)}</p>
           )}
         </div>
 
-        <div className="divide-y divide-border/45 rounded-xl border border-border/40">
+        <div className="divide-y divide-border/60">
           {items.map((item, index) => {
             const lineTotal = item.unitPriceIdr * item.quantity
             const itemDisplay = itemDisplays[item.id] ?? (index === 0 ? productDisplay : undefined)
@@ -179,7 +174,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
               isEditing && items.length === 1 && !item.productId && index === 0
 
             return (
-              <div key={item.id} className="flex items-start justify-between gap-4 px-4 py-4">
+              <div key={item.id} className="flex items-start justify-between gap-4 py-4">
                 <div className="flex min-w-0 flex-1 items-start gap-3.5">
                   <div className="size-16 shrink-0 overflow-hidden rounded-2xl bg-surface-panel ring-1 ring-border/30">
                     {itemDisplay?.imageUrl ? (
@@ -199,7 +194,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                       <input
                         value={draft.productName}
                         onChange={(event) => onDraftChange('productName', event.target.value)}
-                        className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm"
+                        className="h-11 w-full rounded-xl border border-border/70 bg-surface-panel px-3.5 text-sm"
                         placeholder="Product / item name"
                       />
                     ) : (
@@ -251,7 +246,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                     onChange={(event) =>
                       onDraftChange('totalIdrText', formatIdrText(event.target.value))
                     }
-                    className="h-9 w-28 rounded-lg border border-border bg-background px-3 text-right text-sm"
+                    className="h-11 w-28 rounded-xl border border-border/70 bg-surface-panel px-3.5 text-right text-sm"
                   />
                 </div>
               ) : (
@@ -261,29 +256,19 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
           </div>
         ) : null}
 
-        <div className="grid gap-3 border-t border-border/60 pt-3 sm:grid-cols-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <CreditCard className="size-3.5" />
-            </span>
-            <div>
-              <p className="text-2xs font-medium text-muted-foreground/80">Payment method</p>
-              <p className="text-sm font-medium text-foreground">
-                {order.paymentMethod ? PAYMENT_METHOD_LABELS[order.paymentMethod] : 'Not set'}
-              </p>
-            </div>
+        <div className="grid gap-3 border-t border-border/60 pt-3 sm:grid-cols-[repeat(2,minmax(0,1fr))] sm:gap-x-6">
+          <div className="min-w-0">
+            <p className="text-2xs font-medium text-muted-foreground/80">Payment method</p>
+            <p className="mt-0.5 text-sm font-medium text-foreground">
+              {order.paymentMethod ? PAYMENT_METHOD_LABELS[order.paymentMethod] : 'Not set'}
+            </p>
           </div>
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-panel px-3 py-2.5">
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground">
-                <User className="size-3.5" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-2xs font-medium text-muted-foreground/80">Assigned florist</p>
-                <p className="truncate text-sm font-semibold text-foreground">
-                  {order.florist ?? 'Assigned when Processing starts'}
-                </p>
-              </div>
+          <div className="flex min-w-0 items-center justify-between gap-3 sm:border-l sm:border-border/50 sm:pl-6">
+            <div className="min-w-0 text-left">
+              <p className="text-2xs font-medium text-muted-foreground/80">Assigned florist</p>
+              <p className={`mt-0.5 truncate text-sm font-medium ${order.florist ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {order.florist ?? 'No florist assigned yet'}
+              </p>
             </div>
             {!isEditing && order.floristAssignedEmployeeId && ['admin', 'owner'].includes(currentUserRole) && !['delivered', 'picked_up', 'cancelled', 'failed'].includes(order.status) && (
               <button type="button" onClick={onOpenFloristReassignment} className="h-9 shrink-0 rounded-full bg-foreground px-3.5 text-xs font-semibold text-background shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">

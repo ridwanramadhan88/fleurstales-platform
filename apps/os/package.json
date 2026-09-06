@@ -79,5 +79,8 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.3",
     "vitest": "4.1.10"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
   }
 }

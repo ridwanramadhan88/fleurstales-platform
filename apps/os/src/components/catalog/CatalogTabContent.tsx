@@ -62,24 +62,24 @@ const OverviewCard: FC<{
       : tone === 'info'
         ? 'bg-info/5 ring-2 ring-info/45'
         : 'bg-accent ring-2 ring-primary/35'
-    : 'bg-card ring-1 ring-border/70'
-  const className = `min-w-0 rounded-xl p-3 text-left transition sm:p-4 ${selectedClass} ${
+    : 'bg-surface-card shadow-ios-sm ring-1 ring-border/60'
+  const className = `min-w-0 rounded-2xl p-4 text-left transition ${selectedClass} ${
     onClick ? 'tap-scale hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25' : ''
   }`
 
   if (onClick) {
     return (
       <button type="button" onClick={onClick} aria-pressed={selected} className={className}>
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <p className={`mt-1 text-xl font-semibold ${accentClass}`}>{value}</p>
+        <p className="text-2xs font-semibold text-muted-foreground">{label}</p>
+        <p className={`mt-1 text-xl font-semibold tabular-nums ${accentClass}`}>{value}</p>
       </button>
     )
   }
 
   return (
     <div className={className}>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-xl font-semibold ${accentClass}`}>{value}</p>
+      <p className="text-2xs font-semibold text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-xl font-semibold tabular-nums ${accentClass}`}>{value}</p>
     </div>
   )
 }
@@ -150,7 +150,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
   const csvInputRef = useRef<HTMLInputElement | null>(null)
 
   return (
-    <section className="space-y-4 pb-6">
+    <section className="space-y-6">
       <section
         aria-label="Catalog overview"
         className="space-y-3"
@@ -286,7 +286,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
 
       <section aria-label="Catalog products" className="space-y-3">
         {filteredProducts.length === 0 ? (
-          <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-xl bg-card px-6 py-8 text-center ring-1 ring-border">
+          <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-card px-6 py-8 text-center shadow-ios-sm ring-1 ring-border/60">
             <p className="text-sm font-semibold leading-5 text-foreground">No products found</p>
             <p className="text-xs text-muted-foreground">
               No products match these filters. Try a different search or occasion.

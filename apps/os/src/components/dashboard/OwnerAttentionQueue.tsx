@@ -39,7 +39,7 @@ export const OwnerAttentionQueue: FC<OwnerAttentionQueueProps> = ({ onNavigate }
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning/10 text-warning">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-warning text-warning">
             <AlertTriangle className="size-4" aria-hidden="true" />
           </span>
           <div>
@@ -53,7 +53,7 @@ export const OwnerAttentionQueue: FC<OwnerAttentionQueueProps> = ({ onNavigate }
         </div>
       </div>
 
-      <div className="mt-4 divide-y divide-border/70 rounded-lg border border-border/70">
+      <div className="mt-4 divide-y divide-border/70 overflow-hidden rounded-xl border border-border/60">
         {pendingOrderRequests.length > 0 && (
           <button
             type="button"

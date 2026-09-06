@@ -1,16 +1,14 @@
 import type { FC } from 'react'
-import { ArrowRight, MapPin, Truck } from 'lucide-react'
+import { MapPin, Truck } from 'lucide-react'
 import { StatusChip } from '../ui/chip'
 import {
   ORDER_CARD_BG,
   PAYMENT_DOT_TONE,
   PAYMENT_STATUS_LABELS,
-  QUICK_ACTION_BUTTON_STYLE,
   STATUS_GROUP_FROM_STATUS,
   STATUS_ICONS,
   STATUS_LABELS,
   URGENCY_CHIP,
-  getQuickActionLabel,
 } from './orderTableLabels'
 import {
   getDisplayScheduleLabel,
@@ -19,7 +17,7 @@ import {
   isPaymentOverdue,
 } from './orderTableFormatters'
 import type { OrdersTableViewModel } from './OrdersTableViewController'
-import { shouldGateOrderAdvanceForPayment, shouldHighlightReadyPayment } from '../../domain/orderPaymentGateDomain'
+import { shouldHighlightReadyPayment } from '../../domain/orderPaymentGateDomain'
 
 type RowRefSetter = (key: string) => (node: HTMLElement | null) => void
 
@@ -52,9 +50,7 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
     formatter,
     emptyStateMessage,
     getProductName,
-    getNextStatusForOrder,
     onOpenDetails,
-    onQuickAdvance,
   } = viewModel
 
   return (
@@ -67,10 +63,13 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
             <div className="min-w-0 flex-1">
               <ColumnHeader label="ORDER" />
             </div>
-            <div className="w-[120px] shrink-0">
+            <div className="w-[150px] shrink-0">
+              <ColumnHeader label="TIME" />
+            </div>
+            <div className="w-[110px] shrink-0">
               <ColumnHeader label="FULFILLMENT" />
             </div>
-            <div className="w-[150px] shrink-0">
+            <div className="w-[120px] shrink-0">
               <ColumnHeader label="STATUS" />
             </div>
             <div className="w-[90px] shrink-0">
@@ -79,9 +78,6 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
             <div className="w-[130px] shrink-0">
               <ColumnHeader label="TOTAL" />
             </div>
-            <span className="w-[130px] shrink-0 pl-2 text-xs font-semibold tracking-wide text-muted-foreground">
-              QUICK ACTION
-            </span>
           </div>
 
           {/* Rows */}
@@ -91,9 +87,7 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
             const isFutureCustomOrder =
               activeScope === 'custom' && isFutureOrder(order)
             const isNewOrder = STATUS_GROUP_FROM_STATUS[order.status] === 'new'
-            const rowNextStatus = getNextStatusForOrder(order)
             const highlightPayment = shouldHighlightReadyPayment(order)
-            const paymentBlocked = Boolean(rowNextStatus && shouldGateOrderAdvanceForPayment(order, rowNextStatus))
             return (
               <div
                 key={order.orderNumber}
@@ -136,35 +130,37 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
                   </div>
                 </div>
 
-                {/* Fulfillment */}
-                <div className="flex w-[120px] shrink-0 items-center gap-1.5 text-muted-foreground">
-                  {order.fulfillment === 'delivery' ? (
-                    <Truck className="size-3.5 shrink-0" />
-                  ) : (
-                    <MapPin className="size-3.5 shrink-0" />
-                  )}
-                  <span>
-                    {order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}
-                  </span>
-                </div>
-
-                {/* Status: icon + plain text, no color — color is reserved
-                    for the time chip below, which always carries a color
-                    (red/yellow/blue) so staff can scan urgency at a glance. */}
-                <div className="flex w-[150px] shrink-0 flex-col items-start gap-1">
-                  <span className="inline-flex items-center gap-1.5 text-foreground/90">
-                    <StatusIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="text-2xs font-medium">
-                      {STATUS_LABELS[order.status]}
-                    </span>
-                  </span>
+                {/* Time: expected pickup/delivery moment on its own column
+                    so every column holds one datum and rows align. */}
+                <div className="flex w-[150px] shrink-0 items-center">
                   {urgency === 'late' || urgency === 'dueSoon' || isFutureCustomOrder ? (
                     <StatusChip tone={isFutureCustomOrder ? 'info' : URGENCY_CHIP[urgency].tone} className="px-2 py-0.5 text-xs">
                       {getDisplayScheduleLabel(order) ?? URGENCY_CHIP[urgency].label}
                     </StatusChip>
                   ) : (
-                    <span className="text-xs text-muted-foreground">{getDisplayScheduleLabel(order) ?? URGENCY_CHIP[urgency].label}</span>
+                    <span className="truncate text-xs text-muted-foreground">{getDisplayScheduleLabel(order) ?? URGENCY_CHIP[urgency].label}</span>
                   )}
+                </div>
+
+                {/* Fulfillment */}
+                <div className="flex w-[110px] shrink-0 items-center gap-1.5 text-muted-foreground">
+                  {order.fulfillment === 'delivery' ? (
+                    <Truck className="size-3.5 shrink-0" />
+                  ) : (
+                    <MapPin className="size-3.5 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}
+                  </span>
+                </div>
+
+                {/* Status: icon + plain text, no color — color is reserved
+                    for the time chip, which always carries urgency color. */}
+                <div className="flex w-[120px] shrink-0 items-center gap-1.5 text-foreground/90">
+                  <StatusIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="truncate text-2xs font-medium">
+                    {STATUS_LABELS[order.status]}
+                  </span>
                 </div>
 
                 {/* Florist */}
@@ -202,30 +198,6 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
                       </span>
                     )}
                   </span>
-                </div>
-
-                {/* Quick action: one-tap status advance (bug 5, with the
-                    same undo-able toast as the details panel's Next status
-                    button, bug 4). Its own column so it doesn't compete with
-                    Total for space. */}
-                <div className="flex w-[130px] shrink-0 items-center justify-end pr-1">
-                  {rowNextStatus ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onQuickAdvance(order)
-                      }}
-                      title={paymentBlocked ? 'Payment confirmation required.' : `Advance to ${getQuickActionLabel(rowNextStatus)}`}
-                      aria-label={`Advance order to ${getQuickActionLabel(rowNextStatus)}`}
-                      className={`inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition hover:brightness-95 ${QUICK_ACTION_BUTTON_STYLE[rowNextStatus].className}`}
-                    >
-                      {getQuickActionLabel(rowNextStatus)}
-                      <ArrowRight className="size-3.5 shrink-0" />
-                    </button>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
                 </div>
               </div>
             )

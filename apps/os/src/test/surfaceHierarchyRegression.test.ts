@@ -25,7 +25,7 @@ describe('surface hierarchy regressions', () => {
   it('uses semantic surfaces in shared cards, tabs, chips and overlays', () => {
     expect(read('src/components/ui/card.tsx')).toContain('bg-surface-card')
     expect(read('src/components/ui/tabs.tsx')).toContain('bg-surface-track')
-    expect(read('src/components/ui/tabs.tsx')).toContain('bg-surface-selected')
+    expect(read('src/components/ui/tabs.tsx')).toContain('bg-primary')
     expect(read('src/components/ui/chip.tsx')).toContain('bg-surface-neutral')
     expect(read('src/components/ui/popover.tsx')).toContain('bg-surface-popover')
     expect(read('src/components/ui/select.tsx')).toContain('bg-surface-popover')
@@ -44,15 +44,15 @@ describe('surface hierarchy regressions', () => {
     expect(select).not.toContain('bg-popover/95')
     expect(dropdown).not.toContain('bg-popover/95')
     expect(bottomTabs).toContain('bg-surface-footer')
-    expect(bottomTabs).not.toContain('backdrop-blur-xl')
+    expect(bottomTabs).toContain('backdrop-blur-xl')
   })
 
   it('does not use faint charcoal tints for active shared chips or tabs', () => {
     const chip = read('src/components/ui/chip.tsx')
     const tabs = read('src/components/ui/tabs.tsx')
-    expect(chip).toContain('bg-surface-selected')
+    expect(chip).toContain('bg-primary')
     expect(chip).not.toContain("? 'border-primary/20 bg-primary/10")
-    expect(tabs).toContain('bg-surface-selected')
-    expect(tabs).not.toContain('data-[state=active]:bg-card')
+    expect(tabs).toContain('bg-primary')
+    expect(tabs).not.toContain('data-[state=active]:bg-surface-selected')
   })
 })

@@ -186,10 +186,6 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
 
   return (
     <section className="space-y-5" aria-label="Transaction ledger">
-      <header>
-        <h2 className="text-lg font-semibold">Transactions</h2>
-        <p className="text-sm text-muted-foreground">Money In/Out history by account. Click linked order transactions to inspect payment proof and supporting order evidence.</p>
-      </header>
 
       <div className="no-scrollbar flex gap-1 overflow-x-auto border-b border-border pt-1">
         {([['all','All'],['orders','Orders'],['payroll','Payroll'],['refunds','Refunds'],['manual','Manual'],['cashflow','Balance & Transfers']] as const).map(([value,label]) => (
@@ -204,10 +200,10 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
         </label>
 
         <div className="flex flex-wrap gap-2">
-          <div className="inline-flex rounded-full bg-surface-track p-1">
+          <div className="inline-flex rounded-full bg-surface-track p-1 ring-1 ring-border/60">
             {(['all','income','expense'] as const).map((value) => <button key={value} type="button" onClick={() => { setDirection(value); setCategory('all') }} className={`h-9 rounded-full px-3.5 text-sm ${direction === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{value === 'all' ? 'All' : value === 'income' ? 'In' : 'Out'}</button>)}
           </div>
-          <div className="inline-flex rounded-full bg-surface-track p-1">
+          <div className="inline-flex rounded-full bg-surface-track p-1 ring-1 ring-border/60">
             {([['all','All'],['today','Today'],['30d','30D']] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setPeriod(value)} className={`h-9 rounded-full px-3.5 text-sm ${period === value ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>{label}</button>)}
           </div>
         </div>

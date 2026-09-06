@@ -163,6 +163,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
                   <Calendar
                     initialFocus
                     mode="range"
+                    className="p-0"
                     defaultMonth={draftRange?.from}
                     selected={draftRange}
                     onSelect={(range) => {

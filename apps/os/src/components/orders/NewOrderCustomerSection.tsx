@@ -34,13 +34,13 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
 
   return (
     <>
-              {/* Customer — secondary identity card, quiet/recessed so
-                  Order Items reads as the hero below it. */}
+              {/* Customer — flat on the card so Order Items below it stays
+                  the visual hero; fields sit directly on the surface. */}
               <section
                 onFocus={() => onSectionFocus('customer')}
                 className={sectionClass(
                   activeGuideSection === 'customer',
-                  'border-b border-border/70 bg-transparent px-0 pb-4 pt-1 sm:rounded-lg sm:border-0 sm:bg-surface-panel sm:px-3 sm:py-3',
+                  'bg-transparent px-0 py-1 sm:px-1',
                 )}
               >
                 <h3 className="text-sm font-semibold leading-5 text-foreground">
@@ -100,7 +100,7 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                   {values.customerWhatsappNumber.trim().length > 0 && (
                     <div className="px-0.5">
                       {matchedCustomer ? (
-                        <div className="space-y-1 rounded-md border border-border/70 bg-card px-3 py-2">
+                        <div className="space-y-1 rounded-xl border border-border/70 bg-card px-3 py-2">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-xs font-semibold text-foreground">
                               {matchedCustomer.name}
@@ -213,7 +213,7 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                             onChange={(value) =>
                               onFieldValueChange('customerBirthday', value)
                             }
-                            className={`h-9 text-xs ${fieldClass(activeGuideField === 'customerBirthday')}`}
+                            className={`h-11 text-sm ${fieldClass(activeGuideField === 'customerBirthday')}`}
                           />
                         </label>
                       </div>
@@ -264,7 +264,7 @@ const SuggestionOption: FC<{
   label: string
   onChange: () => void
 }> = ({ checked, label, onChange }) => (
-  <label className="flex cursor-pointer items-start gap-2 rounded-md bg-card px-2.5 py-2 ring-1 ring-border/80">
+  <label className="flex cursor-pointer items-start gap-2 rounded-xl bg-card px-2.5 py-2 ring-1 ring-border/80">
     <input
       type="checkbox"
       checked={checked}

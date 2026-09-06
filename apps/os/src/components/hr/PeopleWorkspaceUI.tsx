@@ -150,7 +150,7 @@ export const PeopleListCard = ({
   className,
   ...props
 }: HTMLAttributes<HTMLElement> & { density?: 'dense' | 'standard' }) => (
-  <article className={surfaceCardClass(density, cn('shadow-none', className))} {...props} />
+  <article className={surfaceCardClass(density, className, { shadow: false })} {...props} />
 )
 
 export const CreateStaffSheet = ({

@@ -6,6 +6,7 @@ import { useUserStore } from '../../store/userStore'
 import { createFinanceCashFlowEntry, type CashFlowEntryKind } from '../../data/financeCashFlow'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
+import { FinanceModuleHeader } from './FinanceModuleHeader'
 
 const formatIdr = (value: number): string => `Rp ${Math.round(value).toLocaleString('id-ID')}`
 const CASH_ACCOUNT_ID = 'cash:main'
@@ -144,17 +145,11 @@ export const FinanceCashFlowOverview: FC = () => {
 
   return (
     <section className="space-y-5" aria-label="Cash Flow">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Cash Flow</h2>
-          <p className="text-sm text-muted-foreground">Ledger-derived company balance and current-month operating cash flow.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => open('opening_balance')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"><PlusCircle className="size-4" />Opening Balance</button>
-          <button type="button" onClick={() => open('adjustment')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"><SlidersHorizontal className="size-4" />Adjust</button>
-          <button type="button" onClick={() => open('transfer')} className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"><ArrowLeftRight className="size-4" />Transfer</button>
-        </div>
-      </header>
+      <FinanceModuleHeader
+        title="Cash Flow"
+        description="Ledger-derived company balance and current-month operating cash flow."
+        actions={<><button type="button" onClick={() => open('opening_balance')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"><PlusCircle className="size-4" />Opening Balance</button><button type="button" onClick={() => open('adjustment')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"><SlidersHorizontal className="size-4" />Adjust</button><button type="button" onClick={() => open('transfer')} className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"><ArrowLeftRight className="size-4" />Transfer</button></>}
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <MetricCard label="Total Balance" value={metrics.total} />
@@ -209,7 +204,7 @@ export const FinanceCashFlowOverview: FC = () => {
           {dialogMode === 'adjustment' && (
             <fieldset className="space-y-2">
               <legend className="text-xs font-medium">Direction</legend>
-              <div className="grid grid-cols-2 gap-2 rounded-full bg-surface-track p-1">
+              <div className="grid grid-cols-2 gap-2 rounded-full bg-surface-track p-1 ring-1 ring-border/60">
                 <button type="button" onClick={() => setDirection('income')} className={`h-10 rounded-full text-sm font-semibold ${direction === 'income' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Increase +</button>
                 <button type="button" onClick={() => setDirection('expense')} className={`h-10 rounded-full text-sm font-semibold ${direction === 'expense' ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>Decrease −</button>
               </div>

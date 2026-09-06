@@ -52,7 +52,7 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
         )}
 
         {order.financeVerificationStatus === 'rejected' && (
-          <section className="mb-3 space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3.5 py-3">
+          <section className="mb-3 space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-3">
             <div>
               <p className="text-xs font-semibold text-destructive">Rejected by Finance</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -66,13 +66,13 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
                   onChange={(event) => setResubmissionNote(event.target.value)}
                   rows={2}
                   placeholder="Describe what was corrected before resubmitting"
-                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
+                  className="w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25"
                 />
                 <div className="flex justify-end">
                   <button
                     type="button"
                     onClick={onResubmitFinance}
-                    className="rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-ios-sm hover:bg-foreground/90 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-[18px] text-xs font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90"
                   >
                     Resubmit to Finance
                   </button>

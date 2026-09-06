@@ -14,6 +14,7 @@
 import type { FC, ReactNode } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { surfaceCardClass } from './card'
 
 export type OverviewCardTone = 'default' | 'success' | 'warning' | 'danger'
 
@@ -72,7 +73,7 @@ export const OverviewStatCard: FC<OverviewStatCardProps> = ({
           : undefined
       }
       className={cn(
-        'flex min-h-20 h-full flex-col justify-between rounded-xl bg-surface-card p-3.5 text-left ring-1 ring-border/60 transition',
+        surfaceCardClass('dense', 'flex min-h-20 h-full flex-col justify-between text-left transition'),
         onClick && 'tap-scale cursor-pointer hover:bg-accent/60',
         className,
       )}
@@ -89,7 +90,7 @@ export const OverviewStatCard: FC<OverviewStatCardProps> = ({
         <p
           className={
             valueClassName ??
-            'font-display text-2xl font-semibold leading-none text-foreground'
+            'font-display text-2xl font-semibold leading-none tabular-nums text-foreground'
           }
         >
           {value}
@@ -114,7 +115,7 @@ export const OverviewStatGrid: FC<{ children: ReactNode; className?: string }> =
 }) => (
   <div
     className={cn(
-      'grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3',
+      'grid grid-cols-2 gap-3 sm:grid-cols-4',
       className,
     )}
   >

@@ -22,6 +22,7 @@ import {
   getStockStatusGroup,
 } from '../../domain/stockDomain'
 import { useDismissableModal } from '../../hooks/useDismissableModal'
+import { StatusChip } from '../ui/chip'
 import { StockTransferLossSection } from './StockTransferLossSection'
 
 export interface StockItemDetailSheetProps {
@@ -81,12 +82,7 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
   const riskLevel = getStockRiskLevel(item, transfers)
   const activeTransfer = getActiveTransferForItem(item.id, transfers)
 
-  const riskBadgeClass =
-    riskLevel === 'red'
-      ? 'bg-destructive/10 text-destructive ring-destructive/15'
-      : riskLevel === 'yellow'
-        ? 'bg-warning/10 text-warning ring-warning/15'
-        : 'bg-success/10 text-success ring-success/15'
+  const riskTone = riskLevel === 'red' ? 'destructive' : riskLevel === 'yellow' ? 'warning' : 'success'
 
   const statusLabelMap: Record<typeof statusGroup, string> = {
     active: 'Active',
@@ -105,7 +101,7 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/32 backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/35 backdrop-blur-[2px] sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
@@ -128,7 +124,7 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="tap-scale inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-muted/70 hover:text-foreground rounded-full p-0 size-11 rounded-full p-0 whitespace-nowrap"
+            className="tap-scale inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
             aria-label="Close item detail"
           >
             <X className="size-4" />
@@ -138,12 +134,7 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
         <div className="space-y-3 px-5 py-4 md:grid md:grid-cols-[minmax(16rem,0.8fr)_minmax(22rem,1.2fr)] md:items-start md:gap-5 md:space-y-0 md:px-6 md:py-5">
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-2xs font-medium ${riskBadgeClass} ring-1`}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {statusLabelMap[statusGroup]}
-              </span>
+              <StatusChip tone={riskTone}>{statusLabelMap[statusGroup]}</StatusChip>
               <span className="text-2xs text-muted-foreground">
                 Freshness: {freshnessLabelMap[freshness]}
               </span>
@@ -186,7 +177,7 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleArchive(!item.isArchived)}
-                className="inline-flex h-11 items-center gap-2 rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground sm:min-h-0 sm:text-xs"
+                className="inline-flex h-9 items-center gap-2 rounded-full px-4 text-[13px] font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
               >
                 {item.isArchived ? (
                   <>
@@ -206,7 +197,7 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex cursor-pointer items-center justify-center text-sm font-medium text-muted-foreground transition hover:text-foreground sm:min-h-0 sm:text-xs rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+              className="inline-flex h-9 items-center rounded-full px-4 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
             >
               Close
             </button>
@@ -214,7 +205,7 @@ export const StockItemDetailSheet: FC<StockItemDetailSheetProps> = ({
               <button
                 type="button"
                 onClick={onEditRequest}
-                className="inline-flex cursor-pointer items-center justify-center rounded-full bg-primary text-sm font-medium text-white shadow-ios-sm transition hover:bg-primary/90 sm:min-h-0 sm:text-xs rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
               >
                 <Pencil className="size-3.5" />
                 Edit item

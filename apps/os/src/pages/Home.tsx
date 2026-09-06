@@ -57,6 +57,8 @@ import { useSettingsStore } from '../store/settingsStore'
 import { getActiveBranches } from '../domain/settings/settingsSelectors'
 import { canViewScheduling } from '../domain/hrSchedulingDomain'
 import { FinanceWorkspaceTabs } from '../components/finance/FinanceWorkspaceTabs'
+import { FinanceModuleHeader } from '../components/finance/FinanceModuleHeader'
+import { FinanceCashFlowOverview } from '../components/finance/FinanceCashFlowOverview'
 import { getDefaultFinanceWorkspaceModule, getFinanceWorkspaceModules, type FinanceWorkspaceModule } from '../domain/financeWorkspaceDomain'
 import { toast } from '../hooks/use-toast'
 import { requestAppConfirmation } from '../components/ui/app-confirm'
@@ -497,7 +499,7 @@ const HomePage: FC<HomePageProps> = ({
           notificationCount={notifications.unreadCount}
         />
 
-        <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-5 px-4 pt-5 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:gap-5 sm:px-6 sm:py-7 sm:pb-8 lg:gap-6 lg:px-8 lg:py-8">
+        <main className="mx-auto flex w-full max-w-[1160px] flex-1 flex-col gap-6 px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           {activeTab === 'dashboard' && (
             <DashboardTab
               activeBranch={activeBranch}
@@ -511,7 +513,7 @@ const HomePage: FC<HomePageProps> = ({
           )}
 
           {activeTab === 'orders' && canAccessSection(userRole, 'orders', permissions) && (
-            <section className="space-y-4">
+            <section className="space-y-6">
               <OrdersTabHeader
                 activeOrdersSubTab={activeOrdersSubTab}
                 orderCounts={orderCounts}
@@ -553,9 +555,9 @@ const HomePage: FC<HomePageProps> = ({
           )}
 
           {activeTab === 'finance' && canAccessSection(userRole, 'finance', permissions) && (
-            <section className="space-y-4 sm:space-y-5">
+            <section className="space-y-6">
               {financeModules.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border bg-card p-6 text-center shadow-ios-sm">
+                <div className="rounded-2xl bg-card p-6 text-center shadow-ios-sm ring-1 ring-border/60">
                   <p className="text-sm font-semibold">No Finance module available</p>
                   <p className="mt-1 text-xs text-muted-foreground">{userRole === 'owner' ? 'Enable at least one Finance feature in Owner Settings.' : 'Ask the Owner to enable a Finance feature for your role.'}</p>
                 </div>
@@ -581,6 +583,10 @@ const HomePage: FC<HomePageProps> = ({
 
               {financeModule === 'payroll' && hasActionPermission(userRole, 'finance.view_payroll', actionPermissions, permissions) && (
                 <>
+                  <FinanceModuleHeader
+                    title="Payroll"
+                    description="Review monthly payroll proposals"
+                  />
                   <PayrollScheduleCard title="Payroll schedule" />
                   <FinancePayrollScheduleAdjustment />
                   <FinancePayrollReview />
@@ -610,6 +616,10 @@ const HomePage: FC<HomePageProps> = ({
                     canEditManual={canEditManualTransactions}
                   />
                 </>
+              )}
+
+              {financeModule === 'balance' && hasActionPermission(userRole, 'finance.view_ledger', actionPermissions, permissions) && (
+                <FinanceCashFlowOverview />
               )}
               </>}
             </section>
