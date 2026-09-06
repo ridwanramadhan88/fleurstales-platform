@@ -9,6 +9,7 @@ import { useFinanceStore } from '../../store/financeStore'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useUserStore } from '../../store/userStore'
 import { useSettingsStore } from '../../store/settingsStore'
+import { isActionAuthorized } from '../../config/authorization'
 import {
   getFinanceCategoryLabel,
 } from '../../domain/financeTransactionCategoryDomain'
@@ -48,7 +49,7 @@ const sourceLabel = (transaction: FinanceTransaction) => {
 }
 
 const statusLabel = (transaction: FinanceTransaction) => {
-  if (transaction.status === 'pending') return 'Pending data correction'
+  if (transaction.status === 'pending') return 'Pending Finance reconciliation'
   if (transaction.status === 'rejected') return 'Rejected'
   return 'Posted'
 }
@@ -88,7 +89,7 @@ const TransactionRow: FC<{
             {transaction.status !== 'verified' && <StatusChip tone="warning">{transaction.status}</StatusChip>}
             {onOpenOrder && (
               <span className="inline-flex items-center gap-1 text-2xs font-semibold text-primary">
-                View order evidence <ExternalLink className="size-3" />
+                View order details <ExternalLink className="size-3" />
               </span>
             )}
           </div>
@@ -138,6 +139,7 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
   const orders = useOrdersStore((state) => state.orders)
   const actorName = useUserStore((state) => state.name)
   const userRole = useUserStore((state) => state.role)
+  const canVerifyOrderPayment = isActionAuthorized(userRole, 'finance.verify_order')
   const [sourceTab, setSourceTab] = useState<SourceTab>('all')
   const [search, setSearch] = useState('')
   const [direction, setDirection] = useState<'all' | FinanceTransactionType>('all')
@@ -240,7 +242,7 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
         <OrderFinanceReviewSheetContainer
           order={reviewingOrder}
           onClose={() => setReviewingOrderNumber(null)}
-          canVerify={false}
+          canVerify={canVerifyOrderPayment}
           actorName={actorName}
           userRole={userRole}
         />
