@@ -63,7 +63,7 @@ begin
   select lower(pg_get_functiondef('public.save_hr_operational_state(bigint,jsonb)'::regprocedure))
   into v_hr;
   v_revision_guard := position('if p_expected_revision is null or v_current_revision <> p_expected_revision then' in v_hr);
-  v_rate_guard := position('private.consume_mutation_rate_budget(v_scope, 10, 5, 120)' in v_hr);
+  v_rate_guard := position('private.consume_mutation_rate_budget(v_scope, 15, 5, 60)' in v_hr);
   v_writer := position('v_result := public.save_hr_operational_state_unchecked' in v_hr);
   if v_revision_guard=0 or v_rate_guard=0 or v_writer=0
      or not (v_revision_guard < v_rate_guard and v_rate_guard < v_writer) then
@@ -77,7 +77,7 @@ begin
     'public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)'::regprocedure
   )) into v_order;
   v_revision_guard := position('if p_expected_revision is null or v_actual_revision <> p_expected_revision then' in v_order);
-  v_rate_guard := position('private.consume_mutation_rate_budget(v_scope, 20, 5, 120)' in v_order);
+  v_rate_guard := position('private.consume_mutation_rate_budget(v_scope, 25, 5, 60)' in v_order);
   v_writer := position('v_result := public.save_order_operational_state_unchecked' in v_order);
   if v_revision_guard=0 or v_rate_guard=0 or v_writer=0
      or not (v_revision_guard < v_rate_guard and v_rate_guard < v_writer) then
