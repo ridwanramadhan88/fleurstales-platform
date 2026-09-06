@@ -268,11 +268,22 @@ describe('§13 — Admin payment confirmation waits for Finance reconciliation',
       expectedRevision: paidOrder.revision ?? 2,
       actor: { employeeId: 'finance-1', name: 'Finance Tester', role: 'finance' },
     })
-
     expect(reconciliation.allowed).toBe(true)
+    expect(useOrdersStore.getState().orders[0].financeVerified).toBe(true)
+
+    // In backend-configured mode the order command persists through the
+    // authoritative reconciliation RPC instead of mutating the local Finance
+    // projection. Exercise the local projection explicitly in this pairing
+    // test so the two trust boundaries remain visible.
+    const ledgerReconciliation = useFinanceStore.getState().verifyOrderTransactions({
+      orderNumber: 'A',
+      actor: { name: 'Finance Tester', role: 'finance' },
+      completedAt: '2026-07-12T00:10:00.000Z',
+    })
+
+    expect(ledgerReconciliation.allowed).toBe(true)
     expect(useFinanceStore.getState().transactions).toHaveLength(1)
     expect(useFinanceStore.getState().transactions[0].status).toBe('verified')
-    expect(useOrdersStore.getState().orders[0].financeVerified).toBe(true)
   })
 })
 
