@@ -22,7 +22,7 @@ const ITEMS: Record<
 > = {
   order_verification: {
     label: "Order Reconciliation",
-    description: "Reconcile completed orders once",
+    description: "Final-check Admin-confirmed payments",
     icon: ClipboardCheck,
   },
   payroll: {
