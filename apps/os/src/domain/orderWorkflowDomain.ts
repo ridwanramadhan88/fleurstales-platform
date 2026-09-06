@@ -2,12 +2,11 @@
  * @file orderWorkflowDomain.ts
  * @description Pure order workflow and Finance reconciliation rules.
  *
- * Finished orders (delivered/picked_up) are locked from direct edits for every
- * role while they sit in Finance reconciliation. Finance can reconcile or
- * return the order for correction, but cannot directly change order details,
- * payment, assignment, fulfillment, or status. Admin/Owner may edit a locked
- * order only after the correction/change-request flow explicitly sets
- * `editUnlocked`; saving the correction re-locks the order.
+ * Admin confirms the customer payment before production and Finance performs
+ * the final reconciliation separately. Fulfillment state is informational for
+ * Finance: an order may still be In Progress when its payment is reconciled.
+ * Finished orders remain locked from direct edits unless an approved
+ * correction/change-request flow explicitly unlocks them.
  */
 
 import type {
@@ -81,15 +80,18 @@ export const canDirectlyEditOrder = (
   _role: UserRole,
 ): boolean => !isOrderLocked(order)
 
+/** Admin-confirmed paid orders wait here until Finance makes the final call. */
 export const isPendingFinanceVerification = (order: OrderTableRow): boolean =>
-  isOrderFinished(order) &&
+  order.paymentStatus === 'paid' &&
+  !isVoidedRevenueOrder(order) &&
   !order.financeVerified &&
   order.financeVerificationStatus !== 'rejected'
 
 const hasValidPaymentInfoForVerification = (order: OrderTableRow): boolean => {
-  if (order.paidAmountIdr === undefined) return true
-  if (order.paidAmountIdr < 0) return false
-  if (order.paidAmountIdr > order.totalIdr) return false
+  if (order.paymentStatus !== 'paid') return false
+  const paidAmount = order.paidAmountIdr ?? order.totalIdr
+  if (paidAmount !== order.totalIdr || paidAmount < 0) return false
+  if (order.paymentMethod === 'transfer' && !order.paymentProofUrl) return false
   return true
 }
 
@@ -100,7 +102,7 @@ export type OrderFinanceDecisionCode =
   | 'ORDER_CANCELLED'
   | 'ORDER_VOIDED'
   | 'ALREADY_VERIFIED'
-  | 'ORDER_NOT_FINISHED'
+  | 'PAYMENT_NOT_CONFIRMED'
   | 'INVALID_PAYMENT_INFO'
   | 'NOT_PERMITTED'
   | 'NOTE_REQUIRED'
@@ -158,15 +160,15 @@ export const canMakeOrderFinanceDecision = ({
     return {
       allowed: false,
       code: 'ALREADY_VERIFIED',
-      reason: 'This order has already been finance-verified.',
+      reason: 'This order has already been reconciled by Finance.',
     }
   }
 
-  if (!isOrderFinished(order)) {
+  if (order.paymentStatus !== 'paid') {
     return {
       allowed: false,
-      code: 'ORDER_NOT_FINISHED',
-      reason: 'The order must be completed before a Finance decision.',
+      code: 'PAYMENT_NOT_CONFIRMED',
+      reason: 'Admin must confirm full payment before Finance can reconcile it.',
     }
   }
 
@@ -174,7 +176,9 @@ export const canMakeOrderFinanceDecision = ({
     return {
       allowed: false,
       code: 'INVALID_PAYMENT_INFO',
-      reason: 'The order payment information is not in a verifiable state.',
+      reason: order.paymentMethod === 'transfer' && !order.paymentProofUrl
+        ? 'Transfer evidence is required before Finance can reconcile this payment.'
+        : 'The order payment amount is not in a verifiable state.',
     }
   }
 
@@ -323,8 +327,8 @@ export const canResubmitOrderFinance = ({
   if (order.financeVerificationStatus !== 'rejected') {
     return { allowed: false, reason: 'Only a Finance-rejected order can be resubmitted.' }
   }
-  if (!isOrderFinished(order)) {
-    return { allowed: false, reason: 'The order must remain completed before resubmission.' }
+  if (order.paymentStatus !== 'paid') {
+    return { allowed: false, reason: 'Confirm full payment before resubmitting to Finance.' }
   }
   if (!note?.trim()) {
     return { allowed: false, reason: 'Describe what was corrected before resubmitting.' }
