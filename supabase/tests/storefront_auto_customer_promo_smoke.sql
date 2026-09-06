@@ -1,3 +1,5 @@
+-- Verifies both customer-assigned voucher semantics and the real public
+-- Storefront quote/create wiring that consumes them.
 begin;
 
 insert into public.customers (
