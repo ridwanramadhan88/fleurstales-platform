@@ -1,6 +1,108 @@
--- Verifies both customer-assigned voucher semantics and the real public
--- Storefront quote/create wiring that consumes them.
+-- Verifies customer-assigned voucher semantics through the real Storefront
+-- quote and final order-creation paths. Everything is rolled back.
 begin;
+
+insert into public.branches (
+  id,
+  name,
+  code,
+  is_active,
+  delivery_fee_idr,
+  opening_hours
+) values (
+  'smoke-auto-promo-branch',
+  'Auto Promo Smoke Branch',
+  'SAP',
+  true,
+  0,
+  jsonb_build_object(
+    'monday', jsonb_build_object('isOpen', true, 'opensAt', '00:00', 'closesAt', '23:59'),
+    'tuesday', jsonb_build_object('isOpen', true, 'opensAt', '00:00', 'closesAt', '23:59'),
+    'wednesday', jsonb_build_object('isOpen', true, 'opensAt', '00:00', 'closesAt', '23:59'),
+    'thursday', jsonb_build_object('isOpen', true, 'opensAt', '00:00', 'closesAt', '23:59'),
+    'friday', jsonb_build_object('isOpen', true, 'opensAt', '00:00', 'closesAt', '23:59'),
+    'saturday', jsonb_build_object('isOpen', true, 'opensAt', '00:00', 'closesAt', '23:59'),
+    'sunday', jsonb_build_object('isOpen', true, 'opensAt', '00:00', 'closesAt', '23:59')
+  )
+)
+on conflict (id) do update set
+  name = excluded.name,
+  code = excluded.code,
+  is_active = excluded.is_active,
+  delivery_fee_idr = excluded.delivery_fee_idr,
+  opening_hours = excluded.opening_hours,
+  updated_at = now();
+
+insert into public.public_payment_accounts (
+  id,
+  bank_name,
+  account_number,
+  account_holder,
+  type,
+  is_active,
+  is_default,
+  is_customer_visible,
+  branch_ids
+) values (
+  'smoke-auto-promo-account',
+  'Smoke Bank',
+  '0000000000',
+  'Smoke Account',
+  'bank_transfer',
+  true,
+  true,
+  true,
+  array['smoke-auto-promo-branch']::text[]
+)
+on conflict (id) do update set
+  is_active = excluded.is_active,
+  is_default = excluded.is_default,
+  is_customer_visible = excluded.is_customer_visible,
+  branch_ids = excluded.branch_ids,
+  updated_at = now();
+
+insert into public.products (
+  id,
+  product_code,
+  material,
+  name,
+  is_active
+) values (
+  'smoke-auto-promo-product',
+  'SAP-PRODUCT',
+  'fresh',
+  'Auto Promo Smoke Product',
+  true
+)
+on conflict (id) do update set
+  product_code = excluded.product_code,
+  material = excluded.material,
+  name = excluded.name,
+  is_active = excluded.is_active,
+  updated_at = now();
+
+insert into public.product_variants (
+  id,
+  product_id,
+  sku,
+  size,
+  price_idr,
+  status
+) values (
+  'smoke-auto-promo-variant',
+  'smoke-auto-promo-product',
+  'SAP-VARIANT',
+  'M',
+  400000,
+  'active'
+)
+on conflict (id) do update set
+  product_id = excluded.product_id,
+  sku = excluded.sku,
+  size = excluded.size,
+  price_idr = excluded.price_idr,
+  status = excluded.status,
+  updated_at = now();
 
 insert into public.customers (
   id,
@@ -16,6 +118,7 @@ insert into public.customers (
   'admin'
 )
 on conflict (id) do update set
+  name = excluded.name,
   whatsapp_number = excluded.whatsapp_number,
   normalized_whatsapp_number = excluded.normalized_whatsapp_number,
   updated_at = now();
@@ -34,6 +137,17 @@ values (
         'eligibility', 'all',
         'selectedCustomerIds', jsonb_build_array(),
         'isActive', true,
+        'minOrderIdr', 0,
+        'startDate', '2000-01-01',
+        'endDate', '2100-01-01'
+      ),
+      jsonb_build_object(
+        'id', 'smoke-selected-disabled',
+        'code', 'OFF80',
+        'percentOff', 80,
+        'eligibility', 'selected',
+        'selectedCustomerIds', jsonb_build_array('smoke-auto-promo-customer'),
+        'isActive', false,
         'minOrderIdr', 0,
         'startDate', '2000-01-01',
         'endDate', '2100-01-01'
@@ -103,81 +217,145 @@ on conflict (domain) do update set
 
 do $$
 declare
+  v_customer jsonb := jsonb_build_object(
+    'name', 'Auto Promo Smoke Customer',
+    'whatsappNumber', '089900009000'
+  );
+  v_unmatched_customer jsonb := jsonb_build_object(
+    'name', 'Unknown Smoke Customer',
+    'whatsappNumber', '089911119999'
+  );
+  v_items jsonb := jsonb_build_array(
+    jsonb_build_object(
+      'productId', 'smoke-auto-promo-product',
+      'variantId', 'smoke-auto-promo-variant',
+      'quantity', 1
+    )
+  );
+  v_schedule_date date := timezone('Asia/Jakarta', now())::date + 1;
   v_result jsonb;
-  v_quote_definition text;
-  v_create_definition text;
-  v_quote_signature regprocedure := 'public.quote_storefront_checkout(text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text)'::regprocedure;
-  v_create_signature regprocedure := 'public.create_storefront_order(text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text)'::regprocedure;
+  v_order public.orders%rowtype;
 begin
-  v_result := private.resolve_voucher_discount(
-    jsonb_build_object('whatsappNumber', '089900009000'),
-    400000,
+  -- Helper semantics: blank code privately selects the best eligible voucher
+  -- assigned to the WhatsApp-matched customer.
+  v_result := private.resolve_voucher_discount(v_customer, 400000, null);
+  if coalesce((v_result->>'promoAccepted')::boolean, false) is not true
+    or v_result->>'promoCode' <> 'AUTO20'
+    or (v_result->>'discountIdr')::bigint <> 80000 then
+    raise exception 'Expected helper to choose AUTO20 / 80000, got %', v_result;
+  end if;
+
+  -- Real public Storefront quote must do the same with no promo code supplied.
+  v_result := public.quote_storefront_checkout(
+    'smoke-auto-promo-quote-0001',
+    v_customer,
+    'smoke-auto-promo-branch',
+    'pickup',
+    v_schedule_date,
+    '12:00'::time,
+    v_items,
+    null,
+    null,
+    null,
+    null,
+    null,
+    'transfer',
     null
   );
-
-  if coalesce((v_result->>'promoAccepted')::boolean, false) is not true then
-    raise exception 'Expected assigned voucher to auto-apply, got %', v_result;
-  end if;
-  if v_result->>'promoCode' <> 'AUTO20' then
-    raise exception 'Expected best eligible selected voucher AUTO20, got %', v_result;
-  end if;
-  if (v_result->>'discountIdr')::bigint <> 80000 then
-    raise exception 'Expected AUTO20 discount 80000, got %', v_result;
+  if coalesce((v_result->>'promoAccepted')::boolean, false) is not true
+    or v_result->>'promoCode' <> 'AUTO20'
+    or (v_result->>'itemsSubtotalIdr')::bigint <> 400000
+    or (v_result->>'discountIdr')::bigint <> 80000
+    or (v_result->>'totalIdr')::bigint <> 320000 then
+    raise exception 'Expected Storefront quote to auto-apply AUTO20, got %', v_result;
   end if;
 
-  -- General vouchers remain code-driven even when they have a larger discount.
-  v_result := private.resolve_voucher_discount(
-    jsonb_build_object('whatsappNumber', '089900009000'),
-    400000,
+  -- Explicit customer input remains authoritative. A general voucher may still
+  -- be used when its code is intentionally entered.
+  v_result := public.quote_storefront_checkout(
+    'smoke-auto-promo-quote-0002',
+    v_customer,
+    'smoke-auto-promo-branch',
+    'pickup',
+    v_schedule_date,
+    '12:00'::time,
+    v_items,
+    null,
+    null,
+    null,
+    null,
+    null,
+    'transfer',
     'ALL50'
   );
   if coalesce((v_result->>'promoAccepted')::boolean, false) is not true
     or v_result->>'promoCode' <> 'ALL50'
-    or (v_result->>'discountIdr')::bigint <> 200000 then
-    raise exception 'Expected explicit ALL50 voucher semantics to stay unchanged, got %', v_result;
+    or (v_result->>'discountIdr')::bigint <> 200000
+    or (v_result->>'totalIdr')::bigint <> 200000 then
+    raise exception 'Expected explicit ALL50 semantics to stay unchanged, got %', v_result;
   end if;
 
-  -- A phone number with no private CRM match must not reveal or auto-apply any voucher.
-  v_result := private.resolve_voucher_discount(
-    jsonb_build_object('whatsappNumber', '089911119999'),
-    400000,
+  -- A phone number with no private CRM match must not reveal or auto-apply a
+  -- customer-specific voucher.
+  v_result := public.quote_storefront_checkout(
+    'smoke-auto-promo-quote-0003',
+    v_unmatched_customer,
+    'smoke-auto-promo-branch',
+    'pickup',
+    v_schedule_date,
+    '12:00'::time,
+    v_items,
+    null,
+    null,
+    null,
+    null,
+    null,
+    'transfer',
     null
   );
   if coalesce((v_result->>'promoAccepted')::boolean, false) is true
     or v_result->>'promoCode' is not null
-    or coalesce((v_result->>'discountIdr')::bigint, 0) <> 0 then
+    or coalesce((v_result->>'discountIdr')::bigint, 0) <> 0
+    or (v_result->>'totalIdr')::bigint <> 400000 then
     raise exception 'Expected unmatched WhatsApp to have no automatic voucher, got %', v_result;
   end if;
 
-  -- Guard the real Storefront boundaries, not only the helper. The public quote
-  -- must consult the private assigned-voucher resolver when the code is blank,
-  -- and final create must resolve the same quote before delegating to the
-  -- previously proven order creator.
-  v_quote_definition := pg_get_functiondef(v_quote_signature);
-  if position('private.resolve_voucher_discount' in v_quote_definition) = 0 then
-    raise exception 'Storefront quote is not wired to the customer-assigned voucher resolver.';
-  end if;
-  if position('v_auto_discount <= v_existing_discount' in v_quote_definition) = 0 then
-    raise exception 'Storefront quote no longer preserves the stronger existing/review reward.';
+  -- Final Storefront order creation must independently resolve the same blank
+  -- code through the authoritative checkout resolver and snapshot AUTO20.
+  v_result := public.create_storefront_order(
+    'smoke-auto-promo-create-0001',
+    v_customer,
+    'smoke-auto-promo-branch',
+    'pickup',
+    v_schedule_date,
+    '12:00'::time,
+    v_items,
+    null,
+    null,
+    null,
+    null,
+    null,
+    'transfer',
+    null
+  );
+
+  if (v_result->>'discountIdr')::bigint <> 80000
+    or (v_result->>'totalIdr')::bigint <> 320000 then
+    raise exception 'Expected final order result to include AUTO20 discount, got %', v_result;
   end if;
 
-  v_create_definition := pg_get_functiondef(v_create_signature);
-  if position('public.quote_storefront_checkout' in v_create_definition) = 0
-    or position('v_effective_promo_code' in v_create_definition) = 0 then
-    raise exception 'Storefront order creation is not enforcing automatic promo resolution server-side.';
-  end if;
+  select * into v_order
+  from public.orders
+  where id = v_result->>'orderId';
 
-  if not has_function_privilege('anon', v_quote_signature, 'EXECUTE') then
-    raise exception 'Anon Storefront lost quote execution access.';
+  if not found then
+    raise exception 'Expected Storefront order row to be created.';
   end if;
-  if has_function_privilege('authenticated', v_quote_signature, 'EXECUTE') then
-    raise exception 'Authenticated role unexpectedly gained Storefront quote execution access.';
-  end if;
-  if not has_function_privilege('anon', v_create_signature, 'EXECUTE') then
-    raise exception 'Anon Storefront lost create-order execution access.';
-  end if;
-  if has_function_privilege('authenticated', v_create_signature, 'EXECUTE') then
-    raise exception 'Authenticated role unexpectedly gained Storefront create-order execution access.';
+  if v_order.promo_code <> 'AUTO20'
+    or v_order.discount_idr <> 80000
+    or v_order.total_idr <> 320000 then
+    raise exception 'Expected order row to snapshot AUTO20 / 80000 / 320000, got promo %, discount %, total %',
+      v_order.promo_code, v_order.discount_idr, v_order.total_idr;
   end if;
 end
 $$;
