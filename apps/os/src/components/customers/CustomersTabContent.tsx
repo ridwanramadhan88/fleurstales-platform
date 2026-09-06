@@ -70,14 +70,17 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
             </h1>
           </div>
           {canEditCustomerWorkspace && (
-            <button
-              type="button"
-              onClick={onOpenVoucherDialog}
-              className="tap-scale inline-flex w-full shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 sm:w-auto rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
-            >
-              <Ticket className="size-4" />
-              Manage vouchers
-            </button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <ReviewPromoSettings />
+              <button
+                type="button"
+                onClick={onOpenVoucherDialog}
+                className="tap-scale inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 sm:w-auto"
+              >
+                <Ticket className="size-4" />
+                Manage vouchers
+              </button>
+            </div>
           )}
         </header>
 
@@ -102,7 +105,6 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
       </section>
 
       <CustomerSegmentRulesSettingsContainer />
-      <ReviewPromoSettings />
       <StaffReviewHistory title="Customer reviews" />
 
       <CustomerFiltersBar
