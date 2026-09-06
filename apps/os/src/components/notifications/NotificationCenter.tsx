@@ -22,10 +22,10 @@ const formatNotificationAge = (createdAt: string): string => {
 }
 
 const unreadTone: Record<NotificationItem['priority'], string> = {
-  info: 'bg-info/12 ring-info/25',
-  success: 'bg-success/12 ring-success/25',
-  warning: 'bg-warning/14 ring-warning/30',
-  critical: 'bg-destructive/12 ring-destructive/30',
+  info: 'bg-info/15 ring-2 ring-info/45',
+  success: 'bg-success/15 ring-2 ring-success/45',
+  warning: 'bg-warning/20 ring-2 ring-warning/50',
+  critical: 'bg-destructive/15 ring-2 ring-destructive/50',
 }
 
 export const NotificationCenter: FC<NotificationCenterProps> = ({
@@ -45,8 +45,9 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
       title={<span className="sr-only">Notifications</span>}
       headerClassName="sr-only"
       hideCloseButton
-      side="top"
-      contentClassName="inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] h-[min(62vh,34rem)] w-auto max-w-xl gap-0 rounded-2xl border p-0 sm:h-[min(82vh,44rem)] md:max-w-2xl"
+      side="right"
+      size="compact"
+      contentClassName="gap-0 p-0 sm:p-0"
     >
       <header className="shrink-0 border-b border-border/70 px-4 py-4 sm:px-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
@@ -58,7 +59,7 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
             <button
               type="button"
               onClick={onMarkAllRead}
-              className="col-start-1 row-start-2 justify-self-start text-xs font-medium text-primary hover:bg-surface-panel sm:col-start-2 sm:row-start-1 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+              className="col-start-1 row-start-2 h-9 justify-self-start rounded-full px-4 text-xs font-medium text-primary transition hover:bg-accent sm:col-start-2 sm:row-start-1"
             >
               Mark all read
             </button>
@@ -76,7 +77,7 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 pb-5 sm:px-5">
         {items.length === 0 ? (
-          <div className="rounded-xl bg-muted/60 px-4 py-8 text-center">
+          <div className="rounded-2xl bg-surface-panel px-4 py-8 text-center ring-1 ring-border/60">
             <p className="text-sm font-medium text-foreground">Nothing needs attention</p>
             <p className="mt-1 text-xs text-muted-foreground">Important updates will appear here.</p>
           </div>
@@ -90,16 +91,16 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
                     type="button"
                     disabled={!clickable}
                     onClick={() => clickable && onOpenNotification?.(item)}
-                    className={`w-full rounded-xl px-3 py-2 text-left ring-1 transition ${
+                    className={`w-full rounded-xl px-3 py-2 text-left transition ${
                       item.isRead
-                        ? 'bg-card ring-border/70 hover:bg-muted/50'
-                        : `${unreadTone[item.priority]} shadow-ios-sm`
+                        ? 'bg-card opacity-70 ring-1 ring-border/60 hover:bg-muted/50 hover:opacity-100'
+                        : `${unreadTone[item.priority]} shadow-ios-sm hover:shadow-ios`
                     } ${clickable ? 'cursor-pointer' : 'cursor-default'} disabled:opacity-100`}
                   >
                     <div className="flex items-start gap-3">
                       <span
                         aria-hidden="true"
-                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.isRead ? 'bg-muted-foreground/35' : 'bg-primary'}`}
+                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.isRead ? 'bg-muted-foreground/35' : 'bg-primary ring-4 ring-primary/15'}`}
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">

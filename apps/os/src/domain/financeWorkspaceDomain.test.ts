@@ -14,7 +14,7 @@ describe('finance workspace privacy', () => {
 
   it('allows Finance to view all finance modules', () => {
     expect(getFinanceWorkspaceModules('finance')).toEqual([
-      'order_verification', 'ledger', 'payroll', 'refunds',
+      'order_verification', 'ledger', 'balance', 'payroll', 'refunds',
     ])
   })
 })

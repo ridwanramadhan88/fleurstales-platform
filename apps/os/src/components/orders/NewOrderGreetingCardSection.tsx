@@ -29,7 +29,7 @@ export const NewOrderGreetingCardSection: FC<NewOrderGreetingCardSectionProps> =
       onFocus={() => onSectionFocus('greetingCard')}
       className={sectionClass(
         activeGuideSection === 'greetingCard',
-        'space-y-3 rounded-lg bg-surface-panel px-3 py-3',
+        'space-y-3 px-1 py-1',
       )}
     >
       <h3 className="text-sm font-semibold leading-5 text-foreground">Greeting card</h3>

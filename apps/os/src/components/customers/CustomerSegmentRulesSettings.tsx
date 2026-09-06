@@ -12,6 +12,8 @@ import type { FC } from 'react'
 import { Crown } from 'lucide-react'
 import type { VipRuleMode } from '../../store/customerStoreTypes'
 import type { CustomerSegmentRulesSettingsViewModel } from './CustomerSegmentRulesSettingsController'
+import { AppDialog } from '../ui/app-dialog'
+import { Button } from '../ui/button'
 
 const modeOptions: { id: VipRuleMode; label: string; description: string }[] = [
   {
@@ -49,59 +51,59 @@ export const CustomerSegmentRulesSettings: FC<
   if (!isOwner) return null
 
   return (
-    <section
-      aria-label="VIP customer rules"
-      className="space-y-3 rounded-lg bg-muted px-3 py-3"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-          <Crown className="size-3.5" />
-          VIP customer rules
-        </h3>
-        <button
-          type="button"
-          onClick={onToggleEditing}
-          className="text-xs font-medium text-primary underline-offset-2 hover:underline min-h-11 rounded-full px-[18px] whitespace-nowrap"
-        >
-          {isEditing ? 'Done' : 'Edit'}
-        </button>
-      </div>
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="md"
+        onClick={onToggleEditing}
+        aria-label="VIP customer rules"
+        className="w-full sm:w-auto"
+      >
+        <Crown className="size-4 text-warning" />
+        VIP rules
+      </Button>
 
-      {!isEditing ? (
-        <p className="rounded-lg bg-card px-3 py-2 text-xs text-foreground/90 ring-1 ring-border">
-          A customer becomes <span className="font-semibold text-warning">VIP</span>{' '}
-          when they reach {summaryLabel}.
-        </p>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-2xs text-muted-foreground">
-            Choose how the two conditions below combine, then set your
-            thresholds. This updates VIP segmentation everywhere immediately.
+      <AppDialog
+        open={isEditing}
+        onOpenChange={(nextOpen) => { if (!nextOpen) onToggleEditing() }}
+        title="VIP customer rules"
+        description={`A customer becomes VIP when they reach ${summaryLabel}.`}
+        size="compact"
+      >
+        <div className="space-y-4 pt-1">
+          <p className="text-xs leading-5 text-muted-foreground">
+            Choose how the two conditions combine, then set your thresholds.
+            Updates VIP segmentation everywhere immediately.
           </p>
-
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label="VIP rule mode">
             {modeOptions.map((option) => (
               <button
                 key={option.id}
                 type="button"
                 onClick={() => onSetSegmentRules({ mode: option.id })}
-                title={option.description}
-                className={`tap-scale rounded-lg border px-2 py-1.5 text-xs font-medium transition ${
+                aria-pressed={segmentRules.mode === option.id}
+                className={`tap-scale min-h-11 rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
                   segmentRules.mode === option.id
-                    ? 'border-primary bg-primary/5 text-foreground'
-                    : 'border-border bg-card text-foreground hover:bg-accent'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                    : 'border-border bg-card hover:bg-accent'
                 }`}
               >
-                {option.label}
+                <span className="block text-sm font-semibold text-foreground">
+                  {option.label}
+                </span>
+                <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
+                  {option.description}
+                </span>
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div className="space-y-1 rounded-lg bg-card px-3 py-2 ring-1 ring-border">
-              <label className="text-2xs font-semibold text-muted-foreground">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">
                 Minimum lifetime spend (IDR)
-              </label>
+              </span>
               <input
                 type="number"
                 min={0}
@@ -116,13 +118,13 @@ export const CustomerSegmentRulesSettings: FC<
                   })
                 }
                 disabled={segmentRules.mode === 'orders'}
-                className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-11 w-full rounded-xl border border-border/70 bg-surface-panel px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
               />
-            </div>
-            <div className="space-y-1 rounded-lg bg-card px-3 py-2 ring-1 ring-border">
-              <label className="text-2xs font-semibold text-muted-foreground">
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">
                 Minimum order count
-              </label>
+              </span>
               <input
                 type="number"
                 min={0}
@@ -137,13 +139,19 @@ export const CustomerSegmentRulesSettings: FC<
                   })
                 }
                 disabled={segmentRules.mode === 'spend'}
-                className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-11 w-full rounded-xl border border-border/70 bg-surface-panel px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50"
               />
-            </div>
+            </label>
+          </div>
+
+          <div className="flex justify-end border-t border-border/60 pt-4">
+            <Button type="button" onClick={onToggleEditing}>
+              Done
+            </Button>
           </div>
         </div>
-      )}
-    </section>
+      </AppDialog>
+    </>
   )
 }
 

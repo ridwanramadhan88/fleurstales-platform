@@ -79,7 +79,7 @@ export const StockTabContent: FC<StockTabContentViewModel> = ({
   onUpdateItem,
 }) => {
   return (
-    <section className="space-y-3">
+    <section className="space-y-6">
       {/* 1. Overview */}
       <StockSummaryCards
         items={nonArchivedBranchItems}

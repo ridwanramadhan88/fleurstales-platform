@@ -15,6 +15,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    exclude: ['**/node_modules/**', '**/dist/**', '**/fleurstales OS_original/**', '**/fleurstales-platform-main/**'],
     setupFiles: [fileURLToPath(new URL('./src/test/setupTests.ts', import.meta.url))],
     css: false,
     pool: 'forks',

@@ -284,7 +284,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
                         </div>
                       </div>
                       {isEditing ? (
-                        <div className={`grid gap-1 rounded-xl bg-surface-track p-1 ${levels.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                        <div className={`grid gap-1 rounded-xl bg-surface-track p-1 ring-1 ring-border/60 ${levels.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                           {levels.map((level) => (
                             <button
                               key={level}

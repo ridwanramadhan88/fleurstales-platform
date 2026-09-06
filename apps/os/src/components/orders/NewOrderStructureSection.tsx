@@ -46,16 +46,16 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
       onFocus={() => onSectionFocus('structure')}
       className={sectionClass(
         activeGuideSection === 'structure',
-        'space-y-3 rounded-lg bg-surface-panel px-3 py-3',
+        'space-y-3 px-1 py-1',
       )}
     >
       <h3 className="text-sm font-semibold leading-5 text-foreground">Order structure</h3>
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="text-xs font-medium text-foreground">Order source</span>
+          <span className="w-24 shrink-0 text-xs font-medium text-foreground">Order source</span>
           <div
             className={[
-              'inline-flex rounded-full border bg-background p-0.5 text-xs transition',
+              'inline-flex rounded-full border bg-surface-panel p-0.5 text-xs transition',
               activeGuideField === 'orderType'
                 ? 'border-primary/40 ring-2 ring-primary/40'
                 : 'border-border/60',
@@ -94,10 +94,10 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
       </div>
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2.5">
-          <span className="text-xs font-medium text-foreground">Fulfillment</span>
+          <span className="w-24 shrink-0 text-xs font-medium text-foreground">Fulfillment</span>
           <div
             className={[
-              'inline-flex rounded-full border bg-background p-0.5 text-xs transition',
+              'inline-flex rounded-full border bg-surface-panel p-0.5 text-xs transition',
               activeGuideField === 'fulfillmentType'
                 ? 'border-primary/40 ring-2 ring-primary/40'
                 : 'border-border',
@@ -169,7 +169,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
                 onChange={(value) => onFieldValueChange('deliveryDate', value)}
                 placeholder="Pick date"
                 disabledDates={isBranchClosedOnDate}
-                className={`h-9 text-xs ${fieldClass(activeGuideField === 'deliveryDate')}`}
+                className={`h-11 text-sm ${fieldClass(activeGuideField === 'deliveryDate')}`}
               />
             </div>
             <div className="space-y-1.5">
@@ -186,7 +186,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
                 placeholder="Pick time"
                 allowedSlots={deliveryTimeSlots}
                 disabled={!values.deliveryDate || deliveryTimeSlots.length === 0}
-                className={`h-9 text-xs ${fieldClass(activeGuideField === 'deliveryTime')}`}
+                className={`h-11 text-sm ${fieldClass(activeGuideField === 'deliveryTime')}`}
               />
             </div>
           </div>
@@ -251,7 +251,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               onChange={(value) => onFieldValueChange('pickupDate', value)}
               placeholder="Pick date"
               disabledDates={isBranchClosedOnDate}
-              className={`h-9 text-xs ${fieldClass(activeGuideField === 'pickupDate')}`}
+              className={`h-11 text-sm ${fieldClass(activeGuideField === 'pickupDate')}`}
             />
           </div>
           <div className="space-y-1.5">
@@ -268,7 +268,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               placeholder="Pick time"
               allowedSlots={pickupTimeSlots}
               disabled={!values.pickupDate || pickupTimeSlots.length === 0}
-              className={`h-9 text-xs ${fieldClass(activeGuideField === 'pickupTime')}`}
+              className={`h-11 text-sm ${fieldClass(activeGuideField === 'pickupTime')}`}
             />
           </div>
         </div>

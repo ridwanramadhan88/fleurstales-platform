@@ -20,6 +20,7 @@ import { format } from 'date-fns'
 import type { DateRange } from 'react-day-picker'
 import type { CompareMode, RevenueDrilldownKey, TrendMetric } from './RevenueDashboardController'
 import { OverviewStatCard, OverviewStatGrid } from '../ui/overview-card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover'
 import { Calendar } from '../ui/calendar'
 import type { BranchFilter } from '../../types/orders'
@@ -341,7 +342,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
   }
 
   return (
-    <section className="space-y-6 sm:space-y-4">
+    <section className="space-y-6">
       {/* Header */}
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
@@ -381,10 +382,10 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
       {/* Summary cards */}
       <OverviewStatGrid className="gap-2 min-[420px]:gap-3 sm:gap-4">
         <OverviewStatCard
-          label={`Revenue (confirmed) · ${comparePeriodLabel}`}
+          label="Confirmed revenue"
           value={formatIdr(summary.totalRevenueIdr)}
           valueClassName={REVENUE_VALUE_CLASS}
-          helper={summary.growthPercent === null ? 'Finance confirmed' : `${summary.growthPercent >= 0 ? '+' : ''}${summary.growthPercent.toFixed(1)}% vs previous period`}
+          helper={summary.growthPercent === null ? `${comparePeriodLabel} · Finance confirmed` : `${comparePeriodLabel} · ${summary.growthPercent >= 0 ? '+' : ''}${summary.growthPercent.toFixed(1)}% vs previous period`}
           helperClassName="sm:min-h-10"
           onClick={() => setDetailKey('confirmed')}
           tone={
@@ -396,19 +397,19 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
           }
         />
         <OverviewStatCard
-          label={`Revenue est. · ${comparePeriodLabel}`}
+          label="Estimated revenue"
           value={formatIdr(estimatedRevenueIdr)}
           valueClassName={REVENUE_VALUE_CLASS}
-          helper={`Confirmed + ${formatIdr(estimatedUnconfirmedIdr)} pending`}
+          helper={`${comparePeriodLabel} · Confirmed + ${formatIdr(estimatedUnconfirmedIdr)} pending`}
           helperClassName="sm:min-h-10"
           tone="default"
           onClick={() => setDetailKey('estimated')}
         />
         <OverviewStatCard
-          label={`Orders confirmed · ${comparePeriodLabel}`}
+          label="Orders confirmed"
           value={String(summary.orderCount)}
           valueClassName={REVENUE_VALUE_CLASS}
-          helper="Orders in confirmed revenue"
+          helper={`${comparePeriodLabel} · confirmed orders`}
           helperClassName="sm:min-h-10"
           tone="default"
           onClick={() => setDetailKey('confirmed_orders')}
@@ -417,14 +418,14 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
           label="Avg. order value"
           value={formatIdr(summary.averageOrderValueIdr)}
           valueClassName={REVENUE_VALUE_CLASS}
-          helper="Per confirmed order"
+          helper={`${comparePeriodLabel} · per confirmed order`}
           helperClassName="sm:min-h-10"
           tone="default"
         />
       </OverviewStatGrid>
 
       {/* Revenue trend */}
-      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-ios sm:p-5">
+      <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-ios sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0.5">
             <h2 className="text-base font-semibold leading-6 text-foreground">{compareMode === 'income_expense' ? 'Revenue trend' : trendMetric === 'revenue' ? 'Revenue trend' : 'Expense trend'}</h2>
@@ -483,6 +484,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
                 <Calendar
                   initialFocus
                   mode="range"
+                  className="p-0"
                   defaultMonth={draftRange?.from}
                   selected={draftRange}
                   onSelect={(range) => {
@@ -496,19 +498,26 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
           </ChipRow>
         </div>
 
-        <ChipRow activeKey={compareMode} className="mt-3">
-          {COMPARE_MODE_OPTIONS.filter((option) => option.value !== 'branch_vs_branch' || canCompareBranches).map((option) => {
-            const isActive = compareMode === option.value
-            return (
-              <FilterChip key={option.value} active={isActive} data-active={isActive} onClick={() => onCompareModeChange(option.value)} className="shrink-0">
-                {option.label}
-              </FilterChip>
-            )
-          })}
-        </ChipRow>
+        <div className="mt-3 flex flex-col gap-1.5 sm:max-w-xs">
+          <label htmlFor="revenue-compare-mode" className="text-xs font-medium text-muted-foreground">
+            Compare view
+          </label>
+          <Select value={compareMode} onValueChange={(value) => onCompareModeChange(value as CompareMode)}>
+            <SelectTrigger id="revenue-compare-mode" aria-label="Compare view">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {COMPARE_MODE_OPTIONS.filter((option) => option.value !== 'branch_vs_branch' || canCompareBranches).map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {compareMode !== 'income_expense' && (
-          <div className="mt-3 inline-flex rounded-full bg-surface-track p-1" aria-label="Trend metric">
+          <div className="mt-3 inline-flex rounded-full bg-surface-track p-1 ring-1 ring-border/60" aria-label="Trend metric">
             {(['revenue','expense'] as TrendMetric[]).map((metric) => (
               <button key={metric} type="button" onClick={() => onTrendMetricChange(metric)} className={`h-9 rounded-full px-4 text-sm font-semibold ${trendMetric === metric ? metric === 'revenue' ? 'bg-success/15 text-success shadow-sm' : 'bg-destructive/10 text-destructive shadow-sm' : 'text-muted-foreground'}`}>
                 {metric === 'revenue' ? 'Revenue' : 'Expense'}
@@ -621,7 +630,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
         ) : (
           <div className="mt-3 h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={compareTrend} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <AreaChart data={compareTrend} margin={{ top: 4, right: 4, left: 8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="compareFillA" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={trendMetric === 'expense' && compareMode !== 'income_expense' ? 'hsl(var(--destructive))' : 'hsl(var(--success))'} stopOpacity={0.32} />
@@ -634,7 +643,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
                 </defs>
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={false} interval={trendDays > 14 ? 3 : 1} />
-                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(value: number) => value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}jt` : `${value / 1000}rb`} width={40} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(value: number) => value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}jt` : `${Math.round(value / 1000)}rb`} width={52} />
                 <Tooltip
                   cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1 }}
                   contentStyle={{ borderRadius: 12, border: '1px solid hsl(var(--border))', background: 'hsl(var(--popover))', fontSize: 12 }}
@@ -662,12 +671,12 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
         </div>
       </div>
 
-      <div className="rounded-lg border border-border/70 bg-card shadow-ios">
+      <div>
         <button
           type="button"
           onClick={() => setIsAnalysisOpen((open) => !open)}
           aria-expanded={isAnalysisOpen}
-          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left sm:px-5"
+          className="flex w-full items-center justify-between gap-3 px-1 py-2 text-left"
         >
           <div>
             <h2 className="text-sm font-semibold leading-5 text-foreground">Detailed analysis</h2>
@@ -681,10 +690,10 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
         </button>
 
         {isAnalysisOpen && (
-          <div className="space-y-4 border-t border-border/70 p-4 sm:p-5">
-            <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-3 border-t border-border/60 py-4">
+            <div className="grid gap-3 lg:grid-cols-2">
               {/* Branch comparison */}
-              <div className="rounded-lg border border-border/70 bg-card p-4 shadow-ios sm:p-5">
+              <div className="rounded-2xl border border-border/60 bg-surface-card p-4 shadow-ios-sm sm:p-5">
                 <h2 className="text-2xs font-semibold text-muted-foreground">
                         Branch comparison
                 </h2>
@@ -712,7 +721,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
               </div>
 
               {/* Top customers */}
-              <div className="rounded-lg border border-border/70 bg-card p-4 shadow-ios sm:p-5">
+              <div className="rounded-2xl border border-border/60 bg-surface-card p-4 shadow-ios-sm sm:p-5">
                 <h2 className="text-2xs font-semibold text-muted-foreground">
                         Top customers
                 </h2>
@@ -723,7 +732,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
                         {topCustomers.map((entry, index) => (
                           <div
                             key={entry.customerName}
-                            className="flex items-center justify-between rounded-xl bg-muted px-3 py-2"
+                            className="flex items-center justify-between rounded-xl bg-surface-panel px-3 py-2 ring-1 ring-border/40"
                           >
                             <div className="flex items-center gap-2.5">
                                     <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-2xs font-semibold text-primary">
@@ -747,9 +756,9 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
               </div>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-3 lg:grid-cols-2">
               {/* Payment method breakdown */}
-              <div className="rounded-lg border border-border/70 bg-card p-4 shadow-ios sm:p-5">
+              <div className="rounded-2xl border border-border/60 bg-surface-card p-4 shadow-ios-sm sm:p-5">
                 <h2 className="text-2xs font-semibold text-muted-foreground">
                         Payment method
                 </h2>
@@ -784,7 +793,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
               </div>
 
               {/* Source breakdown */}
-              <div className="rounded-lg border border-border/70 bg-card p-4 shadow-ios sm:p-5">
+              <div className="rounded-2xl border border-border/60 bg-surface-card p-4 shadow-ios-sm sm:p-5">
                 <h2 className="text-2xs font-semibold text-muted-foreground">
                         Revenue by source
                 </h2>

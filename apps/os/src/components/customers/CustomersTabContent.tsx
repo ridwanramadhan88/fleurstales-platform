@@ -66,7 +66,7 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
   const [workspaceTab, setWorkspaceTab] = useState<CustomerWorkspaceTab>('customers')
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <header className="space-y-3 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:space-y-0">
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
@@ -75,14 +75,17 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
         </div>
 
         {workspaceTab === 'customers' && canEditCustomerWorkspace && (
-          <button
-            type="button"
-            onClick={onOpenVoucherDialog}
-            className="tap-scale inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 sm:w-auto"
-          >
-            <Ticket className="size-4" />
-            Manage vouchers
-          </button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <CustomerSegmentRulesSettingsContainer />
+            <button
+              type="button"
+              onClick={onOpenVoucherDialog}
+              className="tap-scale inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 sm:w-auto"
+            >
+              <Ticket className="size-4" />
+              Manage vouchers
+            </button>
+          </div>
         )}
 
         {workspaceTab === 'reviews' && canEditCustomerWorkspace && <ReviewPromoSettings />}
@@ -118,27 +121,25 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
       {workspaceTab === 'customers' ? (
         <>
           <section aria-label="Customer CRM overview" className="space-y-3">
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-              <div className="min-w-0 rounded-xl bg-card p-3 ring-1 ring-border/70 sm:p-4">
-                <p className="text-xs font-medium text-muted-foreground">Total customers</p>
-                <p className="mt-1 text-xl font-semibold text-foreground">{overview.totalCustomers}</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="min-w-0 rounded-2xl bg-surface-card p-4 shadow-ios-sm ring-1 ring-border/60">
+                <p className="text-2xs font-semibold text-muted-foreground">Total customers</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{overview.totalCustomers}</p>
               </div>
-              <div className="min-w-0 rounded-xl bg-card p-3 ring-1 ring-border/70 sm:p-4">
-                <p className="text-xs font-medium text-muted-foreground">VIP customers</p>
-                <p className="mt-1 text-xl font-semibold text-warning">{overview.vipCount}</p>
+              <div className="min-w-0 rounded-2xl bg-surface-card p-4 shadow-ios-sm ring-1 ring-border/60">
+                <p className="text-2xs font-semibold text-muted-foreground">VIP customers</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums text-warning">{overview.vipCount}</p>
               </div>
-              <div className="min-w-0 rounded-xl bg-card p-3 ring-1 ring-border/70 sm:p-4">
-                <p className="text-xs font-medium text-muted-foreground">Lifetime revenue</p>
-                <p className="mt-1 break-words text-xl font-semibold text-foreground">Rp {formatter.format(overview.totalLifetimeRevenue)}</p>
+              <div className="min-w-0 rounded-2xl bg-surface-card p-4 shadow-ios-sm ring-1 ring-border/60">
+                <p className="text-2xs font-semibold text-muted-foreground">Lifetime revenue</p>
+                <p className="mt-1 break-words text-xl font-semibold tabular-nums text-foreground">Rp {formatter.format(overview.totalLifetimeRevenue)}</p>
               </div>
-              <div className="min-w-0 rounded-xl bg-card p-3 ring-1 ring-border/70 sm:p-4">
-                <p className="text-xs font-medium text-muted-foreground">Avg orders / customer</p>
-                <p className="mt-1 text-xl font-semibold text-info">{avgOrdersPerCustomerLabel}</p>
+              <div className="min-w-0 rounded-2xl bg-surface-card p-4 shadow-ios-sm ring-1 ring-border/60">
+                <p className="text-2xs font-semibold text-muted-foreground">Avg orders / customer</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums text-info">{avgOrdersPerCustomerLabel}</p>
               </div>
             </div>
           </section>
-
-          <CustomerSegmentRulesSettingsContainer />
 
           <CustomerFiltersBar
             segmentFilter={segmentFilter}
@@ -151,7 +152,7 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
 
           <section aria-label="Customer list" className="space-y-3">
             {displayed.length === 0 ? (
-              <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-xl bg-card px-6 py-8 text-center ring-1 ring-border">
+              <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-card px-6 py-8 text-center shadow-ios-sm ring-1 ring-border/60">
                 <p className="text-sm font-semibold leading-5 text-foreground">No customers found</p>
                 <p className="text-xs text-muted-foreground">Try adjusting the search or segment filters.</p>
               </div>

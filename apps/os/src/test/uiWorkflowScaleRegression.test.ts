@@ -10,7 +10,7 @@ describe('mobile workflow UI scale regressions', () => {
     expect(topBar).toContain('bg-surface-card/80')
     expect(topBar).toContain('bg-transparent text-foreground')
     expect(topBar).toContain('size-10 items-center justify-center rounded-full')
-    expect(topBar).toContain('border border-border/80 bg-card')
+    expect(topBar).toContain('border border-border/70 bg-card')
     expect(topBar).toContain('md:grid-cols-[minmax(8.5rem,auto)_minmax(12rem,24rem)_auto]')
     expect(topBar).toContain('xl:grid-cols-[minmax(0,1fr)_minmax(20rem,42rem)_minmax(0,1fr)]')
     expect(topBar).not.toContain('bg-primary text-primary-foreground shadow-ios-sm')

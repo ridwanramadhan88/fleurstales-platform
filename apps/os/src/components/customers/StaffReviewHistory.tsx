@@ -78,7 +78,7 @@ export const StaffReviewHistory: FC<StaffReviewHistoryProps> = ({
   }, [reviews])
 
   return (
-    <section className={`space-y-3 rounded-xl bg-card p-4 ring-1 ring-border/70 ${className}`.trim()} aria-label={title}>
+    <section className={`space-y-3 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60 ${className}`.trim()} aria-label={title}>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-2.5">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -103,7 +103,7 @@ export const StaffReviewHistory: FC<StaffReviewHistoryProps> = ({
       {error && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
 
       {!loading && !error && reviews.length === 0 && (
-        <p className="rounded-lg bg-muted/35 px-3 py-3 text-xs text-muted-foreground">{emptyLabel}</p>
+        <p className="rounded-xl bg-surface-panel px-3 py-3 text-xs text-muted-foreground ring-1 ring-border/40">{emptyLabel}</p>
       )}
 
       {!loading && !error && reviews.length > 0 && (

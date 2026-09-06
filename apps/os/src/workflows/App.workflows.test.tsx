@@ -226,11 +226,10 @@ describe('critical application workflows', () => {
     if (!(orderRow instanceof HTMLElement)) {
       throw new Error('Active order row not found')
     }
-    await user.click(
-      within(orderRow).getByRole('button', {
-        name: 'Advance order to Processing',
-      }),
-    )
+    // Status advances from the details footer now that the list has no
+    // one-tap quick action.
+    await user.click(orderRow)
+    await user.click(screen.getByRole('button', { name: 'Konfirmasi Pembayaran' }))
 
     expect(await screen.findByRole('heading', { name: 'Konfirmasi Pembayaran' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Confirm PAID' }))
@@ -242,16 +241,9 @@ describe('critical application workflows', () => {
     })
     expect(screen.queryByRole('heading', { name: 'Process Order' })).not.toBeInTheDocument()
 
-    const paidOrderNumbers = await screen.findAllByText(created.orderNumber)
-    const paidOrderRow = paidOrderNumbers[0].closest('[role="button"]')
-    if (!(paidOrderRow instanceof HTMLElement)) {
-      throw new Error('Paid order row not found')
-    }
-    await user.click(
-      within(paidOrderRow).getByRole('button', {
-        name: 'Advance order to Processing',
-      }),
-    )
+    // The details panel stays open on the paid order; advance straight
+    // from its footer.
+    await user.click(screen.getByRole('button', { name: 'Processing' }))
 
     expect(await screen.findByRole('heading', { name: 'Process Order' })).toBeInTheDocument()
     await user.click((await screen.findAllByRole('radio'))[0])
@@ -306,9 +298,8 @@ describe('critical application workflows', () => {
     if (!(orderRow instanceof HTMLElement)) {
       throw new Error('Payment-gated order row not found')
     }
-    const blockedAction = within(orderRow).getByRole('button', {
-      name: 'Advance order to Finished',
-    })
+    await user.click(orderRow)
+    const blockedAction = screen.getByTitle('Advance to Finished')
     expect(blockedAction).toBeEnabled()
     expect(
       useOrdersStore

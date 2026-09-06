@@ -110,10 +110,12 @@ module.exports = {
         },
       },
       borderRadius: {
-        // Full ladder derived from --radius so every corner in the app
-        // scales together when the token changes. `xs` formalizes the 8px
-        // radius that was previously hand-typed as `rounded-[8px]` in ~15
-        // files; `sm` likewise replaces the equivalent `rounded-[10px]`.
+        // Apple ladder — use only these, no arbitrary rounded-[…]:
+        // pill (rounded-full) → buttons, inputs, selects, chips, tabs
+        // 2xl (16px) → cards, stat cards, form sections
+        // xl (12px) → popovers, menus, nested rows, icon tiles
+        // 2xl overlay → sheets, dialogs (top-only radius on mobile sheets)
+        // lg/md/sm/xs below scale together from --radius for inner elements.
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',

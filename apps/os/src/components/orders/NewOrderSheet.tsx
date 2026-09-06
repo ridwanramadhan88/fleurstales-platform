@@ -6,7 +6,7 @@
  */
 
 import type { FC, KeyboardEvent } from 'react'
-import { FileText, Save, Trash2 } from 'lucide-react'
+import { FileText, Save, Trash2, X } from 'lucide-react'
 import type { NewOrderSheetViewModel } from './NewOrderSheetController'
 import { NewOrderCustomerSection } from './NewOrderCustomerSection'
 import { NewOrderItemsSection } from './NewOrderItemsSection'
@@ -44,20 +44,20 @@ export interface NewOrderSheetProps {
 // the left-to-right, top-to-bottom fill order that Enter-to-advance follows.
 const fieldClass = (isActive: boolean): string =>
   [
-    'h-10 w-full rounded-lg border border-transparent bg-background px-3 text-xs text-foreground outline-none transition',
+    'h-11 w-full rounded-xl border border-transparent bg-surface-panel px-3.5 text-sm text-foreground outline-none transition',
     'placeholder:text-muted-foreground placeholder:font-normal',
     isActive
-      ? 'border-primary/30 bg-primary/[0.05] font-medium ring-2 ring-primary/40 focus:border-primary/40 focus:bg-primary/[0.04] focus:ring-2 focus:ring-primary/45'
-      : 'font-medium ring-1 ring-border/70 focus:border-border focus:bg-background focus:ring-1 focus:ring-border/70',
+      ? 'border-primary/40 font-medium ring-2 ring-primary/25 focus:border-primary/40 focus:ring-2 focus:ring-primary/25'
+      : 'font-medium ring-1 ring-border/60 focus:border-border focus:bg-surface-panel focus:ring-1 focus:ring-border/60',
   ].join(' ')
 
 const textAreaClass = (isActive: boolean): string =>
   [
-    'min-h-[64px] w-full rounded-lg border border-transparent bg-background px-3 py-2 text-xs text-foreground outline-none transition',
+    'min-h-[64px] w-full rounded-xl border border-transparent bg-surface-panel px-3.5 py-2.5 text-sm text-foreground outline-none transition',
     'placeholder:text-muted-foreground',
     isActive
-      ? 'border-primary/30 bg-primary/[0.05] ring-2 ring-primary/40 focus:border-primary/40 focus:bg-primary/[0.04] focus:ring-2 focus:ring-primary/45'
-      : 'ring-1 ring-border/70 focus:border-border focus:bg-background focus:ring-1 focus:ring-border/70',
+      ? 'border-primary/40 ring-2 ring-primary/25 focus:border-primary/40 focus:ring-2 focus:ring-primary/25'
+      : 'ring-1 ring-border/60 focus:border-border focus:bg-surface-panel focus:ring-1 focus:ring-border/60',
   ].join(' ')
 
 // Section card highlight: the section the guide is currently on (or that
@@ -123,7 +123,7 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
   return (
     <>
       <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/32 backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/35 backdrop-blur-[2px] sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
@@ -131,7 +131,7 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
         aria-modal="true"
         aria-label="New order"
         onClick={(event) => event.stopPropagation()}
-        className="animate-sheet-up mobile-focus-workflow flex max-h-[94vh] w-full flex-col rounded-t-2xl bg-card shadow-ios-lg ring-1 ring-border/60 sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-5xl sm:rounded-2xl md:max-w-6xl xl:max-w-7xl"
+        className="animate-sheet-up mobile-focus-workflow flex max-h-[94vh] w-full flex-col rounded-t-2xl bg-card shadow-ios-lg ring-1 ring-border/60 sm:mx-auto sm:max-h-[92vh] sm:w-[calc(100vw-2rem)] sm:max-w-3xl sm:rounded-2xl lg:max-w-5xl"
       >
         <div className="flex items-center justify-between border-b border-border/70 px-4 py-3 sm:px-5 sm:py-3.5">
           <div className="space-y-0.5">
@@ -143,10 +143,10 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
           <button
             type="button"
             onClick={onClose}
-            className="tap-scale inline-flex items-center justify-center rounded-full bg-muted text-xs text-muted-foreground transition cursor-pointer hover:bg-accent hover:text-foreground rounded-full p-0 size-11 rounded-full p-0 whitespace-nowrap"
+            className="tap-scale inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
             aria-label="Close new order"
           >
-            ×
+            <X className="size-4" />
           </button>
         </div>
 
@@ -184,27 +184,21 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
                   </section>
                 )}
 
-                <div className="grid gap-3 sm:grid-cols-2 sm:items-start">
-                  <section className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-ios-sm">
-                    <div className="border-b border-border/70 px-3.5 py-3">
-                      <p className="text-sm font-semibold leading-5 text-foreground">Order details</p>
-                      <p className="mt-0.5 text-2xs text-muted-foreground">Customer and item information.</p>
-                    </div>
-                    <div className="space-y-0 divide-y divide-border/70 px-3 py-1">
-                      <NewOrderCustomerSection
-                        viewModel={viewModel}
-                        fieldClass={fieldClass}
-                        sectionClass={sectionClass}
-                      />
-                      <NewOrderItemsSection
-                        viewModel={viewModel}
-                        fieldClass={fieldClass}
-                        sectionClass={sectionClass}
-                      />
-                    </div>
-                  </section>
+                <div className="grid gap-6 sm:grid-cols-2 sm:items-start sm:gap-8">
+                  <div className="space-y-6">
+                    <NewOrderCustomerSection
+                      viewModel={viewModel}
+                      fieldClass={fieldClass}
+                      sectionClass={sectionClass}
+                    />
+                    <NewOrderItemsSection
+                      viewModel={viewModel}
+                      fieldClass={fieldClass}
+                      sectionClass={sectionClass}
+                    />
+                  </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-6">
                     <NewOrderPaymentSection
                       viewModel={viewModel}
                       fieldClass={fieldClass}

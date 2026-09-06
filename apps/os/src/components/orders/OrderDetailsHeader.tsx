@@ -160,7 +160,7 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
             type="text"
             value={draft.customerName}
             onChange={(event) => onDraftChange('customerName', event.target.value)}
-            className="h-9 w-full max-w-xs rounded-sm border border-border bg-background px-3 text-lg font-semibold text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40"
+            className="h-11 w-full max-w-xs rounded-xl border border-border/70 bg-surface-panel px-3.5 text-lg font-semibold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25"
             placeholder="Customer name"
           />
         )}

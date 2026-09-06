@@ -21,13 +21,13 @@ export const tabButtonClass = ({
   className?: string
 }) =>
   cn(
-    "inline-flex shrink-0 items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex shrink-0 items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 disabled:pointer-events-none disabled:opacity-50",
     level === "primary" ? "h-11 px-[18px]" : "h-9 px-3.5",
+    // Pill everywhere (Apple ladder). Segmented lives inside a grey track and
+    // has no own border; standalone keeps a hairline border for definition.
     segmented ? "rounded-full" : "rounded-full border",
     active
-      ? segmented
-        ? "bg-surface-selected text-primary-foreground shadow-ios-sm ring-1 ring-primary/30"
-        : "border-primary bg-primary text-primary-foreground shadow-ios-sm"
+      ? "border-primary bg-primary text-primary-foreground"
       : segmented
         ? "text-muted-foreground hover:bg-surface-card hover:text-foreground"
         : "border-border bg-surface-card text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -42,7 +42,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex min-h-11 items-center justify-center gap-1 rounded-full bg-surface-track p-1 text-muted-foreground",
+      "inline-flex min-h-11 items-center justify-center gap-1 rounded-full bg-surface-track p-1 text-muted-foreground ring-1 ring-border/60",
       className
     )}
     {...props}
@@ -57,7 +57,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-surface-selected data-[state=active]:text-primary-foreground data-[state=active]:shadow-ios-sm",
+      "inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-surface-card data-[state=active]:text-foreground data-[state=active]:shadow-ios-sm",
       className
     )}
     {...props}

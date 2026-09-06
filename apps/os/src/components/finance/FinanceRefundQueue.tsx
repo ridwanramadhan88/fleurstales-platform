@@ -1,5 +1,5 @@
 import { useMemo, useState, type FC } from 'react'
-import { ExternalLink, RotateCcw, ShieldCheck } from 'lucide-react'
+import { ExternalLink, ShieldCheck } from 'lucide-react'
 import type { OrderTableRow } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
 import { useUserStore } from '../../store/userStore'
@@ -9,6 +9,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { hasActionPermission } from '../../config/actionPermissions'
 import { toast } from '../../hooks/use-toast'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
+import { FinanceModuleHeader } from './FinanceModuleHeader'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 
 type RefundQueueTab = 'pending' | 'completed' | 'all'
@@ -122,24 +123,13 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
   }
 
   return (
-    <section aria-label="Finance refund queue" className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-border/60">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex size-11 items-center justify-center rounded-full bg-warning/10 text-warning">
-              <RotateCcw className="size-5" />
-            </span>
-            <div>
-              <h2 className="text-base font-semibold leading-6 text-foreground">Refund queue</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Track initiated refunds and confirm when funds have been returned.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <span className="sr-only">{pendingOrders.length} pending</span>
-      </header>
+    <>
+      <FinanceModuleHeader
+        title="Refund queue"
+        description="Track initiated refunds and confirm when funds have been returned."
+      />
+      <section aria-label="Finance refund queue" className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-border/60">
+      <span className="sr-only">{pendingOrders.length} pending</span>
 
       <nav aria-label="Refund queue filters" className={settingsTabTrackClass({ level: 'primary', className: 'gap-5 sm:gap-6' })}>
         {([
@@ -248,5 +238,6 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
         )}
       </ConfirmActionDialog>
     </section>
+    </>
   )
 }

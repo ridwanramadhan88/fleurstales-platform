@@ -15,7 +15,7 @@ export const FormSection = ({
   optional?: boolean
   className?: string
 }) => (
-  <section className={cn('space-y-3 rounded-xl border border-border/70 bg-surface-card p-4', className)}>
+  <section className={cn('space-y-3 rounded-2xl bg-surface-card p-5 shadow-ios-sm ring-1 ring-border/60', className)}>
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-semibold leading-5 text-foreground">{title}</h3>
@@ -37,7 +37,7 @@ export const FieldLabel = ({ children, required = false }: { children: ReactNode
 export const ValidationSummary = ({ errors, title = 'Check the highlighted fields' }: { errors: string[]; title?: string }) => {
   if (!errors.length) return null
   return (
-    <div role="alert" className="rounded-xl border border-destructive/25 bg-destructive/8 p-3 text-sm text-destructive">
+    <div role="alert" className="rounded-2xl bg-surface-error p-4 text-sm text-destructive ring-1 ring-destructive/25">
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
         <div>
@@ -52,7 +52,7 @@ export const ValidationSummary = ({ errors, title = 'Check the highlighted field
 }
 
 export const InheritedValueNote = ({ children }: { children: ReactNode }) => (
-  <p className="rounded-lg bg-surface-panel px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
+  <p className="rounded-xl bg-surface-panel px-3 py-2 text-xs text-muted-foreground ring-1 ring-border/40">
     {children}
   </p>
 )

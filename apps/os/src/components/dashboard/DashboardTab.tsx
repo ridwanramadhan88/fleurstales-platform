@@ -43,7 +43,7 @@ export const DashboardTab: FC<DashboardTabProps> = ({
   onGoToFinishedOrders,
 }) => {
   return (
-    <section className="space-y-6 sm:space-y-5 lg:space-y-6">
+    <section className="space-y-6">
       <DashboardHeader
         activeBranch={activeBranch}
         formattedDate={formattedDate}

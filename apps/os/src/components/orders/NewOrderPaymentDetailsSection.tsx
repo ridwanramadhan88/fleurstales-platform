@@ -44,7 +44,7 @@ export const NewOrderPaymentDetailsSection: FC<NewOrderPaymentDetailsSectionProp
       onFocus={() => onSectionFocus('payment')}
       className={sectionClass(
         activeGuideSection === 'payment',
-        'space-y-3 rounded-lg bg-muted/40 px-3 py-3',
+        'space-y-3 px-1 py-1',
       )}
     >
       <h3 className="text-sm font-semibold leading-5 text-foreground">Payment</h3>

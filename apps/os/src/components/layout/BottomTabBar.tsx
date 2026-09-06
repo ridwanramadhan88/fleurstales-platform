@@ -42,15 +42,15 @@ export const BottomTabBar: FC<BottomTabBarViewModel> = ({
         key={tab.id}
         type="button"
         onClick={() => onTabChange(tab.id)}
-        className={`tap-scale flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-1.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 ${
+        className={`tap-scale flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-full px-1.5 py-1.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
           isActive
-            ? 'bg-surface-selected text-primary-foreground'
-            : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+            ? 'text-primary'
+            : 'text-muted-foreground hover:text-foreground active:bg-muted/60'
         }`}
         aria-label={tab.label}
         aria-current={isActive ? 'page' : undefined}
       >
-        <Icon className="size-[21px]" strokeWidth={isActive ? 2.35 : 2} />
+        <Icon className="size-[22px]" strokeWidth={isActive ? 2.35 : 2} />
         <span className="w-full truncate text-[11px] font-semibold leading-none">
           {tab.label}
         </span>
@@ -61,7 +61,7 @@ export const BottomTabBar: FC<BottomTabBarViewModel> = ({
   return (
     <nav
       aria-label="Primary navigation"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border/65 bg-surface-footer pb-[max(env(safe-area-inset-bottom),0px)] shadow-[0_-8px_24px_rgba(15,23,42,0.05)]"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border/65 bg-surface-footer/85 pb-[max(env(safe-area-inset-bottom),0px)] shadow-[0_-8px_24px_rgba(15,23,42,0.05)] backdrop-blur-xl"
     >
       <div
         className="mx-auto grid w-full max-w-md gap-1 px-3 py-2"

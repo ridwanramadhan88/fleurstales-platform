@@ -24,7 +24,7 @@ export const NewOrderNotesSection: FC<NewOrderNotesSectionProps> = ({
       onFocus={() => onSectionFocus('notes')}
       className={sectionClass(
         activeGuideSection === 'notes',
-        'space-y-1.5 rounded-lg bg-surface-panel px-3 py-3',
+        'space-y-1.5 px-1 py-1',
       )}
     >
       <label htmlFor="orderNote" className="text-sm font-semibold leading-5 text-foreground">

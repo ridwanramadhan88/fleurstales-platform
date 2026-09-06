@@ -49,9 +49,11 @@ export interface FilterChipProps
  */
 export const FilterChip = React.forwardRef<HTMLButtonElement, FilterChipProps>(
   ({ active, tintedWhenActive, className, children, ...props }, ref) => {
+    // Apple pattern: solid blue = primary filter active, tinted blue = subtle
+    // active inside a tinted group. Inactive is always quiet card + muted text.
     const activeClasses = tintedWhenActive
-      ? 'border-primary bg-surface-selected text-primary-foreground shadow-ios-sm ring-1 ring-primary/30'
-      : 'border-primary bg-primary text-primary-foreground shadow-ios-sm'
+      ? 'border-primary/30 bg-primary/10 text-primary ring-1 ring-primary/25'
+      : 'border-primary bg-primary text-primary-foreground'
 
     return (
       <button

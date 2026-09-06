@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { makeOrder } from '../../test/factories/order'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
-import { OrderDetailsDeliverySection } from './OrderDetailsDeliverySection'
+import { OrderDetailsNotesSection } from './OrderDetailsNotesSection'
 import { OrderDetailsHeader } from './OrderDetailsHeader'
 
 const baseOrder = makeOrder({
@@ -53,7 +53,7 @@ describe('order details collection polish', () => {
 
   it('keeps greeting and operational-note editing behind the main edit action', () => {
     render(
-      <OrderDetailsDeliverySection
+      <OrderDetailsNotesSection
         viewModel={makeViewModel({ canEdit: true })}
       />,
     )

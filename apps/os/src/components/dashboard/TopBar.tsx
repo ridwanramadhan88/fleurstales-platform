@@ -52,7 +52,7 @@ const TopBarSearch: FC<{
       value={value}
       onChange={(event) => onChange?.(event.target.value)}
       placeholder={placeholder}
-      className="h-10 w-full appearance-none rounded-full border border-border/80 bg-card pl-11 pr-11 text-sm leading-none text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-foreground/25 focus:ring-2 focus:ring-foreground/10"
+      className="h-11 w-full appearance-none rounded-full border border-border/70 bg-card pl-11 pr-11 text-sm leading-none text-foreground outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25"
     />
     {value.length > 0 && (
       <button
@@ -181,7 +181,7 @@ export const TopBar: FC<TopBarViewModel> = ({
         >
           <Bell className="size-[18px]" strokeWidth={2.15} />
           {notificationCount > 0 && (
-            <span className="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-foreground px-1 text-[9px] font-bold text-background ring-2 ring-background">
+            <span className="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground ring-2 ring-background">
               {notificationCount > 9 ? "9+" : notificationCount}
             </span>
           )}
@@ -202,7 +202,7 @@ export const TopBar: FC<TopBarViewModel> = ({
           </button>
 
           {profileMenuOpen && (
-            <div className="animate-pop-in absolute right-0 z-40 mt-2 w-52 max-w-[82vw] rounded-xl border border-border/50 bg-surface-popover p-1.5 text-sm text-foreground shadow-lg">
+            <div className="animate-pop-in absolute right-0 z-40 mt-2 w-52 max-w-[82vw] rounded-xl border border-border/50 bg-surface-popover p-1.5 text-sm text-foreground shadow-ios">
               <div className="px-2.5 py-2">
                 <p className="truncate font-semibold">{userName}</p>
                 <p className="text-xs text-muted-foreground">{roleLabel}</p>
@@ -315,7 +315,7 @@ const BranchMenuPortal: FC<BranchMenuPortalProps> = ({
       ref={panelRef}
       role="listbox"
       aria-label="Branch"
-      className="animate-pop-in fixed z-[120] rounded-xl border border-border/60 bg-surface-popover p-1 text-sm text-popover-foreground shadow-lg"
+      className="animate-pop-in fixed z-[120] rounded-xl border border-border/60 bg-surface-popover p-1 text-sm text-popover-foreground shadow-ios"
       style={position}
     >
       <p className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">

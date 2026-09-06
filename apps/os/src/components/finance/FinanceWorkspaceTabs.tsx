@@ -2,6 +2,7 @@ import type { FC } from "react";
 import {
   BadgeDollarSign,
   ClipboardCheck,
+  Landmark,
   ReceiptText,
   RotateCcw,
 } from "lucide-react";
@@ -39,6 +40,11 @@ const ITEMS: Record<
     description: "Read-only financial history",
     icon: ReceiptText,
   },
+  balance: {
+    label: "Balance",
+    description: "Accounts and cash flow",
+    icon: Landmark,
+  },
 };
 
 export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
@@ -64,7 +70,7 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
     <nav
       ref={navRef}
       aria-label="Finance modules"
-      className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 scroll-px-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:p-0"
+      className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 scroll-px-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:p-0 lg:grid-cols-5"
     >
       {modules.map((module) => {
         const item = ITEMS[module];
@@ -78,7 +84,7 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
             aria-label={item.label}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "scroll-mx-4 flex min-h-[4.75rem] min-w-[10.5rem] shrink-0 items-center gap-3 overflow-hidden rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-w-0",
+              "scroll-mx-4 flex min-h-[4.75rem] min-w-[10.5rem] shrink-0 items-center gap-3 overflow-hidden rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:min-w-0",
               active
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border/70 bg-card text-foreground hover:bg-muted/60",

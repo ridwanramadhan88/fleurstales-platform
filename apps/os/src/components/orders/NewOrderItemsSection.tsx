@@ -36,20 +36,20 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
 
   return (
     <>
-              {/* Order Items — the hero card: primary-tinted, larger
-                  emphasis, so it visually outranks Customer above it. */}
+              {/* Order Items — the hero: larger emphasis, so it visually
+                  outranks Customer above it. Flat on the card. */}
               <section
                 onFocus={() => onSectionFocus('items')}
                 className={sectionClass(
                   activeGuideSection === 'items',
-                  'border-b border-border/70 bg-transparent px-0 pb-4 pt-4 sm:rounded-lg sm:border-0 sm:bg-card sm:px-3 sm:py-3',
+                  'bg-transparent px-0 py-1 sm:px-1',
                 )}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold leading-5 text-foreground">
                     Order items<span className="text-destructive">*</span>
                   </h3>
-                  <div className="inline-flex rounded-full border border-border bg-card p-0.5 text-xs">
+                  <div className="inline-flex rounded-full border border-border bg-surface-panel p-0.5 text-xs">
                     <button
                       type="button"
                       onClick={() => onOrderItemModeChange('catalog')}

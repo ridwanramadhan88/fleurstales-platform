@@ -102,7 +102,7 @@ export const OrderActivityTimeline: FC<OrderActivityTimelineProps> = ({
   const lastIndex = rows.length - 1
 
   return (
-    <section className="space-y-1 rounded-xl bg-card px-3 py-3 ring-1 ring-border/35">
+    <section className="space-y-1 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60">
       <p className="text-sm font-semibold leading-5 text-foreground">Activity timeline</p>
       <div className="mt-2">
         {rows.map((row, index) => (
@@ -115,7 +115,7 @@ export const OrderActivityTimeline: FC<OrderActivityTimelineProps> = ({
                     ? `z-10 mt-0.5 flex size-3.5 shrink-0 rounded-full ${STATUS_STAGE_STYLE[row.id as OrderStatus].currentDot}${STATUS_STAGE_STYLE[row.id as OrderStatus].pulse ? ' animate-pulse' : ''}`
                     : row.state === 'done'
                       ? `z-10 mt-0.5 flex size-3.5 shrink-0 rounded-full ${STATUS_STAGE_STYLE[row.id as OrderStatus].doneDot}`
-                      : 'z-10 mt-0.5 flex size-3.5 shrink-0 rounded-full border-2 border-border bg-card'
+                      : 'z-10 mt-0.5 flex size-3.5 shrink-0 rounded-full border-2 border-border bg-surface-card'
                 }
               />
               {index < lastIndex && (
@@ -146,7 +146,7 @@ export const OrderActivityTimeline: FC<OrderActivityTimelineProps> = ({
               <p
                 className={
                   row.state === 'current'
-                    ? `flex items-center gap-2 text-sm font-semibold ${STATUS_STAGE_STYLE[row.id as OrderStatus].currentText}`
+                    ? `flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold ${STATUS_STAGE_STYLE[row.id as OrderStatus].currentText}`
                     : row.state === 'done'
                       ? 'text-sm font-medium text-foreground'
                       : 'text-sm font-medium text-muted-foreground'
