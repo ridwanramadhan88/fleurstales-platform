@@ -1,6 +1,6 @@
 import { bootstrapSharedData } from './shared/bootstrap'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
-import { isSharedBackendConfigured } from '../api/remoteSession'
+import { isSupabaseConfigured } from './shared/supabaseConfig'
 
 export interface StaffReviewAnswer {
   questionId: string
@@ -46,7 +46,7 @@ export const getStaffReviews = async (filters?: {
   orderId?: string
   customerId?: string
 }): Promise<StaffReview[]> => {
-  if (!isSharedBackendConfigured()) return []
+  if (!isSupabaseConfigured()) return []
 
   const result = await getClient().rpc<StaffReviewResponse>('get_staff_reviews', {
     p_order_id: filters?.orderId ?? null,
