@@ -51,7 +51,9 @@ describe('HR Scheduling UI', () => {
     openScheduling()
     const thisWeek = screen.getByRole('button', { name:/This week/ })
     expect(thisWeek).toHaveTextContent('This week')
-    expect(thisWeek).toHaveTextContent(/\d{2} \w{3} – \d{2} \w{3}/)
+    // NOTE: en-GB short month renders September as 4-letter "Sept"
+    // (the only such month), so allow 3–4 word chars.
+    expect(thisWeek).toHaveTextContent(/\d{2} \w{3,4} – \d{2} \w{3,4}/)
     expect(thisWeek).not.toHaveTextContent('Mon')
     expect(thisWeek).not.toHaveTextContent('Sun')
     expect(thisWeek).not.toHaveTextContent('All branches')
