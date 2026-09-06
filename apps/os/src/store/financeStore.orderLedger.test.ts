@@ -18,7 +18,7 @@ const command = {
 }
 
 describe('automatic order ledger posting', () => {
-  it('posts one immutable order-payment entry and treats a matching retry as idempotent', () => {
+  it('posts one pending order-payment entry and treats a matching retry as idempotent', () => {
     const first = useFinanceStore.getState().recordOrderPayment(command)
     const replay = useFinanceStore.getState().recordOrderPayment({ ...command, sourceEventId: 'retry-event' })
 
@@ -40,9 +40,8 @@ describe('automatic order ledger posting', () => {
     expect(useFinanceStore.getState().transactions).toHaveLength(1)
   })
 
-  it('keeps the retired Finance verification writer disabled', () => {
+  it('lets Finance finalize the pending order-payment entry without duplicating it', () => {
     useFinanceStore.getState().recordOrderPayment(command)
-    const before = useFinanceStore.getState().transactions
 
     const result = useFinanceStore.getState().verifyOrderTransactions({
       orderNumber: 'ORD-1',
@@ -50,9 +49,9 @@ describe('automatic order ledger posting', () => {
       completedAt: '2026-07-14T09:30:00.000Z',
     })
 
-    expect(result.allowed).toBe(false)
-    expect(useFinanceStore.getState().transactions).toEqual(before)
-    expect(useFinanceStore.getState().transactions[0].status).toBe('pending')
+    expect(result.allowed).toBe(true)
+    expect(useFinanceStore.getState().transactions).toHaveLength(1)
+    expect(useFinanceStore.getState().transactions[0].status).toBe('verified')
   })
 
   it('prevents manual rejection of system-generated order entries', () => {
