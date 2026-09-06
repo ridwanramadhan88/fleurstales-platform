@@ -101,7 +101,7 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
               role="tab"
               aria-selected={tab === id}
               onClick={() => setTab(id)}
-              className={`h-11 shrink-0 border-b-2 px-0.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
+              className={`h-11 shrink-0 border-b-2 px-0 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
                 tab === id
                   ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
