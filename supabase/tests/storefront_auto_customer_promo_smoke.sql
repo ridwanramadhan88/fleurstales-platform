@@ -1,5 +1,6 @@
 -- Verifies customer-assigned voucher semantics through the real Storefront
 -- quote and final order-creation paths. Everything is rolled back.
+-- Full CI guard: keep this end-to-end database path in the migration replay gate.
 begin;
 
 insert into public.branches (
