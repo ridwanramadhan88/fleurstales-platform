@@ -1,6 +1,6 @@
 import { bootstrapSharedData } from './shared/bootstrap'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
-import { isSharedBackendConfigured } from '../api/remoteSession'
+import { isSupabaseConfigured } from './shared/supabaseConfig'
 
 export interface ReviewQuestionConfig {
   id: string
@@ -53,14 +53,14 @@ const writeLocal = (config: ReviewConfiguration): ReviewConfiguration => {
 }
 
 export const getReviewConfiguration = async (): Promise<ReviewConfiguration> => {
-  if (!isSharedBackendConfigured()) return readLocal()
+  if (!isSupabaseConfigured()) return readLocal()
   return getClient().rpc<ReviewConfiguration>('get_review_configuration', {})
 }
 
 export const saveReviewQuestions = async (
   questions: ReviewQuestionConfig[],
 ): Promise<ReviewConfiguration> => {
-  if (!isSharedBackendConfigured()) {
+  if (!isSupabaseConfigured()) {
     const current = readLocal()
     const next = {
       ...current,
@@ -83,7 +83,7 @@ export const saveReviewQuestions = async (
 export const saveReviewRewardSettings = async (
   reward: ReviewRewardConfig,
 ): Promise<ReviewConfiguration> => {
-  if (!isSharedBackendConfigured()) {
+  if (!isSupabaseConfigured()) {
     const current = readLocal()
     return writeLocal({
       ...current,
