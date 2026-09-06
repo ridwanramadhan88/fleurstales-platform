@@ -40,6 +40,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
   grandTotalIdr,
   voucherCode,
   appliedVoucherCode,
+  automaticPromoLabel,
   voucherMessage,
   eligibleVouchers,
   matchedCustomer,
@@ -140,6 +141,17 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
               ))}
             </div>
           )}
+
+          {automaticPromoLabel && !appliedVoucherCode && (
+            <div className="mb-3 flex items-center gap-2.5 rounded-[var(--sf-radius-field)] border border-[#00813f]/24 bg-[#00813f]/[0.055] px-4 py-3.5">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#00813f] text-white"><Check className="size-3.5" strokeWidth={2.2} /></span>
+              <div className="min-w-0">
+                <p className="truncate sf-type-2 font-medium">{automaticPromoLabel}</p>
+                <p className="sf-type-1 text-black/45">Automatically applied from your WhatsApp customer profile.</p>
+              </div>
+            </div>
+          )}
+
           {appliedVoucherCode ? (
             <div className="flex items-center justify-between gap-3 rounded-[var(--sf-radius-field)] border border-[#00813f]/24 bg-[#00813f]/[0.055] px-4 py-3.5">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -155,7 +167,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
             </div>
           )}
           {matchedCustomer && eligibleVouchers.length > 0 && !appliedVoucherCode && <p className="mt-2 sf-type-1 text-[#00813f]">Available for your customer profile.</p>}
-          {voucherMessage && !appliedVoucherCode && <p className="mt-2 sf-type-1 text-red-700">{voucherMessage}</p>}
+          {voucherMessage && !appliedVoucherCode && <p className={`mt-2 sf-type-1 ${automaticPromoLabel ? 'text-[#00813f]' : 'text-red-700'}`}>{voucherMessage}</p>}
         </ReviewSection>
 
         <ReviewSection eyebrow="Payment" title="Bank transfer">
@@ -187,7 +199,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
           <div className="space-y-3 rounded-[var(--sf-radius-card)] bg-[#f0e6dd] px-4 py-5">
             <PriceRow label="Subtotal" value={formatter.format(itemsTotalIdr)} />
             <PriceRow label={fulfillment === 'delivery' ? 'Delivery fee' : 'Pickup fee'} value={fulfillment === 'delivery' ? formatter.format(deliveryFeeIdr) : 'Free'} />
-            {discountIdr > 0 && <PriceRow label={appliedVoucherCode ? `Discount (${appliedVoucherCode})` : 'Discount'} value={`-${formatter.format(discountIdr)}`} accent />}
+            {discountIdr > 0 && <PriceRow label={appliedVoucherCode ? `Discount (${appliedVoucherCode})` : automaticPromoLabel ? `Discount (${automaticPromoLabel})` : 'Discount'} value={`-${formatter.format(discountIdr)}`} accent />}
             <div className="mt-4 flex items-end justify-between gap-4 border-t border-black/14 pt-4">
               <span className="sf-type-3 font-medium">Total to pay</span>
               <span className="text-[2.55rem] font-medium leading-none tabular-nums">{formatter.format(grandTotalIdr)}</span>
