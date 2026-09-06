@@ -1,4 +1,5 @@
 -- Accepted-write feedback-loop guard contract.
+-- Full database replay must keep both conflict and accepted-write circuits intact.
 --
 -- The existing conflict breaker protects stale-revision loops. These assertions
 -- keep the second line of defense intact for technically valid/current-revision
