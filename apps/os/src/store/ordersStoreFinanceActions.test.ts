@@ -10,11 +10,20 @@ const buildActions = (initialOrders: Parameters<typeof createFakeOrdersStore>[0]
   return { ...harness, ...actions }
 }
 
-describe('legacy Finance order-decision actions', () => {
-  it('does not allow Finance to re-verify a completed paid order', () => {
-    const store = buildActions([
-      makeOrder({ orderNumber: 'A', status: 'delivered', paymentStatus: 'paid', financeVerified: false }),
-    ])
+const paidCashOrder = (patch: Parameters<typeof makeOrder>[0] = {}) => makeOrder({
+  orderNumber: 'A',
+  status: 'processing',
+  paymentStatus: 'paid',
+  paymentMethod: 'cash',
+  totalIdr: 100_000,
+  paidAmountIdr: 100_000,
+  financeVerified: false,
+  ...patch,
+})
+
+describe('Finance order reconciliation actions', () => {
+  it('allows Finance to reconcile an Admin-confirmed paid order before fulfillment finishes', () => {
+    const store = buildActions([paidCashOrder()])
 
     const result = store.verifyOrderFinance({
       orderNumber: 'A',
@@ -22,15 +31,13 @@ describe('legacy Finance order-decision actions', () => {
       actor: { name: 'Finance A', role: 'finance' },
     })
 
-    expect(result.allowed).toBe(false)
-    expect(store.findOrder('A')?.financeVerified).toBe(false)
-    expect(store.findOrder('A')?.financeVerifiedBy).toBeUndefined()
+    expect(result.allowed).toBe(true)
+    expect(store.findOrder('A')?.financeVerified).toBe(true)
+    expect(store.findOrder('A')?.financeVerifiedBy).toBe('Finance A')
   })
 
-  it('does not allow Owner to use the retired Finance verification command', () => {
-    const store = buildActions([
-      makeOrder({ orderNumber: 'A', status: 'picked_up', paymentStatus: 'paid', financeVerified: false }),
-    ])
+  it('does not allow Owner to use the Finance reconciliation capability', () => {
+    const store = buildActions([paidCashOrder({ status: 'picked_up' })])
 
     const result = store.verifyOrderFinance({
       orderNumber: 'A',
@@ -42,31 +49,26 @@ describe('legacy Finance order-decision actions', () => {
     expect(store.findOrder('A')?.financeVerified).toBe(false)
   })
 
-  it('does not create legacy rejected or review states', () => {
-    const store = buildActions([
-      makeOrder({ orderNumber: 'A', status: 'delivered', paymentStatus: 'paid', financeVerified: false }),
-    ])
-    const revision = store.findOrder('A')?.revision ?? 1
+  it('allows Finance to return a paid order for correction with a reason', () => {
+    const store = buildActions([paidCashOrder()])
 
-    expect(store.rejectOrderFinance({
-      orderNumber: 'A', expectedRevision: revision,
-      actor: { name: 'Finance A', role: 'finance' }, note: 'Missing receipt',
-    }).allowed).toBe(false)
-    expect(store.markOrderForFinanceReview({
-      orderNumber: 'A', expectedRevision: revision,
-      actor: { name: 'Finance A', role: 'finance' }, note: 'Review',
-    }).allowed).toBe(false)
+    const result = store.rejectOrderFinance({
+      orderNumber: 'A',
+      expectedRevision: store.findOrder('A')?.revision ?? 1,
+      actor: { name: 'Finance A', role: 'finance' },
+      note: 'Missing receipt detail',
+    })
 
-    expect(store.findOrder('A')?.financeVerificationStatus).toBeUndefined()
-    expect(store.findOrder('A')?.financeVerificationNote).toBeUndefined()
+    expect(result.allowed).toBe(true)
+    expect(store.findOrder('A')?.financeVerificationStatus).toBe('rejected')
+    expect(store.findOrder('A')?.financeVerificationNote).toBe('Missing receipt detail')
+    expect(store.findOrder('A')?.editUnlocked).toBe(true)
   })
 
-  it('leaves a pre-existing legacy verification stamp unchanged', () => {
+  it('leaves a pre-existing verification stamp unchanged', () => {
     const store = buildActions([
-      makeOrder({
-        orderNumber: 'A',
+      paidCashOrder({
         status: 'delivered',
-        paymentStatus: 'paid',
         financeVerified: true,
         financeVerifiedBy: 'Legacy Finance',
         financeVerifiedAt: '2026-01-01T00:00:00.000Z',
@@ -86,7 +88,7 @@ describe('legacy Finance order-decision actions', () => {
 })
 
 describe('finished-order edit governance', () => {
-  it('re-locks an approved unlocked edit without needing Finance verification', () => {
+  it('re-locks an approved unlocked edit without needing another workflow status change', () => {
     const store = buildActions([
       makeOrder({ orderNumber: 'A', status: 'delivered', editUnlocked: true }),
     ])
