@@ -102,6 +102,10 @@ on conflict (domain) do update set
 do $$
 declare
   v_result jsonb;
+  v_quote_definition text;
+  v_create_definition text;
+  v_quote_signature regprocedure := 'public.quote_storefront_checkout(text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text)'::regprocedure;
+  v_create_signature regprocedure := 'public.create_storefront_order(text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text)'::regprocedure;
 begin
   v_result := private.resolve_voucher_discount(
     jsonb_build_object('whatsappNumber', '089900009000'),
@@ -141,6 +145,37 @@ begin
     or v_result->>'promoCode' is not null
     or coalesce((v_result->>'discountIdr')::bigint, 0) <> 0 then
     raise exception 'Expected unmatched WhatsApp to have no automatic voucher, got %', v_result;
+  end if;
+
+  -- Guard the real Storefront boundaries, not only the helper. The public quote
+  -- must consult the private assigned-voucher resolver when the code is blank,
+  -- and final create must resolve the same quote before delegating to the
+  -- previously proven order creator.
+  v_quote_definition := pg_get_functiondef(v_quote_signature);
+  if position('private.resolve_voucher_discount' in v_quote_definition) = 0 then
+    raise exception 'Storefront quote is not wired to the customer-assigned voucher resolver.';
+  end if;
+  if position('v_auto_discount <= v_existing_discount' in v_quote_definition) = 0 then
+    raise exception 'Storefront quote no longer preserves the stronger existing/review reward.';
+  end if;
+
+  v_create_definition := pg_get_functiondef(v_create_signature);
+  if position('public.quote_storefront_checkout' in v_create_definition) = 0
+    or position('v_effective_promo_code' in v_create_definition) = 0 then
+    raise exception 'Storefront order creation is not enforcing automatic promo resolution server-side.';
+  end if;
+
+  if not has_function_privilege('anon', v_quote_signature, 'EXECUTE') then
+    raise exception 'Anon Storefront lost quote execution access.';
+  end if;
+  if has_function_privilege('authenticated', v_quote_signature, 'EXECUTE') then
+    raise exception 'Authenticated role unexpectedly gained Storefront quote execution access.';
+  end if;
+  if not has_function_privilege('anon', v_create_signature, 'EXECUTE') then
+    raise exception 'Anon Storefront lost create-order execution access.';
+  end if;
+  if has_function_privilege('authenticated', v_create_signature, 'EXECUTE') then
+    raise exception 'Authenticated role unexpectedly gained Storefront create-order execution access.';
   end if;
 end
 $$;
