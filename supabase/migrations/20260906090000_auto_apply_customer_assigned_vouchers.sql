@@ -163,3 +163,187 @@ begin
   );
 end;
 $function$;
+
+-- The catalog Storefront quote has historically resolved vouchers inline and
+-- skipped that work entirely when p_promo_code was blank. Wrap the current
+-- cash-flow/review-reward quote so the customer-specific resolver participates
+-- in the actual Storefront path without weakening the private CRM boundary.
+alter function public.quote_storefront_checkout(
+  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
+) rename to quote_storefront_checkout_pre_customer_auto_promo;
+revoke execute on function public.quote_storefront_checkout_pre_customer_auto_promo(
+  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
+) from public, anon, authenticated, service_role;
+
+create or replace function public.quote_storefront_checkout(
+  p_idempotency_key text,
+  p_customer jsonb,
+  p_branch_id text,
+  p_fulfillment text,
+  p_schedule_date date,
+  p_schedule_time time without time zone,
+  p_items jsonb,
+  p_delivery_address text default null,
+  p_delivery_instructions text default null,
+  p_order_note text default null,
+  p_greeting_message text default null,
+  p_greeting_card_name text default null,
+  p_payment_method text default 'transfer',
+  p_promo_code text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_quote jsonb;
+  v_auto_promo jsonb;
+  v_items_subtotal bigint := 0;
+  v_delivery_fee bigint := 0;
+  v_existing_discount bigint := 0;
+  v_auto_discount bigint := 0;
+begin
+  v_quote := public.quote_storefront_checkout_pre_customer_auto_promo(
+    p_idempotency_key,
+    p_customer,
+    p_branch_id,
+    p_fulfillment,
+    p_schedule_date,
+    p_schedule_time,
+    p_items,
+    p_delivery_address,
+    p_delivery_instructions,
+    p_order_note,
+    p_greeting_message,
+    p_greeting_card_name,
+    p_payment_method,
+    p_promo_code
+  );
+
+  -- A code typed by the customer remains authoritative. This also preserves
+  -- the existing validation/message behavior for explicit all/vip/selected
+  -- vouchers.
+  if nullif(trim(coalesce(p_promo_code, '')), '') is not null then
+    return v_quote;
+  end if;
+
+  v_items_subtotal := coalesce((v_quote->>'itemsSubtotalIdr')::bigint, 0);
+  v_delivery_fee := coalesce((v_quote->>'deliveryFeeIdr')::bigint, 0);
+  v_existing_discount := coalesce((v_quote->>'discountIdr')::bigint, 0);
+  v_auto_promo := private.resolve_voucher_discount(p_customer, v_items_subtotal, null);
+
+  if coalesce((v_auto_promo->>'promoAccepted')::boolean, false) is not true then
+    return v_quote;
+  end if;
+
+  v_auto_discount := coalesce((v_auto_promo->>'discountIdr')::bigint, 0);
+
+  -- Review rewards are already resolved by the wrapped quote. Keep whichever
+  -- automatic benefit is better; ties keep the review reward so its one-time
+  -- redemption behavior stays deterministic.
+  if v_auto_discount <= v_existing_discount then
+    return v_quote;
+  end if;
+
+  return (v_quote - 'reviewRewardPercentOff' - 'reviewRewardMinOrderIdr')
+    || jsonb_build_object(
+      'discountIdr', v_auto_discount,
+      'totalIdr', greatest(0, v_items_subtotal - v_auto_discount + v_delivery_fee),
+      'promoCode', nullif(trim(v_auto_promo->>'promoCode'), ''),
+      'promoAccepted', true,
+      'promoMessage', v_auto_promo->>'promoMessage',
+      'reviewRewardApplied', false
+    );
+end;
+$function$;
+revoke execute on function public.quote_storefront_checkout(
+  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
+) from public, authenticated;
+grant execute on function public.quote_storefront_checkout(
+  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
+) to anon, service_role;
+
+-- Enforce the same automatic selection at final order creation. The browser
+-- normally snapshots the quoted promo code, but the server must not rely on a
+-- client race or stale UI state for customer-assigned eligibility.
+alter function public.create_storefront_order(
+  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
+) rename to create_storefront_order_pre_customer_auto_promo;
+revoke execute on function public.create_storefront_order_pre_customer_auto_promo(
+  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
+) from public, anon, authenticated, service_role;
+
+create or replace function public.create_storefront_order(
+  p_idempotency_key text,
+  p_customer jsonb,
+  p_branch_id text,
+  p_fulfillment text,
+  p_schedule_date date,
+  p_schedule_time time without time zone,
+  p_items jsonb,
+  p_delivery_address text default null,
+  p_delivery_instructions text default null,
+  p_order_note text default null,
+  p_greeting_message text default null,
+  p_greeting_card_name text default null,
+  p_payment_method text default 'transfer',
+  p_promo_code text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_effective_promo_code text := nullif(trim(coalesce(p_promo_code, '')), '');
+  v_quote jsonb;
+begin
+  if v_effective_promo_code is null then
+    v_quote := public.quote_storefront_checkout(
+      p_idempotency_key,
+      p_customer,
+      p_branch_id,
+      p_fulfillment,
+      p_schedule_date,
+      p_schedule_time,
+      p_items,
+      p_delivery_address,
+      p_delivery_instructions,
+      p_order_note,
+      p_greeting_message,
+      p_greeting_card_name,
+      p_payment_method,
+      null
+    );
+
+    if coalesce((v_quote->>'promoAccepted')::boolean, false)
+      and nullif(trim(v_quote->>'promoCode'), '') is not null then
+      v_effective_promo_code := v_quote->>'promoCode';
+    end if;
+  end if;
+
+  return public.create_storefront_order_pre_customer_auto_promo(
+    p_idempotency_key,
+    p_customer,
+    p_branch_id,
+    p_fulfillment,
+    p_schedule_date,
+    p_schedule_time,
+    p_items,
+    p_delivery_address,
+    p_delivery_instructions,
+    p_order_note,
+    p_greeting_message,
+    p_greeting_card_name,
+    p_payment_method,
+    v_effective_promo_code
+  );
+end;
+$function$;
+revoke execute on function public.create_storefront_order(
+  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
+) from public, authenticated;
+grant execute on function public.create_storefront_order(
+  text,jsonb,text,text,date,time without time zone,jsonb,text,text,text,text,text,text,text
+) to anon, service_role;
