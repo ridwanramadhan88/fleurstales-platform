@@ -26,7 +26,11 @@ import type { Voucher } from '../../store/voucherStore'
 
 type CheckoutStep = 'cart' | 'details' | 'review' | 'summary'
 type PaymentMethod = 'cash' | 'transfer'
-
+type StorefrontCheckoutQuoteWithAutoPromo = StorefrontCheckoutQuoteResult & {
+  reviewRewardApplied?: boolean
+  reviewRewardPercentOff?: number
+  reviewRewardMinOrderIdr?: number
+}
 
 export interface CartDrawerViewModel extends CartDrawerProps {
   step: CheckoutStep
@@ -54,6 +58,7 @@ export interface CartDrawerViewModel extends CartDrawerProps {
   detailsError: string | null
   voucherCode: string
   appliedVoucherCode: string | null
+  automaticPromoLabel: string | null
   voucherMessage: string | null
   paymentMethod: PaymentMethod
   placedOrderNumber: string | null
@@ -117,7 +122,7 @@ export const useCartDrawerController = (
   const [placedOrderNumber, setPlacedOrderNumber] = useState<string | null>(null)
   const sharedData = useMemo(() => bootstrapSharedData(), [])
   const remoteCheckoutEnabled = sharedData.enabled
-  const [remoteQuote, setRemoteQuote] = useState<StorefrontCheckoutQuoteResult | null>(null)
+  const [remoteQuote, setRemoteQuote] = useState<StorefrontCheckoutQuoteWithAutoPromo | null>(null)
   const [checkoutIdempotencyKey, setCheckoutIdempotencyKey] = useState(() => generateId('checkout-attempt'))
   const [placedOrderTotals, setPlacedOrderTotals] = useState<{
     itemsTotalIdr: number
@@ -197,7 +202,6 @@ export const useCartDrawerController = (
     if (deliveryTime && !availableTimeSlots.includes(deliveryTime)) setDeliveryTime('')
   }, [availableTimeSlots, deliveryTime])
 
-
   // A server quote is valid only for the exact customer/cart/branch/schedule/payment
   // inputs that produced it. Any change clears the quote and applied promo so stale
   // totals can never be shown or submitted.
@@ -241,6 +245,12 @@ export const useCartDrawerController = (
     : voucherValidation?.ok && voucherValidation.discountIdr
       ? voucherValidation.discountIdr
       : 0
+
+  const automaticPromoLabel = remoteQuote?.reviewRewardApplied
+    ? `Review reward${remoteQuote.reviewRewardPercentOff ? ` · ${remoteQuote.reviewRewardPercentOff}% off` : ''}`
+    : !appliedVoucherCode && remoteQuote?.promoAccepted && remoteQuote.promoCode
+      ? `Voucher ${remoteQuote.promoCode}`
+      : null
 
   const { grandTotalIdr } = calculateOrderTotal({
     itemsTotalIdr,
@@ -303,8 +313,15 @@ export const useCartDrawerController = (
       const error = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
       if (error) { setVoucherMessage(`Complete checkout details first. ${error}`); return }
       try {
-        const quote = await sharedData.repositories.checkout.quoteOrder(buildQuoteRequest(code.trim()))
+        const quote = await sharedData.repositories.checkout.quoteOrder(buildQuoteRequest(code.trim())) as StorefrontCheckoutQuoteWithAutoPromo
         setRemoteQuote(quote)
+        if (quote.reviewRewardApplied) {
+          setAppliedVoucherCode(null)
+          setVoucherMessage(quote.reviewRewardPercentOff
+            ? `Your automatic review reward (${quote.reviewRewardPercentOff}% off) gives the best discount and stays applied.`
+            : 'Your automatic review reward gives the best discount and stays applied.')
+          return
+        }
         if (!quote.promoAccepted) { setAppliedVoucherCode(null); setVoucherMessage(quote.promoMessage ?? 'This voucher code is not valid.'); return }
         setAppliedVoucherCode(quote.promoCode ?? code.trim().toUpperCase())
         setVoucherMessage(quote.promoMessage ?? 'Voucher applied.')
@@ -331,10 +348,16 @@ export const useCartDrawerController = (
     setAppliedVoucherCode(null)
     setVoucherCode('')
     setVoucherMessage(null)
+    if (remoteCheckoutEnabled && sharedData.enabled) {
+      void sharedData.repositories.checkout.quoteOrder(buildQuoteRequest())
+        .then((quote) => setRemoteQuote(quote as StorefrontCheckoutQuoteWithAutoPromo))
+        .catch(() => setRemoteQuote(null))
+      return
+    }
     setRemoteQuote(null)
   }
 
-  const handleContinueFromDetails = () => {
+  const handleContinueFromDetails = async () => {
     const error = validateStorefrontCheckoutDetails({
       customerName,
       whatsappNumber,
@@ -349,6 +372,19 @@ export const useCartDrawerController = (
       return
     }
     setDetailsError(null)
+
+    if (remoteCheckoutEnabled && sharedData.enabled) {
+      try {
+        const quote = await sharedData.repositories.checkout.quoteOrder(buildQuoteRequest()) as StorefrontCheckoutQuoteWithAutoPromo
+        setRemoteQuote(quote)
+        setAppliedVoucherCode(null)
+        setVoucherMessage(null)
+      } catch (cause) {
+        setDetailsError(cause instanceof Error ? cause.message : 'Unable to calculate your checkout total.')
+        return
+      }
+    }
+
     setStep('review')
   }
 
@@ -393,8 +429,8 @@ export const useCartDrawerController = (
     const shared = sharedData
     if (shared.enabled) {
       try {
-        const quote = await shared.repositories.checkout.quoteOrder(checkoutRequest)
-        if (appliedVoucherCode && !quote.promoAccepted) {
+        const quote = await shared.repositories.checkout.quoteOrder(checkoutRequest) as StorefrontCheckoutQuoteWithAutoPromo
+        if (appliedVoucherCode && !quote.promoAccepted && !quote.reviewRewardApplied) {
           setAppliedVoucherCode(null)
           setRemoteQuote(quote)
           setVoucherMessage(quote.promoMessage ?? 'The voucher is no longer valid.')
@@ -402,6 +438,7 @@ export const useCartDrawerController = (
           setStep('details')
           return
         }
+        if (quote.reviewRewardApplied) setAppliedVoucherCode(null)
         setRemoteQuote(quote)
         const order = await shared.repositories.checkout.createOrder(checkoutRequest)
         setPlacedOrderTotals({
@@ -540,6 +577,7 @@ export const useCartDrawerController = (
     detailsError,
     voucherCode,
     appliedVoucherCode,
+    automaticPromoLabel,
     voucherMessage,
     paymentMethod,
     placedOrderNumber,

@@ -10,10 +10,10 @@ import { FINISH_PHOTO_BUCKET, FINISH_PHOTO_MIME_TYPE, buildFinishPhotoStoragePat
 import { PAYMENT_PROOF_BUCKET, PAYMENT_PROOF_MIME_TYPE, buildPaymentProofStoragePath } from '../domain/paymentProofImageDomain'
 import type { OrderTableRow } from '../types/orders'
 import { bootstrapSharedData } from './shared/bootstrap'
+import { isSupabaseConfigured } from './shared/supabaseConfig'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
 import { useOrdersStore } from '../store/ordersStore'
-import { isSharedBackendConfigured } from '../api/remoteSession'
 
 const getStorageClient = () => {
   const client = getSupabaseAuthClient()
@@ -118,7 +118,7 @@ export const attachOrderFinishPhoto = async (
 ): Promise<OrderTableRow> => {
   if (!order.id) throw new Error('Order id is missing.')
 
-  if (!isSharedBackendConfigured()) {
+  if (!isSupabaseConfigured()) {
     const user = await import('../store/userStore').then(({ useUserStore }) => useUserStore.getState())
     const result = useOrdersStore.getState().setOrderFinishPhoto({
       orderNumber: order.orderNumber,

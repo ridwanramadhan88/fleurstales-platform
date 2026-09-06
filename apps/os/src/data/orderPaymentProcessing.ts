@@ -1,11 +1,11 @@
 import type { OrderTableRow } from '../types/orders'
 import { bootstrapSharedData } from './shared/bootstrap'
+import { isSupabaseConfigured } from './shared/supabaseConfig'
 import { browserSupabaseTokenProvider } from './shared/supabaseSession'
 import { refreshBusinessOsOrdersFromRemote } from './shared/orderBridge'
 import { useOrdersStore } from '../store/ordersStore'
 import { useFinanceStore } from '../store/financeStore'
 import { useUserStore } from '../store/userStore'
-import { isSharedBackendConfigured } from '../api/remoteSession'
 
 export interface ProcessPaymentResult {
   orderId: string
@@ -116,7 +116,7 @@ export const confirmOrderPaymentForProcessing = async (
   if (!order.id) throw new Error('Order id is missing.')
   if (!financeAccountId) throw new Error('Receiving account is required.')
 
-  if (!isSharedBackendConfigured()) {
+  if (!isSupabaseConfigured()) {
     return confirmLocalPaymentForProcessing(order, financeAccountId, paymentProofPath ?? order.paymentProofUrl)
   }
 
@@ -145,7 +145,7 @@ export const processOrderForProduction = async (
     throw new Error('Bukti transfer is missing. Confirm payment first.')
   }
 
-  if (!isSharedBackendConfigured()) {
+  if (!isSupabaseConfigured()) {
     const current = useOrdersStore.getState().orders.find((item) => item.orderNumber === order.orderNumber) ?? order
     const user = useUserStore.getState()
     const result = useOrdersStore.getState().assignFloristAndStartProcessing({

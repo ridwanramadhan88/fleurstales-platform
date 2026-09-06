@@ -39,6 +39,7 @@ const base = (): CartDrawerViewModel => ({
   detailsError: null,
   voucherCode: '',
   appliedVoucherCode: null,
+  automaticPromoLabel: null,
   voucherMessage: null,
   paymentMethod: 'transfer',
   placedOrderNumber: null,
@@ -96,5 +97,20 @@ describe('customer checkout CRM and voucher UI', () => {
     expect(viewModel.handleApplySuggestedVoucher).toHaveBeenCalledWith('VIP10')
     expect(screen.getByText('Happy birthday!')).toBeInTheDocument()
     expect(screen.getByText('From Budi')).toBeInTheDocument()
+  })
+
+  it('shows a WhatsApp-matched automatic promo and discounted total', () => {
+    const viewModel = {
+      ...base(),
+      eligibleVouchers: [],
+      automaticPromoLabel: 'Review reward · 10% off',
+      discountIdr: 20_000,
+      grandTotalIdr: 180_000,
+    }
+    render(<ReviewStep {...viewModel} />)
+    expect(screen.getByText('Review reward · 10% off')).toBeInTheDocument()
+    expect(screen.getByText('Automatically applied from your WhatsApp customer profile.')).toBeInTheDocument()
+    expect(screen.getByText('Discount (Review reward · 10% off)')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Place order/ })).toHaveTextContent('180.000')
   })
 })
