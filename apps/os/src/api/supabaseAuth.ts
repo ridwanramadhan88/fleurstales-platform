@@ -3,6 +3,7 @@ import { resolveSupabaseConfig } from '../data/shared/supabaseConfig'
 import { setSupabaseBrowserSession } from '../data/shared/supabaseSession'
 
 let client: SupabaseClient | null | undefined
+let browserSessionSyncStarted = false
 
 const syncBrowserSession = (session: Session | null): void => {
   setSupabaseBrowserSession(session ? {
@@ -10,6 +11,18 @@ const syncBrowserSession = (session: Session | null): void => {
     userId: session.user.id,
     expiresAt: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined,
   } : null)
+}
+
+const ensureBrowserSessionSync = (authClient: SupabaseClient): void => {
+  if (browserSessionSyncStarted) return
+  browserSessionSyncStarted = true
+
+  // Keep the token bridge used by the custom PostgREST client synchronized for
+  // the lifetime of the Supabase client. Login-specific subscriptions unmount
+  // after sign-in, while Supabase can continue refreshing the session token.
+  authClient.auth.onAuthStateChange((_event, session) => {
+    syncBrowserSession(session)
+  })
 }
 
 export const getSupabaseAuthClient = (): SupabaseClient | null => {
@@ -26,6 +39,7 @@ export const getSupabaseAuthClient = (): SupabaseClient | null => {
       persistSession: true,
     },
   })
+  ensureBrowserSessionSync(client)
   return client
 }
 
