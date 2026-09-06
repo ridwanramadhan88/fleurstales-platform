@@ -1,6 +1,7 @@
 -- Company-wide staff reads vs Admin operational branch ownership.
--- Read visibility must never be narrowed by the Admin runtime branch; order
--- mutations must always enforce it at the database boundary.
+-- Read visibility must never be narrowed by the Admin runtime branch. Normal
+-- operational mutations remain branch-scoped, while the dedicated payment
+-- confirmation flow has a narrow company-wide payment-only exception.
 
 do $$
 declare
@@ -75,7 +76,22 @@ begin
      or position('ORDER_OUTSIDE_BRANCH_SCOPE' in v_source)=0
      or position('admin' in lower(v_source))=0
      or position('is distinct from' in lower(v_source))=0 then
-    raise exception 'Admin order mutation branch trigger lost its authoritative/null-safe guard';
+    raise exception 'Admin order mutation trigger lost its authoritative/null-safe branch guard';
+  end if;
+
+  -- Payment confirmation may be company-wide for Admin, but the bypass must be
+  -- restricted to confirmed orders and payment-only columns. In particular,
+  -- lifecycle status, florist assignment, branch, and all other order fields
+  -- must still fall through to the operational branch guard above.
+  if position('v_payment_only_update' in v_source)=0
+     or position('orders.advance_status' in v_source)=0
+     or position('payment_proof_url' in v_source)=0
+     or position('payment_status' in v_source)=0
+     or position('paid_amount_idr' in v_source)=0
+     or position('to_jsonb' in lower(v_source))=0
+     or position('old.status = ''confirmed''' in lower(v_source))=0
+     or position('new.status = ''confirmed''' in lower(v_source))=0 then
+    raise exception 'Admin payment confirmation exception is missing or too broad';
   end if;
 
   -- Orders RLS must continue delegating row visibility to the helper.
@@ -98,7 +114,7 @@ begin
   end if;
 
   -- Notifications are awareness/read surfaces. Admin may see company-wide
-  -- notifications; order mutation authority remains enforced by the trigger.
+  -- notifications; operational order mutation authority remains branch-scoped.
   select pg_get_functiondef('private.can_read_staff_notification(public.staff_notifications)'::regprocedure) into v_source;
   if position('notification_kind_allowed_for_role' in v_source)=0 then
     raise exception 'Notification reads lost capability-aware filtering';
