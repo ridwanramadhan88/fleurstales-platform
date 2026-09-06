@@ -31,13 +31,14 @@ afterEach(() => {
 })
 
 describe('critical role workflow regression coverage', () => {
-  it('Finance cannot use the retired second order-verification workflow', () => {
+  it('Finance can perform the final reconciliation after Admin confirms full payment', () => {
     useOrdersStore.setState({
       orders: [makeOrder({
         orderNumber: 'FINANCE-FLOW',
         branch: 'Kedamaian',
-        status: 'picked_up',
+        status: 'processing',
         paymentStatus: 'paid',
+        paymentMethod: 'cash',
         paidAmountIdr: 500_000,
         totalIdr: 500_000,
         financeVerified: false,
@@ -50,8 +51,9 @@ describe('critical role workflow regression coverage', () => {
       actor: finance,
     })
 
-    expect(result.allowed).toBe(false)
-    expect(useOrdersStore.getState().orders[0].financeVerified).toBe(false)
+    expect(result.allowed).toBe(true)
+    expect(useOrdersStore.getState().orders[0].financeVerified).toBe(true)
+    expect(useOrdersStore.getState().orders[0].financeVerifiedBy).toBe('Finance')
   })
 
   it('Admin cannot directly edit a Finance-verified locked legacy order', () => {
