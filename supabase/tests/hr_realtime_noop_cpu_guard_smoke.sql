@@ -1,4 +1,5 @@
 -- HR Realtime no-op CPU guard contract.
+-- Full database replay must keep both the Realtime contract and no-op guards.
 --
 -- employee_point_events remains intentionally published because the Business OS
 -- uses it to refresh the points UI. Therefore the HR persistence path must not
