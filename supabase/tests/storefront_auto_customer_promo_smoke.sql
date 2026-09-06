@@ -34,6 +34,13 @@ on conflict (id) do update set
   opening_hours = excluded.opening_hours,
   updated_at = now();
 
+-- The schema allows only one global default account. The seed already creates
+-- one, so temporarily make the smoke account the deterministic default inside
+-- this rollback-only transaction.
+update public.public_payment_accounts
+set is_default = false
+where is_default = true;
+
 insert into public.public_payment_accounts (
   id,
   bank_name,
