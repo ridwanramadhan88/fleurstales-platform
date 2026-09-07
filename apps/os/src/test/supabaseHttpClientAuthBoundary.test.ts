@@ -39,6 +39,22 @@ describe('SupabaseHttpClient authentication boundary', () => {
     expect(headers.get('Authorization')).toBe('Bearer staff-jwt')
   })
 
+  it('reads the token provider again for every request so refreshed JWTs are used', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('null', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    let token = 'staff-jwt-1'
+    const client = new SupabaseHttpClient(config, { getAccessToken: () => token })
+
+    await client.rpc('first_staff_request', {})
+    token = 'staff-jwt-2'
+    await client.rpc('second_staff_request', {})
+
+    const firstHeaders = new Headers((fetchMock.mock.calls[0]?.[1] as RequestInit).headers)
+    const secondHeaders = new Headers((fetchMock.mock.calls[1]?.[1] as RequestInit).headers)
+    expect(firstHeaders.get('Authorization')).toBe('Bearer staff-jwt-1')
+    expect(secondHeaders.get('Authorization')).toBe('Bearer staff-jwt-2')
+  })
+
   it('keeps anonymous requests available for clients without an auth token provider', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('null', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
