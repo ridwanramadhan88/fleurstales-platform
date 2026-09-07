@@ -146,7 +146,9 @@ export default function App() {
         branches: currentSettings.branches,
       })
       const scheduledBranch = branchContext.scheduledBranchId
-      const operationalBranch = branchContext.operationalBranchId
+      const fallbackOperationalBranch = branchContext.fallbackOperationalBranchId
+      const operationalBranch = scheduledBranch
+        ?? (branchContext.requiresOperationalBranch ? fallbackOperationalBranch : undefined)
 
       if (productionSession) {
         // Authentication is independent from today's schedule. Admin/Florist
