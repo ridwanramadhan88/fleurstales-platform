@@ -55,6 +55,8 @@ begin
      or private.has_action_permission_for_role('hr','orders.advance_status') then
     raise exception 'HR received Order mutation authority';
   end if;
+  -- Finance now owns the final reconciliation step after Admin payment confirmation.
+  -- This must stay enabled so only reconciled payments enter balance/revenue.
   if not private.has_action_permission_for_role('finance','finance.verify_order') then
     raise exception 'Finance final order reconciliation capability missing';
   end if;
