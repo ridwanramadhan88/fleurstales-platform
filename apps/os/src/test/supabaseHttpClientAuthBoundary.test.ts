@@ -40,7 +40,7 @@ describe('SupabaseHttpClient authentication boundary', () => {
   })
 
   it('reads the token provider again for every request so refreshed JWTs are used', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response('null', { status: 200 }))
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response('null', { status: 200 })))
     vi.stubGlobal('fetch', fetchMock)
     let token = 'staff-jwt-1'
     const client = new SupabaseHttpClient(config, { getAccessToken: () => token })
