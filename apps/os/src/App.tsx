@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import HomePage from './pages/Home'
 import LoginPage from './pages/Login'
 import { useUserStore } from './store/userStore'
@@ -17,7 +17,7 @@ import { getBusinessOsCustomersRefreshError, refreshBusinessOsCustomersFromRemot
 import { getStoreBridgeStatus, refreshBusinessOsStoreFromRemote, stopBusinessOsStoreBridge } from './data/shared/storeBridge'
 import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
 import { clearSharedSession, getSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
-import { signOutSupabase } from './api/supabaseAuth'
+import { signOutSupabase, subscribeSupabaseAuth } from './api/supabaseAuth'
 import { connectOperationalSupabase, stopOperationalSupabaseSync } from './data/operationalSupabaseSync'
 import { connectAuthorizationSupabase, stopAuthorizationSupabaseSync } from './data/authorizationSupabaseSync'
 import { connectInternalSettingsSupabase, stopInternalSettingsSupabaseSync } from './data/internalSettingsSupabaseSync'
@@ -42,21 +42,56 @@ const stopAllProductionBridges = (): void => {
   stopEmployeePointsSupabase()
 }
 
+const hydrationErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'unknown client error'
+
+const runHydrationStage = async (
+  label: string,
+  hydrate: () => Promise<boolean>,
+): Promise<{ ready: boolean; failure?: string }> => {
+  try {
+    const ready = await hydrate()
+    return ready ? { ready } : { ready, failure: `${label}: unavailable` }
+  } catch (error) {
+    return { ready: false, failure: `${label}: ${hydrationErrorMessage(error)}` }
+  }
+}
+
 export default function App() {
   const [view, setView] = useState<'login' | 'admin'>('login')
   const [selectedBranch, setSelectedBranch] = useState<BranchFilter>('All')
   const signIn = useUserStore((state) => state.signIn)
   const clearSession = useUserStore((state) => state.clearSession)
+  const resettingSessionRef = useRef(false)
   const { theme, toggleTheme } = useTheme()
 
   const resetSession = useCallback(async () => {
-    stopAllProductionBridges()
-    clearSharedSession()
-    clearSession()
-    setSelectedBranch('All')
-    setView('login')
-    await Promise.allSettled([signOutSupabase(), signOutSharedBackend()])
+    if (resettingSessionRef.current) return
+    resettingSessionRef.current = true
+    try {
+      stopAllProductionBridges()
+      clearSharedSession()
+      clearSession()
+      setSelectedBranch('All')
+      setView('login')
+      await Promise.allSettled([signOutSupabase(), signOutSharedBackend()])
+    } finally {
+      resettingSessionRef.current = false
+    }
   }, [clearSession])
+
+  useEffect(() => {
+    if (view !== 'admin') return
+    const unsubscribe = subscribeSupabaseAuth((_event, session) => {
+      const sharedSession = getSharedSession()
+      if (sharedSession.kind !== 'staff' || sharedSession.source !== 'supabase') return
+      const expectedUserId = sharedSession.userId
+      if (!session || !expectedUserId || session.user.id !== expectedUserId) {
+        void resetSession()
+      }
+    })
+    return unsubscribe
+  }, [resetSession, view])
 
   const handleSignIn = useCallback(async (employee: Employee) => {
     try {
@@ -70,13 +105,17 @@ export default function App() {
         setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: profileBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
       }
 
-      const authorizationReady = await connectAuthorizationSupabase()
-      const internalSettingsReady = await connectInternalSettingsSupabase()
-      const operationalReady = await connectOperationalSupabase()
-      const staffOperationsReady = await connectStaffOperationsSupabase()
+      const authorization = await runHydrationStage('Authorization', connectAuthorizationSupabase)
+      const internalSettings = await runHydrationStage('Internal settings', connectInternalSettingsSupabase)
+      const operational = await runHydrationStage('Operational domains', connectOperationalSupabase)
+      const staffOperations = await runHydrationStage('Staff schedule/attendance', connectStaffOperationsSupabase)
       const productionSession = getSharedSession().source === 'supabase'
-      if (productionSession && (!authorizationReady || !internalSettingsReady || !operationalReady || !staffOperationsReady)) {
-        throw new Error('Fleurstales staff authority, settings, schedule, or operational data could not be fully hydrated.')
+      if (productionSession) {
+        const failures = [authorization.failure, internalSettings.failure, operational.failure, staffOperations.failure]
+          .filter((failure): failure is string => Boolean(failure))
+        if (failures.length > 0) {
+          throw new Error(`Fleurstales startup hydration failed: ${failures.join('; ')}.`)
+        }
       }
 
       const hr = useHrStore.getState()
