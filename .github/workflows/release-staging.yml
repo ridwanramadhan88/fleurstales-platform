@@ -65,5 +65,5 @@ jobs:
         run: ./scripts/run-supabase-smoke-tests.sh "$SUPABASE_DB_URL"
       - name: Deploy staging staff functions after database verification
         run: |
-          npx -y supabase@2.109.1 functions deploy staff-admin --project-ref "$SUPABASE_PROJECT_ID"
-          npx -y supabase@2.109.1 functions deploy staff-login --project-ref "$SUPABASE_PROJECT_ID"
+          npx -y supabase@2.109.1 functions deploy staff-admin --use-api --project-ref "$SUPABASE_PROJECT_ID"
+          npx -y supabase@2.109.1 functions deploy staff-login --use-api --project-ref "$SUPABASE_PROJECT_ID"
