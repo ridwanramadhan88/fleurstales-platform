@@ -49,7 +49,7 @@ describe('resolveStaffBranchContext', () => {
       branches,
     })).toEqual({
       scheduledBranchId: undefined,
-      operationalBranchId: 'branch-b',
+      fallbackOperationalBranchId: 'branch-b',
       requiresOperationalBranch: true,
     })
   })
@@ -62,12 +62,12 @@ describe('resolveStaffBranchContext', () => {
       branches,
     })).toEqual({
       scheduledBranchId: undefined,
-      operationalBranchId: 'branch-a',
+      fallbackOperationalBranchId: 'branch-a',
       requiresOperationalBranch: true,
     })
   })
 
-  it('prefers an active scheduled branch over profile/default fallback', () => {
+  it('keeps an active scheduled branch separate from the fallback branch', () => {
     expect(resolveStaffBranchContext({
       role: 'admin',
       scheduledBranchId: 'branch-b',
@@ -75,7 +75,7 @@ describe('resolveStaffBranchContext', () => {
       branches,
     })).toEqual({
       scheduledBranchId: 'branch-b',
-      operationalBranchId: 'branch-b',
+      fallbackOperationalBranchId: 'branch-a',
       requiresOperationalBranch: true,
     })
   })
@@ -88,12 +88,12 @@ describe('resolveStaffBranchContext', () => {
       branches,
     })).toEqual({
       scheduledBranchId: undefined,
-      operationalBranchId: 'branch-b',
+      fallbackOperationalBranchId: 'branch-b',
       requiresOperationalBranch: true,
     })
   })
 
-  it('does not require a fallback operational branch for cross-branch roles', () => {
+  it('does not require fallback branch context for cross-branch roles', () => {
     expect(resolveStaffBranchContext({
       role: 'finance',
       scheduledBranchId: undefined,
@@ -101,7 +101,7 @@ describe('resolveStaffBranchContext', () => {
       branches,
     })).toEqual({
       scheduledBranchId: undefined,
-      operationalBranchId: undefined,
+      fallbackOperationalBranchId: 'branch-b',
       requiresOperationalBranch: false,
     })
   })
@@ -114,7 +114,7 @@ describe('resolveStaffBranchContext', () => {
       branches: [{ id: 'branch-retired', isActive: false }],
     })).toEqual({
       scheduledBranchId: undefined,
-      operationalBranchId: undefined,
+      fallbackOperationalBranchId: undefined,
       requiresOperationalBranch: true,
     })
   })
