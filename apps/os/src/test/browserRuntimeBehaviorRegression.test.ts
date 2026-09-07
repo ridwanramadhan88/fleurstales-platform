@@ -41,6 +41,17 @@ describe('browser runtime behavior', () => {
     expect(http).toContain('if (this.tokenProvider && !accessToken)')
   })
 
+  it('keeps staff authentication independent from todays schedule', () => {
+    const app = read('src/App.tsx')
+    const sessionDomain = read('src/domain/sessionHydrationDomain.ts')
+
+    expect(app).toContain('resolveStaffBranchContext')
+    expect(app).not.toContain('Admin requires a dated working schedule')
+    expect(app).toContain('scheduledBranchId: undefined')
+    expect(sessionDomain).toContain("role === 'admin' || role === 'florist'")
+    expect(sessionDomain).toContain('fallbackOperationalBranchId')
+  })
+
   it('reconciles orders and notifications on Realtime reconnect without duplicate roster streams', () => {
     const realtime = read('src/data/realtimeSupabaseSync.ts')
 
