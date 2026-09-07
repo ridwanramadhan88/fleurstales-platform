@@ -3,7 +3,7 @@ import { DEFAULT_ACTION_PERMISSIONS } from '../config/actionPermissions'
 import { DEFAULT_ROLE_SECTION_ACCESS } from '../config/permissions'
 import type { SharedSession } from '../data/shared/staffSessionDomain'
 import type { PermissionMatrix } from '../types/settings'
-import { canHydrateCustomersForRole, resolveAuthoritativeStaffRole } from './sessionHydrationDomain'
+import { canHydrateCustomersForRole, resolveAuthoritativeStaffRole, resolveStaffBranchContext } from './sessionHydrationDomain'
 
 describe('resolveAuthoritativeStaffRole', () => {
   it('uses the authenticated Supabase staff profile role over a stale employee role', () => {
@@ -31,6 +31,92 @@ describe('resolveAuthoritativeStaffRole', () => {
     }
 
     expect(resolveAuthoritativeStaffRole('admin', session)).toBe('admin')
+  })
+})
+
+describe('resolveStaffBranchContext', () => {
+  const branches = [
+    { id: 'branch-a', isActive: true, isDefault: true },
+    { id: 'branch-b', isActive: true, isDefault: false },
+    { id: 'branch-retired', isActive: false, isDefault: false },
+  ]
+
+  it('lets an unscheduled Admin open the OS at their active profile branch without inventing a schedule', () => {
+    expect(resolveStaffBranchContext({
+      role: 'admin',
+      scheduledBranchId: undefined,
+      profileBranchId: 'branch-b',
+      branches,
+    })).toEqual({
+      scheduledBranchId: undefined,
+      operationalBranchId: 'branch-b',
+      requiresOperationalBranch: true,
+    })
+  })
+
+  it('lets an unscheduled Florist fall back to the default active branch', () => {
+    expect(resolveStaffBranchContext({
+      role: 'florist',
+      scheduledBranchId: undefined,
+      profileBranchId: 'branch-retired',
+      branches,
+    })).toEqual({
+      scheduledBranchId: undefined,
+      operationalBranchId: 'branch-a',
+      requiresOperationalBranch: true,
+    })
+  })
+
+  it('prefers an active scheduled branch over profile/default fallback', () => {
+    expect(resolveStaffBranchContext({
+      role: 'admin',
+      scheduledBranchId: 'branch-b',
+      profileBranchId: 'branch-a',
+      branches,
+    })).toEqual({
+      scheduledBranchId: 'branch-b',
+      operationalBranchId: 'branch-b',
+      requiresOperationalBranch: true,
+    })
+  })
+
+  it('does not expose an inactive assignment as the current schedule', () => {
+    expect(resolveStaffBranchContext({
+      role: 'admin',
+      scheduledBranchId: 'branch-retired',
+      profileBranchId: 'branch-b',
+      branches,
+    })).toEqual({
+      scheduledBranchId: undefined,
+      operationalBranchId: 'branch-b',
+      requiresOperationalBranch: true,
+    })
+  })
+
+  it('does not require a fallback operational branch for cross-branch roles', () => {
+    expect(resolveStaffBranchContext({
+      role: 'finance',
+      scheduledBranchId: undefined,
+      profileBranchId: 'branch-b',
+      branches,
+    })).toEqual({
+      scheduledBranchId: undefined,
+      operationalBranchId: undefined,
+      requiresOperationalBranch: false,
+    })
+  })
+
+  it('keeps the explicit no-active-branch failure detectable for branch-scoped roles', () => {
+    expect(resolveStaffBranchContext({
+      role: 'florist',
+      scheduledBranchId: undefined,
+      profileBranchId: undefined,
+      branches: [{ id: 'branch-retired', isActive: false }],
+    })).toEqual({
+      scheduledBranchId: undefined,
+      operationalBranchId: undefined,
+      requiresOperationalBranch: true,
+    })
   })
 })
 
