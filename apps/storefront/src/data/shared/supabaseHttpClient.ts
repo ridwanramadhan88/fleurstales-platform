@@ -135,6 +135,15 @@ export class SupabaseHttpClient {
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const accessToken = await this.tokenProvider?.getAccessToken()
+    // A token provider means this client belongs to an authenticated staff
+    // workflow. Never silently downgrade a protected OS request to the anon
+    // publishable-key role when the browser session bridge is empty or racing
+    // with sign-out/token refresh. Public Storefront clients do not provide a
+    // token provider and keep their existing anonymous behavior.
+    if (this.tokenProvider && !accessToken) {
+      throw new SupabaseHttpError('SESSION_REQUIRED', 401, { code: 'SESSION_REQUIRED' })
+    }
+
     const headers = new Headers(init.headers)
     headers.set('apikey', this.config.publishableKey)
     if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
