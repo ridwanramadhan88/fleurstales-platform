@@ -109,13 +109,15 @@ export default function App() {
       const internalSettings = await runHydrationStage('Internal settings', connectInternalSettingsSupabase)
       const operational = await runHydrationStage('Operational domains', connectOperationalSupabase)
       const staffOperations = await runHydrationStage('Staff schedule/attendance', connectStaffOperationsSupabase)
+      const authorizationReady = authorization.ready
+      const internalSettingsReady = internalSettings.ready
+      const operationalReady = operational.ready
+      const staffOperationsReady = staffOperations.ready
       const productionSession = getSharedSession().source === 'supabase'
-      if (productionSession) {
+      if (productionSession && (!authorizationReady || !internalSettingsReady || !operationalReady || !staffOperationsReady)) {
         const failures = [authorization.failure, internalSettings.failure, operational.failure, staffOperations.failure]
           .filter((failure): failure is string => Boolean(failure))
-        if (failures.length > 0) {
-          throw new Error(`Fleurstales startup hydration failed: ${failures.join('; ')}.`)
-        }
+        throw new Error(`Fleurstales startup hydration failed: ${failures.join('; ')}.`)
       }
 
       const hr = useHrStore.getState()
