@@ -38,8 +38,11 @@ let syncing = false
 let stopSubscription: (() => void) | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 let lastSerialized = ''
+let lastHydrationError: string | undefined
 
 const client = () => bootstrapSharedData(browserSupabaseTokenProvider)
+
+export const getInternalSettingsHydrationError = (): string | undefined => lastHydrationError
 
 const localPayload = (): InternalSettingsPayload => {
   const state = useSettingsStore.getState()
@@ -82,11 +85,18 @@ const isRevisionConflict = (error: unknown): boolean =>
     (typeof error.payload === 'object' && error.payload !== null && 'code' in error.payload && error.payload.code === '40001'))
 
 export const hydrateInternalSettingsFromSupabase = async (): Promise<boolean> => {
-  if (!getSupabaseBrowserSession()) return false
+  if (!getSupabaseBrowserSession()) {
+    lastHydrationError = 'SESSION_REQUIRED'
+    return false
+  }
   const boot = client()
-  if (!boot.enabled) return false
+  if (!boot.enabled) {
+    lastHydrationError = 'Supabase is not configured.'
+    return false
+  }
   const remote = await boot.repositories.client.rpc<InternalSettingsResponse>('get_internal_settings_config', {})
   applyRemote(remote)
+  lastHydrationError = undefined
   return true
 }
 
@@ -156,6 +166,7 @@ export const stopInternalSettingsSupabaseSync = (): void => {
   saveTimer = undefined
   stopSubscription?.()
   stopSubscription = undefined
+  lastHydrationError = undefined
 }
 
 export const connectInternalSettingsSupabase = async (): Promise<boolean> => {
@@ -165,6 +176,7 @@ export const connectInternalSettingsSupabase = async (): Promise<boolean> => {
     startInternalSettingsSupabaseSync()
     return true
   } catch (error) {
+    lastHydrationError = error instanceof Error ? error.message : 'Unable to hydrate internal settings.'
     console.error('Unable to hydrate Fleurstales internal settings.', error)
     return false
   }

@@ -24,6 +24,34 @@ describe('browser runtime behavior', () => {
     expect(home).toContain('[activeTab, activeOrdersSubTab, financeModule, peopleSection]')
   })
 
+  it('binds an open production workspace to the same authoritative Supabase user', () => {
+    const app = read('src/App.tsx')
+    const http = read('src/data/shared/supabaseHttpClient.ts')
+
+    expect(app).toContain('subscribeSupabaseAuth')
+    expect(app).toContain("sharedSession.source !== 'supabase'")
+    expect(app).toContain('session.user.id !== expectedUserId')
+    expect(app).toContain('void resetSession()')
+    expect(app).toContain('Fleurstales startup hydration failed:')
+    expect(app).toContain("runHydrationStage('Operational domains'")
+    expect(app).toContain('getAuthorizationHydrationError')
+    expect(app).toContain('getInternalSettingsHydrationError')
+    expect(app).toContain('usePersistenceHealthStore.getState().message')
+    expect(http).toContain("throw new SupabaseHttpError('SESSION_REQUIRED', 401")
+    expect(http).toContain('if (this.tokenProvider && !accessToken)')
+  })
+
+  it('keeps staff authentication independent from todays schedule', () => {
+    const app = read('src/App.tsx')
+    const sessionDomain = read('src/domain/sessionHydrationDomain.ts')
+
+    expect(app).toContain('resolveStaffBranchContext')
+    expect(app).not.toContain('Admin requires a dated working schedule')
+    expect(app).toContain('scheduledBranchId: undefined')
+    expect(sessionDomain).toContain("role === 'admin' || role === 'florist'")
+    expect(sessionDomain).toContain('fallbackOperationalBranchId')
+  })
+
   it('reconciles orders and notifications on Realtime reconnect without duplicate roster streams', () => {
     const realtime = read('src/data/realtimeSupabaseSync.ts')
 

@@ -3,6 +3,7 @@
 do $$
 declare
   v_runtime_source text;
+  v_attendance_source text;
   v_create_source text;
   v_create_contract_source text;
   v_create_delegate_source text;
@@ -36,10 +37,23 @@ begin
   end if;
 
   select pg_get_functiondef('public.set_staff_runtime_context(text,text,date)'::regprocedure) into v_runtime_source;
-  if position('ADMIN_DATED_BRANCH_REQUIRED' in v_runtime_source)=0
-     or position('ADMIN_BRANCH_SCOPE_REQUIRED' in v_runtime_source)=0
-     or position('staff_schedule_overrides' in v_runtime_source)=0 then
-    raise exception 'Admin dated-branch runtime authority is incomplete';
+  if position('OPERATIONAL_BRANCH_REQUIRED' in v_runtime_source)=0
+     or position('INVALID_OPERATIONAL_BRANCH' in v_runtime_source)=0 then
+    raise exception 'Branch-scoped runtime authority is incomplete';
+  end if;
+  if position('ADMIN_DATED_BRANCH_REQUIRED' in v_runtime_source)>0
+     or position('staff_schedule_overrides' in v_runtime_source)>0 then
+    raise exception 'Admin runtime context is still incorrectly coupled to today''s schedule';
+  end if;
+
+  -- Login/runtime may be unscheduled, but attendance must still prove a real
+  -- dated working assignment. This prevents an operational fallback branch
+  -- from becoming attendance authority.
+  select pg_get_functiondef('public.save_my_attendance_record(jsonb)'::regprocedure)
+    into v_attendance_source;
+  if position('DATED_ATTENDANCE_SCHEDULE_REQUIRED' in v_attendance_source)=0
+     or position('staff_schedule_overrides' in v_attendance_source)=0 then
+    raise exception 'Attendance lost dated-schedule authority';
   end if;
 
   select pg_get_functiondef('public.create_internal_order(jsonb)'::regprocedure) into v_create_source;

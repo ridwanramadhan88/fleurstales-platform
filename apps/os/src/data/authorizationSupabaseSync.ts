@@ -28,9 +28,12 @@ let syncing = false
 let stopSubscription: (() => void) | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 let lastSerialized = ''
+let lastHydrationError: string | undefined
 
 const client = () => bootstrapSharedData(browserSupabaseTokenProvider)
 const roles: UserRole[] = ['owner', 'admin', 'finance', 'hr', 'florist']
+
+export const getAuthorizationHydrationError = (): string | undefined => lastHydrationError
 
 const mergeSections = (incoming: Partial<PermissionMatrix> | undefined): PermissionMatrix => {
   const next = structuredClone(DEFAULT_ROLE_SECTION_ACCESS) as PermissionMatrix
@@ -97,11 +100,18 @@ const isRevisionConflict = (error: unknown): boolean =>
     (typeof error.payload === 'object' && error.payload !== null && 'code' in error.payload && error.payload.code === '40001'))
 
 export const hydrateAuthorizationFromSupabase = async (): Promise<boolean> => {
-  if (!getSupabaseBrowserSession()) return false
+  if (!getSupabaseBrowserSession()) {
+    lastHydrationError = 'SESSION_REQUIRED'
+    return false
+  }
   const boot = client()
-  if (!boot.enabled) return false
+  if (!boot.enabled) {
+    lastHydrationError = 'Supabase is not configured.'
+    return false
+  }
   const remote = await boot.repositories.client.rpc<AuthorizationResponse>('get_authorization_config', {})
   applyRemote(remote)
+  lastHydrationError = undefined
   return true
 }
 
@@ -171,6 +181,7 @@ export const stopAuthorizationSupabaseSync = (): void => {
   saveTimer = undefined
   stopSubscription?.()
   stopSubscription = undefined
+  lastHydrationError = undefined
 }
 
 export const connectAuthorizationSupabase = async (): Promise<boolean> => {
@@ -180,6 +191,7 @@ export const connectAuthorizationSupabase = async (): Promise<boolean> => {
     startAuthorizationSupabaseSync()
     return true
   } catch (error) {
+    lastHydrationError = error instanceof Error ? error.message : 'Unable to hydrate authorization.'
     console.error('Unable to hydrate Fleurstales authorization configuration.', error)
     return false
   }

@@ -17,6 +17,48 @@ export const resolveAuthoritativeStaffRole = (
   : employeeRole
 
 /**
+ * Login is an authentication decision, not a scheduling decision. A real
+ * working schedule still wins when present, but Admin/Florist may open their
+ * operational workspace while unscheduled by falling back to an active profile
+ * branch, then the default/first active branch. The fallback never becomes a
+ * scheduled branch, so attendance remains schedule-authoritative.
+ */
+export const resolveStaffBranchContext = ({
+  role,
+  scheduledBranchId,
+  profileBranchId,
+  branches,
+}: {
+  role: UserRole
+  scheduledBranchId?: string
+  profileBranchId?: string
+  branches: Array<{ id: string; isActive: boolean; isDefault?: boolean }>
+}): {
+  scheduledBranchId?: string
+  fallbackOperationalBranchId?: string
+  requiresOperationalBranch: boolean
+} => {
+  const activeBranches = branches.filter((branch) => branch.isActive)
+  const activeIds = new Set(activeBranches.map((branch) => branch.id))
+  const activeScheduledBranchId = scheduledBranchId && activeIds.has(scheduledBranchId)
+    ? scheduledBranchId
+    : undefined
+  const activeProfileBranchId = profileBranchId && activeIds.has(profileBranchId)
+    ? profileBranchId
+    : undefined
+  const fallbackOperationalBranchId = activeProfileBranchId
+    ?? activeBranches.find((branch) => branch.isDefault)?.id
+    ?? activeBranches[0]?.id
+  const requiresOperationalBranch = role === 'admin' || role === 'florist'
+
+  return {
+    scheduledBranchId: activeScheduledBranchId,
+    fallbackOperationalBranchId,
+    requiresOperationalBranch,
+  }
+}
+
+/**
  * Customer data is needed by anyone who can open the Customers workspace,
  * plus staff who can create orders because the order workflow resolves
  * customer records even when the Customers section itself is hidden.
