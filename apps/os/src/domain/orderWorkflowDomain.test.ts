@@ -27,6 +27,15 @@ import {
   isWorkflowHappyPathStatus,
 } from './orderWorkflowDomain'
 
+const paidCashOrder = (patch: Parameters<typeof makeOrder>[0] = {}) => makeOrder({
+  paymentStatus: 'paid',
+  paymentMethod: 'cash',
+  totalIdr: 100_000,
+  paidAmountIdr: 100_000,
+  financeVerified: false,
+  ...patch,
+})
+
 describe('status classification', () => {
   it('flags cancelled and failed as terminal issue statuses', () => {
     expect(isTerminalIssueStatus('cancelled')).toBe(true)
@@ -45,7 +54,6 @@ describe('status classification', () => {
     expect(isWorkflowHappyPathStatus('cancelled')).toBe(false)
     expect(isWorkflowHappyPathStatus('failed')).toBe(false)
   })
-
 })
 
 describe('canCancelOrder', () => {
@@ -65,7 +73,7 @@ describe('canCancelOrder', () => {
 })
 
 describe('role capability checks', () => {
-  it('only finance and owner can verify orders', () => {
+  it('recognizes finance and owner as Finance decision roles at the pure domain layer', () => {
     expect(canVerifyOrder('finance')).toBe(true)
     expect(canVerifyOrder('owner')).toBe(true)
     expect(canVerifyOrder('admin')).toBe(false)
@@ -116,19 +124,17 @@ describe('isOrderLocked', () => {
     expect(isOrderLocked(makeOrder({ status: 'delivering' }))).toBe(false)
   })
 
-  it('locks the moment an order finishes (delivered/picked_up), even before Finance verifies', () => {
+  it('locks the moment an order finishes, even before Finance reconciles it', () => {
     expect(isOrderLocked(makeOrder({ status: 'delivered', financeVerified: false }))).toBe(true)
     expect(isOrderLocked(makeOrder({ status: 'picked_up', financeVerified: false }))).toBe(true)
   })
 
-  it('stays locked after Finance verification too', () => {
+  it('stays locked after Finance reconciliation too', () => {
     expect(isOrderLocked(makeOrder({ status: 'delivered', financeVerified: true }))).toBe(true)
   })
 
   it('is unlocked while editUnlocked is true, regardless of finished status', () => {
-    expect(
-      isOrderLocked(makeOrder({ status: 'delivered', editUnlocked: true })),
-    ).toBe(false)
+    expect(isOrderLocked(makeOrder({ status: 'delivered', editUnlocked: true }))).toBe(false)
   })
 
   it('cancelled/failed orders are never locked by this rule', () => {
@@ -138,7 +144,7 @@ describe('isOrderLocked', () => {
 })
 
 describe('canDirectlyEditOrder', () => {
-  it('allows any role to edit an order that is not locked', () => {
+  it('allows any role through this lock-only helper when the order is not locked', () => {
     const order = makeOrder({ status: 'processing' })
     expect(canDirectlyEditOrder(order, 'admin')).toBe(true)
     expect(canDirectlyEditOrder(order, 'owner')).toBe(true)
@@ -152,73 +158,50 @@ describe('canDirectlyEditOrder', () => {
     expect(canDirectlyEditOrder(order, 'admin')).toBe(false)
   })
 
-  it('allows admin/owner back in once editUnlocked lifts the lock', () => {
+  it('allows the lock-only helper back in once editUnlocked lifts the lock', () => {
     const order = makeOrder({ status: 'delivered', editUnlocked: true })
     expect(canDirectlyEditOrder(order, 'admin')).toBe(true)
     expect(canDirectlyEditOrder(order, 'owner')).toBe(true)
   })
 })
 
-
 describe('finance verification queue eligibility', () => {
-  it('requires the order to be finished', () => {
-    expect(isPendingFinanceVerification(makeOrder({ status: 'processing' }))).toBe(false)
+  it('requires Admin-confirmed paid status, not finished fulfillment', () => {
+    expect(isPendingFinanceVerification(paidCashOrder({ status: 'processing' }))).toBe(true)
+    expect(isPendingFinanceVerification(makeOrder({ status: 'delivered', paymentStatus: 'unpaid' }))).toBe(false)
   })
 
-  it('includes finished, unverified, non-rejected orders', () => {
-    expect(
-      isPendingFinanceVerification(
-        makeOrder({ status: 'delivered', financeVerified: false }),
-      ),
-    ).toBe(true)
+  it('includes paid, unverified, non-rejected orders while fulfillment is still active', () => {
+    expect(isPendingFinanceVerification(paidCashOrder({ status: 'ready' }))).toBe(true)
+    expect(isPendingFinanceVerification(paidCashOrder({ status: 'delivered' }))).toBe(true)
   })
 
-  it('excludes orders that are already verified', () => {
-    expect(
-      isPendingFinanceVerification(
-        makeOrder({ status: 'delivered', financeVerified: true }),
-      ),
-    ).toBe(false)
+  it('excludes orders that are already Finance-reconciled', () => {
+    expect(isPendingFinanceVerification(paidCashOrder({ status: 'delivered', financeVerified: true }))).toBe(false)
   })
 
-  it('excludes orders Finance has rejected outright', () => {
-    expect(
-      isPendingFinanceVerification(
-        makeOrder({
-          status: 'delivered',
-          financeVerified: false,
-          financeVerificationStatus: 'rejected',
-        }),
-      ),
-    ).toBe(false)
+  it('excludes orders Finance has returned for correction', () => {
+    expect(isPendingFinanceVerification(paidCashOrder({
+      status: 'processing',
+      financeVerificationStatus: 'rejected',
+    }))).toBe(false)
   })
 
-  it('keeps "review"-flagged orders in the queue since it is a soft flag', () => {
-    expect(
-      isPendingFinanceVerification(
-        makeOrder({
-          status: 'picked_up',
-          financeVerified: false,
-          financeVerificationStatus: 'review',
-        }),
-      ),
-    ).toBe(true)
+  it('keeps review-flagged paid orders in the queue because review is a soft flag', () => {
+    expect(isPendingFinanceVerification(paidCashOrder({
+      status: 'processing',
+      financeVerificationStatus: 'review',
+    }))).toBe(true)
   })
 })
 
 describe('isMarkedForFinanceReview / isRejectedByFinance', () => {
   it('reads the financeVerificationStatus flag directly', () => {
-    expect(
-      isMarkedForFinanceReview(makeOrder({ financeVerificationStatus: 'review' })),
-    ).toBe(true)
-    expect(
-      isMarkedForFinanceReview(makeOrder({ financeVerificationStatus: 'rejected' })),
-    ).toBe(false)
+    expect(isMarkedForFinanceReview(makeOrder({ financeVerificationStatus: 'review' }))).toBe(true)
+    expect(isMarkedForFinanceReview(makeOrder({ financeVerificationStatus: 'rejected' }))).toBe(false)
     expect(isMarkedForFinanceReview(makeOrder())).toBe(false)
 
-    expect(
-      isRejectedByFinance(makeOrder({ financeVerificationStatus: 'rejected' })),
-    ).toBe(true)
+    expect(isRejectedByFinance(makeOrder({ financeVerificationStatus: 'rejected' }))).toBe(true)
     expect(isRejectedByFinance(makeOrder())).toBe(false)
   })
 })
@@ -266,7 +249,7 @@ describe('applyApprovedEditChangeRequest', () => {
     expect(applyApprovedEditChangeRequest(order)).toBe(order)
   })
 
-  it('does not write status for a cancel request (cancellation uses transitionOrderStatus)', () => {
+  it('does not write status for a cancel request', () => {
     const order = makeOrder({
       status: 'delivered',
       pendingChangeRequest: {
@@ -285,7 +268,7 @@ describe('applyApprovedEditChangeRequest', () => {
     expect(updated.pendingChangeRequest).toBeDefined()
   })
 
-  it('unlocks (but does not apply) an edit request, clearing the request', () => {
+  it('unlocks an edit request and clears the request', () => {
     const order = makeOrder({
       status: 'delivered',
       pendingChangeRequest: {
@@ -333,13 +316,13 @@ describe('applyUnlockedEditFinalization', () => {
     expect(applyUnlockedEditFinalization(order)).toBe(order)
   })
 
-  it('re-locks the order (clears editUnlocked) after the edit is saved', () => {
+  it('re-locks the order after the edit is saved', () => {
     const order = makeOrder({ status: 'delivered', editUnlocked: true, financeVerified: false })
     const updated = applyUnlockedEditFinalization(order)
     expect(updated.editUnlocked).toBe(false)
   })
 
-  it('resets financeVerified back to false if the order had already been verified', () => {
+  it('resets financeVerified if a previously reconciled order is edited', () => {
     const order = makeOrder({
       status: 'delivered',
       editUnlocked: true,
@@ -359,7 +342,7 @@ describe('applyUnlockedEditFinalization', () => {
     expect(updated.financeVerificationNote).toBeUndefined()
   })
 
-  it('leaves financeVerified alone (stays false) if it was never verified', () => {
+  it('leaves financeVerified false if it was never verified', () => {
     const order = makeOrder({ status: 'delivered', editUnlocked: true, financeVerified: false })
     const updated = applyUnlockedEditFinalization(order)
     expect(updated.financeVerified).toBe(false)
@@ -367,9 +350,9 @@ describe('applyUnlockedEditFinalization', () => {
 })
 
 describe('applyFinanceVerification', () => {
-  it('marks the order verified and stamps actor/time, clearing any prior status/note', () => {
-    const order = makeOrder({
-      status: 'delivered',
+  it('marks the order reconciled and stamps actor/time, clearing prior status/note', () => {
+    const order = paidCashOrder({
+      status: 'processing',
       financeVerificationStatus: 'review',
       financeVerificationNote: 'Double-check discount',
     })
@@ -385,25 +368,26 @@ describe('applyFinanceVerification', () => {
 })
 
 describe('canVerifyOrderFinance', () => {
-  it('allows a finished, unverified order for a permitted role', () => {
-    const order = makeOrder({ status: 'delivered', paymentStatus: 'paid', financeVerified: false })
+  it('allows a fully paid order for a permitted Finance decision role', () => {
+    const order = paidCashOrder({ status: 'delivered' })
     expect(canVerifyOrderFinance(order, 'finance')).toEqual({ allowed: true })
     expect(canVerifyOrderFinance(order, 'owner')).toEqual({ allowed: true })
   })
 
-  it('allows a finished order that is still unpaid/partial/refunded — paymentStatus itself is not gated', () => {
-    expect(
-      canVerifyOrderFinance(
-        makeOrder({ status: 'delivered', paymentStatus: 'unpaid', financeVerified: false }),
-        'finance',
-      ),
-    ).toEqual({ allowed: true })
-    expect(
-      canVerifyOrderFinance(
-        makeOrder({ status: 'picked_up', paymentStatus: 'refund_pending', financeVerified: false }),
-        'finance',
-      ),
-    ).toEqual({ allowed: true })
+  it('requires Admin-confirmed full payment', () => {
+    const unpaid = canVerifyOrderFinance(
+      makeOrder({ status: 'delivered', paymentStatus: 'unpaid', financeVerified: false }),
+      'finance',
+    )
+    const refundPending = canVerifyOrderFinance(
+      makeOrder({ status: 'picked_up', paymentStatus: 'refund_pending', financeVerified: false }),
+      'finance',
+    )
+
+    expect(unpaid.allowed).toBe(false)
+    expect(unpaid.allowed === false && unpaid.code).toBe('PAYMENT_NOT_CONFIRMED')
+    expect(refundPending.allowed).toBe(false)
+    expect(refundPending.allowed === false && refundPending.code).toBe('PAYMENT_NOT_CONFIRMED')
   })
 
   it('rejects when the order does not exist', () => {
@@ -416,48 +400,32 @@ describe('canVerifyOrderFinance', () => {
   })
 
   it('rejects when the order is cancelled', () => {
-    const order = makeOrder({ status: 'cancelled', paymentStatus: 'paid', financeVerified: false })
-    const result = canVerifyOrderFinance(order, 'finance')
+    const result = canVerifyOrderFinance(paidCashOrder({ status: 'cancelled' }), 'finance')
     expect(result.allowed).toBe(false)
     expect(result.allowed === false && result.code).toBe('ORDER_CANCELLED')
   })
 
-  it('rejects when the order is voided (failed)', () => {
-    const order = makeOrder({ status: 'failed', paymentStatus: 'paid', financeVerified: false })
-    const result = canVerifyOrderFinance(order, 'finance')
+  it('rejects when the order is voided', () => {
+    const result = canVerifyOrderFinance(paidCashOrder({ status: 'failed' }), 'finance')
     expect(result.allowed).toBe(false)
     expect(result.allowed === false && result.code).toBe('ORDER_VOIDED')
   })
 
-  it('rejects when the order is already finance-verified', () => {
-    const order = makeOrder({ status: 'delivered', paymentStatus: 'paid', financeVerified: true })
-    const result = canVerifyOrderFinance(order, 'finance')
+  it('rejects when the order is already finance-reconciled', () => {
+    const result = canVerifyOrderFinance(paidCashOrder({ status: 'delivered', financeVerified: true }), 'finance')
     expect(result.allowed).toBe(false)
     expect(result.allowed === false && result.code).toBe('ALREADY_VERIFIED')
   })
 
-  it('rejects when the order has not reached a finished status', () => {
-    const order = makeOrder({ status: 'processing', paymentStatus: 'paid', financeVerified: false })
-    const result = canVerifyOrderFinance(order, 'finance')
-    expect(result.allowed).toBe(false)
-    expect(result.allowed === false && result.code).toBe('ORDER_NOT_FINISHED')
+  it('allows Finance to reconcile while fulfillment is still in progress', () => {
+    const result = canVerifyOrderFinance(paidCashOrder({ status: 'processing' }), 'finance')
+    expect(result).toEqual({ allowed: true })
   })
 
-  it('rejects when paidAmountIdr is a broken value (negative or exceeds total)', () => {
-    const negative = makeOrder({
-      status: 'delivered',
-      paymentStatus: 'partial',
-      totalIdr: 100_000,
-      paidAmountIdr: -1,
-      financeVerified: false,
-    })
-    const overpaid = makeOrder({
-      status: 'delivered',
-      paymentStatus: 'paid',
-      totalIdr: 100_000,
-      paidAmountIdr: 999_999,
-      financeVerified: false,
-    })
+  it('rejects broken paid amounts', () => {
+    const negative = paidCashOrder({ totalIdr: 100_000, paidAmountIdr: -1 })
+    const overpaid = paidCashOrder({ totalIdr: 100_000, paidAmountIdr: 999_999 })
+
     const negativeResult = canVerifyOrderFinance(negative, 'finance')
     const overpaidResult = canVerifyOrderFinance(overpaid, 'finance')
     expect(negativeResult.allowed).toBe(false)
@@ -466,20 +434,25 @@ describe('canVerifyOrderFinance', () => {
     expect(overpaidResult.allowed === false && overpaidResult.code).toBe('INVALID_PAYMENT_INFO')
   })
 
+  it('requires transfer evidence', () => {
+    const result = canVerifyOrderFinance(paidCashOrder({
+      paymentMethod: 'transfer',
+      paymentProofUrl: undefined,
+    }), 'finance')
+    expect(result.allowed).toBe(false)
+    expect(result.allowed === false && result.code).toBe('INVALID_PAYMENT_INFO')
+  })
+
   it('rejects when the role lacks permission', () => {
-    const order = makeOrder({ status: 'delivered', paymentStatus: 'paid', financeVerified: false })
-    const result = canVerifyOrderFinance(order, 'admin')
+    const result = canVerifyOrderFinance(paidCashOrder({ status: 'delivered' }), 'admin')
     expect(result.allowed).toBe(false)
     expect(result.allowed === false && result.code).toBe('NOT_PERMITTED')
   })
 })
 
-
-
 describe('Finance resubmission domain', () => {
-  const rejectedFinishedOrder = makeOrder({
+  const rejectedPaidOrder = paidCashOrder({
     status: 'delivered',
-    financeVerified: false,
     financeVerificationStatus: 'rejected',
     financeVerificationNote: 'Receipt does not match',
     financeVerificationActor: 'Finance A',
@@ -488,33 +461,38 @@ describe('Finance resubmission domain', () => {
     revision: 7,
   })
 
-  it('allows Admin and Owner to resubmit a rejected completed order with a note', () => {
-    expect(canResubmitOrderFinance({ order: rejectedFinishedOrder, role: 'admin', note: 'Receipt corrected' })).toEqual({ allowed: true })
-    expect(canResubmitOrderFinance({ order: rejectedFinishedOrder, role: 'owner', note: 'Receipt corrected' })).toEqual({ allowed: true })
+  it('allows Admin and Owner to resubmit a rejected paid order with a note', () => {
+    expect(canResubmitOrderFinance({ order: rejectedPaidOrder, role: 'admin', note: 'Receipt corrected' })).toEqual({ allowed: true })
+    expect(canResubmitOrderFinance({ order: rejectedPaidOrder, role: 'owner', note: 'Receipt corrected' })).toEqual({ allowed: true })
   })
 
   it.each(['finance', 'hr', 'florist'] as const)('blocks %s from resubmitting', (role) => {
-    const result = canResubmitOrderFinance({ order: rejectedFinishedOrder, role, note: 'Receipt corrected' })
+    const result = canResubmitOrderFinance({ order: rejectedPaidOrder, role, note: 'Receipt corrected' })
     expect(result.allowed).toBe(false)
   })
 
-  it('requires a rejected, completed order and a meaningful correction note', () => {
+  it('requires rejected status, confirmed payment, and a meaningful correction note', () => {
     expect(canResubmitOrderFinance({
-      order: makeOrder({ ...rejectedFinishedOrder, financeVerificationStatus: undefined }),
+      order: makeOrder({ ...rejectedPaidOrder, financeVerificationStatus: undefined }),
       role: 'admin',
       note: 'Receipt corrected',
     }).allowed).toBe(false)
     expect(canResubmitOrderFinance({
-      order: makeOrder({ ...rejectedFinishedOrder, status: 'processing' }),
+      order: makeOrder({ ...rejectedPaidOrder, status: 'processing', paymentStatus: 'unpaid' }),
       role: 'admin',
       note: 'Receipt corrected',
     }).allowed).toBe(false)
-    expect(canResubmitOrderFinance({ order: rejectedFinishedOrder, role: 'admin', note: '   ' }).allowed).toBe(false)
+    expect(canResubmitOrderFinance({ order: rejectedPaidOrder, role: 'admin', note: '   ' }).allowed).toBe(false)
+  })
+
+  it('does not require fulfillment completion before resubmission', () => {
+    const processing = makeOrder({ ...rejectedPaidOrder, status: 'processing' })
+    expect(canResubmitOrderFinance({ order: processing, role: 'admin', note: 'Receipt corrected' })).toEqual({ allowed: true })
   })
 
   it('clears the rejection decision and stamps the correction handoff', () => {
     const updated = applyFinanceResubmission(
-      rejectedFinishedOrder,
+      rejectedPaidOrder,
       'Admin A',
       '  Uploaded the corrected receipt  ',
       '2026-07-17T10:00:00.000Z',

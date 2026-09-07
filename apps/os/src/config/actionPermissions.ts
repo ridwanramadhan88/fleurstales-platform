@@ -61,8 +61,8 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'orders.advance_status', label:'Advance Order Status', description:'Move an order through its permitted fulfillment workflow.', parentSection:'orders', group:'Orders' },
   { id:'orders.submit_change_request', label:'Request Locked Changes', description:'Submit edit or cancellation requests for locked orders.', parentSection:'orders', group:'Orders' },
   { id:'orders.resolve_change_request', label:'Resolve Order Change Requests', description:'Approve or reject locked-order change requests.', parentSection:'orders', group:'Orders' },
-  { id:'finance.view_order_verification', label:'View Order Reconciliation', description:'View paid orders and their production completion state.', parentSection:'finance', group:'Finance' },
-  { id:'finance.verify_order', label:'Legacy Order Verification', description:'Deprecated. New order payments post when Admin starts Processing.', parentSection:'finance', group:'Finance' },
+  { id:'finance.view_order_verification', label:'View Order Reconciliation', description:'View Admin-confirmed payments and their order workflow state.', parentSection:'finance', group:'Finance' },
+  { id:'finance.verify_order', label:'Reconcile Order Payment', description:'Make the final Finance confirmation before an order payment enters balance and revenue.', parentSection:'finance', group:'Finance' },
   { id:'finance.view_payroll', label:'View Payroll', description:'View payroll proposals.', parentSection:'finance', group:'Finance' },
   { id:'finance.approve_employee_payroll', label:'Approve Employee Payroll', description:'Approve one employee payroll.', parentSection:'finance', group:'Finance' },
   { id:'finance.approve_all_payroll', label:'Approve All Payroll', description:'Approve remaining payroll items.', parentSection:'finance', group:'Finance' },
@@ -102,7 +102,7 @@ const OWNER_DEFAULT_CAPABILITIES = CAPABILITY_REGISTRY
 export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
   owner: withEnabled(...OWNER_DEFAULT_CAPABILITIES),
   admin: withEnabled('orders.read_all','orders.create','orders.edit','orders.assign','orders.advance_status','orders.submit_change_request'),
-  finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry'),
+  finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.verify_order','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry'),
   hr: withEnabled('orders.read_all','hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
 }
@@ -117,7 +117,7 @@ export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
   'orders.submit_change_request': ['owner','admin'],
   'orders.resolve_change_request': ['owner','finance'],
   'finance.view_order_verification': ['finance'],
-  'finance.verify_order': [],
+  'finance.verify_order': ['finance'],
   'finance.view_payroll': ['finance'],
   'finance.approve_employee_payroll': ['finance'],
   'finance.approve_all_payroll': ['finance'],

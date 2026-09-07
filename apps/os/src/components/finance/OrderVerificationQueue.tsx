@@ -14,7 +14,7 @@ import { FinanceModuleHeader } from './FinanceModuleHeader'
 export interface OrderVerificationQueueProps {
   /** Orders already scoped to the active branch. */
   orders: OrderTableRow[]
-  /** @deprecated Payment reconciliation is read-only. Kept while callers migrate. */
+  /** Whether Finance may make the final payment reconciliation decision. */
   canVerify: boolean
   /** Whether the current Finance user can resolve locked-order change requests. */
   canResolveRequest: boolean
@@ -26,6 +26,7 @@ export interface OrderVerificationQueueProps {
 }
 
 export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
+  canVerify,
   canResolveRequest,
   actorName,
   userRole,
@@ -54,7 +55,7 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
         title="Order Reconciliation"
         hint={
           <InfoHint label="About order reconciliation">
-            Paid orders appear here automatically as soon as Admin confirms payment.
+            Paid orders appear here automatically after Admin confirms full payment and its evidence. Finance reconciliation is the final confirmation before the payment enters company balance and revenue.
           </InfoHint>
         }
       />
@@ -75,7 +76,7 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
       <div className="flex justify-end">
         <InfoDisclosure title="How reconciliation works" className="hidden sm:block">
           <p className="max-w-md">
-            Payment is posted once when Admin confirms full payment and records the receiving account. Click any order to inspect payment proof and supporting order evidence. In Progress means the order workflow is still active, while Complete means it has ended.
+            Admin confirms the full payment first and records the receiving account plus transfer evidence when required. The ledger entry stays Pending until Finance reconciles it. Only Finance-reconciled payments are included in company balance and revenue. In Progress and Complete describe the order workflow only.
           </p>
         </InfoDisclosure>
       </div>
@@ -123,7 +124,7 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
       <OrderFinanceReviewSheetContainer
         order={reviewingOrder}
         onClose={() => onSelectOrder(null)}
-        canVerify={false}
+        canVerify={canVerify}
         actorName={actorName}
         userRole={userRole}
       />

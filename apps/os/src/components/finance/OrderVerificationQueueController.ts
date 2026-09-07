@@ -32,6 +32,7 @@ export interface FinanceQueueStatusCounts {
 }
 
 export interface OrderVerificationQueueViewModel {
+  canVerify: boolean
   canResolveRequest: boolean
   actorName: string
   userRole: UserRole
@@ -156,6 +157,7 @@ const paymentRowsForOrders = (
 
 export const useOrderVerificationQueueController = ({
   orders,
+  canVerify,
   canResolveRequest,
   actorName,
   userRole,
@@ -222,6 +224,7 @@ export const useOrderVerificationQueueController = ({
   }, [orders, searchQuery])
 
   return {
+    canVerify,
     canResolveRequest,
     actorName,
     userRole,

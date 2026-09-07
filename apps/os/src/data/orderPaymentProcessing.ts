@@ -86,7 +86,7 @@ const confirmLocalPaymentForProcessing = (
           ? {
               ...transaction,
               accountId: financeAccountId,
-              status: 'verified' as const,
+              status: 'pending' as const,
               transactionDate: paymentEvent.occurredAt,
               updatedAt: new Date().toISOString(),
             }

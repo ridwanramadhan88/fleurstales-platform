@@ -55,7 +55,7 @@ describe('chip, tab, card and section spacing system', () => {
     expect(payroll).toContain('min-h-0 flex-1 overflow-y-auto px-5 pb-28 pt-4')
     expect(payroll).toContain('shrink-0 border-t border-border bg-card px-5 py-3')
     expect(orderDetails).toContain('space-y-8')
-    expect(financeReview).toContain('space-y-6')
+    expect(financeReview).toContain('space-y-8')
     expect(orderActions).toContain('-mx-5')
     expect(orderActions).toContain('px-5 pt-3')
   })

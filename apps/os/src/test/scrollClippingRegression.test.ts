@@ -19,7 +19,7 @@ describe('scroll clipping regression', () => {
   it.each([
     ['src/components/orders/OrderDetailsPanel.tsx', 'overflow-y-auto overflow-x-hidden pb-10'],
     ['src/components/customers/CustomerProfileDrawer.tsx', 'overflow-y-auto overflow-x-hidden px-1'],
-    ['src/components/finance/OrderFinanceReviewSheet.tsx', 'overflow-y-auto overflow-x-hidden px-1'],
+    ['src/components/finance/OrderFinanceReviewSheet.tsx', 'overflow-y-auto overflow-x-hidden px-px'],
   ])('%s keeps card strokes inside its vertical drawer viewport', (path, safeClass) => {
     expect(read(path)).toContain(safeClass)
   })
@@ -40,16 +40,24 @@ describe('scroll clipping regression', () => {
     expect(source).not.toContain('overflow-x-clip')
   })
 
-  it('draws scrollable dialog and finance-sheet edges inside their bounds', () => {
+  it('draws scrollable dialog and payroll-sheet edges inside their bounds', () => {
     for (const path of [
       'src/components/ui/dialog.tsx',
       'src/components/ui/alert-dialog.tsx',
-      'src/components/finance/OrderFinanceReviewSheet.tsx',
       'src/components/finance/FinancePayrollReview.tsx',
     ]) {
       const source = read(path)
       expect(source).not.toContain('shadow-ios-lg ring-1 ring-border/60')
       expect(source).toContain('border border-border/60')
     }
+  })
+
+  it('keeps Finance reconciliation shell visually aligned with Order Details', () => {
+    const orderDetails = read('src/components/orders/OrderDetailsPanel.tsx')
+    const financeReview = read('src/components/finance/OrderFinanceReviewSheet.tsx')
+
+    expect(orderDetails).toContain('shadow-ios-lg ring-1 ring-border/60')
+    expect(financeReview).toContain('shadow-ios-lg ring-1 ring-border/60')
+    expect(financeReview).toContain('size="standard"')
   })
 })
