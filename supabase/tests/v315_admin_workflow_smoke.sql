@@ -49,7 +49,7 @@ begin
   -- Login/runtime may be unscheduled, but attendance must still prove a real
   -- dated working assignment. This prevents an operational fallback branch
   -- from becoming attendance authority.
-  select pg_get_functiondef('public.save_my_attendance_record(date,text,text,timestamptz,timestamptz,text,text,text,numeric,numeric,boolean,text)'::regprocedure)
+  select pg_get_functiondef('public.save_my_attendance_record(jsonb)'::regprocedure)
     into v_attendance_source;
   if position('DATED_ATTENDANCE_SCHEDULE_REQUIRED' in v_attendance_source)=0
      or position('staff_schedule_overrides' in v_attendance_source)=0 then
