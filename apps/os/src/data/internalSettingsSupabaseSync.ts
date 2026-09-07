@@ -105,7 +105,7 @@ const persistInternalSettings = async (): Promise<void> => {
   const boot = client()
   if (!boot.enabled) return
   const payload = localPayload()
-  const serialized = JSON.stringify(payload)
+  const serialized = serialize(payload)
   if (serialized === lastSerialized) return
 
   try {
@@ -155,7 +155,7 @@ const scheduleSave = (): void => {
 
 export const startInternalSettingsSupabaseSync = (): void => {
   if (stopSubscription || useUserStore.getState().role !== 'owner') return
-  lastSerialized = JSON.stringify(localPayload())
+  lastSerialized = serialize(localPayload())
   const stopSettings = useSettingsStore.subscribe(scheduleSave)
   const stopCustomer = useCustomerStore.subscribe(scheduleSave)
   stopSubscription = () => { stopSettings(); stopCustomer() }
