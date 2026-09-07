@@ -4,6 +4,7 @@ import LoginPage from './pages/Login'
 import { useUserStore } from './store/userStore'
 import { useHrStore } from './store/hrStore'
 import { useSettingsStore } from './store/settingsStore'
+import { usePersistenceHealthStore } from './store/persistenceHealthStore'
 import { getEffectiveScheduleForDate } from './domain/hrSchedulingDomain'
 import { getLocalDateString, nowInJakarta } from './domain/orderTimingDomain'
 import { canHydrateCustomersForRole, resolveAuthoritativeStaffRole } from './domain/sessionHydrationDomain'
@@ -19,8 +20,8 @@ import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
 import { clearSharedSession, getSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
 import { signOutSupabase, subscribeSupabaseAuth } from './api/supabaseAuth'
 import { connectOperationalSupabase, stopOperationalSupabaseSync } from './data/operationalSupabaseSync'
-import { connectAuthorizationSupabase, stopAuthorizationSupabaseSync } from './data/authorizationSupabaseSync'
-import { connectInternalSettingsSupabase, stopInternalSettingsSupabaseSync } from './data/internalSettingsSupabaseSync'
+import { connectAuthorizationSupabase, getAuthorizationHydrationError, stopAuthorizationSupabaseSync } from './data/authorizationSupabaseSync'
+import { connectInternalSettingsSupabase, getInternalSettingsHydrationError, stopInternalSettingsSupabaseSync } from './data/internalSettingsSupabaseSync'
 import { setRuntimeBranchContext } from './data/runtimeBranchSupabase'
 import { connectPayrollSupabase, stopPayrollSupabaseSync } from './data/payrollSupabaseSync'
 import { connectRealtimeSupabase, stopRealtimeSupabaseSync } from './data/realtimeSupabaseSync'
@@ -48,10 +49,12 @@ const hydrationErrorMessage = (error: unknown): string =>
 const runHydrationStage = async (
   label: string,
   hydrate: () => Promise<boolean>,
+  getFailure?: () => string | undefined,
 ): Promise<{ ready: boolean; failure?: string }> => {
   try {
     const ready = await hydrate()
-    return ready ? { ready } : { ready, failure: `${label}: unavailable` }
+    if (ready) return { ready }
+    return { ready, failure: `${label}: ${getFailure?.() ?? 'unavailable'}` }
   } catch (error) {
     return { ready: false, failure: `${label}: ${hydrationErrorMessage(error)}` }
   }
@@ -105,9 +108,9 @@ export default function App() {
         setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: profileBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
       }
 
-      const authorization = await runHydrationStage('Authorization', connectAuthorizationSupabase)
-      const internalSettings = await runHydrationStage('Internal settings', connectInternalSettingsSupabase)
-      const operational = await runHydrationStage('Operational domains', connectOperationalSupabase)
+      const authorization = await runHydrationStage('Authorization', connectAuthorizationSupabase, getAuthorizationHydrationError)
+      const internalSettings = await runHydrationStage('Internal settings', connectInternalSettingsSupabase, getInternalSettingsHydrationError)
+      const operational = await runHydrationStage('Operational domains', connectOperationalSupabase, () => usePersistenceHealthStore.getState().message)
       const staffOperations = await runHydrationStage('Staff schedule/attendance', connectStaffOperationsSupabase)
       const authorizationReady = authorization.ready
       const internalSettingsReady = internalSettings.ready
