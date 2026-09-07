@@ -26,6 +26,19 @@ describe('SupabaseHttpClient authentication boundary', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('forwards the current staff JWT when an authenticated session is available', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('null', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const client = new SupabaseHttpClient(config, { getAccessToken: () => 'staff-jwt' })
+
+    await client.rpc('get_operational_domain_state', { p_domain: 'finance' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit
+    const headers = new Headers(init.headers)
+    expect(headers.get('Authorization')).toBe('Bearer staff-jwt')
+  })
+
   it('keeps anonymous requests available for clients without an auth token provider', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('null', { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
