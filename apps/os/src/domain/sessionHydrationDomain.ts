@@ -35,7 +35,7 @@ export const resolveStaffBranchContext = ({
   branches: Array<{ id: string; isActive: boolean; isDefault?: boolean }>
 }): {
   scheduledBranchId?: string
-  operationalBranchId?: string
+  fallbackOperationalBranchId?: string
   requiresOperationalBranch: boolean
 } => {
   const activeBranches = branches.filter((branch) => branch.isActive)
@@ -53,8 +53,7 @@ export const resolveStaffBranchContext = ({
 
   return {
     scheduledBranchId: activeScheduledBranchId,
-    operationalBranchId: activeScheduledBranchId
-      ?? (requiresOperationalBranch ? fallbackOperationalBranchId : undefined),
+    fallbackOperationalBranchId,
     requiresOperationalBranch,
   }
 }
