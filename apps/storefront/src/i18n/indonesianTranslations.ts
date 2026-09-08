@@ -77,6 +77,12 @@ const termReplacements: Array<[RegExp, string]> = [
   [/\brestock\b/gi, 'isi ulang stok'],
   [/\bexpiry\b/gi, 'kedaluwarsa'],
   [/\bexpired\b/gi, 'kedaluwarsa'],
+  [/\bHR\b/g, 'SDM'],
+  [/\bFlorist\b/gi, 'Perangkai Bunga'],
+  [/\bOwner\b/gi, 'Pemilik'],
+  [/\bshift\b/gi, 'sif'],
+  [/\brefund\b/gi, 'pengembalian dana'],
+  [/\bcrop(?:ped|ping)?\b/gi, 'potong'],
 ]
 
 const phraseReplacements: Array<[RegExp, string]> = [
