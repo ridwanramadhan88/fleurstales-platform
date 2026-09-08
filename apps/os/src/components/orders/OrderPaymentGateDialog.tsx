@@ -144,7 +144,7 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
               <span className="text-xs font-medium text-muted-foreground">Bukti transfer</span>
               {paymentProofPreview ? (
                 <div className="flex items-start gap-3 rounded-xl bg-background p-3 ring-1 ring-border/70">
-                  <img src={paymentProofPreview} alt="Bukti transfer preview" className="h-20 w-20 rounded-lg object-cover" />
+                  <img src={paymentProofPreview} alt="Pratinjau bukti transfer" className="h-20 w-20 rounded-lg object-cover" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-success">Ready to upload</p>
                     <p className="mt-1 text-2xs text-muted-foreground">The private Finance proof is uploaded only when Confirm PAID is clicked.</p>
