@@ -122,6 +122,9 @@ const polishLegacyCopy = (value: string, source = value): string => {
 
 const POLISHED_TRANSLATION_OVERRIDES: Record<string, string> = {
   'Branch vs Branch': 'Cabang vs Cabang',
+  'Period vs Previous Period': 'Periode vs Periode Sebelumnya',
+  'Revenue vs Expense': 'Pendapatan vs Pengeluaran',
+  'Single view': 'Tampilan tunggal',
   'Publish anyway': 'Tetap terbitkan',
   'Review schedule': 'Periksa jadwal',
   'Visit online store': 'Buka toko online',
