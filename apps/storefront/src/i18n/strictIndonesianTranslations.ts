@@ -194,7 +194,6 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Other source': 'Sumber lainnya',
   'Which promotions interest you?': 'Promo apa yang paling menarik bagi Anda?',
   'Choose one or more.': 'Pilih satu atau lebih.',
-  'Discount': 'Potongan Harga / Diskon',
   'Cashback': 'Cashback',
   'Bundle deal': 'Bundling',
   'Flash sale': 'Flash Sale',
