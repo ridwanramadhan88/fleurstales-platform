@@ -14,16 +14,16 @@ const renderStartupFailure = (error: unknown) => {
   root.render(
     <main className="flex min-h-screen items-center justify-center bg-background px-6 text-center text-foreground">
       <section className="max-w-md rounded-xl border bg-card p-8 shadow-sm">
-        <h1 className="text-xl font-semibold">Fleurstales OS couldn&apos;t start</h1>
+        <h1 className="text-xl font-semibold">Fleurstales OS tidak dapat dimulai</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Check the connection and reload the workspace.
+          Periksa koneksi, lalu muat ulang ruang kerja.
         </p>
         <button
           type="button"
           className="mt-6 min-h-11 rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground"
           onClick={() => window.location.reload()}
         >
-          Reload
+          Muat ulang
         </button>
       </section>
     </main>,
