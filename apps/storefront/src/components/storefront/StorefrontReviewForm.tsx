@@ -1,4 +1,4 @@
-import { useMemo, useState, type FC, type FormEvent } from 'react'
+import { useMemo, useState, type FC, type FormEvent, type ReactNode } from 'react'
 import { Check, Star } from 'lucide-react'
 import {
   submitPublicOrderReview,
@@ -88,7 +88,7 @@ const fieldClass =
 const sectionClass =
   'rounded-[var(--sf-radius-card)] border border-black/10 bg-white/45 p-5 sm:p-6'
 
-const FieldLabel: FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+const FieldLabel: FC<{ children: ReactNode; required?: boolean }> = ({ children, required }) => (
   <span className="mb-2 block sf-type-2 font-semibold text-black/72">
     {children}{required ? <span className="ml-1 text-[#d84b72]">*</span> : null}
   </span>
