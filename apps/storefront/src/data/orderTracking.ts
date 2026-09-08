@@ -1,5 +1,5 @@
 import { bootstrapSharedData } from './shared/bootstrap'
-import type { OrderFulfillment, OrderStatus, PaymentMethod, PaymentStatus } from './shared/databaseTypes'
+import type { Json, OrderFulfillment, OrderStatus, PaymentMethod, PaymentStatus } from './shared/databaseTypes'
 
 export interface PublicOrderTrackingItem {
   name: string
@@ -176,7 +176,7 @@ export const submitPublicOrderReview = async (
     p_tracking_id: trackingId,
     p_answers: answers,
     p_note: note?.trim() || null,
-    p_profile: profile,
+    p_profile: profile as unknown as Json,
   })
 
   const cached = trackingDetailsCache.get(trackingId)
