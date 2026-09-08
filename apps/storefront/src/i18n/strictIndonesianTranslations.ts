@@ -253,8 +253,8 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
 export const ID_STRICT_PATTERN_TRANSLATIONS: Array<
   [RegExp, (...matches: string[]) => string]
 > = [
-  [/^Rate (\\d+) out of 5$/i, (_full, score) => `Beri nilai ${score} dari 5`],
-  [/^Thank you! Your (\\d+(?:[.,]\\d+)?)% reward for the next order is now active\\.$/i, (_full, percent) => `Terima kasih! Promo ${percent}% untuk pesanan berikutnya sudah aktif.`],
+  [/^Rate (\d+) out of 5$/i, (_full, score) => `Beri nilai ${score} dari 5`],
+  [/^Thank you! Your (\d+(?:[.,]\d+)?)% reward for the next order is now active\.$/i, (_full, percent) => `Terima kasih! Promo ${percent}% untuk pesanan berikutnya sudah aktif.`],
   [/^Open cart, (\d+) items?$/i, (_full, count) => `Buka keranjang, ${count} item`],
   [/^Shop (.+) collection$/i, (_full, collection) => `Belanja koleksi ${collection}`],
   [/^Promo (\d+(?:[.,]\d+)?)% untuk order berikutnya sudah aktif\.$/i, (_full, percent) => `Promo ${percent}% untuk pesanan berikutnya sudah aktif.`],
