@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import StorefrontPage from './pages/Storefront'
 import StorefrontOrderTrackingPage from './pages/StorefrontOrderTrackingPage'
+import { StorefrontLanguageSwitcher } from './components/storefront/StorefrontLanguageSwitcher'
 import {
   STOREFRONT_NAVIGATION_EVENT,
   type StorefrontNavigationDetail,
@@ -59,11 +60,14 @@ export default function App() {
   const trackingRoute = readTrackingRoute()
   if (trackingRoute.trackingId || trackingRoute.orderNumber || isManualTrackingRoute()) {
     return (
-      <StorefrontOrderTrackingPage
-        trackingId={trackingRoute.trackingId}
-        orderNumber={trackingRoute.orderNumber}
-        legacyRoute={trackingRoute.legacy}
-      />
+      <>
+        <StorefrontLanguageSwitcher floating />
+        <StorefrontOrderTrackingPage
+          trackingId={trackingRoute.trackingId}
+          orderNumber={trackingRoute.orderNumber}
+          legacyRoute={trackingRoute.legacy}
+        />
+      </>
     )
   }
 

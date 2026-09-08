@@ -1,6 +1,7 @@
 import { finalizeIndonesianStaticCopy } from './finalizeIndonesianCopy'
 import { ID_PATTERN_TRANSLATIONS, ID_TRANSLATIONS } from './indonesianTranslations'
 import { ID_REVIEWED_SOURCE_TRANSLATIONS } from './reviewedTranslationSource'
+import { ID_STRICT_PATTERN_TRANSLATIONS, ID_STRICT_TRANSLATIONS } from './strictIndonesianTranslations'
 import type { UiLanguage } from './uiLanguage'
 
 const normalize = (value: string): string => value.replace(/\s+/g, ' ').trim()
@@ -31,6 +32,14 @@ export const translateUiText = (value: string, language: UiLanguage): string => 
   if (language === 'en') return value
   const normalized = normalize(value)
   if (!normalized || !/[A-Za-z]/.test(normalized)) return value
+
+  const strictExact = ID_STRICT_TRANSLATIONS[normalized]
+  if (strictExact !== undefined) {
+    return preserveBoundaryWhitespace(value, finalizeIndonesianStaticCopy(strictExact))
+  }
+
+  const strictPatterned = applyPatterns(normalized, ID_STRICT_PATTERN_TRANSLATIONS)
+  if (strictPatterned !== undefined) return preserveBoundaryWhitespace(value, strictPatterned)
 
   const exact = ID_TRANSLATIONS[normalized]
   if (exact !== undefined) {

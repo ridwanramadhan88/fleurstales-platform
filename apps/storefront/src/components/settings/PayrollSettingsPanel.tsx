@@ -62,7 +62,7 @@ export const PayrollSettingsPanel: FC<Props> = ({ isEditing, settings, validatio
         </div>
         <p className="pb-2 text-xs text-muted-foreground">10 points = Rp {Math.round(settings.pointValueIdr * 10).toLocaleString('id-ID')}</p>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">The monthly payable point bonus remains capped at Rp 500.000 per staff.</p>
+      <p className="mt-2 text-xs text-muted-foreground">Bonus poin bulanan yang dapat dibayarkan tetap dibatasi maksimal Rp 500.000 per staf.</p>
     </SettingsCard>
 
     <section className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 shadow-sm">

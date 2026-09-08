@@ -3,6 +3,7 @@ import { ArrowLeft, Search } from 'lucide-react'
 import { CartBagIcon, CartCountBadge } from './StorefrontCartIcon'
 import { StorefrontContainer } from './StorefrontContainer'
 import { StorefrontBrand } from './StorefrontBrand'
+import { StorefrontLanguageSwitcher } from './StorefrontLanguageSwitcher'
 
 interface Props {
   cartCount: number
@@ -48,6 +49,8 @@ export const StorefrontHeader: FC<Props> = ({
       </button>
 
       <div className="flex shrink-0 items-center">
+        <StorefrontLanguageSwitcher />
+
         <button
           type="button"
           onClick={onOpenSearch}

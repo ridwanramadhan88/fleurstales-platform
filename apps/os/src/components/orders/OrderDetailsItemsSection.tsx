@@ -106,7 +106,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
               </Select>
             </label>
           </div>
-          <p className="w-full text-2xs text-muted-foreground">Payment status is controlled only by Konfirmasi Pembayaran and the refund workflow.</p>
+          <p className="w-full text-2xs text-muted-foreground">Status pembayaran hanya dikendalikan oleh Konfirmasi Pembayaran dan alur pengembalian dana.</p>
         </section>
       ) : null}
 

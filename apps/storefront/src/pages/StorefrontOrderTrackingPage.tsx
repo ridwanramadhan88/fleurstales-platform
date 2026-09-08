@@ -306,7 +306,7 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
 
                   {isComplete ? (
                     <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/45 p-5 sm:p-7">
-                      <p className="sf-label text-[#00813f]">Order selesai</p>
+                      <p className="sf-label text-[#00813f]">Pesanan selesai</p>
                       <h2 className="mt-2 sf-type-5 font-display">How was your order?</h2>
                       {details.reviewSubmitted ? (
                         <div className="mt-5 rounded-2xl bg-[#eee4cc] p-4 sm:p-5">
