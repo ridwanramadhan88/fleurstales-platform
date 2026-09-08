@@ -66,7 +66,7 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
             <div className="flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2.5 text-warning">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               <div>
-                <p className="text-sm font-semibold">Bukti transfer is missing</p>
+                <p className="text-sm font-semibold">Bukti transfer tidak ditemukan</p>
                 <p className="mt-0.5 text-xs text-warning/90">This transfer was recorded without the expected private payment proof.</p>
               </div>
             </div>
