@@ -12,8 +12,19 @@ describe('natural Indonesian UI copy', () => {
   it('translates operational workflow states consistently', () => {
     expect(translateUiText('Confirmed', 'id')).toBe('Dikonfirmasi')
     expect(translateUiText('Rejected', 'id')).toBe('Ditolak')
-    expect(translateUiText('Not assigned', 'id')).toBe('Belum ditugaskan')
+    expect(translateUiText('Not assigned', 'id')).toBe('Belum Ditugaskan')
     expect(translateUiText('Processing', 'id')).toBe('Diproses')
+  })
+
+  it('uses Indonesian business terminology instead of mixed English labels', () => {
+    expect(translateUiText('Dashboard', 'id')).toBe('Ringkasan')
+    expect(translateUiText('Orders', 'id')).toBe('Pesanan')
+    expect(translateUiText('Finance', 'id')).toBe('Keuangan')
+    expect(translateUiText('Revenue', 'id')).toBe('Pendapatan')
+    expect(translateUiText('Payroll', 'id')).toBe('Penggajian')
+    expect(translateUiText('Inventory', 'id')).toBe('Inventaris')
+    expect(translateUiText('Customer', 'id')).toBe('Pelanggan')
+    expect(translateUiText('Branch', 'id')).toBe('Cabang')
   })
 
   it('uses natural Indonesian instead of mixed-language sentences', () => {
@@ -50,6 +61,14 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('Branch: Kedamaian', 'id')).toBe('Cabang: Kedamaian')
   })
 
+  it('covers customer storefront and order tracking copy', () => {
+    expect(translateUiText('You’ll get', 'id')).toBe('Kamu akan dapat')
+    expect(translateUiText('All Flowers', 'id')).toBe('Semua Bunga')
+    expect(translateUiText('Track your Fleurstales order', 'id')).toBe('Lacak pesanan Fleurstales Anda')
+    expect(translateUiText('Customer & fulfillment', 'id')).toBe('Pelanggan & pemenuhan')
+    expect(translateUiText('Open cart, 3 items', 'id')).toBe('Buka keranjang, 3 item')
+  })
+
   it('preserves text-node boundary whitespace around translated copy', () => {
     expect(translateUiText('Save ', 'id')).toBe('Simpan ')
     expect(translateUiText(' Save changes', 'id')).toBe(' Simpan perubahan')
@@ -58,16 +77,19 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('   ', 'id')).toBe('   ')
   })
 
-  it('keeps established role and technical names', () => {
-    expect(translateUiText('Owner', 'id')).toBe('Owner')
+  it('translates staff-facing role names while preserving technical identifiers', () => {
+    expect(translateUiText('Owner', 'id')).toBe('Pemilik')
     expect(translateUiText('Admin', 'id')).toBe('Admin')
-    expect(translateUiText('HR', 'id')).toBe('HR')
-    expect(translateUiText('Florist', 'id')).toBe('Florist')
+    expect(translateUiText('HR', 'id')).toBe('SDM')
+    expect(translateUiText('Florist', 'id')).toBe('Perangkai Bunga')
     expect(translateUiText('WhatsApp', 'id')).toBe('WhatsApp')
     expect(translateUiText('SKU', 'id')).toBe('SKU')
+    expect(translateUiText('PDF', 'id')).toBe('PDF')
+    expect(translateUiText('CSV', 'id')).toBe('CSV')
   })
 
   it('returns original English when selected', () => {
     expect(translateUiText('Inventory is disabled.', 'en')).toBe('Inventory is disabled.')
+    expect(translateUiText('Track your Fleurstales order', 'en')).toBe('Track your Fleurstales order')
   })
 })
