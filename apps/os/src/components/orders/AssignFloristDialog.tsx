@@ -198,7 +198,7 @@ export const AssignFloristDialog: FC<{
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {currency.format(order.totalIdr)} · {order.paymentMethod === 'cash' ? 'Cash' : order.paymentMethod === 'transfer' ? 'Transfer' : 'Payment method not set'}
                     </p>
-                    {!paymentReady && <p className="mt-2 text-xs text-warning">Close this dialog and use Konfirmasi Pembayaran first.</p>}
+                    {!paymentReady && <p className="mt-2 text-xs text-warning">Tutup dialog ini dan gunakan Konfirmasi Pembayaran terlebih dahulu.</p>}
                   </div>
                 </div>
               </section>
