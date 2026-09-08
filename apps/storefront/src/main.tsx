@@ -20,16 +20,16 @@ const renderStartupFailure = (error: unknown) => {
     <main className="flex min-h-screen items-center justify-center bg-[#f7f0e8] px-6 text-center text-black">
       <section className="max-w-md">
         <p className="mb-3 text-xs font-medium uppercase tracking-[0.24em]">Fleurstales</p>
-        <h1 className="text-2xl font-medium">We couldn&apos;t open the shop.</h1>
+        <h1 className="text-2xl font-medium">Toko tidak dapat dibuka.</h1>
         <p className="mt-3 text-sm leading-6 text-black/65">
-          Please check your connection, then try again.
+          Periksa koneksi Anda, lalu coba lagi.
         </p>
         <button
           type="button"
           className="mt-7 min-h-11 border border-black bg-black px-6 text-sm font-medium text-white"
           onClick={() => window.location.reload()}
         >
-          Try again
+          Coba lagi
         </button>
       </section>
     </main>,
