@@ -2,7 +2,10 @@ import { create } from 'zustand'
 
 export type UiLanguage = 'id' | 'en'
 
-const STORAGE_KEY = 'fleurstales-ui-language'
+// v2 intentionally resets the old hidden preference. This release exposes a
+// customer-facing selector and establishes Indonesian as the true first-run
+// default; explicit choices made with the new selector continue to persist.
+const STORAGE_KEY = 'fleurstales-ui-language-v2'
 
 const readStoredLanguage = (): UiLanguage => {
   if (typeof window === 'undefined') return 'id'
