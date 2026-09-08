@@ -22,9 +22,25 @@ export interface PublicReviewQuestion {
   displayOrder: number
 }
 
+export interface PublicReviewProfile {
+  domicile?: string | null
+  ageRange?: 'under_18' | '18_24' | '25_34' | '35_plus' | null
+  gender?: 'male' | 'female' | null
+  occupation?: string | null
+  acquisitionSource?: string | null
+  promoPreferences?: string[]
+}
+
+export interface PublicReviewProfileInput extends PublicReviewProfile {
+  name?: string
+  email?: string
+  birthday?: string
+}
+
 export interface PublicSubmittedReview {
   note?: string | null
   submittedAt: string
+  surveyData?: Record<string, unknown> | null
   answers: Array<{
     questionId: string
     question: string
@@ -49,6 +65,9 @@ export interface PublicOrderTrackingDetails {
   branchAddress?: string | null
   customerName: string
   customerWhatsapp?: string | null
+  customerEmail?: string | null
+  customerBirthday?: string | null
+  customerProfile?: PublicReviewProfile | null
   contactWhatsapp?: string | null
   deliveryAddress?: string | null
   deliveryInstructions?: string | null
@@ -151,11 +170,13 @@ export const submitPublicOrderReview = async (
   trackingId: string,
   answers: Array<{ questionId: string; score: number }>,
   note?: string,
+  profile: PublicReviewProfileInput = {},
 ): Promise<SubmitReviewResult> => {
   const result = await getPublicClient().rpc<SubmitReviewResult>('submit_order_review', {
     p_tracking_id: trackingId,
     p_answers: answers,
     p_note: note?.trim() || null,
+    p_profile: profile,
   })
 
   const cached = trackingDetailsCache.get(trackingId)
