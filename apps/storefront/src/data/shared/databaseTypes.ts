@@ -249,6 +249,12 @@ export interface CustomerRow {
   normalized_whatsapp_number: string
   email: string | null
   birthday: string | null
+  domicile: string | null
+  age_range: string | null
+  gender: string | null
+  occupation: string | null
+  acquisition_source: string | null
+  promo_preferences: string[]
   preferred_branch_id: string | null
   tags: string[]
   notes: string | null
