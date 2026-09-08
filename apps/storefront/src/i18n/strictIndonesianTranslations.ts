@@ -152,7 +152,6 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Track Order': 'Lacak Pesanan',
   'Collection Series': 'Seri Koleksi',
   'Swipe': 'Geser',
-  'Track Order': 'Lacak Pesanan',
   'Track': 'Lacak',
   'Checking…': 'Memeriksa…',
 
