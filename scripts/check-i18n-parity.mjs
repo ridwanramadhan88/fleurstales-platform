@@ -13,9 +13,11 @@ const sharedFiles = [
   'finalizeIndonesianCopy.ts',
   'reviewedTranslationSource.ts',
   'reviewedTranslations.ts',
+  'strictIndonesianTranslations.ts',
   'translateUiText.ts',
   'translateUiText.test.ts',
   'UiLanguageBridge.tsx',
+  'uiLanguage.ts',
 ]
 
 const reportFirstDifference = (file, os, storefront) => {
