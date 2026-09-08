@@ -7,11 +7,19 @@ type AttributeRecord = { original: string; applied: string }
 
 const textRecords = new WeakMap<Text, TextRecord>()
 const attributeRecords = new WeakMap<Element, Map<string, AttributeRecord>>()
-const TRANSLATABLE_ATTRIBUTES = ['placeholder', 'title', 'aria-label'] as const
+const TRANSLATABLE_ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'alt'] as const
+
+const isTrackingTranslationRoot = (element: Element): boolean => {
+  if (!element.matches('.storefront-font[data-no-translate]')) return false
+  const path = window.location.pathname
+  return /^\/track(?:\/|$)/.test(path) || /^\/order(?:\/|$)/.test(path)
+}
 
 const shouldSkip = (element: Element | null): boolean => {
   if (!element) return true
-  return Boolean(element.closest('script, style, code, pre, svg, [data-no-translate], [contenteditable="true"]'))
+  if (element.closest('script, style, code, pre, svg, [contenteditable="true"]')) return true
+  const noTranslateRoot = element.closest('[data-no-translate]')
+  return Boolean(noTranslateRoot && !isTrackingTranslationRoot(noTranslateRoot))
 }
 
 const translateTextNode = (node: Text, language: UiLanguage) => {
