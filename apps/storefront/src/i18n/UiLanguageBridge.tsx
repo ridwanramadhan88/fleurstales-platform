@@ -9,17 +9,20 @@ const textRecords = new WeakMap<Text, TextRecord>()
 const attributeRecords = new WeakMap<Element, Map<string, AttributeRecord>>()
 const TRANSLATABLE_ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'alt'] as const
 
-const isTrackingTranslationRoot = (element: Element): boolean => {
-  if (!element.matches('.storefront-font[data-no-translate]')) return false
-  const path = window.location.pathname
-  return /^\/track(?:\/|$)/.test(path) || /^\/order(?:\/|$)/.test(path)
-}
+/**
+ * The public storefront historically marked its outer shell data-no-translate
+ * to protect customer/catalog values. The bridge now translates only known UI
+ * copy, so the storefront shell itself may participate while any nested
+ * data-no-translate element remains explicitly protected.
+ */
+const isStorefrontTranslationRoot = (element: Element): boolean =>
+  element.matches('.storefront-font[data-no-translate]')
 
 const shouldSkip = (element: Element | null): boolean => {
   if (!element) return true
   if (element.closest('script, style, code, pre, svg, [contenteditable="true"]')) return true
   const noTranslateRoot = element.closest('[data-no-translate]')
-  return Boolean(noTranslateRoot && !isTrackingTranslationRoot(noTranslateRoot))
+  return Boolean(noTranslateRoot && !isStorefrontTranslationRoot(noTranslateRoot))
 }
 
 const translateTextNode = (node: Text, language: UiLanguage) => {
