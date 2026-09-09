@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { MoreVertical, Pencil, RotateCcw, ShieldCheck, X, XCircle } from 'lucide-react'
+import { MoreVertical, Pencil, RotateCcw, X, XCircle } from 'lucide-react'
 import { StatusChip } from '../ui/chip'
 import {
   DropdownMenu,
@@ -27,7 +27,6 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
     urgency,
     canEdit,
     canVerify,
-    canVerifyThisOrder,
     canRequestChange,
     hasPendingRequest,
     locked,
@@ -38,7 +37,6 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
     isCancellable,
     onDraftChange,
     onCancelOrder,
-    onVerifyOrder,
     onOpenRequestModal,
     canManageRefund,
     onOpenInitiateRefund,
@@ -47,7 +45,7 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
   const canInitiateRefund = canManageRefund && order.paymentStatus === 'paid'
   const hasMenuActions =
     !isEditing &&
-    (canVerifyThisOrder || canEdit || canRequestChange || canInitiateRefund)
+    (canEdit || canRequestChange || canInitiateRefund)
 
   return (
     <header className="mb-4">
@@ -86,12 +84,6 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
                   <DropdownMenuItem onClick={onOpenInitiateRefund}>
                     <RotateCcw className="size-3.5" />
                     Initiate refund
-                  </DropdownMenuItem>
-                )}
-                {canVerifyThisOrder && (
-                  <DropdownMenuItem onClick={onVerifyOrder}>
-                    <ShieldCheck className="size-3.5" />
-                    Reconcile order
                   </DropdownMenuItem>
                 )}
                 {canEdit && (

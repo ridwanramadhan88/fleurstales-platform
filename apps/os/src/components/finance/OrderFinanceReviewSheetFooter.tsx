@@ -14,7 +14,11 @@ type OrderFinanceReviewSheetFooterProps = Pick<
   | "onStartAction"
   | "onConfirmAction"
   | "onVerifyOrder"
-> & { hasPaymentMismatch?: boolean };
+> & {
+  hasPaymentMismatch?: boolean;
+  hasMissingProof?: boolean;
+  paymentFullyPaid?: boolean;
+};
 
 export const OrderFinanceReviewSheetFooter: FC<
   OrderFinanceReviewSheetFooterProps
@@ -30,9 +34,11 @@ export const OrderFinanceReviewSheetFooter: FC<
   onConfirmAction,
   onVerifyOrder,
   hasPaymentMismatch = false,
+  hasMissingProof = false,
+  paymentFullyPaid = true,
 }) => {
   const [mismatchReviewed, setMismatchReviewed] = useState(false);
-  useEffect(() => setMismatchReviewed(false), [hasPaymentMismatch]);
+  useEffect(() => setMismatchReviewed(false), [hasPaymentMismatch, hasMissingProof, paymentFullyPaid]);
 
   if (!canVerify || !isPending) return null;
 
@@ -45,8 +51,36 @@ export const OrderFinanceReviewSheetFooter: FC<
         </div>
       ) : (
         <>
-          {hasPaymentMismatch && <label className="mb-3 flex items-start gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning"><input type="checkbox" checked={mismatchReviewed} onChange={(event) => setMismatchReviewed(event.target.checked)} disabled={decisionBusy} className="mt-0.5"/><span>I reviewed the payment mismatch and still want to reconcile this order.</span></label>}
-          <div className="flex items-center justify-end gap-2"><button type="button" onClick={() => onStartAction("correction")} disabled={decisionBusy} className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-warning/30 bg-warning/5 px-[18px] text-sm font-semibold text-warning disabled:opacity-40"><AlertTriangle className="size-4"/>Needs correction</button><button type="button" onClick={onVerifyOrder} disabled={decisionBusy || (hasPaymentMismatch && !mismatchReviewed)} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-success px-[18px] text-sm font-semibold text-white disabled:opacity-40">{decisionBusy ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4"/>}Reconcile order</button></div>
+          {!paymentFullyPaid && (
+            <div className="mb-3 flex items-start gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span>Full payment must be recorded before this order can be reconciled.</span>
+            </div>
+          )}
+          {hasMissingProof && (
+            <div className="mb-3 flex items-start gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span>Bukti transfer is required before this transfer can be reconciled.</span>
+            </div>
+          )}
+          {hasPaymentMismatch && paymentFullyPaid && !hasMissingProof && (
+            <label className="mb-3 flex items-start gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">
+              <input type="checkbox" checked={mismatchReviewed} onChange={(event) => setMismatchReviewed(event.target.checked)} disabled={decisionBusy} className="mt-0.5"/>
+              <span>I reviewed the payment mismatch and still want to reconcile this order.</span>
+            </label>
+          )}
+          <div className="flex items-center justify-end gap-2">
+            <button type="button" onClick={() => onStartAction("correction")} disabled={decisionBusy} className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-warning/30 bg-warning/5 px-[18px] text-sm font-semibold text-warning disabled:opacity-40"><AlertTriangle className="size-4"/>Needs correction</button>
+            <button
+              type="button"
+              onClick={onVerifyOrder}
+              disabled={decisionBusy || !paymentFullyPaid || hasMissingProof || (hasPaymentMismatch && !mismatchReviewed)}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-success px-[18px] text-sm font-semibold text-white disabled:opacity-40"
+            >
+              {decisionBusy ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4"/>}
+              Reconcile order
+            </button>
+          </div>
         </>
       )}
     </section>

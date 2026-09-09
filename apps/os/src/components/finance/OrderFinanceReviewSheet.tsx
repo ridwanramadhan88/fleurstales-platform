@@ -60,6 +60,7 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
     (order.paymentStatus === "paid" && paidAmount !== order.totalIdr) ||
     (order.paymentStatus === "partial" && (paidAmount <= 0 || paidAmount >= order.totalIdr)) ||
     (order.paymentStatus === "unpaid" && paidAmount > 0);
+  const hasMissingProof = order.paymentMethod === "transfer" && !order.paymentProofUrl;
 
   return (
     <AppSheet
@@ -152,6 +153,8 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
         onConfirmAction={onConfirmAction}
         onVerifyOrder={onVerifyOrder}
         hasPaymentMismatch={hasPaymentMismatch}
+        hasMissingProof={hasMissingProof}
+        paymentFullyPaid={order.paymentStatus === "paid"}
       />
     </AppSheet>
   );

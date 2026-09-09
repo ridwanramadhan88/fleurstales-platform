@@ -4,7 +4,7 @@ import { OrderChangeRequestModal } from './OrderChangeRequestModal'
 import { OrderStatusStepper } from './OrderStatusStepper'
 import { OrderRefundPanel } from './OrderRefundPanel'
 import { OrderRefundDialog } from './OrderRefundDialog'
-import { OrderPaymentProofFinanceCard } from './OrderPaymentProofFinanceCard'
+import { OrderPaymentProofSummary } from './OrderPaymentProofSummary'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 
 interface OrderDetailsFinanceSectionProps {
@@ -47,8 +47,8 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
           onReject={onRejectRequest}
         />
 
-        {currentUserRole === 'finance' && order.paymentMethod === 'transfer' && (
-          <OrderPaymentProofFinanceCard paymentProofPath={order.paymentProofUrl} />
+        {['finance', 'owner', 'admin'].includes(currentUserRole) && (
+          <OrderPaymentProofSummary order={order} />
         )}
 
         {order.financeVerificationStatus === 'rejected' && (
