@@ -595,7 +595,7 @@ const mapFlowerRecipeSnapshot = (
   value: Json,
 ): Array<{ flowerName: string; quantity: number; unit: 'stem' | 'bunch' }> | undefined => {
   if (!Array.isArray(value)) return undefined
-  const items = value.flatMap((raw) => {
+  const items: Array<{ flowerName: string; quantity: number; unit: 'stem' | 'bunch' }> = value.flatMap((raw) => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return []
     const record = raw as Record<string, Json | undefined>
     const flowerName = typeof record.flowerName === 'string' ? record.flowerName.trim() : ''
