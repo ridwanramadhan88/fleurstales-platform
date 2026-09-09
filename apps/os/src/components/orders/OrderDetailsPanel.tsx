@@ -8,6 +8,7 @@ import { OrderDetailsActionsSection } from './OrderDetailsActionsSection'
 import { OrderDetailsDeliverySection } from './OrderDetailsDeliverySection'
 import { OrderDetailsFinanceSection } from './OrderDetailsFinanceSection'
 import { OrderDetailsHeader } from './OrderDetailsHeader'
+import { OrderDetailsCurrentFocus } from './OrderDetailsCurrentFocus'
 import { OrderDetailsItemsSection } from './OrderDetailsItemsSection'
 import { OrderDetailsMetaSection } from './OrderDetailsMetaSection'
 import { OrderDetailsNotesSection } from './OrderDetailsNotesSection'
@@ -35,6 +36,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       contentClassName="gap-0 overflow-hidden rounded-t-2xl bg-card px-5 pb-4 pt-5 shadow-ios-lg ring-1 ring-border/60 sm:right-auto sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 md:max-w-3xl lg:h-[90vh] lg:max-h-[90vh] lg:max-w-5xl"
     >
       <OrderDetailsHeader viewModel={viewModel} />
+      <OrderDetailsCurrentFocus viewModel={viewModel} />
       <OrderDetailsFinanceSection viewModel={viewModel} />
 
       {/* px-px keeps card strokes off the scrollport clip edge (1px is
@@ -43,7 +45,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         <div role="tablist" aria-label="Order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
           {([
             ['details', 'Details'],
-            ['customer', 'Customer'],
+            ['customer', 'Customer & fulfillment'],
             ['activity', 'Activity'],
           ] as const).map(([id, label]) => (
             <button
@@ -65,15 +67,50 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         <div role="tabpanel" className="space-y-8 pt-5">
           {tab === 'details' && (
             <>
-              <OrderDetailsItemsSection viewModel={viewModel} />
-              <OrderDetailsMetaSection viewModel={viewModel} />
-              <OrderDetailsNotesSection viewModel={viewModel} />
+              <details open className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
+                <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-foreground marker:hidden">
+                  <span className="flex items-center justify-between gap-3">
+                    Order details
+                    <span className="text-2xs font-medium text-muted-foreground group-open:hidden">Show</span>
+                    <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
+                  </span>
+                </summary>
+                <div className="space-y-5 border-t border-border/60 p-4">
+                  <OrderDetailsItemsSection viewModel={viewModel} />
+                  <OrderDetailsMetaSection viewModel={viewModel} />
+                </div>
+              </details>
+
+              <details className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
+                <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-foreground marker:hidden">
+                  <span className="flex items-center justify-between gap-3">
+                    Notes & greeting card
+                    <span className="text-2xs font-medium text-muted-foreground group-open:hidden">Show</span>
+                    <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
+                  </span>
+                </summary>
+                <div className="border-t border-border/60 p-4">
+                  <OrderDetailsNotesSection viewModel={viewModel} />
+                </div>
+              </details>
+
               {order.id ? (
-                <StaffReviewHistory
-                  orderId={order.id}
-                  title="Customer review"
-                  emptyLabel="No review submitted for this order."
-                />
+                <details className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
+                  <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-foreground marker:hidden">
+                    <span className="flex items-center justify-between gap-3">
+                      Customer review
+                      <span className="text-2xs font-medium text-muted-foreground group-open:hidden">Show</span>
+                      <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
+                    </span>
+                  </summary>
+                  <div className="border-t border-border/60 p-4">
+                    <StaffReviewHistory
+                      orderId={order.id}
+                      title="Customer review"
+                      emptyLabel="No review submitted for this order."
+                    />
+                  </div>
+                </details>
               ) : (
                 <section className="rounded-2xl bg-surface-card p-4 text-xs text-muted-foreground ring-1 ring-border/60">
                   Review history is unavailable for this legacy order.
