@@ -1,8 +1,7 @@
 /**
  * @file CatalogItemFormSheet.tsx
  * @description Focused create/edit sheet for essential Catalog product data.
- * Promo, featured placement, and inventory recipes are intentionally managed
- * outside this form so creating a sellable product stays fast and readable.
+ * Keeps product setup focused while allowing a flowers-only recipe per sellable size.
  */
 
 import type { FC, FormEvent } from 'react'
