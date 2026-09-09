@@ -590,6 +590,23 @@ const mapCustomerSuggestions = (value: Json | null): SharedOrder['customerProfil
   return birthday || email || preferredBranchId ? { birthday, email, preferredBranchId } : undefined
 }
 
+const mapFlowerRecipeSnapshot = (
+  value: Json,
+): Array<{ flowerName: string; quantity: number; unit: 'stem' | 'bunch' }> | undefined => {
+  if (!Array.isArray(value)) return undefined
+  const items = value.flatMap((raw) => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return []
+    const record = raw as Record<string, Json | undefined>
+    const flowerName = typeof record.flowerName === 'string' ? record.flowerName.trim() : ''
+    const quantity = typeof record.quantity === 'number' ? record.quantity : Number(record.quantity)
+    const unit = record.unit === 'bunch' ? 'bunch' : record.unit === 'stem' ? 'stem' : undefined
+    return flowerName && Number.isFinite(quantity) && quantity > 0 && unit
+      ? [{ flowerName, quantity, unit }]
+      : []
+  })
+  return items.length > 0 ? items : undefined
+}
+
 const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   id: row.id,
   orderNumber: row.order_number,
@@ -700,6 +717,7 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
       variantSizeSnapshot: optional(item.variant_size_snapshot),
       quantity: item.quantity,
       unitPriceIdr: item.unit_price_idr,
+      flowerRecipeSnapshot: mapFlowerRecipeSnapshot(item.flower_recipe_snapshot),
     })),
 })
 
