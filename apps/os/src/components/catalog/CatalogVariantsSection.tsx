@@ -145,9 +145,9 @@ export const CatalogVariantsSection: FC<Props> = ({
               <div>
                 <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Flower2 className="size-4 text-primary" />
-                  Flower Recipe
+                  Resep Bunga
                 </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Flowers only. Add the standard flower composition for this size.</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Khusus bunga. Tambahkan komposisi bunga standar untuk ukuran ini.</p>
               </div>
               <button
                 type="button"
@@ -160,19 +160,19 @@ export const CatalogVariantsSection: FC<Props> = ({
                 className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted"
               >
                 <Plus className="size-3.5" />
-                Add flower
+                Tambah bunga
               </button>
             </div>
 
             {row.flowerRecipe.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-                No flower recipe yet.
+                Belum ada resep bunga.
               </div>
             ) : (
               <div className="space-y-2">
                 {row.flowerRecipe.map((item, recipeIndex) => (
                   <div key={item.id} className="grid gap-2 rounded-xl bg-muted/45 p-3 sm:grid-cols-[minmax(0,1fr)_7rem_8rem_2.75rem] sm:items-end">
-                    <VariantField label="Flower">
+                    <VariantField label="Bunga">
                       <input
                         value={item.flowerName}
                         onChange={(event) => updateFlowerRecipe(row, updateVariant, index, recipeIndex, { flowerName: event.target.value })}
@@ -180,7 +180,7 @@ export const CatalogVariantsSection: FC<Props> = ({
                         className={inputClass}
                       />
                     </VariantField>
-                    <VariantField label="Qty">
+                    <VariantField label="Jumlah">
                       <input
                         type="number"
                         min={0.01}
@@ -191,7 +191,7 @@ export const CatalogVariantsSection: FC<Props> = ({
                         className={inputClass}
                       />
                     </VariantField>
-                    <VariantField label="Unit">
+                    <VariantField label="Satuan">
                       <Select
                         value={item.unit}
                         onValueChange={(value) => updateFlowerRecipe(row, updateVariant, index, recipeIndex, { unit: value as 'stem' | 'bunch' })}
