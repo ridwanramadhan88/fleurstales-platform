@@ -213,9 +213,7 @@ const mapProduct = (
 
 const readRecipeMap = async (
   client: SupabaseHttpClient,
-  includeInternal: boolean,
 ): Promise<Map<string, ProductVariantFlowerRecipeRow[]>> => {
-  if (!includeInternal) return new Map()
   const rows: ProductVariantFlowerRecipeRow[] = await client.select('product_variant_flower_recipes', {
     order: [{ column: 'sort_order' }, { column: 'id' }],
   })
@@ -263,7 +261,7 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
       client.select('product_variants', { order: [{ column: 'sort_order' }] }),
       client.select('product_images', { order: [{ column: 'sort_order' }] }),
       readCostMap(client, options?.includeCosts === true),
-      readRecipeMap(client, options?.includeCosts === true),
+      readRecipeMap(client),
     ])
     return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client))
   },
