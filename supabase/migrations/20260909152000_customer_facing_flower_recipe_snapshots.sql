@@ -75,6 +75,24 @@ before insert on public.order_items
 for each row
 execute function private.snapshot_order_item_flower_recipe();
 
+-- Existing catalog-linked orders predate recipe snapshots. Seed them from the
+-- current variant recipe so active production orders immediately gain a usable reference.
+update public.order_items oi
+set flower_recipe_snapshot = coalesce((
+  select jsonb_agg(
+    jsonb_build_object(
+      'flowerName', r.flower_name,
+      'quantity', r.quantity,
+      'unit', r.unit
+    )
+    order by r.sort_order, r.id
+  )
+  from public.product_variant_flower_recipes r
+  where r.variant_id = oi.variant_id
+), '[]'::jsonb)
+where oi.variant_id is not null
+  and oi.flower_recipe_snapshot = '[]'::jsonb;
+
 comment on column public.order_items.flower_recipe_snapshot is
   'Order-time snapshot of the selected variant flower recipe. Customer-facing and used by Florist as production reference.';
 
