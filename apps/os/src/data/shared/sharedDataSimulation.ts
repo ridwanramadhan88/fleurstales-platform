@@ -81,7 +81,7 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
       rows = rows.map((product) => ({
         ...product,
         variants: product.variants.map((variant) =>
-          options?.includeCosts ? variant : { ...variant, costIdr: undefined }),
+          options?.includeCosts ? variant : { ...variant, costIdr: undefined, flowerRecipe: undefined }),
       }))
       return clone(rows)
     },
