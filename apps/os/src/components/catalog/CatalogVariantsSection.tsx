@@ -1,14 +1,29 @@
 import type { FC } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Flower2, Plus, Trash2 } from 'lucide-react'
 import type { CatalogVariantStatus } from '../../store/catalogStoreTypes'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import type { VariantRow } from './CatalogItemFormSheet'
+import { generateId } from '../../lib/id'
 
 interface Props {
   variants: VariantRow[]
   updateVariant: (index: number, patch: Partial<VariantRow>) => void
   addVariant: () => void
   removeVariant: (index: number) => void
+}
+
+const updateFlowerRecipe = (
+  row: VariantRow,
+  updateVariant: Props['updateVariant'],
+  variantIndex: number,
+  recipeIndex: number,
+  patch: Partial<VariantRow['flowerRecipe'][number]>,
+) => {
+  updateVariant(variantIndex, {
+    flowerRecipe: row.flowerRecipe.map((item, index) =>
+      index === recipeIndex ? { ...item, ...patch } : item,
+    ),
+  })
 }
 
 const inputClass =
@@ -123,6 +138,85 @@ export const CatalogVariantsSection: FC<Props> = ({
                 className={inputClass}
               />
             </VariantField>
+          </div>
+
+          <div className="mt-5 border-t border-border/70 pt-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Flower2 className="size-4 text-primary" />
+                  Flower Recipe
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Flowers only. Add the standard flower composition for this size.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => updateVariant(index, {
+                  flowerRecipe: [
+                    ...row.flowerRecipe,
+                    { id: generateId('flower_recipe'), flowerName: '', quantity: '1', unit: 'stem' },
+                  ],
+                })}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                <Plus className="size-3.5" />
+                Add flower
+              </button>
+            </div>
+
+            {row.flowerRecipe.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                No flower recipe yet.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {row.flowerRecipe.map((item, recipeIndex) => (
+                  <div key={item.id} className="grid gap-2 rounded-xl bg-muted/45 p-3 sm:grid-cols-[minmax(0,1fr)_7rem_8rem_2.75rem] sm:items-end">
+                    <VariantField label="Flower">
+                      <input
+                        value={item.flowerName}
+                        onChange={(event) => updateFlowerRecipe(row, updateVariant, index, recipeIndex, { flowerName: event.target.value })}
+                        placeholder="Example: Red Rose"
+                        className={inputClass}
+                      />
+                    </VariantField>
+                    <VariantField label="Qty">
+                      <input
+                        type="number"
+                        min={0.01}
+                        step={0.01}
+                        inputMode="decimal"
+                        value={item.quantity}
+                        onChange={(event) => updateFlowerRecipe(row, updateVariant, index, recipeIndex, { quantity: event.target.value })}
+                        className={inputClass}
+                      />
+                    </VariantField>
+                    <VariantField label="Unit">
+                      <Select
+                        value={item.unit}
+                        onValueChange={(value) => updateFlowerRecipe(row, updateVariant, index, recipeIndex, { unit: value as 'stem' | 'bunch' })}
+                      >
+                        <SelectTrigger className={inputClass}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="stem">Stem</SelectItem>
+                          <SelectItem value="bunch">Bunch</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </VariantField>
+                    <button
+                      type="button"
+                      onClick={() => updateVariant(index, {
+                        flowerRecipe: row.flowerRecipe.filter((_, flowerIndex) => flowerIndex !== recipeIndex),
+                      })}
+                      aria-label={`Remove flower ${recipeIndex + 1}`}
+                      className="inline-flex size-11 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </article>
       ))}
