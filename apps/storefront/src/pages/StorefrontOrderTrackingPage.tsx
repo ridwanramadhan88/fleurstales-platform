@@ -38,6 +38,45 @@ const PICKUP_STEPS: OrderStatus[] = ['pending_verification', 'confirmed', 'proce
 const CLOSED_STATUSES: OrderStatus[] = ['cancelled', 'failed']
 const COMPLETE_STATUSES: OrderStatus[] = ['delivered', 'picked_up']
 
+const CUSTOMER_STAGE_COPY: Record<OrderStatus, { title: string; description: string }> = {
+  pending_verification: {
+    title: 'Complete payment and wait for confirmation',
+    description: 'Use the payment details below. Production starts after Admin verifies your payment.',
+  },
+  confirmed: {
+    title: 'Your order is confirmed',
+    description: 'Payment and order details are accepted. We will start production according to the schedule.',
+  },
+  processing: {
+    title: 'Your flowers are being made',
+    description: 'Our team is preparing your order. The current schedule stays visible below.',
+  },
+  ready: {
+    title: 'Your flowers are ready',
+    description: 'The finished result is ready for pickup or the next delivery handoff.',
+  },
+  delivering: {
+    title: 'Your order is on the way',
+    description: 'Delivery is in progress. Keep the destination and schedule handy.',
+  },
+  delivered: {
+    title: 'Your order has been delivered',
+    description: 'Everything is complete. You can now leave a review and receive the available review reward.',
+  },
+  picked_up: {
+    title: 'Your order has been picked up',
+    description: 'Everything is complete. You can now leave a review and receive the available review reward.',
+  },
+  cancelled: {
+    title: 'This order was cancelled',
+    description: 'See the reason below or contact Admin if you need help.',
+  },
+  failed: {
+    title: 'This order needs attention',
+    description: 'Please contact Admin so we can help resolve the issue.',
+  },
+}
+
 const displaySchedule = (order: PublicOrderStatusSummary | PublicOrderTrackingDetails): string => {
   const date = order.fulfillment === 'pickup' ? order.requestedPickupDate ?? order.scheduleDate : order.scheduleDate
   const time = order.fulfillment === 'pickup' ? order.requestedPickupTime ?? order.scheduleTime : order.scheduleTime
@@ -210,19 +249,16 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
               ) : details ? (
                 <div className="space-y-5">
                   <div className="rounded-[var(--sf-radius-card)] border border-black/10 bg-[#eee4cc] p-5 sm:p-7">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="sf-type-1 uppercase tracking-[0.16em] text-black/45">{details.orderNumber}</p>
-                        <h2 className="mt-2 sf-type-5 font-display">{STATUS_LABELS[details.status]}</h2>
-                        <p className="mt-2 sf-body text-black/60">{details.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'} · {scheduleLabel}</p>
-                      </div>
-                      {contactHref ? (
-                        <a href={contactHref} target="_blank" rel="noreferrer" className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full bg-[#00813f] px-4 sf-type-2 font-semibold text-white">
-                          <MessageCircle className="size-4" /> Contact Admin
-                        </a>
-                      ) : null}
+                    <p className="sf-type-1 uppercase tracking-[0.16em] text-black/45">{details.orderNumber}</p>
+                    <p className="mt-3 sf-label text-[#00813f]">{STATUS_LABELS[details.status]}</p>
+                    <h2 className="mt-2 sf-type-5 font-display">{CUSTOMER_STAGE_COPY[details.status].title}</h2>
+                    <p className="mt-2 max-w-2xl sf-body leading-7 text-black/60">{CUSTOMER_STAGE_COPY[details.status].description}</p>
+                    <div className="mt-4 flex flex-wrap gap-2 sf-type-2 text-black/55">
+                      <span className="rounded-full bg-white/45 px-3 py-1.5">{details.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}</span>
+                      <span className="rounded-full bg-white/45 px-3 py-1.5">{scheduleLabel}</span>
+                      {details.paymentStatus === 'paid' ? <span className="rounded-full bg-[#00813f]/10 px-3 py-1.5 font-semibold text-[#006f36]">✓ Payment received</span> : null}
                     </div>
-                    <div className="mt-6"><StatusTimeline status={details.status} fulfillment={details.fulfillment} /></div>
+                    <div className="mt-5 opacity-80"><StatusTimeline status={details.status} fulfillment={details.fulfillment} /></div>
                   </div>
 
                   {details.finishPhotoUrl && details.status !== 'pending_verification' && details.status !== 'confirmed' && details.status !== 'processing' ? (
@@ -265,10 +301,13 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                       <p className="mt-4 sf-type-2 leading-6 text-black/58">Admin akan memverifikasi pembayaran sebelum produksi dimulai.</p>
                     </section>
                   ) : details.paymentStatus === 'paid' ? (
-                    <section className="rounded-[var(--sf-radius-card)] border border-[#00813f]/20 bg-[#00813f]/[0.055] p-5 sm:p-6">
-                      <p className="sf-label text-[#006f36]">✓ Pembayaran diterima</p>
-                      <p className="mt-2 text-[1.8rem] font-medium">{currencyFormatter.format(details.totalIdr)}</p>
-                    </section>
+                    <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#00813f]/15 bg-[#00813f]/[0.045] px-4 py-3">
+                      <div>
+                        <p className="sf-type-2 font-semibold text-[#006f36]">✓ Payment received</p>
+                        <p className="mt-0.5 sf-type-1 text-black/45">No payment action is needed.</p>
+                      </div>
+                      <p className="shrink-0 sf-type-3 font-semibold">{currencyFormatter.format(details.totalIdr)}</p>
+                    </div>
                   ) : null}
 
                   {isComplete ? (
@@ -297,44 +336,55 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                     </section>
                   ) : null}
 
-                  <div className="grid gap-5 lg:grid-cols-2">
-                    <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
-                      <p className="sf-label text-black/45">Customer & fulfillment</p>
-                      <dl className="mt-4 space-y-3 sf-body">
-                        <div><dt className="text-black/45">Customer</dt><dd className="font-medium">{details.customerName}</dd></div>
-                        <div><dt className="text-black/45">Branch</dt><dd className="font-medium">{details.branchName ?? details.branchId}</dd></div>
-                        <div><dt className="text-black/45">Schedule</dt><dd className="font-medium">{scheduleLabel}</dd></div>
-                        {details.fulfillment === 'delivery' ? (
-                          <>
-                            <div><dt className="text-black/45">Delivery address</dt><dd className="font-medium">{details.deliveryAddress ?? '—'}</dd></div>
-                            {details.deliveryInstructions ? <div><dt className="text-black/45">Delivery note</dt><dd className="font-medium">{details.deliveryInstructions}</dd></div> : null}
-                          </>
-                        ) : details.branchAddress ? <div><dt className="text-black/45">Pickup address</dt><dd className="font-medium">{details.branchAddress}</dd></div> : null}
-                      </dl>
-                    </section>
+                  <details className="group rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 sf-type-3 font-semibold">
+                      Detail pesanan
+                      <span className="sf-type-1 font-medium text-black/45 group-open:hidden">Show</span>
+                      <span className="hidden sf-type-1 font-medium text-black/45 group-open:inline">Hide</span>
+                    </summary>
+                    <div className="space-y-5 border-t border-black/10 p-5">
+                      <div className="grid gap-5 lg:grid-cols-2">
+                        <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
+                          <p className="sf-label text-black/45">Customer & fulfillment</p>
+                          <dl className="mt-4 space-y-3 sf-body">
+                            <div><dt className="text-black/45">Customer</dt><dd className="font-medium">{details.customerName}</dd></div>
+                            <div><dt className="text-black/45">Branch</dt><dd className="font-medium">{details.branchName ?? details.branchId}</dd></div>
+                            <div><dt className="text-black/45">Schedule</dt><dd className="font-medium">{scheduleLabel}</dd></div>
+                            {details.fulfillment === 'delivery' ? (
+                              <>
+                                <div><dt className="text-black/45">Delivery address</dt><dd className="font-medium">{details.deliveryAddress ?? '—'}</dd></div>
+                                {details.deliveryInstructions ? <div><dt className="text-black/45">Delivery note</dt><dd className="font-medium">{details.deliveryInstructions}</dd></div> : null}
+                              </>
+                            ) : details.branchAddress ? <div><dt className="text-black/45">Pickup address</dt><dd className="font-medium">{details.branchAddress}</dd></div> : null}
+                          </dl>
+                        </section>
 
-                    <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
-                      <p className="sf-label text-black/45">Order total</p>
-                      <dl className="mt-4 space-y-3 sf-body">
-                        <div className="flex justify-between gap-4"><dt className="text-black/45">Items</dt><dd>{currencyFormatter.format(details.itemsSubtotalIdr)}</dd></div>
-                        <div className="flex justify-between gap-4"><dt className="text-black/45">Delivery</dt><dd>{currencyFormatter.format(details.deliveryFeeIdr)}</dd></div>
-                        {details.discountIdr > 0 ? <div className="flex justify-between gap-4"><dt className="text-black/45">Discount</dt><dd>-{currencyFormatter.format(details.discountIdr)}</dd></div> : null}
-                        <div className="flex justify-between gap-4 border-t border-black/10 pt-3 font-semibold"><dt>Total</dt><dd>{currencyFormatter.format(details.totalIdr)}</dd></div>
-                      </dl>
-                    </section>
-                  </div>
+                        <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
+                          <p className="sf-label text-black/45">Order total</p>
+                          <dl className="mt-4 space-y-3 sf-body">
+                            <div className="flex justify-between gap-4"><dt className="text-black/45">Items</dt><dd>{currencyFormatter.format(details.itemsSubtotalIdr)}</dd></div>
+                            <div className="flex justify-between gap-4"><dt className="text-black/45">Delivery</dt><dd>{currencyFormatter.format(details.deliveryFeeIdr)}</dd></div>
+                            {details.discountIdr > 0 ? <div className="flex justify-between gap-4"><dt className="text-black/45">Discount</dt><dd>-{currencyFormatter.format(details.discountIdr)}</dd></div> : null}
+                            <div className="flex justify-between gap-4 border-t border-black/10 pt-3 font-semibold"><dt>Total</dt><dd>{currencyFormatter.format(details.totalIdr)}</dd></div>
+                          </dl>
+                        </section>
+                      </div>
 
-                  <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
-                    <p className="sf-label text-black/45">Items</p>
-                    <div className="mt-4 divide-y divide-black/10">
-                      {details.items.map((item, index) => (
-                        <div key={`${item.name}-${index}`} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                          <div><p className="sf-body font-medium">{item.name}</p>{item.variant ? <p className="mt-0.5 sf-type-1 text-black/45">{item.variant}</p> : null}</div>
-                          <div className="text-right"><p className="sf-type-2">×{item.quantity}</p><p className="mt-0.5 sf-type-1 text-black/50">{currencyFormatter.format(item.unitPriceIdr)}</p></div>
+                      <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
+                        <p className="sf-label text-black/45">Items</p>
+                        <div className="mt-4 divide-y divide-black/10">
+                          {details.items.map((item, index) => (
+                            <div key={`${item.name}-${index}`} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                              <div><p className="sf-body font-medium">{item.name}</p>{item.variant ? <p className="mt-0.5 sf-type-1 text-black/45">{item.variant}</p> : null}</div>
+                              <div className="text-right"><p className="sf-type-2">×{item.quantity}</p><p className="mt-0.5 sf-type-1 text-black/50">{currencyFormatter.format(item.unitPriceIdr)}</p></div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </section>
+
+
                     </div>
-                  </section>
+                  </details>
 
                   {contactHref ? (
                     <a href={contactHref} target="_blank" rel="noreferrer" className="sticky bottom-4 z-20 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#00813f] px-6 sf-type-2 font-semibold text-white shadow-lg sm:mx-auto sm:max-w-sm">
