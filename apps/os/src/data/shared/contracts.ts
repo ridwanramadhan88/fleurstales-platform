@@ -51,7 +51,7 @@ export interface SharedProductVariant {
   sortOrder: number
   /** Only present in authenticated Finance/Owner reads. Never part of the public catalog contract. */
   costIdr?: number | null
-  /** Internal-only production data; omitted from public Storefront reads. */
+  /** Customer-facing flower composition for this sellable size. */
   flowerRecipe?: SharedFlowerRecipeItem[]
 }
 
