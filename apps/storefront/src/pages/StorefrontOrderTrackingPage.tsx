@@ -33,6 +33,18 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   failed: 'Perlu perhatian',
 }
 
+const STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
+  pending_verification: 'Complete payment if needed. Admin will confirm the order before production starts.',
+  confirmed: 'Your order is confirmed and scheduled for production.',
+  processing: 'Your flowers are being prepared by the Fleurstales team.',
+  ready: 'Your flowers are ready. Check the finished photo and fulfillment details below.',
+  delivering: 'Your flowers are on the way to the delivery destination.',
+  delivered: 'Your order is complete. We would love to hear how it went.',
+  picked_up: 'Your order has been picked up. We would love to hear how it went.',
+  cancelled: 'This order has been closed. See the reason below or contact Admin if you need help.',
+  failed: 'This order needs attention. Please contact Admin for help.',
+}
+
 const DELIVERY_STEPS: OrderStatus[] = ['pending_verification', 'confirmed', 'processing', 'ready', 'delivering', 'delivered']
 const PICKUP_STEPS: OrderStatus[] = ['pending_verification', 'confirmed', 'processing', 'ready', 'picked_up']
 const CLOSED_STATUSES: OrderStatus[] = ['cancelled', 'failed']
@@ -50,23 +62,22 @@ const StatusTimeline: FC<Pick<PublicOrderStatusSummary, 'status' | 'fulfillment'
   const terminalIssue = CLOSED_STATUSES.includes(status)
 
   return (
-    <ol className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+    <ol className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
       {steps.map((step, index) => {
         const reached = !terminalIssue && currentIndex >= index
         const current = status === step
         return (
-          <li key={step} className={`rounded-2xl border px-3 py-3 ${reached ? 'border-[#00813f]/30 bg-[#00813f]/[0.07]' : 'border-black/10 bg-white/30'}`}>
-            <div className="flex items-center gap-2">
-              <span className={`flex size-5 items-center justify-center rounded-full border ${reached ? 'border-[#00813f] bg-[#00813f] text-white' : 'border-black/20 text-transparent'}`}>
-                {reached ? <Check className="size-3" /> : null}
-              </span>
-              <span className={`sf-type-1 font-medium ${current ? 'text-black' : 'text-black/60'}`}>{STATUS_LABELS[step]}</span>
-            </div>
+          <li key={step} className="flex shrink-0 items-center gap-2">
+            <span className={`flex size-6 items-center justify-center rounded-full border ${reached ? 'border-[#00813f] bg-[#00813f] text-white' : 'border-black/15 bg-white/30 text-transparent'}`}>
+              {reached ? <Check className="size-3" /> : null}
+            </span>
+            <span className={`sf-type-1 whitespace-nowrap ${current ? 'font-semibold text-black' : 'font-medium text-black/45'}`}>{STATUS_LABELS[step]}</span>
+            {index < steps.length - 1 ? <span className="h-px w-5 bg-black/10" aria-hidden /> : null}
           </li>
         )
       })}
       {terminalIssue ? (
-        <li className="rounded-2xl border border-red-700/20 bg-red-700/[0.06] px-3 py-3 sm:col-span-3 lg:col-span-6">
+        <li className="shrink-0 rounded-full border border-red-700/20 bg-red-700/[0.06] px-3 py-1.5">
           <span className="sf-type-1 font-semibold text-red-800">{STATUS_LABELS[status]}</span>
         </li>
       ) : null}
@@ -210,19 +221,13 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
               ) : details ? (
                 <div className="space-y-5">
                   <div className="rounded-[var(--sf-radius-card)] border border-black/10 bg-[#eee4cc] p-5 sm:p-7">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="sf-type-1 uppercase tracking-[0.16em] text-black/45">{details.orderNumber}</p>
-                        <h2 className="mt-2 sf-type-5 font-display">{STATUS_LABELS[details.status]}</h2>
-                        <p className="mt-2 sf-body text-black/60">{details.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'} · {scheduleLabel}</p>
-                      </div>
-                      {contactHref ? (
-                        <a href={contactHref} target="_blank" rel="noreferrer" className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full bg-[#00813f] px-4 sf-type-2 font-semibold text-white">
-                          <MessageCircle className="size-4" /> Contact Admin
-                        </a>
-                      ) : null}
+                    <div>
+                      <p className="sf-type-1 uppercase tracking-[0.16em] text-black/45">{details.orderNumber}</p>
+                      <h2 className="mt-2 sf-type-5 font-display">{STATUS_LABELS[details.status]}</h2>
+                      <p className="mt-2 sf-body text-black/60">{STATUS_DESCRIPTIONS[details.status]}</p>
+                      <p className="mt-3 sf-type-2 font-medium text-black/55">{details.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'} · {scheduleLabel}</p>
                     </div>
-                    <div className="mt-6"><StatusTimeline status={details.status} fulfillment={details.fulfillment} /></div>
+                    <div className="mt-6 border-t border-black/10 pt-4"><StatusTimeline status={details.status} fulfillment={details.fulfillment} /></div>
                   </div>
 
                   {details.finishPhotoUrl && details.status !== 'pending_verification' && details.status !== 'confirmed' && details.status !== 'processing' ? (
@@ -265,9 +270,12 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                       <p className="mt-4 sf-type-2 leading-6 text-black/58">Admin akan memverifikasi pembayaran sebelum produksi dimulai.</p>
                     </section>
                   ) : details.paymentStatus === 'paid' ? (
-                    <section className="rounded-[var(--sf-radius-card)] border border-[#00813f]/20 bg-[#00813f]/[0.055] p-5 sm:p-6">
-                      <p className="sf-label text-[#006f36]">✓ Pembayaran diterima</p>
-                      <p className="mt-2 text-[1.8rem] font-medium">{currencyFormatter.format(details.totalIdr)}</p>
+                    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#00813f]/15 bg-[#00813f]/[0.04] px-4 py-3">
+                      <div>
+                        <p className="sf-type-2 font-semibold text-[#006f36]">✓ Payment received</p>
+                        <p className="mt-0.5 sf-type-1 text-black/45">No action needed from you.</p>
+                      </div>
+                      <p className="sf-type-3 font-semibold">{currencyFormatter.format(details.totalIdr)}</p>
                     </section>
                   ) : null}
 
@@ -297,44 +305,55 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                     </section>
                   ) : null}
 
-                  <div className="grid gap-5 lg:grid-cols-2">
-                    <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
-                      <p className="sf-label text-black/45">Customer & fulfillment</p>
-                      <dl className="mt-4 space-y-3 sf-body">
-                        <div><dt className="text-black/45">Customer</dt><dd className="font-medium">{details.customerName}</dd></div>
-                        <div><dt className="text-black/45">Branch</dt><dd className="font-medium">{details.branchName ?? details.branchId}</dd></div>
-                        <div><dt className="text-black/45">Schedule</dt><dd className="font-medium">{scheduleLabel}</dd></div>
-                        {details.fulfillment === 'delivery' ? (
-                          <>
-                            <div><dt className="text-black/45">Delivery address</dt><dd className="font-medium">{details.deliveryAddress ?? '—'}</dd></div>
-                            {details.deliveryInstructions ? <div><dt className="text-black/45">Delivery note</dt><dd className="font-medium">{details.deliveryInstructions}</dd></div> : null}
-                          </>
-                        ) : details.branchAddress ? <div><dt className="text-black/45">Pickup address</dt><dd className="font-medium">{details.branchAddress}</dd></div> : null}
-                      </dl>
-                    </section>
+                  <details className="group rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35">
+                    <summary className="cursor-pointer list-none px-5 py-4 sf-type-3 font-semibold marker:hidden sm:px-6">
+                      <span className="flex items-center justify-between gap-4">
+                        Order details
+                        <span className="sf-type-1 text-black/40 group-open:hidden">Show</span>
+                        <span className="hidden sf-type-1 text-black/40 group-open:inline">Hide</span>
+                      </span>
+                    </summary>
+                    <div className="space-y-6 border-t border-black/10 p-5 sm:p-6">
+                      <div className="grid gap-6 lg:grid-cols-2">
+                        <section>
+                          <p className="sf-label text-black/45">Customer & fulfillment</p>
+                          <dl className="mt-4 space-y-3 sf-body">
+                            <div><dt className="text-black/45">Customer</dt><dd className="font-medium">{details.customerName}</dd></div>
+                            <div><dt className="text-black/45">Branch</dt><dd className="font-medium">{details.branchName ?? details.branchId}</dd></div>
+                            <div><dt className="text-black/45">Schedule</dt><dd className="font-medium">{scheduleLabel}</dd></div>
+                            {details.fulfillment === 'delivery' ? (
+                              <>
+                                <div><dt className="text-black/45">Delivery address</dt><dd className="font-medium">{details.deliveryAddress ?? '—'}</dd></div>
+                                {details.deliveryInstructions ? <div><dt className="text-black/45">Delivery note</dt><dd className="font-medium">{details.deliveryInstructions}</dd></div> : null}
+                              </>
+                            ) : details.branchAddress ? <div><dt className="text-black/45">Pickup address</dt><dd className="font-medium">{details.branchAddress}</dd></div> : null}
+                          </dl>
+                        </section>
 
-                    <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
-                      <p className="sf-label text-black/45">Order total</p>
-                      <dl className="mt-4 space-y-3 sf-body">
-                        <div className="flex justify-between gap-4"><dt className="text-black/45">Items</dt><dd>{currencyFormatter.format(details.itemsSubtotalIdr)}</dd></div>
-                        <div className="flex justify-between gap-4"><dt className="text-black/45">Delivery</dt><dd>{currencyFormatter.format(details.deliveryFeeIdr)}</dd></div>
-                        {details.discountIdr > 0 ? <div className="flex justify-between gap-4"><dt className="text-black/45">Discount</dt><dd>-{currencyFormatter.format(details.discountIdr)}</dd></div> : null}
-                        <div className="flex justify-between gap-4 border-t border-black/10 pt-3 font-semibold"><dt>Total</dt><dd>{currencyFormatter.format(details.totalIdr)}</dd></div>
-                      </dl>
-                    </section>
-                  </div>
+                        <section>
+                          <p className="sf-label text-black/45">Order total</p>
+                          <dl className="mt-4 space-y-3 sf-body">
+                            <div className="flex justify-between gap-4"><dt className="text-black/45">Items</dt><dd>{currencyFormatter.format(details.itemsSubtotalIdr)}</dd></div>
+                            <div className="flex justify-between gap-4"><dt className="text-black/45">Delivery</dt><dd>{currencyFormatter.format(details.deliveryFeeIdr)}</dd></div>
+                            {details.discountIdr > 0 ? <div className="flex justify-between gap-4"><dt className="text-black/45">Discount</dt><dd>-{currencyFormatter.format(details.discountIdr)}</dd></div> : null}
+                            <div className="flex justify-between gap-4 border-t border-black/10 pt-3 font-semibold"><dt>Total</dt><dd>{currencyFormatter.format(details.totalIdr)}</dd></div>
+                          </dl>
+                        </section>
+                      </div>
 
-                  <section className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/35 p-5 sm:p-6">
-                    <p className="sf-label text-black/45">Items</p>
-                    <div className="mt-4 divide-y divide-black/10">
-                      {details.items.map((item, index) => (
-                        <div key={`${item.name}-${index}`} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                          <div><p className="sf-body font-medium">{item.name}</p>{item.variant ? <p className="mt-0.5 sf-type-1 text-black/45">{item.variant}</p> : null}</div>
-                          <div className="text-right"><p className="sf-type-2">×{item.quantity}</p><p className="mt-0.5 sf-type-1 text-black/50">{currencyFormatter.format(item.unitPriceIdr)}</p></div>
+                      <section className="border-t border-black/10 pt-5">
+                        <p className="sf-label text-black/45">Items</p>
+                        <div className="mt-4 divide-y divide-black/10">
+                          {details.items.map((item, index) => (
+                            <div key={`${item.name}-${index}`} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                              <div><p className="sf-body font-medium">{item.name}</p>{item.variant ? <p className="mt-0.5 sf-type-1 text-black/45">{item.variant}</p> : null}</div>
+                              <div className="text-right"><p className="sf-type-2">×{item.quantity}</p><p className="mt-0.5 sf-type-1 text-black/50">{currencyFormatter.format(item.unitPriceIdr)}</p></div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </section>
                     </div>
-                  </section>
+                  </details>
 
                   {contactHref ? (
                     <a href={contactHref} target="_blank" rel="noreferrer" className="sticky bottom-4 z-20 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#00813f] px-6 sf-type-2 font-semibold text-white shadow-lg sm:mx-auto sm:max-w-sm">
