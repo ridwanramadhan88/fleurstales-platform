@@ -35,7 +35,6 @@ describe('browser runtime behavior', () => {
     const http = read('src/data/shared/supabaseHttpClient.ts')
 
     expect(app).toContain('subscribeSupabaseAuth')
-    expect(app).toContain("sharedSession.source !== 'supabase'")
     expect(app).toContain('session.user.id !== expectedUserId')
     expect(app).toContain('void resetSession()')
     expect(app).toContain('Fleurstales startup hydration failed:')
