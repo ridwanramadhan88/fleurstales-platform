@@ -206,6 +206,20 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                       {item.quantity} × Rp {formatter.format(item.unitPriceIdr)}
                       {itemMetadata.length > 0 ? ` · ${itemMetadata.join(' · ')}` : ''}
                     </p>
+                    {(item.flowerRecipeSnapshot?.length ?? 0) > 0 ? (
+                      <div className="mt-3 rounded-xl bg-primary/[0.055] px-3 py-2.5 ring-1 ring-primary/10">
+                        <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-primary" data-no-translate>
+                          Resep Bunga
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+                          {item.flowerRecipeSnapshot?.map((flower, flowerIndex) => (
+                            <span key={`${flower.flowerName}-${flowerIndex}`} className="text-xs font-medium text-foreground/80">
+                              {flower.flowerName} · {flower.quantity} {flower.unit === 'bunch' ? 'ikat' : 'tangkai'}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 <p className="shrink-0 text-sm font-semibold text-foreground">
