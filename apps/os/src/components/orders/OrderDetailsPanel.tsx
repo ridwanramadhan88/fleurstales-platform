@@ -7,6 +7,7 @@ import { OrderActivityTimeline } from './OrderActivityTimeline'
 import { OrderDetailsActionsSection } from './OrderDetailsActionsSection'
 import { OrderDetailsDeliverySection } from './OrderDetailsDeliverySection'
 import { OrderDetailsFinanceSection } from './OrderDetailsFinanceSection'
+import { OrderDetailsCurrentFocus } from './OrderDetailsCurrentFocus'
 import { OrderDetailsHeader } from './OrderDetailsHeader'
 import { OrderDetailsItemsSection } from './OrderDetailsItemsSection'
 import { OrderDetailsMetaSection } from './OrderDetailsMetaSection'
@@ -35,6 +36,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       contentClassName="gap-0 overflow-hidden rounded-t-2xl bg-card px-5 pb-4 pt-5 shadow-ios-lg ring-1 ring-border/60 sm:right-auto sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 md:max-w-3xl lg:h-[90vh] lg:max-h-[90vh] lg:max-w-5xl"
     >
       <OrderDetailsHeader viewModel={viewModel} />
+      <OrderDetailsCurrentFocus viewModel={viewModel} />
       <OrderDetailsFinanceSection viewModel={viewModel} />
 
       {/* px-px keeps card strokes off the scrollport clip edge (1px is
@@ -65,20 +67,59 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         <div role="tabpanel" className="space-y-8 pt-5">
           {tab === 'details' && (
             <>
-              <OrderDetailsItemsSection viewModel={viewModel} />
-              <OrderDetailsMetaSection viewModel={viewModel} />
-              <OrderDetailsNotesSection viewModel={viewModel} />
-              {order.id ? (
-                <StaffReviewHistory
-                  orderId={order.id}
-                  title="Customer review"
-                  emptyLabel="No review submitted for this order."
-                />
+              {viewModel.isEditing ? (
+                <>
+                  <OrderDetailsItemsSection viewModel={viewModel} />
+                  <OrderDetailsMetaSection viewModel={viewModel} />
+                  <OrderDetailsNotesSection viewModel={viewModel} />
+                </>
               ) : (
-                <section className="rounded-2xl bg-surface-card p-4 text-xs text-muted-foreground ring-1 ring-border/60">
-                  Review history is unavailable for this legacy order.
-                </section>
+                <>
+                  <details open className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold text-foreground">
+                      Order & items
+                      <span className="text-xs font-medium text-muted-foreground group-open:hidden">Show</span>
+                      <span className="hidden text-xs font-medium text-muted-foreground group-open:inline">Hide</span>
+                    </summary>
+                    <div className="space-y-5 border-t border-border/50 p-4">
+                      <OrderDetailsItemsSection viewModel={viewModel} />
+                      <OrderDetailsMetaSection viewModel={viewModel} />
+                    </div>
+                  </details>
+
+                  <details className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold text-foreground">
+                      Notes & greeting card
+                      <span className="text-xs font-medium text-muted-foreground group-open:hidden">Show</span>
+                      <span className="hidden text-xs font-medium text-muted-foreground group-open:inline">Hide</span>
+                    </summary>
+                    <div className="space-y-5 border-t border-border/50 p-4">
+                      <OrderDetailsNotesSection viewModel={viewModel} />
+                    </div>
+                  </details>
+                </>
               )}
+
+              <details className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold text-foreground">
+                  Customer review
+                  <span className="text-xs font-medium text-muted-foreground group-open:hidden">Show</span>
+                  <span className="hidden text-xs font-medium text-muted-foreground group-open:inline">Hide</span>
+                </summary>
+                <div className="border-t border-border/50 p-4">
+                  {order.id ? (
+                    <StaffReviewHistory
+                      orderId={order.id}
+                      title="Customer review"
+                      emptyLabel="No review submitted for this order."
+                    />
+                  ) : (
+                    <section className="rounded-2xl bg-surface-card p-4 text-xs text-muted-foreground ring-1 ring-border/60">
+                      Review history is unavailable for this legacy order.
+                    </section>
+                  )}
+                </div>
+              </details>
             </>
           )}
           {tab === 'customer' && (
