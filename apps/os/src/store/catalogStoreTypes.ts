@@ -86,6 +86,13 @@ export interface CatalogProductImage {
   height?: number
 }
 
+export interface CatalogFlowerRecipeItem {
+  id: string
+  flowerName: string
+  quantity: number
+  unit: 'stem' | 'bunch'
+}
+
 export interface CatalogVariant {
   /** Internal UUID primary key — stable even if the SKU format changes. */
   id: string
@@ -98,6 +105,8 @@ export interface CatalogVariant {
   /** Optional cost price in IDR — Finance-only field, used for margin reporting. */
   cost?: number
   status: CatalogVariantStatus
+  /** Internal production recipe: flowers only, scoped to this size. */
+  flowerRecipe?: CatalogFlowerRecipeItem[]
 }
 
 /**

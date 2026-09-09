@@ -42,6 +42,7 @@ import type {
   ProductOccasionRow,
   ProductRow,
   ProductVariantCostRow,
+  ProductVariantFlowerRecipeRow,
   ProductVariantRow,
   PublicPaymentAccountRow,
   ReplaceCatalogSnapshotRpcArgs,
@@ -106,6 +107,7 @@ const mapOccasion = (row: OccasionRow): SharedOccasion => ({
 const mapVariant = (
   row: ProductVariantRow,
   costByVariantId: ReadonlyMap<string, number | null>,
+  recipeByVariantId: ReadonlyMap<string, ProductVariantFlowerRecipeRow[]>,
 ): SharedProductVariant => ({
   id: row.id,
   productId: row.product_id,
@@ -115,6 +117,17 @@ const mapVariant = (
   status: row.status,
   sortOrder: row.sort_order,
   ...(costByVariantId.has(row.id) ? { costIdr: costByVariantId.get(row.id) ?? null } : {}),
+  ...(recipeByVariantId.has(row.id) ? {
+    flowerRecipe: (recipeByVariantId.get(row.id) ?? [])
+      .sort((a, b) => a.sort_order - b.sort_order || a.id.localeCompare(b.id))
+      .map((item) => ({
+        id: item.id,
+        flowerName: item.flower_name,
+        quantity: item.quantity,
+        unit: item.unit,
+        sortOrder: item.sort_order,
+      })),
+  } : {}),
 })
 
 const productImagePublicUrl = (client: SupabaseHttpClient, storagePath: string): string =>
@@ -165,6 +178,7 @@ const mapProduct = (
   variantRows: ProductVariantRow[],
   imageRows: ProductImageRow[],
   costByVariantId: ReadonlyMap<string, number | null>,
+  recipeByVariantId: ReadonlyMap<string, ProductVariantFlowerRecipeRow[]>,
   client: SupabaseHttpClient,
 ): SharedProduct => ({
   id: row.id,
@@ -190,12 +204,25 @@ const mapProduct = (
   variants: variantRows
     .filter((variant) => variant.product_id === row.id)
     .sort((a, b) => a.sort_order - b.sort_order)
-    .map((variant) => mapVariant(variant, costByVariantId)),
+    .map((variant) => mapVariant(variant, costByVariantId, recipeByVariantId)),
   images: imageRows
     .filter((image) => image.product_id === row.id)
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((image) => mapImage(client, image)),
 })
+
+const readRecipeMap = async (
+  client: SupabaseHttpClient,
+  includeInternal: boolean,
+): Promise<Map<string, ProductVariantFlowerRecipeRow[]>> => {
+  if (!includeInternal) return new Map()
+  const rows: ProductVariantFlowerRecipeRow[] = await client.select('product_variant_flower_recipes', {
+    order: [{ column: 'sort_order' }, { column: 'id' }],
+  })
+  const grouped = new Map<string, ProductVariantFlowerRecipeRow[]>()
+  for (const row of rows) grouped.set(row.variant_id, [...(grouped.get(row.variant_id) ?? []), row])
+  return grouped
+}
 
 const readCostMap = async (
   client: SupabaseHttpClient,
@@ -227,7 +254,7 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
   },
 
   async listProducts(options) {
-    const [products, occasions, variants, images, costByVariantId] = await Promise.all([
+    const [products, occasions, variants, images, costByVariantId, recipeByVariantId] = await Promise.all([
       client.select('products', {
         filters: options?.includeInactive ? undefined : { is_active: true },
         order: [{ column: 'sort_order' }, { column: 'name' }],
@@ -236,8 +263,9 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
       client.select('product_variants', { order: [{ column: 'sort_order' }] }),
       client.select('product_images', { order: [{ column: 'sort_order' }] }),
       readCostMap(client, options?.includeCosts === true),
+      readRecipeMap(client, options?.includeCosts === true),
     ])
-    return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, client))
+    return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client))
   },
 
   async getProduct(productId) {
@@ -247,7 +275,7 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
       client.select('product_variants', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_images', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
     ])
-    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), client) : null
+    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), new Map(), client) : null
   },
   async listSizeGuideTemplates() {
     const rows = await client.select('size_guide_templates', { order: [{ column: 'name' }] })
@@ -278,6 +306,12 @@ export const createCatalogAdminRepository = (client: SupabaseHttpClient): Catalo
         'replace_catalog_snapshot',
         args as unknown as Record<string, Json>,
       )
+    },
+    async replaceFlowerRecipes(input) {
+      return client.rpc<{ recipeCount: number }>('replace_catalog_flower_recipes', {
+        p_base_revision: input.baseRevision,
+        p_products: asJson(input.products),
+      })
     },
     async replaceArrangementTypes(names) {
       const args: ReplaceArrangementTypesRpcArgs = { p_names: asJson(names) }

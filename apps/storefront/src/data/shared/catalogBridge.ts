@@ -114,6 +114,14 @@ const mapRemoteCatalog = (
           price: variant.priceIdr,
           ...(variant.costIdr !== undefined ? { cost: variant.costIdr ?? undefined } : {}),
           status: variant.status,
+          ...(variant.flowerRecipe?.length ? {
+            flowerRecipe: variant.flowerRecipe.map((item) => ({
+              id: item.id,
+              flowerName: item.flowerName,
+              quantity: item.quantity,
+              unit: item.unit,
+            })),
+          } : {}),
         })),
         isFeatured: product.isFeatured,
         isActive: product.isActive,
@@ -177,6 +185,15 @@ const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccas
         status: variant.status,
         sortOrder: variantIndex,
         ...(variant.cost !== undefined ? { costIdr: variant.cost } : {}),
+        ...(variant.flowerRecipe?.length ? {
+          flowerRecipe: variant.flowerRecipe.map((item, recipeIndex) => ({
+            id: item.id,
+            flowerName: item.flowerName,
+            quantity: item.quantity,
+            unit: item.unit,
+            sortOrder: recipeIndex,
+          })),
+        } : { flowerRecipe: [] }),
       })),
       // Phase 5 owns Storage/image writes. The Phase 4 RPC intentionally
       // ignores this field, so existing remote image rows are preserved.
@@ -460,6 +477,10 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
     // lastSyncedHash remains unchanged until the complete pipeline succeeds,
     // so a later failure stays visibly dirty and can be retried safely.
     remoteRevision = result.revision
+    await shared.repositories.catalogAdmin.replaceFlowerRecipes({
+      baseRevision: remoteRevision,
+      products: snapshot.products,
+    })
     await shared.repositories.catalogAdmin.replaceArrangementTypes(
       useCatalogStore.getState().arrangementTypes,
     )

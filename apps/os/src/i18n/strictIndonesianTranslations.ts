@@ -155,6 +155,16 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Track': 'Lacak',
   'Checking…': 'Memeriksa…',
 
+  'Flower Recipe': 'Resep Bunga',
+  'Flowers only. Add the standard flower composition for this size.': 'Khusus bunga. Tambahkan komposisi bunga standar untuk ukuran ini.',
+  'Add flower': 'Tambah bunga',
+  'No flower recipe yet.': 'Belum ada resep bunga.',
+  'Flower': 'Bunga',
+  'Qty': 'Jumlah',
+  'Unit': 'Satuan',
+  'Stem': 'Tangkai',
+  'Bunch': 'Ikat',
+
   'Current focus': 'Fokus saat ini',
   'Verify and accept this order': 'Verifikasi dan terima pesanan ini',
   'Check payment readiness, requested schedule, and customer order details before production starts.': 'Periksa kesiapan pembayaran, jadwal yang diminta, dan detail pesanan pelanggan sebelum produksi dimulai.',

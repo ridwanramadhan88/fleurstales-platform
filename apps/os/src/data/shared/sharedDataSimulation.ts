@@ -81,7 +81,7 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
       rows = rows.map((product) => ({
         ...product,
         variants: product.variants.map((variant) =>
-          options?.includeCosts ? variant : { ...variant, costIdr: undefined }),
+          options?.includeCosts ? variant : { ...variant, costIdr: undefined, flowerRecipe: undefined }),
       }))
       return clone(rows)
     },
@@ -112,6 +112,16 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         productCount: bundle.catalog.products.length,
         occasionCount: bundle.catalog.occasions.length,
       }
+    },
+    async replaceFlowerRecipes(input) {
+      if (input.baseRevision !== bundle.catalog.adminState.revision) {
+        throw new Error(`CATALOG_CONFLICT: expected revision ${input.baseRevision}, current revision ${bundle.catalog.adminState.revision}.`)
+      }
+      const recipeCount = input.products.reduce(
+        (total, product) => total + product.variants.reduce((sum, variant) => sum + (variant.flowerRecipe?.length ?? 0), 0),
+        0,
+      )
+      return { recipeCount }
     },
     async replaceArrangementTypes(names) {
       arrangementTypes = [...names]

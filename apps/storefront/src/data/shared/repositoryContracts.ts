@@ -53,6 +53,10 @@ export interface CatalogAdminRepository extends CatalogReadRepository {
     products: SharedProduct[]
   }): Promise<SharedCatalogReplaceResult>
   replaceArrangementTypes(names: string[]): Promise<SharedArrangementTypesReplaceResult>
+  replaceFlowerRecipes(input: {
+    baseRevision: number
+    products: SharedProduct[]
+  }): Promise<{ recipeCount: number }>
   uploadProductImage(input: {
     productId: string
     image: SharedProductImageMetadataInput
