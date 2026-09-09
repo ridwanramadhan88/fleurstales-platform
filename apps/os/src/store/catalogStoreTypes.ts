@@ -105,7 +105,7 @@ export interface CatalogVariant {
   /** Optional cost price in IDR — Finance-only field, used for margin reporting. */
   cost?: number
   status: CatalogVariantStatus
-  /** Internal production recipe: flowers only, scoped to this size. */
+  /** Customer-facing and production recipe: flowers only, scoped to this size. */
   flowerRecipe?: CatalogFlowerRecipeItem[]
 }
 

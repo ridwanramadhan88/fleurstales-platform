@@ -213,9 +213,7 @@ const mapProduct = (
 
 const readRecipeMap = async (
   client: SupabaseHttpClient,
-  includeInternal: boolean,
 ): Promise<Map<string, ProductVariantFlowerRecipeRow[]>> => {
-  if (!includeInternal) return new Map()
   const rows: ProductVariantFlowerRecipeRow[] = await client.select('product_variant_flower_recipes', {
     order: [{ column: 'sort_order' }, { column: 'id' }],
   })
@@ -263,19 +261,20 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
       client.select('product_variants', { order: [{ column: 'sort_order' }] }),
       client.select('product_images', { order: [{ column: 'sort_order' }] }),
       readCostMap(client, options?.includeCosts === true),
-      readRecipeMap(client, options?.includeCosts === true),
+      readRecipeMap(client),
     ])
     return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client))
   },
 
   async getProduct(productId) {
-    const [products, occasions, variants, images] = await Promise.all([
+    const [products, occasions, variants, images, recipeByVariantId] = await Promise.all([
       client.select('products', { filters: { id: productId }, limit: 1 }),
       client.select('product_occasions', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_variants', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_images', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
+      readRecipeMap(client),
     ])
-    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), new Map(), client) : null
+    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), recipeByVariantId, client) : null
   },
   async listSizeGuideTemplates() {
     const rows = await client.select('size_guide_templates', { order: [{ column: 'name' }] })
@@ -592,6 +591,23 @@ const mapCustomerSuggestions = (value: Json | null): SharedOrder['customerProfil
   return birthday || email || preferredBranchId ? { birthday, email, preferredBranchId } : undefined
 }
 
+const mapFlowerRecipeSnapshot = (
+  value: Json,
+): Array<{ flowerName: string; quantity: number; unit: 'stem' | 'bunch' }> | undefined => {
+  if (!Array.isArray(value)) return undefined
+  const items: Array<{ flowerName: string; quantity: number; unit: 'stem' | 'bunch' }> = value.flatMap((raw) => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return []
+    const record = raw as Record<string, Json | undefined>
+    const flowerName = typeof record.flowerName === 'string' ? record.flowerName.trim() : ''
+    const quantity = typeof record.quantity === 'number' ? record.quantity : Number(record.quantity)
+    const unit = record.unit === 'bunch' ? 'bunch' : record.unit === 'stem' ? 'stem' : undefined
+    return flowerName && Number.isFinite(quantity) && quantity > 0 && unit
+      ? [{ flowerName, quantity, unit }]
+      : []
+  })
+  return items.length > 0 ? items : undefined
+}
+
 const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   id: row.id,
   orderNumber: row.order_number,
@@ -702,6 +718,7 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
       variantSizeSnapshot: optional(item.variant_size_snapshot),
       quantity: item.quantity,
       unitPriceIdr: item.unit_price_idr,
+      flowerRecipeSnapshot: mapFlowerRecipeSnapshot(item.flower_recipe_snapshot),
     })),
 })
 

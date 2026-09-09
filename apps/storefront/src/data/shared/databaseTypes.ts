@@ -394,6 +394,7 @@ export interface OrderItemRow {
   variant_size_snapshot: string | null
   quantity: number
   unit_price_idr: number
+  flower_recipe_snapshot: Json
   created_at: string
 }
 

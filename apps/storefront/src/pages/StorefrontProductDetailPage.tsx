@@ -16,6 +16,7 @@ import { StorefrontMiniCart } from "../components/storefront/StorefrontMiniCart"
 import { StorefrontHeader } from "../components/storefront/StorefrontHeader";
 import { StorefrontContainer } from "../components/storefront/StorefrontContainer";
 import { StorefrontFooter } from "../components/storefront/StorefrontFooter";
+import { StorefrontFlowerRecipe } from "../components/storefront/StorefrontFlowerRecipe";
 import {
   Dialog,
   DialogContent,
@@ -393,6 +394,11 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                   })}
                 </div>
               </section>
+
+              <StorefrontFlowerRecipe
+                variant={selectedVariant}
+                showSelectionHint={requiresSizeSelection && !selectedVariant}
+              />
 
               <section className="space-y-4 lg:space-y-3" aria-labelledby="purchase-heading">
                 <h2 id="purchase-heading" className="sr-only">Purchase options</h2>

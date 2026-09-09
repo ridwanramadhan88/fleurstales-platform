@@ -14,6 +14,7 @@ import { ImageOff, Minus, Plus, X } from 'lucide-react'
 import type { CatalogProduct, CatalogVariant } from '../../store/catalogStoreTypes'
 import { useDismissableModal } from '../../hooks/useDismissableModal'
 import { getDisplayPriceIdr, getPromoPercentLabel } from '../../domain/catalogDomain'
+import { StorefrontFlowerRecipe } from './StorefrontFlowerRecipe'
 
 export interface StorefrontProductDetailSheetProps {
   product: CatalogProduct | null
@@ -152,6 +153,8 @@ export const StorefrontProductDetailSheet: FC<StorefrontProductDetailSheetProps>
               </div>
             </div>
           )}
+
+          <StorefrontFlowerRecipe variant={selectedVariant} compact />
 
           <div className="flex items-center justify-between">
             <p className="sf-label text-black/50">Quantity</p>

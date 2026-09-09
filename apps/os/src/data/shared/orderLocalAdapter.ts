@@ -118,6 +118,7 @@ export const orderTableRowToSharedOrder = (order: OrderTableRow): SharedOrder =>
       variantSizeSnapshot: item.variantSizeSnapshot,
       quantity: item.quantity,
       unitPriceIdr: item.unitPriceIdr,
+      flowerRecipeSnapshot: item.flowerRecipeSnapshot?.map((recipe) => ({ ...recipe })),
     })),
   }
 }
@@ -149,6 +150,7 @@ export const sharedOrderToOrderTableRow = (order: SharedOrder): OrderTableRow =>
     variantSizeSnapshot: item.variantSizeSnapshot,
     quantity: item.quantity,
     unitPriceIdr: item.unitPriceIdr,
+    flowerRecipeSnapshot: item.flowerRecipeSnapshot?.map((recipe) => ({ ...recipe })),
   })),
   source: order.source,
   fulfillment: order.fulfillment,

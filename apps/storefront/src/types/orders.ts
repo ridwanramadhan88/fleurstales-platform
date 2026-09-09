@@ -141,6 +141,8 @@ export interface OrderLineItem {
   variantSizeSnapshot?: string
   /** Per-unit price in IDR at the time the order was placed. */
   unitPriceIdr: number
+  /** Immutable recipe snapshot captured when this line was ordered. */
+  flowerRecipeSnapshot?: Array<{ flowerName: string; quantity: number; unit: 'stem' | 'bunch' }>
 }
 
 /**
