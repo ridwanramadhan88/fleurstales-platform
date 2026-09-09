@@ -181,7 +181,6 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Finance decision': 'Keputusan Keuangan',
   'Payment matches': 'Pembayaran cocok',
   'Payment needs attention': 'Pembayaran perlu diperiksa',
-  'Difference': 'Selisih',
   'Payment amount does not match': 'Jumlah pembayaran tidak cocok',
   'Payment is not fully paid': 'Pembayaran belum lunas',
   'Finance should reconcile only after the full payment has been recorded.': 'Rekonsiliasi hanya dilakukan setelah pembayaran penuh tercatat.',
