@@ -32,15 +32,16 @@ set search_path = ''
 as $$
 declare
   v_existing_snapshot jsonb;
+  v_existing_variant_id text;
 begin
-  -- Operational saves upsert existing line ids. Preserve their historical
-  -- snapshot even if Admin has since edited the live Catalog recipe.
-  select flower_recipe_snapshot
-  into v_existing_snapshot
+  -- Operational saves upsert existing line ids. Preserve the historical
+  -- snapshot only while the selected variant itself is unchanged.
+  select variant_id, flower_recipe_snapshot
+  into v_existing_variant_id, v_existing_snapshot
   from public.order_items
   where id = new.id;
 
-  if found then
+  if found and v_existing_variant_id is not distinct from new.variant_id then
     new.flower_recipe_snapshot := coalesce(v_existing_snapshot, '[]'::jsonb);
     return new;
   end if;
