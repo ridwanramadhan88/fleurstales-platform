@@ -1,3 +1,4 @@
+-- Flower recipe catalog authority and persistence smoke coverage.
 do $$
 declare
   v_source text;
