@@ -198,8 +198,8 @@ export const CatalogVariantsSection: FC<Props> = ({
                       >
                         <SelectTrigger className={inputClass}><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="stem">Stem</SelectItem>
-                          <SelectItem value="bunch">Bunch</SelectItem>
+                          <SelectItem value="stem">Tangkai</SelectItem>
+                          <SelectItem value="bunch">Ikat</SelectItem>
                         </SelectContent>
                       </Select>
                     </VariantField>
