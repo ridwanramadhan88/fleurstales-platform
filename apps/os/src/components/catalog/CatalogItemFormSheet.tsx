@@ -60,6 +60,12 @@ export interface VariantRow {
   price: string
   cost: string
   status: CatalogVariantStatus
+  flowerRecipe: Array<{
+    id: string
+    flowerName: string
+    quantity: string
+    unit: 'stem' | 'bunch'
+  }>
 }
 
 export interface CatalogFormState {
@@ -83,6 +89,7 @@ export const emptyVariantRow = (): VariantRow => ({
   price: '',
   cost: '',
   status: 'active',
+  flowerRecipe: [],
 })
 
 const emptyForm = (defaultCategory: CatalogCategory): CatalogFormState => ({
@@ -121,6 +128,12 @@ const formFromProduct = (product: CatalogProduct): CatalogFormState => ({
     price: variant.price.toString(),
     cost: variant.cost?.toString() ?? '',
     status: variant.status,
+    flowerRecipe: (variant.flowerRecipe ?? []).map((item) => ({
+      id: item.id,
+      flowerName: item.flowerName,
+      quantity: String(item.quantity),
+      unit: item.unit,
+    })),
   })),
 })
 
@@ -201,12 +214,25 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       if (costParsed !== undefined && (!Number.isFinite(costParsed) || costParsed < 0)) {
         nextErrors.push(`Variant ${index + 1} has an invalid cost.`)
       }
+      const flowerRecipe = row.flowerRecipe.map((item, recipeIndex) => {
+        const quantity = Number.parseFloat(item.quantity)
+        if (!item.flowerName.trim()) nextErrors.push(`Variant ${index + 1}, flower ${recipeIndex + 1} needs a flower name.`)
+        if (!Number.isFinite(quantity) || quantity <= 0) nextErrors.push(`Variant ${index + 1}, flower ${recipeIndex + 1} needs a quantity above 0.`)
+        return {
+          id: item.id,
+          flowerName: item.flowerName.trim(),
+          quantity,
+          unit: item.unit,
+        }
+      }).filter((item) => item.flowerName && Number.isFinite(item.quantity) && item.quantity > 0)
+
       if (row.size.trim() && Number.isFinite(price) && price > 0) {
         parsedVariants.push({
           size: row.size.trim(),
           price,
           cost: costParsed,
           status: row.status,
+          flowerRecipe,
           ...(row.id ? { id: row.id } : {}),
           ...(row.sku ? { sku: row.sku } : {}),
         })
