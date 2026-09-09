@@ -36,12 +36,12 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       contentClassName="gap-0 overflow-hidden rounded-t-2xl bg-card px-5 pb-4 pt-5 shadow-ios-lg ring-1 ring-border/60 sm:right-auto sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 md:max-w-3xl lg:h-[90vh] lg:max-h-[90vh] lg:max-w-5xl"
     >
       <OrderDetailsHeader viewModel={viewModel} />
-      <OrderDetailsCurrentFocus viewModel={viewModel} />
-      <OrderDetailsFinanceSection viewModel={viewModel} />
 
-      {/* px-px keeps card strokes off the scrollport clip edge (1px is
-          invisible to the eye but saves the outer ring half). */}
+      {/* Current focus and Finance context scroll with the order body so the
+          fixed footer never squeezes the useful viewport on smaller screens. */}
       <div className="mt-4 min-h-0 flex-1 px-px overflow-y-auto overflow-x-hidden pb-10 pt-1 text-sm text-foreground/90">
+        <OrderDetailsCurrentFocus viewModel={viewModel} />
+        <OrderDetailsFinanceSection viewModel={viewModel} />
         <div role="tablist" aria-label="Order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
           {([
             ['details', 'Details'],
