@@ -7,8 +7,8 @@ begin
     raise exception 'Flower recipe table is missing';
   end if;
 
-  if has_table_privilege('anon','public.product_variant_flower_recipes','SELECT') then
-    raise exception 'Flower recipes must not be public';
+  if not has_table_privilege('anon','public.product_variant_flower_recipes','SELECT') then
+    raise exception 'Customer-facing flower recipes must be readable by Storefront';
   end if;
 
   if not has_function_privilege(
