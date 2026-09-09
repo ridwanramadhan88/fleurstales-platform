@@ -1,3 +1,4 @@
+-- Full release verification for customer/florist Resep Bunga.
 -- Customer-facing Resep Bunga and immutable order snapshot coverage.
 do $$
 declare
