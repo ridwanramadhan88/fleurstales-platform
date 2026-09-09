@@ -271,6 +271,7 @@ export interface SharedOrderItem {
   variantSizeSnapshot?: string
   quantity: number
   unitPriceIdr: number
+  flowerRecipeSnapshot?: Array<{ flowerName: string; quantity: number; unit: 'stem' | 'bunch' }>
 }
 
 export interface SharedOrderPaymentEvent {
