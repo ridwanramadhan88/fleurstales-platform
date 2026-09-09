@@ -33,6 +33,14 @@ export interface SharedArrangementTypesReplaceResult {
   count: number
 }
 
+export interface SharedFlowerRecipeItem {
+  id: string
+  flowerName: string
+  quantity: number
+  unit: 'stem' | 'bunch'
+  sortOrder: number
+}
+
 export interface SharedProductVariant {
   id: string
   productId: string
@@ -43,6 +51,8 @@ export interface SharedProductVariant {
   sortOrder: number
   /** Only present in authenticated Finance/Owner reads. Never part of the public catalog contract. */
   costIdr?: number | null
+  /** Internal-only production data; omitted from public Storefront reads. */
+  flowerRecipe?: SharedFlowerRecipeItem[]
 }
 
 export interface SharedProductImage {
