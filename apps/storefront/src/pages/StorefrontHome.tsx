@@ -96,8 +96,8 @@ export const StorefrontHome: FC<Props> = ({
         aria-hidden="true"
       />
 
-      <div className="storefront-home__headline">
-        <span className="storefront-home__headline-line">You’ll get</span>
+      <div className="storefront-home__headline" data-no-translate>
+        <span className="storefront-home__headline-line">You Get</span>
         <span className="storefront-home__headline-line storefront-home__headline-line--accent">Flowers</span>
         <span className="storefront-home__headline-line">Today!</span>
       </div>

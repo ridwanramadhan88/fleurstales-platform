@@ -4,9 +4,9 @@ import { ArrowLeft, Check, MessageCircle, PackageSearch, Search } from 'lucide-r
 import { StorefrontBrand } from '../components/storefront/StorefrontBrand'
 import { StorefrontContainer } from '../components/storefront/StorefrontContainer'
 import { StorefrontCopyButton } from '../components/storefront/StorefrontCopyButton'
+import { StorefrontReviewForm } from '../components/storefront/StorefrontReviewForm'
 import {
   getPublicOrderTracking,
-  submitPublicOrderReview,
   verifyPublicOrderTrackingAccess,
   type PublicOrderStatusSummary,
   type PublicOrderTrackingDetails,
@@ -110,10 +110,6 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
   const [loading, setLoading] = useState(Boolean(trackingId))
   const [searching, setSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [scores, setScores] = useState<Record<string, number>>({})
-  const [reviewNote, setReviewNote] = useState('')
-  const [reviewBusy, setReviewBusy] = useState(false)
-  const [reviewMessage, setReviewMessage] = useState<string | null>(null)
 
   const TRACKING_LINK_UNAVAILABLE_MESSAGE =
     'This tracking link is no longer available. It may be incorrect, or it may have expired (links remain available for 14 days after the order is completed or closed).'
@@ -176,35 +172,6 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
       setError(cause instanceof Error ? cause.message : 'Could not verify this order.')
     } finally {
       setSearching(false)
-    }
-  }
-
-  const handleSubmitReview = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!trackingId || !details || reviewBusy) return
-    const questions = details.reviewQuestions ?? []
-    if (questions.some((question) => !scores[question.id])) {
-      setReviewMessage('Kasih nilai 1–5 untuk semua pertanyaan dulu ya.')
-      return
-    }
-    setReviewBusy(true)
-    setReviewMessage(null)
-    try {
-      const result = await submitPublicOrderReview(
-        trackingId,
-        questions.map((question) => ({ questionId: question.id, score: scores[question.id] })),
-        reviewNote,
-      )
-      setReviewMessage(
-        result.reward
-          ? `Terima kasih! Promo ${Number(result.reward.percentOff)}% untuk order berikutnya sudah aktif.`
-          : 'Terima kasih untuk review-nya!',
-      )
-      await loadDetails(trackingId)
-    } catch (cause) {
-      setReviewMessage(cause instanceof Error ? cause.message : 'Review belum berhasil dikirim.')
-    } finally {
-      setReviewBusy(false)
     }
   }
 
@@ -320,26 +287,13 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                           ) : null}
                           {details.review?.note ? <p className="mt-3 sf-type-2 italic text-black/58">“{details.review.note}”</p> : null}
                         </div>
-                      ) : (
-                        <form className="mt-5 space-y-5" onSubmit={handleSubmitReview}>
-                          {(details.reviewQuestions ?? []).map((question) => (
-                            <fieldset key={question.id} className="space-y-2">
-                              <legend className="sf-type-2 font-semibold">{question.question}</legend>
-                              <div className="grid grid-cols-5 gap-2">
-                                {[1,2,3,4,5].map((score) => (
-                                  <button key={score} type="button" onClick={() => setScores((current) => ({ ...current, [question.id]: score }))} className={`min-h-11 rounded-full border sf-type-2 font-semibold transition ${scores[question.id] === score ? 'border-[#00813f] bg-[#00813f] text-white' : 'border-black/15 bg-white/55 text-black/65'}`} aria-pressed={scores[question.id] === score}>{score}</button>
-                                ))}
-                              </div>
-                            </fieldset>
-                          ))}
-                          <label className="block space-y-2">
-                            <span className="sf-type-2 font-semibold">Kritik & Saran <span className="font-normal text-black/45">(optional)</span></span>
-                            <textarea value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} rows={4} maxLength={2000} className="w-full resize-none rounded-2xl border border-black/15 bg-[var(--sf-cream)] px-4 py-3 sf-type-2 outline-none focus:border-[#00813f]/50" placeholder="Tulis kritik atau saran…" />
-                          </label>
-                          {reviewMessage && <p className="sf-type-2 text-[#006f36]">{reviewMessage}</p>}
-                          <button type="submit" disabled={reviewBusy || (details.reviewQuestions ?? []).length === 0} className="sf-primary-action w-full px-6 disabled:opacity-40">{reviewBusy ? 'Submitting…' : 'Submit Review'}</button>
-                        </form>
-                      )}
+                      ) : trackingId ? (
+                        <StorefrontReviewForm
+                          trackingId={trackingId}
+                          details={details}
+                          onSubmitted={async () => { await loadDetails(trackingId) }}
+                        />
+                      ) : null}
                     </section>
                   ) : null}
 
