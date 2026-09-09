@@ -45,7 +45,7 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
     (order.paymentStatus === 'partial' && (paidAmount <= 0 || paidAmount >= order.totalIdr)) ||
     (order.paymentStatus === 'unpaid' && paidAmount > 0)
   const missingProof = paymentMethod === 'transfer' && !order.paymentProofUrl
-  const paymentReady = !paymentMismatch && !missingProof
+  const paymentReady = order.paymentStatus === 'paid' && !paymentMismatch && !missingProof
   const paymentTime = latestPayment?.occurredAt
     ? ' · ' + new Date(latestPayment.occurredAt).toLocaleString('id-ID')
     : ''
@@ -93,6 +93,16 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
             </p>
           </div>
         </div>
+
+        {order.paymentStatus !== 'paid' ? (
+          <div className="flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2.5 text-warning">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold">Payment is not fully paid</p>
+              <p className="mt-0.5 text-xs text-warning/90">Finance should reconcile only after the full payment has been recorded.</p>
+            </div>
+          </div>
+        ) : null}
 
         {paymentMismatch ? (
           <div className="flex items-start gap-2 rounded-xl bg-warning/10 px-3 py-2.5 text-warning">
