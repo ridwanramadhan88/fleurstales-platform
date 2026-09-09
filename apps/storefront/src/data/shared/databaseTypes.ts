@@ -178,6 +178,17 @@ export interface ProductVariantRow {
   updated_at: string
 }
 
+export interface ProductVariantFlowerRecipeRow {
+  id: string
+  variant_id: string
+  flower_name: string
+  quantity: number
+  unit: 'stem' | 'bunch'
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 export interface ProductVariantCostRow {
   variant_id: string
   cost_idr: number | null
@@ -494,6 +505,7 @@ export interface Database {
       products: TableDefinition<ProductRow>
       product_occasions: TableDefinition<ProductOccasionRow>
       product_variants: TableDefinition<ProductVariantRow>
+      product_variant_flower_recipes: TableDefinition<ProductVariantFlowerRecipeRow>
       product_variant_costs: TableDefinition<ProductVariantCostRow>
       product_images: TableDefinition<ProductImageRow>
       size_guide_templates: TableDefinition<SizeGuideTemplateRow>
