@@ -113,6 +113,16 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         occasionCount: bundle.catalog.occasions.length,
       }
     },
+    async replaceFlowerRecipes(input) {
+      if (input.baseRevision !== bundle.catalog.adminState.revision) {
+        throw new Error(`CATALOG_CONFLICT: expected revision ${input.baseRevision}, current revision ${bundle.catalog.adminState.revision}.`)
+      }
+      const recipeCount = input.products.reduce(
+        (total, product) => total + product.variants.reduce((sum, variant) => sum + (variant.flowerRecipe?.length ?? 0), 0),
+        0,
+      )
+      return { recipeCount }
+    },
     async replaceArrangementTypes(names) {
       arrangementTypes = [...names]
       return { count: arrangementTypes.length }
