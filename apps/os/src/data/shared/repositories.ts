@@ -267,13 +267,14 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
   },
 
   async getProduct(productId) {
-    const [products, occasions, variants, images] = await Promise.all([
+    const [products, occasions, variants, images, recipeByVariantId] = await Promise.all([
       client.select('products', { filters: { id: productId }, limit: 1 }),
       client.select('product_occasions', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_variants', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_images', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
+      readRecipeMap(client),
     ])
-    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), new Map(), client) : null
+    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), recipeByVariantId, client) : null
   },
   async listSizeGuideTemplates() {
     const rows = await client.select('size_guide_templates', { order: [{ column: 'name' }] })
