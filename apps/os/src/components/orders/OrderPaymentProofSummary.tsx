@@ -62,11 +62,11 @@ export const OrderPaymentProofSummary: FC<OrderPaymentProofSummaryProps> = ({ or
   return (
     <section className="mb-3 rounded-2xl bg-surface-card p-3.5 ring-1 ring-border/60" aria-label="Payment summary">
       <div className="flex flex-wrap items-center gap-3">
-        <span className={\`flex size-9 shrink-0 items-center justify-center rounded-full \${finance.state === 'resolved' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}\`}>
+        <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${finance.state === 'resolved' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
           {finance.state === 'resolved' ? <CheckCircle2 className="size-4" /> : <CreditCard className="size-4" />}
         </span>
         <div className="min-w-0 flex-1">
-          <p className={\`text-xs font-semibold \${finance.state === 'resolved' ? 'text-success' : 'text-foreground'}\`}>
+          <p className={`text-xs font-semibold ${finance.state === 'resolved' ? 'text-success' : 'text-foreground'}`}>
             {finance.state === 'resolved' ? 'Payment reconciled' : 'Payment reference'}
           </p>
           <p className="mt-0.5 text-2xs text-muted-foreground">
