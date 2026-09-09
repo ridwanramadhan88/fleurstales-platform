@@ -29,7 +29,7 @@ export const OrderDetailsCurrentFocus: FC<OrderDetailsCurrentFocusProps> = ({ vi
   const Icon = order.status === 'ready' || order.status === 'delivering' ? PackageCheck : toneIcon[focus.tone]
 
   return (
-    <section className={\`mb-3 rounded-2xl p-4 ring-1 \${toneStyles[focus.tone]}\`} aria-label="Current order focus">
+    <section className={`mb-3 rounded-2xl p-4 ring-1 ${toneStyles[focus.tone]}`} aria-label="Current order focus">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-current/10">
           <Icon className="size-4" />
