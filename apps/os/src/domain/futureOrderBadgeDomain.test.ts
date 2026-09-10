@@ -2,8 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import type { OrderTableRow } from '../types/orders'
 import { countActiveFutureOrders } from './futureOrderBadgeDomain'
 
+const FIXED_NOW = new Date(2026, 8, 10, 10, 0, 0, 0)
+
 vi.mock('./orderTimingDomain', () => ({
-  isFutureOrder: (order: OrderTableRow) => order.orderNumber.startsWith('FUTURE'),
+  nowInJakarta: () => FIXED_NOW,
+  getOrderDateTime: (order: OrderTableRow) => {
+    if (!order.orderNumber.startsWith('FUTURE')) return new Date(2026, 8, 10, 9, 0, 0, 0)
+    return new Date(2026, 8, 10, 11, 0, 0, 0)
+  },
 }))
 
 const order = (orderNumber: string, status: OrderTableRow['status']) =>
