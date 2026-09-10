@@ -119,11 +119,14 @@ export const resolveCatalogSizeGuide = (
   product: Pick<CatalogStoreState['products'][number], 'id' | 'productType'>,
   templates: CatalogSizeGuideTemplate[],
   targets: CatalogSizeGuideTarget[],
+  options?: { includeLogical?: boolean },
 ): CatalogSizeGuideTemplate | undefined => {
   const productTarget = targets.find((target) => target.scope === 'product' && target.productId === product.id)
   const typeTarget = product.productType
     ? targets.find((target) => target.scope === 'product_type' && target.productType === product.productType)
     : undefined
   const templateId = productTarget?.templateId ?? typeTarget?.templateId
-  return templates.find((template) => template.id === templateId && template.byteSize > 0)
+  return templates.find((template) =>
+    template.id === templateId && (options?.includeLogical === true || template.byteSize > 0),
+  )
 }
