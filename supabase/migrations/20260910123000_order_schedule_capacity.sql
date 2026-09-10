@@ -96,7 +96,7 @@ begin
     and o.schedule_date = new.schedule_date
     and o.schedule_time = new.schedule_time
     and o.status in ('pending_verification', 'confirmed', 'processing', 'ready', 'delivering')
-    and o.id <> new.id;
+    and o.id is distinct from new.id;
 
   if v_slot_count >= 3 then
     raise exception using
