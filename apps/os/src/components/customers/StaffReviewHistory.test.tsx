@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -15,7 +15,7 @@ import { StaffReviewHistory } from './StaffReviewHistory'
 describe('StaffReviewHistory synchronization', () => {
   beforeEach(() => mocks.getStaffReviews.mockReset())
 
-  it('refreshes submitted reviews when staff returns to the app', async () => {
+  it('keeps the list compact and reveals the saved review question set on demand', async () => {
     mocks.getStaffReviews
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
@@ -25,12 +25,14 @@ describe('StaffReviewHistory synchronization', () => {
           orderNumber: 'KDM-2026-0013',
           customerId: 'customer-1',
           customerName: 'Customer',
+          customerWhatsapp: '08123456789',
           submittedAt: '2026-09-05T05:47:52.170Z',
           note: 'Tingkatkan lagi',
-          averageScore: 3,
+          averageScore: 3.7,
           answers: [
-            { questionId: 'quality', question: 'Kualitas produk', score: 2 },
-            { questionId: 'service', question: 'Pelayanan', score: 4 },
+            { questionId: 'quality', question: 'Product quality', score: 2 },
+            { questionId: 'service', question: 'Service', score: 4 },
+            { questionId: 'whatsapp', question: 'WhatsApp response time', score: 5 },
           ],
           reward: {
             id: 'reward-1',
@@ -56,8 +58,24 @@ describe('StaffReviewHistory synchronization', () => {
     window.dispatchEvent(new Event('focus'))
 
     await waitFor(() => expect(mocks.getStaffReviews).toHaveBeenCalledTimes(2))
-    expect(await screen.findByText('Customer · KDM-2026-0013')).toBeInTheDocument()
+    const customerName = await screen.findByText('Customer')
+    expect(screen.getByText('KDM-2026-0013')).toBeInTheDocument()
+    expect(screen.getByText('3.7')).toBeInTheDocument()
+
+    expect(screen.queryByText('Product quality')).not.toBeInTheDocument()
+    expect(screen.queryByText('WhatsApp response time')).not.toBeInTheDocument()
+    expect(screen.queryByText('Tingkatkan lagi')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Reward 10% off/)).not.toBeInTheDocument()
+    expect(screen.queryByText('08123456789')).not.toBeInTheDocument()
+
+    const reviewButton = customerName.closest('button')
+    expect(reviewButton).not.toBeNull()
+    fireEvent.click(reviewButton!)
+
+    expect(screen.getByText('Product quality')).toBeInTheDocument()
+    expect(screen.getByText('Service')).toBeInTheDocument()
+    expect(screen.getByText('WhatsApp response time')).toBeInTheDocument()
     expect(screen.getByText('Tingkatkan lagi')).toBeInTheDocument()
-    expect(screen.getByText('Reward 10% off · min Rp 300.000')).toBeInTheDocument()
+    expect(screen.queryByText(/Reward 10% off/)).not.toBeInTheDocument()
   })
 })

@@ -7,7 +7,6 @@ import { ChangeRequestList } from './ChangeRequestList'
 import { FinanceOrderFilterBar } from './FinanceOrderFilterBar'
 import { OrderVerificationQueueRow } from './OrderVerificationQueueRow'
 import type { OrderVerificationQueueViewModel } from './OrderVerificationQueueController'
-import { InfoDisclosure } from '../ui/info-disclosure'
 import { InfoHint } from '../ui/info-hint'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
 
@@ -55,7 +54,7 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
         title="Order Reconciliation"
         hint={
           <InfoHint label="About order reconciliation">
-            Paid orders appear here automatically after Admin confirms full payment and its evidence. Finance reconciliation is the final confirmation before the payment enters company balance and revenue.
+            Paid orders appear after Admin confirms payment. Finance reconciliation posts the payment to company balance and revenue.
           </InfoHint>
         }
       />
@@ -73,14 +72,6 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
     )}
 
     <div className="space-y-3">
-      <div className="flex justify-end">
-        <InfoDisclosure title="How reconciliation works" className="hidden sm:block">
-          <p className="max-w-md">
-            Admin confirms the full payment first and records the receiving account plus transfer evidence when required. The ledger entry stays Pending until Finance reconciles it. Only Finance-reconciled payments are included in company balance and revenue. In Progress and Complete describe the order workflow only.
-          </p>
-        </InfoDisclosure>
-      </div>
-
       <FinanceOrderFilterBar
         dateScope={dateScope}
         onDateScopeChange={onDateScopeChange}

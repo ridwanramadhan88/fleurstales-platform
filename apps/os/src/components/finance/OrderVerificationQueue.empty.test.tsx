@@ -20,5 +20,6 @@ describe('Order Reconciliation empty states', () => {
     expect(screen.getByRole('heading', { name: 'Order Reconciliation' })).toBeInTheDocument()
     expect(screen.getByText('No paid orders in this view')).toBeInTheDocument()
     expect(screen.getByText(/Orders appear after Admin confirms full payment/)).toBeInTheDocument()
+    expect(screen.queryByText('How reconciliation works')).not.toBeInTheDocument()
   })
 })
