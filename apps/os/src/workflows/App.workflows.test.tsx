@@ -12,6 +12,7 @@ import {
   vi,
 } from 'vitest'
 import App from '../App'
+import { useUiLanguage } from '../i18n/uiLanguage'
 import { useOrdersStore } from '../store/ordersStore'
 import { useUserStore } from '../store/userStore'
 import { todayIsoDate, useHrStore } from '../store/hrStore'
@@ -48,6 +49,7 @@ describe('critical application workflows', () => {
 
   beforeEach(() => {
     window.localStorage.clear()
+    useUiLanguage.getState().setLanguage('en')
     useOrdersStore.setState({
       orders: initialOrders,
       lastSequence: initialSequences,

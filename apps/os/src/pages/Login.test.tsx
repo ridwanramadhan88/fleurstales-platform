@@ -3,12 +3,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Employee } from '../store/hrStoreTypes'
 import type { SharedStaffSession } from '../data/shared/staffSessionDomain'
+import { useUiLanguage } from '../i18n/uiLanguage'
 import { LoginPage, reconcileSupabaseEmployeeRole } from './Login'
 
 afterEach(cleanup)
 
 describe('username and password login', () => {
   it('signs in local owner using owner / Fleur1', () => {
+    useUiLanguage.getState().setLanguage('en')
     const onSignIn = vi.fn()
     render(<LoginPage onSignIn={onSignIn} />)
 
@@ -20,6 +22,7 @@ describe('username and password login', () => {
   })
 
   it('rejects an invalid password', () => {
+    useUiLanguage.getState().setLanguage('en')
     render(<LoginPage onSignIn={() => {}} />)
 
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } })

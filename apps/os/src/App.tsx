@@ -18,7 +18,7 @@ import { getBusinessOsCustomersRefreshError, refreshBusinessOsCustomersFromRemot
 import { getStoreBridgeStatus, refreshBusinessOsStoreFromRemote, stopBusinessOsStoreBridge } from './data/shared/storeBridge'
 import { buildLocalStaffSession } from './data/shared/staffSessionDomain'
 import { clearSharedSession, getSharedSession, setSharedStaffSession } from './data/shared/sharedSessionStore'
-import { signOutSupabase, subscribeSupabaseAuth } from './api/supabaseAuth'
+import { initializeSupabaseAuth, signOutSupabase, subscribeSupabaseAuth } from './api/supabaseAuth'
 import { connectOperationalSupabase, stopOperationalSupabaseSync } from './data/operationalSupabaseSync'
 import { connectAuthorizationSupabase, getAuthorizationHydrationError, stopAuthorizationSupabaseSync } from './data/authorizationSupabaseSync'
 import { connectInternalSettingsSupabase, getInternalSettingsHydrationError, stopInternalSettingsSupabaseSync } from './data/internalSettingsSupabaseSync'
@@ -102,11 +102,25 @@ export default function App() {
       const role = resolveAuthoritativeStaffRole(employee.systemRole, sharedSession)
       const today = getLocalDateString(nowInJakarta())
       const profileBranch = employee.branch || undefined
+      const productionSession = sharedSession.source === 'supabase'
+
+      if (productionSession) {
+        // `staff_access_profiles` has already authenticated the staff identity at
+        // this point. Re-read Supabase Auth before any protected hydration so the
+        // custom PostgREST token bridge cannot remain empty/stale after restore or
+        // a just-completed sign-in. Never downgrade SESSION_REQUIRED into local
+        // prototype data; fail closed with a sign-in message instead.
+        const authSession = await initializeSupabaseAuth()
+        const expectedUserId = sharedSession.userId
+        if (!authSession || (expectedUserId && authSession.user.id !== expectedUserId)) {
+          throw new Error('Your secure Fleurstales session expired. Please sign in again.')
+        }
+      }
 
       // Profile branch is only an initial operational hint. Never present it as
       // a schedule: schedule authority is hydrated separately from HR.
       signIn({ employeeId: employee.id, name: employee.name, username: employee.username ?? role, role, branchId: profileBranch, scheduledBranchId: undefined })
-      if (sharedSession.source !== 'supabase') {
+      if (!productionSession) {
         setSharedStaffSession(buildLocalStaffSession({ employeeId: employee.id, displayName: employee.name, role, branchId: profileBranch, source: isSharedBackendConfigured() ? 'legacy_shared_backend' : 'local_demo' }))
       }
 
@@ -118,7 +132,6 @@ export default function App() {
       const internalSettingsReady = internalSettings.ready
       const operationalReady = operational.ready
       const staffOperationsReady = staffOperations.ready
-      const productionSession = getSharedSession().source === 'supabase'
       if (productionSession && (!authorizationReady || !internalSettingsReady || !operationalReady || !staffOperationsReady)) {
         const failures = [authorization.failure, internalSettings.failure, operational.failure, staffOperations.failure]
           .filter((failure): failure is string => Boolean(failure))
