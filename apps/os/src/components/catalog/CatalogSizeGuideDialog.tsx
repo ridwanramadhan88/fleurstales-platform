@@ -47,14 +47,14 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
   }
 
   const handleSaveTemplate = () => {
-    if (!name.trim() || !imageUrl) {
+    if (!name.trim()) {
       toast({ description: 'Add a template name and size-guide image.' })
       return
     }
     const id = saveTemplate({
       name,
-      imageUrl,
-      byteSize: getDataUrlByteSize(imageUrl),
+      imageUrl: imageUrl ?? '',
+      byteSize: imageUrl ? getDataUrlByteSize(imageUrl) : 0,
     })
     setSelectedTemplateId(id)
     resetTemplateForm()
@@ -138,17 +138,24 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                   {templates.map((template) => {
                     const selected = selectedTemplateId === template.id
                     const assignmentCount = targets.filter((target) => target.templateId === template.id).length
+                    const hasImage = template.byteSize > 0
                     return (
                       <div
                         key={template.id}
                         className={`rounded-xl p-2.5 ring-1 ${selected ? 'bg-primary/5 ring-primary/50' : 'bg-card ring-border'}`}
                       >
                         <button type="button" onClick={() => setSelectedTemplateId(template.id)} className="flex w-full items-center gap-3 text-left">
-                          <img src={template.imageUrl} alt="" className="size-16 rounded-lg object-cover ring-1 ring-border" />
+                          {hasImage ? (
+                            <img src={template.imageUrl} alt="" className="size-16 rounded-lg object-cover ring-1 ring-border" />
+                          ) : (
+                            <span className="inline-flex size-16 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border" aria-hidden="true">
+                              <Ruler className="size-6" />
+                            </span>
+                          )}
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-semibold">{template.name}</span>
                             <span className="mt-1 block text-2xs text-muted-foreground">
-                              {Math.ceil(template.byteSize / 1024)} KB · {assignmentCount} assignment{assignmentCount === 1 ? '' : 's'}
+                              {hasImage ? `${Math.ceil(template.byteSize / 1024)} KB · ` : ''}{assignmentCount} assignment{assignmentCount === 1 ? '' : 's'}
                             </span>
                           </span>
                         </button>
