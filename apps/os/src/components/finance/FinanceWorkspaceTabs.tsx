@@ -70,7 +70,7 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
     <nav
       ref={navRef}
       aria-label="Finance modules"
-      className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 scroll-px-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:p-0 lg:grid-cols-5"
+      className="no-scrollbar -mx-4 flex gap-1 overflow-x-auto px-4 py-1 scroll-px-4 sm:mx-0 sm:w-fit sm:max-w-full sm:rounded-xl sm:bg-muted/55 sm:p-1"
     >
       {modules.map((module) => {
         const item = ITEMS[module];
@@ -84,23 +84,14 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
             aria-label={item.label}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "scroll-mx-4 flex min-h-[4.75rem] min-w-[10.5rem] shrink-0 items-center gap-3 overflow-hidden rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:min-w-0",
+              "scroll-mx-4 inline-flex min-h-10 min-w-fit shrink-0 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
               active
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border/70 bg-card text-foreground hover:bg-muted/60",
+                ? "bg-primary text-primary-foreground shadow-ios-sm"
+                : "text-muted-foreground hover:bg-card hover:text-foreground",
             )}
           >
-            <Icon className="size-5 shrink-0" />
-            <span className="min-w-0 flex-1 overflow-hidden">
-              <span className="block truncate text-sm font-semibold leading-tight sm:text-base">
-                {item.label}
-              </span>
-              <span
-                className={`mt-1 block truncate whitespace-nowrap text-xs leading-snug ${active ? "text-primary-foreground/75" : "text-muted-foreground"}`}
-              >
-                {item.description}
-              </span>
-            </span>
+            <Icon className="size-4 shrink-0" />
+            <span className="whitespace-nowrap">{item.label}</span>
           </button>
         );
       })}

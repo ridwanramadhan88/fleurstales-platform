@@ -59,13 +59,16 @@ describe('mobile workflow UI scale regressions', () => {
     expect(footer).not.toContain('>Close<')
   })
 
-  it('uses shared centered and scrollable controls across Finance, People and Revenue', () => {
+  it('uses compact and scrollable controls across Finance, People and Revenue', () => {
     const financeTabs = read('src/components/finance/FinanceWorkspaceTabs.tsx')
     const payroll = read('src/components/finance/FinancePayrollReview.tsx')
     const peopleTabs = read('src/components/hr/PeopleWorkspaceUI.tsx')
     const revenue = read('src/components/dashboard/RevenueDashboard.tsx')
-    expect(financeTabs).toContain('rounded-xl border px-4 py-3 text-left')
-    expect(financeTabs).toContain('min-h-[4.75rem]')
+    expect(financeTabs).toContain('min-h-10 min-w-fit')
+    expect(financeTabs).toContain('rounded-lg px-3.5')
+    expect(financeTabs).toContain('sm:rounded-xl sm:bg-muted/55 sm:p-1')
+    expect(financeTabs).not.toContain('min-h-[4.75rem]')
+    expect(financeTabs).not.toContain('rounded-xl border px-4 py-3 text-left')
     expect(financeTabs).not.toContain('rounded-full')
     expect(payroll).toContain('settingsTabTrackClass')
     expect(payroll).toContain('settingsTabButtonClass')
@@ -87,8 +90,9 @@ describe('mobile workflow UI scale regressions', () => {
     const scheduling = read('src/components/hr/HrSchedulingSection.tsx')
 
     expect(financeTabs).not.toContain('mask-image')
-    expect(financeTabs).toContain('sm:p-0')
-    expect(financeTabs).toContain('truncate whitespace-nowrap')
+    expect(financeTabs).toContain('overflow-x-auto')
+    expect(financeTabs).toContain('sm:p-1')
+    expect(financeTabs).toContain('whitespace-nowrap')
 
     expect(notifications).toContain('hideCloseButton')
     expect(notifications).toContain('Close notifications')
