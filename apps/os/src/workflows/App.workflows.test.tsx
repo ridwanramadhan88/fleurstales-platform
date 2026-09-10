@@ -153,10 +153,11 @@ describe('critical application workflows', () => {
 
     await user.click(form.getByRole('button', { name: 'Pickup date' }))
     const calendar = screen.getByRole('grid')
-    const availableDay = within(calendar)
+    const availableDays = within(calendar)
       .getAllByRole('gridcell')
-      .find((button) => !button.hasAttribute('disabled') && /^\d+$/.test(button.textContent?.trim() ?? ''))
-    if (!availableDay) throw new Error('No available pickup date found')
+      .filter((button) => !button.hasAttribute('disabled') && /^\d+$/.test(button.textContent?.trim() ?? ''))
+    const availableDay = availableDays[availableDays.length - 1]
+    if (!availableDay) throw new Error('No available future pickup date found')
     await user.click(availableDay)
 
     await user.click(form.getByRole('button', { name: 'Pickup time' }))
