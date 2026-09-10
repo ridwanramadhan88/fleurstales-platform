@@ -58,7 +58,7 @@ begin
     end if;
   end if;
 
-  -- Preserve compatibility with any legacy unscheduled rows. Current creation
+  -- Preserve compatibility with legacy unscheduled rows. Current creation
   -- flows require a schedule, and only scheduled rows participate in capacity.
   if new.schedule_date is null or new.schedule_time is null then
     return new;
@@ -68,14 +68,16 @@ begin
     or extract(second from new.schedule_time) <> 0 then
     raise exception using
       errcode = 'P0001',
-      message = 'ORDER_SLOT_INTERVAL_INVALID';
+      message = 'Choose a time in 15-minute intervals.',
+      detail = 'ORDER_SLOT_INTERVAL_INVALID';
   end if;
 
   if (new.schedule_date + new.schedule_time)
       <= (pg_catalog.timezone('Asia/Jakarta', pg_catalog.now()) + interval '45 minutes') then
     raise exception using
       errcode = 'P0001',
-      message = 'ORDER_SLOT_TOO_SOON';
+      message = 'That time is now within the 45-minute preparation window. Please choose a later time.',
+      detail = 'ORDER_SLOT_TOO_SOON';
   end if;
 
   -- Serialize competing inserts/edits for the same branch/date/time. Without
@@ -99,7 +101,8 @@ begin
   if v_slot_count >= 3 then
     raise exception using
       errcode = 'P0001',
-      message = 'ORDER_SLOT_FULL';
+      message = 'That time is already full. Please choose another pickup or delivery time.',
+      detail = 'ORDER_SLOT_FULL';
   end if;
 
   return new;
