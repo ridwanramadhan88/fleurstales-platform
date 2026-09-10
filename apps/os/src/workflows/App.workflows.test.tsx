@@ -12,6 +12,7 @@ import {
   vi,
 } from 'vitest'
 import App from '../App'
+import { useUiLanguage } from '../i18n/uiLanguage'
 import { useOrdersStore } from '../store/ordersStore'
 import { useUserStore } from '../store/userStore'
 import { todayIsoDate, useHrStore } from '../store/hrStore'
@@ -23,6 +24,7 @@ const originalConsoleLog = console.log
 const originalConsoleWarn = console.warn
 
 const chooseRole = async (role: 'Owner' | 'Admin') => {
+  useUiLanguage.getState().setLanguage('en')
   const user = userEvent.setup()
   await user.type(screen.getByLabelText('Username'), role === 'Admin' ? 'akbar' : role.toLowerCase())
   await user.type(screen.getByLabelText('Password'), 'Fleur1')
