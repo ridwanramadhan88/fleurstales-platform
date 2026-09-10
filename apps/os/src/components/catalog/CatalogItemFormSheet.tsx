@@ -160,7 +160,9 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     [product, defaultCategory],
   )
   const sizeTemplate = useMemo(
-    () => product ? resolveCatalogSizeGuide(product, sizeGuideTemplates, sizeGuideTargets) : undefined,
+    () => product
+      ? resolveCatalogSizeGuide(product, sizeGuideTemplates, sizeGuideTargets, { includeLogical: true })
+      : undefined,
     [product, sizeGuideTargets, sizeGuideTemplates],
   )
   const [form, setForm] = useState<CatalogFormState>(initialForm)
