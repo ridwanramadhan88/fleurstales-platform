@@ -125,5 +125,5 @@ export const resolveCatalogSizeGuide = (
     ? targets.find((target) => target.scope === 'product_type' && target.productType === product.productType)
     : undefined
   const templateId = productTarget?.templateId ?? typeTarget?.templateId
-  return templates.find((template) => template.id === templateId)
+  return templates.find((template) => template.id === templateId && template.byteSize > 0)
 }
