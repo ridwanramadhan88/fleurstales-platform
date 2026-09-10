@@ -37,10 +37,10 @@ describe('MonthPickerField', () => {
     const onChange = vi.fn()
     render(<MonthPickerField value="2026-07" onChange={onChange} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /July 2026/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Juli 2026/i }))
 
     expect(screen.getByRole('button', { name: 'Jan' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Dec' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Des' })).toBeInTheDocument()
     expect(screen.queryByText('Su')).not.toBeInTheDocument()
     expect(screen.queryByText('Mo')).not.toBeInTheDocument()
 

@@ -4,6 +4,7 @@ import { useOrdersStore } from '../../store/ordersStore'
 import { useUserStore } from '../../store/userStore'
 import { isHrManagedEmployee } from '../../domain/hrManagedEmployeeDomain'
 import { useSettingsStore } from '../../store/settingsStore'
+import { getDateLocale } from '../../i18n/uiLanguage'
 import type { EmployeePointEntry } from '../../store/hrStoreTypes'
 import {
   buildEmployeePointSummaries,
@@ -30,13 +31,13 @@ const formatCompletedDate = (value?: string) => {
   if (!value) return null
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
-  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
+  return new Intl.DateTimeFormat(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
 }
 const currentPeriodKey = () => new Date().toISOString().slice(0, 7)
 const formatPeriodLabel = (value: string) => {
   const [year, month] = value.split('-').map(Number)
   if (!year || !month) return value
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(getDateLocale(), {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',
@@ -192,7 +193,7 @@ export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) 
 
     {view === 'overview' && <>
     <section className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-border/60">
-      <div className="flex items-center gap-1.5"><h2 className="text-sm font-semibold leading-5">Employee point progress</h2><InfoHint label="About point progress">Approved points and estimated bonus for {formatPeriodLabel(periodKey)}.</InfoHint></div>
+      <div className="flex items-center gap-1.5"><h2 className="text-sm font-semibold leading-5">Employee point progress</h2><InfoHint label="About point progress">{`Approved points and estimated bonus for ${formatPeriodLabel(periodKey)}.`}</InfoHint></div>
       {summaries.length === 0 ? <p className="rounded-lg bg-surface-panel p-4 text-xs text-muted-foreground">No eligible employee or point activity in this period.</p> : <div className="grid gap-3 lg:grid-cols-2">{summaries.map((summary) => <article key={summary.employeeId} className="rounded-xl border border-border/60 p-4">
         <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold leading-5">{summary.employeeName}</p><p className="text-xs capitalize text-muted-foreground">{summary.role}</p></div><div className="text-right"><p className="text-sm font-semibold leading-5">{summary.approvedNetPoints} approved</p><p className="text-xs text-muted-foreground">Est. bonus {formatIdr(summary.estimatedBonusIdr)}</p></div></div>
         {summary.role === 'admin' && <ProgressBlock label="Eligible collect orders" completed={summary.adminEligibleOrders} minimum={summary.adminMinimumIncluded} eligible={summary.adminPointEligibleOrders} pointsEach={rules.collectOrderPoints} />}

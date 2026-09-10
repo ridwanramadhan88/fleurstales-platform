@@ -8,6 +8,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { AppDialog } from '../ui/app-dialog'
 import { InfoHint } from '../ui/info-hint'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
+import { getDateLocale } from '../../i18n/uiLanguage'
 
 const LABELS: Record<AttendanceReviewCase['warningType'], string> = {
   late_check_in: 'Late check-in',
@@ -155,7 +156,7 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
                 <div>
                   <p className="text-base font-semibold leading-6">{employee?.name ?? 'Unknown employee'}</p>
                   <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
-                    {new Date(`${item.date}T12:00:00`).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+                    {new Date(`${item.date}T12:00:00`).toLocaleDateString(getDateLocale(),{day:'numeric',month:'short',year:'numeric'})}
                     {item.orderNumber ? <> · Order <button type="button" onClick={() => onOpenOrder?.(item.orderNumber!)} className="font-semibold text-primary hover:underline">{item.orderNumber}</button></> : ''}
                   </p>
                 </div>

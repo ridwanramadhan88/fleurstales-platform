@@ -5,6 +5,7 @@ import { useSettingsStore } from "../../store/settingsStore";
 import { getBranchFilterOptions } from "../../domain/settings/settingsSelectors";
 import type { BranchFilter } from "../../types/orders";
 import type { TopBarProps } from "./TopBar";
+import { getDateLocale } from "../../i18n/uiLanguage";
 
 const getRoleLabel = (
   role: ReturnType<typeof useUserStore.getState>["role"],
@@ -81,7 +82,7 @@ export const useTopBarController = ({
       ? "Select branch"
       : activeBranch;
 
-  const today = new Date().toLocaleDateString(undefined, {
+  const today = new Date().toLocaleDateString(getDateLocale(), {
     weekday: "short",
     month: "short",
     day: "numeric",

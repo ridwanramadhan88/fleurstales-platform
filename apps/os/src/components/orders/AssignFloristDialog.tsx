@@ -183,7 +183,7 @@ export const AssignFloristDialog: FC<{
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><CalendarClock className="size-5" /></span>
               <div>
                 <p className="text-sm font-semibold leading-5">{order.orderNumber} · {branchName}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Availability for {timing}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{`Availability for ${timing}`}</p>
               </div>
             </div>
 
@@ -207,7 +207,7 @@ export const AssignFloristDialog: FC<{
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold leading-5">{showAll ? 'All active florists' : 'Scheduled florists'}</p>
-                <p className="text-xs text-muted-foreground">{scheduled.length} recommended · {options.length} active</p>
+                <p className="text-xs text-muted-foreground">{`${scheduled.length} recommended · ${options.length} active`}</p>
               </div>
               {(options.length > scheduled.length || scheduled.length === 0) && (
                 <button type="button" onClick={() => setShowAll((value) => !value)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-border px-[18px] text-sm font-semibold hover:bg-muted">

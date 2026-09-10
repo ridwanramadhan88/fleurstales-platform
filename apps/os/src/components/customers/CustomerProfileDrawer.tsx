@@ -137,7 +137,7 @@ export const CustomerProfileDrawer: FC<CustomerProfileDrawerProps> = ({
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Value score {valueScore}/100
+                {`Value score ${valueScore}/100`}
               </p>
             </div>
           </div>

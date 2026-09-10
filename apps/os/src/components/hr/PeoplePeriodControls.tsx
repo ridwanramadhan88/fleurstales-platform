@@ -4,13 +4,14 @@ import type { PayrollDefaultSettings } from '../../types/settings'
 import { buildPayrollScheduleForPaymentMonth } from '../../domain/payrollScheduleDomain'
 import { MonthPickerField } from '../ui/date-time-field'
 import { cn } from '../../lib/utils'
+import { getDateLocale } from '../../i18n/uiLanguage'
 
 const parseMonthKey = (monthKey: string) => {
   const [year, month] = monthKey.split('-').map(Number)
   return { year, month }
 }
 
-const compactDate = (value: string, includeYear = false) => new Intl.DateTimeFormat('en-GB', {
+const compactDate = (value: string, includeYear = false) => new Intl.DateTimeFormat(getDateLocale(), {
   day: 'numeric',
   month: 'short',
   ...(includeYear ? { year: 'numeric' } : {}),

@@ -109,6 +109,48 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('Orders confirmed · Last 7 days', 'id')).toBe('Pesanan terkonfirmasi · Last 7 days')
   })
 
+  it('translates payroll modal titles while preserving staff names', () => {
+    expect(translateUiText('Dewi payroll', 'id')).toBe('Penggajian Dewi')
+    expect(translateUiText('Adjust Dewi', 'id')).toBe('Sesuaikan Dewi')
+    expect(translateUiText('Resolve Dewi', 'id')).toBe('Selesaikan Dewi')
+    expect(translateUiText('Final payroll', 'id')).toBe('Penggajian final')
+  })
+
+  it('translates refund and search dynamics while preserving business data', () => {
+    expect(translateUiText('KDM-2026-0001 is now recorded as refunded.', 'id')).toBe(
+      'KDM-2026-0001 kini tercatat sebagai dana dikembalikan.',
+    )
+    expect(translateUiText('KDM-2026-0001 returned to Paid.', 'id')).toBe('KDM-2026-0001 kembali ke Lunas.')
+    expect(translateUiText('No customers match "Budi".', 'id')).toBe(
+      'Tidak ada pelanggan yang cocok dengan "Budi".',
+    )
+  })
+
+  it('translates refactored single-node dynamics while preserving variables', () => {
+    expect(translateUiText('Showing 3 of 8 active orders.', 'id')).toBe('Menampilkan 3 dari 8 pesanan aktif.')
+    expect(translateUiText('Showing 1 of 1 active order.', 'id')).toBe('Menampilkan 1 dari 1 pesanan aktif.')
+    expect(translateUiText('2 decisions waiting for you.', 'id')).toBe('2 keputusan menunggu Anda.')
+    expect(translateUiText('Availability for Today · 19:00', 'id')).toBe('Ketersediaan untuk Today · 19:00')
+    expect(translateUiText('3 recommended · 5 active', 'id')).toBe('3 direkomendasikan · 5 aktif')
+    expect(translateUiText('Approved points and estimated bonus for 2026-09.', 'id')).toBe(
+      'Poin disetujui dan estimasi bonus untuk 2026-09.',
+    )
+    expect(translateUiText('Your shift ends at 18:00. Capture a new selfie to check out.', 'id')).toBe(
+      'Shift berakhir 18:00. Ambil selfie baru untuk absen pulang.',
+    )
+    expect(translateUiText('After payment is confirmed, Process Order becomes available.', 'id')).toBe(
+      'Setelah pembayaran dikonfirmasi, Process Order tersedia.',
+    )
+    expect(translateUiText('+5 points · order_reward', 'id')).toBe('+5 poin · order_reward')
+    expect(translateUiText('HR reason: approved by manager on call', 'id')).toBe('Alasan SDM: approved by manager on call')
+    expect(translateUiText('Value score 87/100', 'id')).toBe('Skor nilai 87/100')
+    expect(translateUiText('Check-in 09:05', 'id')).toBe('Absen masuk 09:05')
+    expect(translateUiText('Check-out 18:00', 'id')).toBe('Absen pulang 18:00')
+    expect(translateUiText('Accepted within 100 m of this pin.', 'id')).toBe(
+      'Dalam radius 100 m dari pin ini.',
+    )
+  })
+
   it('returns original English when selected', () => {
     expect(translateUiText('Inventory is disabled.', 'en')).toBe('Inventory is disabled.')
     expect(translateUiText('Track your Fleurstales order', 'en')).toBe('Track your Fleurstales order')

@@ -39,13 +39,13 @@ describe('People workspace shared UI', () => {
 
     expect(screen.queryByText('Month')).not.toBeInTheDocument()
     expect(screen.queryByText('Period')).not.toBeInTheDocument()
-    const periodControl = screen.getByRole('button', { name: 'Select month: July 2026' }).closest('[data-people-period-control]')
+    const periodControl = screen.getByRole('button', { name: 'Select month: Juli 2026' }).closest('[data-people-period-control]')
     expect(periodControl?.className).toContain('max-w-[520px]')
     expect(periodControl?.className).toContain('grid-cols-[44px_minmax(0,1fr)_44px]')
     expect(screen.getByRole('button', { name: 'Previous month' }).className).toContain('size-11')
     expect(screen.getByRole('button', { name: 'Next month' }).className).toContain('size-11')
-    expect(screen.getByRole('button', { name: 'Select month: July 2026' })).toBeInTheDocument()
-    expect(screen.getByText('July 2026')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Select month: Juli 2026' })).toBeInTheDocument()
+    expect(screen.getByText('Juli 2026')).toBeInTheDocument()
     expect(screen.getByText('· 21 Jun – 20 Jul')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Previous month' }))

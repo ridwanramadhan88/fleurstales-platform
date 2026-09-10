@@ -399,6 +399,11 @@ export const ID_NATURAL_TRANSLATIONS: Record<string, string> = {
   'Order selesai, masih Pending Finance.': 'Pesanan selesai dan menunggu konfirmasi tim Keuangan.',
   'Ready sudah di-propose. Menunggu Confirm Admin.': 'Status Siap telah diajukan dan menunggu konfirmasi Admin.',
   // V2 implementation audit batch 1 — verified EXACT findings (HEAD ff3243d). Contract: Pemilik/SDM/Perangkai Bunga/Keuangan/Pesanan/Pelanggan/Cabang/Penggajian/Kehadiran/Ruang kerja; Ulasan vs Tinjau.
+  // V2 batch 2 — D2/D13 companions (single-node refactor support).
+  'Oldest items are shown first in their review workspace.': 'Item tertua ditampilkan lebih dulu di ruang kerja tinjauan.',
+  'Manual payees do not use point calculations.': 'Penerima manual tidak memakai perhitungan poin.',
+  'Save payee': 'Simpan penerima',
+  'Remove draft': 'Hapus draf',
   'Authorization': 'Otorisasi',
   'Internal settings': 'Pengaturan internal',
   'Operational domains': 'Domain operasional',

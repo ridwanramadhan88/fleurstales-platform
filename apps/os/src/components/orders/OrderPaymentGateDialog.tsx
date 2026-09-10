@@ -119,7 +119,7 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
           <div className="min-w-0">
             <p className="text-sm font-semibold">{order.orderNumber}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">Rp {formatter.format(order.totalIdr)} · {order.paymentMethod === 'cash' ? 'Cash' : order.paymentMethod === 'transfer' ? 'Transfer' : 'Payment method not set'}</p>
-            <p className="mt-1 text-2xs text-muted-foreground">After payment is confirmed, {getQuickActionLabel(nextStatus)} becomes available.</p>
+            <p className="mt-1 text-2xs text-muted-foreground">{`After payment is confirmed, ${getQuickActionLabel(nextStatus)} becomes available.`}</p>
           </div>
         </div>
 
