@@ -2,6 +2,7 @@ import type { NewOrderFormErrors, NewOrderFormValues } from './useNewOrderForm'
 import { isPaymentMethodAllowedForFulfillment } from '../../domain/orderPaymentGateDomain'
 import type { BranchSettings } from '../../types/settings'
 import { getBranchHoursForDate, isTimeWithinBranchOpeningHours } from '../../domain/branchOpeningHoursDomain'
+import { getOrderSlotValidationMessage, isOrderSlotAligned, isOrderSlotTooSoon } from '../../domain/orderScheduleAvailabilityDomain'
 
 export const validateNewOrderForm = (
   values: NewOrderFormValues,
@@ -54,6 +55,10 @@ export const validateNewOrderForm = (
         nextErrors[dateField] = 'This branch is closed on the selected date.'
       } else if (scheduleTime && !isTimeWithinBranchOpeningHours(branch, scheduleDate, scheduleTime)) {
         nextErrors[timeField] = `Choose a time between ${hours.opensAt} and ${hours.closesAt}.`
+      } else if (scheduleTime && !isOrderSlotAligned(scheduleTime)) {
+        nextErrors[timeField] = getOrderSlotValidationMessage('interval')
+      } else if (scheduleTime && isOrderSlotTooSoon(scheduleDate, scheduleTime)) {
+        nextErrors[timeField] = getOrderSlotValidationMessage('too_soon')
       }
     }
   }
