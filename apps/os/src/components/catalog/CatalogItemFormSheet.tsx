@@ -17,6 +17,8 @@ import type {
   NewCatalogProductInput,
   NewCatalogVariantInput,
 } from '../../store/catalogStore'
+import { useCatalogStore } from '../../store/catalogStore'
+import { resolveCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
 import { CatalogProductDetailsSection } from './CatalogProductDetailsSection'
 import { CatalogVariantsSection } from './CatalogVariantsSection'
 import { AppSheet } from '../ui/app-sheet'
@@ -149,11 +151,17 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   onCreate,
   onUpdate,
 }) => {
+  const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
+  const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets)
   const isEditMode = Boolean(product)
   const defaultCategory = categoryOptions[0] ?? ''
   const initialForm = useMemo(
     () => (product ? formFromProduct(product) : emptyForm(defaultCategory)),
     [product, defaultCategory],
+  )
+  const sizeTemplate = useMemo(
+    () => product ? resolveCatalogSizeGuide(product, sizeGuideTemplates, sizeGuideTargets) : undefined,
+    [product, sizeGuideTargets, sizeGuideTemplates],
   )
   const [form, setForm] = useState<CatalogFormState>(initialForm)
   const [errors, setErrors] = useState<string[]>([])
@@ -320,6 +328,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
             >
               <CatalogVariantsSection
                 variants={form.variants}
+                sizeTemplateName={sizeTemplate?.name}
                 updateVariant={updateVariant}
                 addVariant={addVariantRow}
                 removeVariant={removeVariantRow}
