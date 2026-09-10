@@ -1,5 +1,6 @@
 begin;
 
+-- Current rollout default: Bouquet Standard -> Medium for every available product.
 -- A size-guide template can now exist before its optional visual guide is uploaded.
 -- byte_size = 0 is the explicit marker for a logical sizing template without an image object yet.
 alter table public.size_guide_templates
