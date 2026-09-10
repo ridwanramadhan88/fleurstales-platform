@@ -88,6 +88,27 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('CSV', 'id')).toBe('CSV')
   })
 
+  it('translates V2 audit batch 1 EXACT findings with the current contract', () => {
+    expect(translateUiText('Future', 'id')).toBe('Mendatang')
+    expect(translateUiText('Custom', 'id')).toBe('Kustom')
+    expect(translateUiText('All', 'id')).toBe('Semua')
+    expect(translateUiText('Assign Florists', 'id')).toBe('Tugaskan Perangkai Bunga')
+    expect(translateUiText('Return to HR', 'id')).toBe('Kembalikan ke SDM')
+    expect(translateUiText('Finance modules', 'id')).toBe('Modul Keuangan')
+    expect(translateUiText('Customer reviews', 'id')).toBe('Ulasan pelanggan')
+    expect(translateUiText('Review order', 'id')).toBe('Tinjau Pesanan')
+    expect(translateUiText('Refund queue', 'id')).toBe('Antrian pengembalian dana')
+    expect(translateUiText('Needs confirmation', 'id')).toBe('Perlu konfirmasi')
+  })
+
+  it('translates dashboard compare-period patterns', () => {
+    expect(translateUiText('Revenue (confirmed) · Last 7 days', 'id')).toBe(
+      'Pendapatan terkonfirmasi · Last 7 days',
+    )
+    expect(translateUiText('Revenue est. · Last 7 days', 'id')).toBe('Estimasi pendapatan · Last 7 days')
+    expect(translateUiText('Orders confirmed · Last 7 days', 'id')).toBe('Pesanan terkonfirmasi · Last 7 days')
+  })
+
   it('returns original English when selected', () => {
     expect(translateUiText('Inventory is disabled.', 'en')).toBe('Inventory is disabled.')
     expect(translateUiText('Track your Fleurstales order', 'en')).toBe('Track your Fleurstales order')
