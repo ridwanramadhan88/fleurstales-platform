@@ -164,6 +164,8 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Unit': 'Satuan',
   'Stem': 'Tangkai',
   'Bunch': 'Ikat',
+  'Example: Red Rose': 'Contoh: Mawar Merah',
+  'Reauthorization expired. We already saved your catalog changes, but size-guide uploads still need a fresh sign-in.': 'Otorisasi ulang kedaluwarsa. Perubahan katalog sudah tersimpan, tetapi unggahan panduan ukuran masih memerlukan login ulang.',
 
   'Current focus': 'Fokus saat ini',
   'Verify and accept this order': 'Verifikasi dan terima pesanan ini',
