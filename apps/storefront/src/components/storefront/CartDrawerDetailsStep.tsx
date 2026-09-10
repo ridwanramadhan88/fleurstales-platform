@@ -1,8 +1,9 @@
-import type { FC, ReactNode } from 'react'
+import { useEffect, type FC, type ReactNode } from 'react'
 import { PackageCheck } from 'lucide-react'
 import { DatePickerField, TimeSelectField } from '../ui/date-time-field'
 import type { CartDrawerViewModel } from './CartDrawerController'
 import { DeliveryFillIcon, PickupFillIcon } from './StorefrontFulfilmentIcons'
+import { useOrderSlotAvailability } from '../../hooks/useOrderSlotAvailability'
 
 const fieldClass = 'sf-field'
 const textareaClass = 'sf-field sf-textarea'
@@ -31,6 +32,37 @@ const Field: FC<{ label: string; required?: boolean; children: ReactNode }> = ({
     {children}
   </div>
 )
+
+const AvailableTimeSelectField: FC<{
+  branchId: string
+  date: string
+  openingSlots: string[]
+  value: string
+  onChange: (value: string) => void
+}> = ({ branchId, date, openingSlots, value, onChange }) => {
+  const { availableSlots, loading, error } = useOrderSlotAvailability({ branchId, date, openingSlots })
+
+  useEffect(() => {
+    if (!loading && value && !availableSlots.includes(value)) onChange('')
+  }, [availableSlots, loading, onChange, value])
+
+  return (
+    <>
+      <TimeSelectField
+        value={value}
+        onChange={onChange}
+        placeholder={loading ? 'Checking…' : 'Pick time'}
+        allowedSlots={availableSlots}
+        disabled={!date || loading || availableSlots.length === 0}
+        className={pickerClass}
+      />
+      {error && <p className="sf-type-1 leading-4 text-red-700">{error}</p>}
+      {!loading && !error && date && openingSlots.length > 0 && availableSlots.length === 0 && (
+        <p className="sf-type-1 leading-4 text-black/55">No available times left for this date.</p>
+      )}
+    </>
+  )
+}
 
 export const DetailsStep: FC<CartDrawerViewModel> = ({
   customerName,
@@ -201,13 +233,12 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
             />
           </Field>
           <Field label={fulfillment === 'delivery' ? 'Delivery time' : 'Pickup time'} required>
-            <TimeSelectField
+            <AvailableTimeSelectField
+              branchId={branch}
+              date={deliveryDate}
+              openingSlots={availableTimeSlots}
               value={deliveryTime}
               onChange={setDeliveryTime}
-              placeholder="Pick time"
-              allowedSlots={availableTimeSlots}
-              disabled={!deliveryDate || availableTimeSlots.length === 0}
-              className={pickerClass}
             />
           </Field>
         </div>
