@@ -143,14 +143,15 @@ begin
 end $$;
 
 -- Every available product gets exactly one active canonical Medium variant.
--- Extra variants are retained as inactive rows so permanent SKU/order history
--- and their size-specific flower recipes remain intact.
+-- Prefer an already-active variant, then retain the normal sort order. Extra
+-- variants stay as inactive rows so permanent SKU/order history and their
+-- size-specific flower recipes remain intact.
 with ranked_variants as (
   select
     variant.id,
     row_number() over (
       partition by variant.product_id
-      order by variant.sort_order, variant.id
+      order by (variant.status = 'active') desc, variant.sort_order, variant.id
     ) as variant_rank
   from public.product_variants variant
   join public.products product on product.id = variant.product_id
