@@ -7,6 +7,7 @@ import { generateId } from '../../lib/id'
 
 interface Props {
   variants: VariantRow[]
+  sizeTemplateName?: string
   updateVariant: (index: number, patch: Partial<VariantRow>) => void
   addVariant: () => void
   removeVariant: (index: number) => void
@@ -45,6 +46,7 @@ const VariantField = ({
 
 export const CatalogVariantsSection: FC<Props> = ({
   variants,
+  sizeTemplateName,
   updateVariant,
   addVariant,
   removeVariant,
@@ -75,6 +77,11 @@ export const CatalogVariantsSection: FC<Props> = ({
             <div>
               <p className="text-sm font-semibold text-foreground">Size {index + 1}</p>
               <p className="text-xs text-muted-foreground">{row.sku || 'SKU generated on save'}</p>
+              {sizeTemplateName && (
+                <span className="mt-2 inline-flex rounded-full bg-primary/8 px-2.5 py-1 text-2xs font-semibold text-primary">
+                  {sizeTemplateName} · {row.size || '—'}
+                </span>
+              )}
             </div>
             {variants.length > 1 && (
               <button
