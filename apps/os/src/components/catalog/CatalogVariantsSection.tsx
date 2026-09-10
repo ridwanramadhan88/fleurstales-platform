@@ -78,7 +78,7 @@ export const CatalogVariantsSection: FC<Props> = ({
               <p className="text-sm font-semibold text-foreground">Size {index + 1}</p>
               <p className="text-xs text-muted-foreground">{row.sku || 'SKU generated on save'}</p>
               {sizeTemplateName && (
-                <span className="mt-2 inline-flex rounded-full bg-primary/8 px-2.5 py-1 text-2xs font-semibold text-primary">
+                <span className="mt-2 inline-flex rounded-full bg-primary/10 px-2.5 py-1 text-2xs font-semibold text-primary">
                   {sizeTemplateName} · {row.size || '—'}
                 </span>
               )}
