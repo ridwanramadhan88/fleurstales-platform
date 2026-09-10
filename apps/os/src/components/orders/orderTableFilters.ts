@@ -1,14 +1,12 @@
 import type { DateRange } from 'react-day-picker'
 import type { OrderTableRow } from '../../types/orders'
 import type { OrdersSubTabId } from './OrdersSubTabs'
-import { getLocalDateString, nowInJakarta, parseOrderDateString } from './orderTableFormatters'
+import { getLocalDateString, getOrderDateTime, nowInJakarta, parseOrderDateString } from './orderTableFormatters'
 
 /**
  * @description Returns a list of orders filtered by high-level scope.
- * Conceptually:
- * - Active: all non-terminal statuses.
- * - Completed: delivered, cancelled, failed.
- * Any legacy scope other than "completed" is treated as "active".
+ * Future is based on the exact expected fulfillment timestamp, so later-today
+ * orders remain visible instead of only dates after today.
  */
 export const filterOrdersByScope = (
   scope: OrdersSubTabId,
@@ -17,6 +15,7 @@ export const filterOrdersByScope = (
 ): OrderTableRow[] => {
   const today = nowInJakarta()
   const todayStr = getLocalDateString(today)
+  const nowMs = today.getTime()
 
   return orders.filter((order) => {
     const orderDateStr = parseOrderDateString(order)
@@ -28,7 +27,8 @@ export const filterOrdersByScope = (
     }
 
     if (scope === 'future') {
-      return orderDateStr > todayStr
+      const scheduledAt = getOrderDateTime(order)
+      return scheduledAt !== null && scheduledAt.getTime() > nowMs
     }
 
     if (scope === 'custom') {

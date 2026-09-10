@@ -47,7 +47,7 @@ import { requestSettingsNavigation } from '../components/settings/settingsNaviga
 import { canAccessSection, canEditSection } from '../config/permissions'
 import { getAccessibleNavigationDestinationIds } from '../config/navigationGroups'
 import { hasActionPermission } from '../config/actionPermissions'
-import { useBranchOrderCounts, useFutureOrderCount } from '../hooks/useBranchOrders'
+import { useBranchOrderCounts, useFutureOrderCount, useFutureOrderDates } from '../hooks/useBranchOrders'
 import { useTheme } from '../hooks/useTheme'
 import type { DateRange } from 'react-day-picker'
 import type { BranchFilter } from '../types/orders'
@@ -190,6 +190,7 @@ const HomePage: FC<HomePageProps> = ({
    */
   const orderCounts = useBranchOrderCounts(activeBranch)
   const futureOrderCount = useFutureOrderCount(activeBranch)
+  const futureOrderDates = useFutureOrderDates(activeBranch)
   const orderDrafts = useOrderDrafts()
   const draftCount = orderDrafts.filter((draft) => activeBranch === 'All' || draft.branch === activeBranch).length
 
@@ -529,6 +530,7 @@ const HomePage: FC<HomePageProps> = ({
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
                 futureOrderCount={futureOrderCount}
+                futureOrderDates={futureOrderDates}
               />
 
               <OrdersTableViewContainer

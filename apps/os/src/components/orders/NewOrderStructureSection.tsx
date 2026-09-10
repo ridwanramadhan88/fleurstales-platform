@@ -1,6 +1,7 @@
-import type { FC } from 'react'
+import { useEffect, type FC } from 'react'
 import { DatePickerField, TimeSelectField } from '../ui/date-time-field'
 import type { NewOrderSheetViewModel } from './NewOrderSheetController'
+import { useOrderSlotAvailability } from '../../hooks/useOrderSlotAvailability'
 
 /**
  * @description "Order structure" card of the New Order sheet: fulfillment
@@ -16,6 +17,37 @@ interface NewOrderStructureSectionProps {
   fieldClass: (isActive: boolean) => string
   textAreaClass: (isActive: boolean) => string
   sectionClass: (isActive: boolean, base: string) => string
+}
+
+const AvailableTimeField: FC<{
+  id: string
+  branchId: string
+  date: string
+  openingSlots: string[]
+  value: string
+  onChange: (value: string) => void
+  className: string
+}> = ({ id, branchId, date, openingSlots, value, onChange, className }) => {
+  const { availableSlots, loading, error } = useOrderSlotAvailability({ branchId, date, openingSlots })
+
+  useEffect(() => {
+    if (!loading && value && !availableSlots.includes(value)) onChange('')
+  }, [availableSlots, loading, onChange, value])
+
+  return (
+    <>
+      <TimeSelectField
+        id={id}
+        value={value}
+        onChange={onChange}
+        placeholder={loading ? 'Checking…' : 'Pick time'}
+        allowedSlots={availableSlots}
+        disabled={!date || loading || availableSlots.length === 0}
+        className={className}
+      />
+      {error && <p className="text-2xs text-destructive">{error}</p>}
+    </>
+  )
 }
 
 export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
@@ -34,6 +66,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
     onFulfillmentChange,
     onOrderTypeChange,
     onSectionFocus,
+    branchLabel,
     deliveryTimeSlots,
     pickupTimeSlots,
     deliveryHoursLabel,
@@ -179,13 +212,13 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               >
                 Delivery time
               </label>
-              <TimeSelectField
+              <AvailableTimeField
                 id="deliveryTime"
+                branchId={branchLabel}
+                date={values.deliveryDate}
+                openingSlots={deliveryTimeSlots}
                 value={values.deliveryTime}
                 onChange={(value) => onFieldValueChange('deliveryTime', value)}
-                placeholder="Pick time"
-                allowedSlots={deliveryTimeSlots}
-                disabled={!values.deliveryDate || deliveryTimeSlots.length === 0}
                 className={`h-11 text-sm ${fieldClass(activeGuideField === 'deliveryTime')}`}
               />
             </div>
@@ -261,13 +294,13 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
             >
               Pickup time
             </label>
-            <TimeSelectField
+            <AvailableTimeField
               id="pickupTime"
+              branchId={branchLabel}
+              date={values.pickupDate}
+              openingSlots={pickupTimeSlots}
               value={values.pickupTime}
               onChange={(value) => onFieldValueChange('pickupTime', value)}
-              placeholder="Pick time"
-              allowedSlots={pickupTimeSlots}
-              disabled={!values.pickupDate || pickupTimeSlots.length === 0}
               className={`h-11 text-sm ${fieldClass(activeGuideField === 'pickupTime')}`}
             />
           </div>

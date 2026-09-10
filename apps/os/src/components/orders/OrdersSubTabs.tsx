@@ -1,37 +1,29 @@
 /**
  * @file OrdersSubTabs.tsx
  * @description Primary date range scope control for the Orders view.
- * Exposes three scopes: Today, Tomorrow, and Custom Date Range.
  */
 
-import { useEffect, useState, type FC } from 'react'
+import { useEffect, useMemo, useState, type FC } from 'react'
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover'
 import { Calendar } from '../ui/calendar'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import type { DateRange } from 'react-day-picker'
 import { tabButtonClass } from '../ui/tabs'
+import { useOrdersStore } from '../../store/ordersStore'
+import { getActiveFutureOrderDates } from '../../domain/futureOrderBadgeDomain'
 
-/**
- * @description Life cycle identifiers for the Orders tabs.
- */
 export type OrdersSubTabId = 'today' | 'future' | 'custom'
 
-/**
- * @description Props for the OrdersSubTabs segmented control.
- */
 export interface OrdersSubTabsProps {
-  /** Currently active lifecycle tab. */
   activeTab: OrdersSubTabId
-  /** Handler fired when the user selects a different lifecycle tab. */
   onTabChange: (tab: OrdersSubTabId) => void
-  /** The selected date range for Custom filter. */
   dateRange?: DateRange
-  /** Handler fired when the custom date range is modified. */
   onDateRangeChange?: (range: DateRange | undefined) => void
-  /** Number of active orders scheduled after today. Finished future-dated
-   * records do not keep the waiting-work badge visible. Omitted/zero hides it. */
+  /** Number of active orders whose exact expected fulfillment is still ahead. */
   futureOrderCount?: number
+  /** Optional branch-scoped future dates. Falls back to all visible OS order data. */
+  futureOrderDates?: string[]
 }
 
 export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
@@ -40,25 +32,26 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
   dateRange,
   onDateRangeChange,
   futureOrderCount = 0,
+  futureOrderDates,
 }) => {
+  const allOrders = useOrdersStore((state) => state.orders)
+  const resolvedFutureOrderDates = useMemo(
+    () => futureOrderDates ?? getActiveFutureOrderDates(allOrders),
+    [allOrders, futureOrderDates],
+  )
+  const futureDateSet = useMemo(() => new Set(resolvedFutureOrderDates), [resolvedFutureOrderDates])
+
   const tabs: { id: OrdersSubTabId; label: string }[] = [
     { id: 'today', label: 'Today' },
     { id: 'future', label: 'Future' },
     { id: 'custom', label: 'Custom' },
   ]
 
-  /**
-   * @description Controls whether the custom date popover is open.
-   */
   const [isCustomPopoverOpen, setIsCustomPopoverOpen] = useState(false)
-  /** Draft selection while choosing the start and end dates. The completed range
-   * is committed and the popover closes as soon as the end date is selected. */
   const [draftRange, setDraftRange] = useState<DateRange | undefined>(dateRange)
 
   useEffect(() => {
-    if (isCustomPopoverOpen) {
-      setDraftRange(dateRange)
-    }
+    if (isCustomPopoverOpen) setDraftRange(dateRange)
   }, [isCustomPopoverOpen, dateRange])
 
   const today = new Date()
@@ -72,26 +65,11 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
 
   const presetOptions: { label: string; range: DateRange }[] = [
     { label: 'Today', range: { from: today, to: today } },
-    {
-      label: 'Tomorrow',
-      range: { from: addDays(today, 1), to: addDays(today, 1) },
-    },
-    {
-      label: 'Yesterday',
-      range: { from: addDays(today, -1), to: addDays(today, -1) },
-    },
-    {
-      label: 'Next week',
-      range: { from: addDays(today, 1), to: addDays(today, 7) },
-    },
-    {
-      label: 'Last week',
-      range: { from: addDays(today, -7), to: addDays(today, -1) },
-    },
-    {
-      label: 'Last 30 days',
-      range: { from: addDays(today, -30), to: today },
-    },
+    { label: 'Tomorrow', range: { from: addDays(today, 1), to: addDays(today, 1) } },
+    { label: 'Yesterday', range: { from: addDays(today, -1), to: addDays(today, -1) } },
+    { label: 'Next week', range: { from: addDays(today, 1), to: addDays(today, 7) } },
+    { label: 'Last week', range: { from: addDays(today, -7), to: addDays(today, -1) } },
+    { label: 'Last 30 days', range: { from: addDays(today, -30), to: today } },
   ]
 
   const commitCustomRange = (range: DateRange | undefined) => {
@@ -113,11 +91,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
 
           if (tab.id === 'custom') {
             return (
-              <Popover
-                key={tab.id}
-                open={isCustomPopoverOpen}
-                onOpenChange={setIsCustomPopoverOpen}
-              >
+              <Popover key={tab.id} open={isCustomPopoverOpen} onOpenChange={setIsCustomPopoverOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
@@ -135,9 +109,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
                             ? ` - ${format(dateRange.to, 'dd MMM')}`
                             : ''}
                         </>
-                      ) : (
-                        'Custom'
-                      )}
+                      ) : 'Custom'}
                     </span>
                     <CalendarIcon className="ml-1 size-3.5 opacity-60" />
                   </button>
@@ -166,12 +138,24 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
                     className="p-0"
                     defaultMonth={draftRange?.from}
                     selected={draftRange}
+                    modifiers={{
+                      hasFutureOrder: (date: Date) => {
+                        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                        return futureDateSet.has(key)
+                      },
+                    }}
+                    modifiersClassNames={{
+                      hasFutureOrder: 'relative after:absolute after:bottom-0.5 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-primary aria-selected:after:bg-primary-foreground',
+                    }}
                     onSelect={(range) => {
                       setDraftRange(range)
                       if (range?.from && range.to) commitCustomRange(range)
                     }}
                     numberOfMonths={1}
                   />
+                  {resolvedFutureOrderDates.length > 0 && (
+                    <p className="mt-2 text-2xs text-muted-foreground">Dot = future order scheduled on that date.</p>
+                  )}
                 </PopoverContent>
               </Popover>
             )
@@ -191,9 +175,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
               {tab.id === 'future' && futureOrderCount > 0 && (
                 <span
                   className={`inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-2xs font-semibold ${
-                    isActive
-                      ? 'bg-surface-selected text-primary-foreground'
-                      : 'bg-primary text-primary-foreground'
+                    isActive ? 'bg-surface-selected text-primary-foreground' : 'bg-primary text-primary-foreground'
                   }`}
                 >
                   {futureOrderCount}
