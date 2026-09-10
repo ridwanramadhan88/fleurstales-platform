@@ -38,8 +38,8 @@ begin
     raise exception 'Size guide templates and targets must be JSON arrays.' using errcode = '22023';
   end if;
 
-  delete from public.size_guide_targets;
-  delete from public.size_guide_templates;
+  delete from public.size_guide_targets where id is not null;
+  delete from public.size_guide_templates where id is not null;
 
   for v_template in select value from jsonb_array_elements(p_templates)
   loop
