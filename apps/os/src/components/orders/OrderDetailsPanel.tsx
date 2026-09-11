@@ -15,6 +15,7 @@ import { OrderDetailsNotesSection } from './OrderDetailsNotesSection'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { AppSheet } from '../ui/app-sheet'
 import { AssignFloristDialog } from './AssignFloristDialog'
+import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { StaffReviewHistory } from '../customers/StaffReviewHistory'
 
 export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
@@ -129,6 +130,15 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       <OrderDetailsActionsSection viewModel={viewModel} />
     </AppSheet>
     {showFloristAssignment && <AssignFloristDialog order={order} mode={floristDialogMode ?? 'assign-and-process'} onCancel={onCancelFloristAssignment} onAssigned={onFloristAssigned} />}
+    <ConfirmActionDialog
+      open={viewModel.cancelConfirmOpen}
+      onOpenChange={viewModel.onCancelConfirmChange}
+      title="Cancel this order?"
+      description={`Cancel order for ${order.customerName}? This can be undone from the toast immediately after.`}
+      confirmLabel="Cancel order"
+      destructive
+      onConfirm={viewModel.confirmCancelOrder}
+    />
     </>
   )
 }

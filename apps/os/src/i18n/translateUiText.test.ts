@@ -151,6 +151,38 @@ describe('natural Indonesian UI copy', () => {
     )
   })
 
+  it('translates declarative-confirmation dialog copy while preserving business data', () => {
+    expect(translateUiText('Remove type', 'id')).toBe('Hapus jenis')
+    expect(translateUiText('Remove occasion', 'id')).toBe('Hapus momen')
+    expect(translateUiText('Delete voucher?', 'id')).toBe('Hapus voucher?')
+    expect(translateUiText('Delete stock items?', 'id')).toBe('Hapus item stok?')
+    expect(translateUiText('Cancel order for Budi? This can be undone from the toast immediately after.', 'id')).toBe(
+      'Batalkan pesanan Budi? Ini dapat diurungkan dari toast segera setelahnya.',
+    )
+    expect(translateUiText('Remove “Anniversary”?', 'id')).toBe('Hapus “Anniversary”?')
+    expect(translateUiText('No active products use this occasion.', 'id')).toBe(
+      'Tidak ada produk aktif yang memakai momen ini.',
+    )
+    expect(
+      translateUiText(
+        'No active products use this occasion. 2 inactive products will have this occasion removed. 1 whose main occasion is removed will move to Uncategorized.',
+        'id',
+      ),
+    ).toBe(
+      'Tidak ada produk aktif yang memakai momen ini. 2 produk nonaktif ikut kehilangan momen ini. 1 di antaranya pindah ke Tanpa kategori.',
+    )
+    expect(translateUiText('Delete voucher "BDAY20"? This cannot be undone.', 'id')).toBe(
+      'Hapus voucher "BDAY20"? Ini tidak dapat dibatalkan.',
+    )
+    expect(translateUiText('Removed occasion “Anniversary”.', 'id')).toBe('Momen “Anniversary” dihapus.')
+    expect(translateUiText('Delete 3 products? This cannot be undone.', 'id')).toBe(
+      'Hapus 3 produk? Ini tidak dapat dibatalkan.',
+    )
+    expect(translateUiText('Delete 2 items? This cannot be undone.', 'id')).toBe(
+      'Hapus 2 item? Ini tidak dapat dibatalkan.',
+    )
+  })
+
   it('returns original English when selected', () => {
     expect(translateUiText('Inventory is disabled.', 'en')).toBe('Inventory is disabled.')
     expect(translateUiText('Track your Fleurstales order', 'en')).toBe('Track your Fleurstales order')

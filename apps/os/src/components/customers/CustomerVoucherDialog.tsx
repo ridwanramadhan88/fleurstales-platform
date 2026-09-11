@@ -19,6 +19,7 @@ import {
   DialogDescription,
 } from '../ui/dialog'
 import { DatePickerField } from '../ui/date-time-field'
+import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import type { CustomerVoucherDialogViewModel } from './CustomerVoucherDialogController'
 
 export interface CustomerVoucherDialogProps {
@@ -51,6 +52,9 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
   onCancelForm,
   onSave,
   onDelete,
+  pendingDeleteVoucher,
+  confirmDeleteVoucher,
+  cancelDeleteVoucher,
   onSetVoucherActive,
   onCustomerQueryChange,
   onFormFieldChange,
@@ -308,6 +312,15 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
           </div>
         )}
       </DialogContent>
+      <ConfirmActionDialog
+        open={pendingDeleteVoucher !== null}
+        onOpenChange={(nextOpen) => { if (!nextOpen) cancelDeleteVoucher() }}
+        title="Delete voucher?"
+        description={pendingDeleteVoucher ? `Delete voucher "${pendingDeleteVoucher.code}"? This cannot be undone.` : ''}
+        confirmLabel="Delete voucher"
+        destructive
+        onConfirm={confirmDeleteVoucher}
+      />
     </Dialog>
   )
 }

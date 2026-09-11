@@ -28,6 +28,7 @@ import { CatalogArrangementTypesDialog } from './CatalogArrangementTypesDialog'
 import { CatalogPromoFeatureDialogContainer } from './CatalogPromoFeatureDialogContainer'
 import { CatalogSizeGuideDialog } from './CatalogSizeGuideDialog'
 import { Button } from '../ui/button'
+import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,6 +127,9 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
   onBulkArchive,
   onBulkUnarchive,
   onBulkDelete,
+  pendingBulkDelete,
+  confirmBulkDelete,
+  cancelBulkDelete,
   onExportCsv,
   onDownloadTemplate,
   onImportFile,
@@ -335,6 +339,21 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
       <CatalogArrangementTypesDialog open={arrangementTypesDialogOpen} onClose={onCloseArrangementTypesDialog} />
       <CatalogPromoFeatureDialogContainer open={promoFeatureDialogOpen} onClose={onClosePromoFeatureDialog} />
       <CatalogSizeGuideDialog open={sizeGuideDialogOpen} onClose={onCloseSizeGuideDialog} />
+      <ConfirmActionDialog
+        open={pendingBulkDelete !== null}
+        onOpenChange={(nextOpen) => { if (!nextOpen) cancelBulkDelete() }}
+        title={pendingBulkDelete && pendingBulkDelete.archiveCount > 0 ? 'Clean up selected products?' : 'Delete products?'}
+        description={
+          pendingBulkDelete && pendingBulkDelete.archiveCount > 0
+            ? `${pendingBulkDelete.deleteCount} unreferenced product${pendingBulkDelete.deleteCount === 1 ? '' : 's'} will be deleted. ${pendingBulkDelete.archiveCount} product${pendingBulkDelete.archiveCount === 1 ? '' : 's'} used by orders will be archived instead.`
+            : pendingBulkDelete
+              ? `Delete ${pendingBulkDelete.deleteCount} product${pendingBulkDelete.deleteCount === 1 ? '' : 's'}? This cannot be undone.`
+              : ''
+        }
+        confirmLabel={pendingBulkDelete && pendingBulkDelete.archiveCount > 0 ? 'Continue' : 'Delete'}
+        destructive={(pendingBulkDelete?.deleteCount ?? 0) > 0}
+        onConfirm={confirmBulkDelete}
+      />
     </section>
   )
 }

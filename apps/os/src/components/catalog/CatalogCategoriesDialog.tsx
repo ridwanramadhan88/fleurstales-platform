@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '../ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
+import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import type {
   CatalogCategoriesDialogViewModel,
   CatalogCategoryRow,
@@ -62,7 +63,12 @@ export const CatalogCategoriesDialog: FC<CatalogCategoriesDialogViewModel> = ({
   onCancelEditing,
   onCommitEditing,
   onDelete,
+  pendingDeleteRow,
+  pendingDeleteDescription,
+  confirmDeleteRow,
+  cancelDeleteRow,
 }) => (
+  <>
   <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
     <DialogContent className="grid h-[min(760px,calc(100dvh-2rem))] max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 lg:max-w-2xl">
       <DialogHeader className="border-b border-border/70 px-6 py-5">
@@ -190,6 +196,16 @@ export const CatalogCategoriesDialog: FC<CatalogCategoriesDialogViewModel> = ({
       </div>
     </DialogContent>
   </Dialog>
+  <ConfirmActionDialog
+    open={pendingDeleteRow !== null}
+    onOpenChange={(nextOpen) => { if (!nextOpen) cancelDeleteRow() }}
+    title={pendingDeleteRow ? `Remove “${pendingDeleteRow.name}”?` : 'Remove occasion?'}
+    description={pendingDeleteDescription}
+    confirmLabel="Remove occasion"
+    destructive
+    onConfirm={confirmDeleteRow}
+  />
+  </>
 )
 
 export default CatalogCategoriesDialog

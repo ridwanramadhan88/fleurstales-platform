@@ -8,7 +8,6 @@ import { useCustomerStore } from '../../store/customerStore'
 import type { CustomerProfile } from '../../store/customerStoreTypes'
 import { toast } from '../../hooks/use-toast'
 import type { CustomerVoucherDialogProps } from './CustomerVoucherDialog'
-import { requestAppConfirmation } from '../ui/app-confirm'
 
 export interface VoucherFormState {
   code: string
@@ -36,6 +35,9 @@ export interface CustomerVoucherDialogViewModel
   onCancelForm: () => void
   onSave: () => void
   onDelete: (voucher: Voucher) => void
+  pendingDeleteVoucher: Voucher | null
+  confirmDeleteVoucher: () => void
+  cancelDeleteVoucher: () => void
   onSetVoucherActive: (voucherId: string, isActive: boolean) => void
   onCustomerQueryChange: (value: string) => void
   onFormFieldChange: <K extends keyof VoucherFormState>(
@@ -82,6 +84,7 @@ export const useCustomerVoucherDialogController = ({
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState<VoucherFormState>(emptyFormState)
   const [customerQuery, setCustomerQuery] = useState('')
+  const [pendingDeleteVoucher, setPendingDeleteVoucher] = useState<Voucher | null>(null)
 
   useEffect(() => {
     if (open && initialCustomerId) {
@@ -184,12 +187,18 @@ export const useCustomerVoucherDialogController = ({
       }
       cancelForm()
     },
-    onDelete: async (voucher) => {
-      const confirmed = await requestAppConfirmation({ title: 'Delete voucher?', description: `Delete voucher "${voucher.code}"? This cannot be undone.`, confirmLabel: 'Delete voucher', destructive: true })
-      if (!confirmed) return
+    onDelete: (voucher) => {
+      setPendingDeleteVoucher(voucher)
+    },
+    pendingDeleteVoucher,
+    confirmDeleteVoucher: () => {
+      const voucher = pendingDeleteVoucher
+      setPendingDeleteVoucher(null)
+      if (!voucher) return
       deleteVoucher(voucher.id)
       toast({ description: `Deleted voucher "${voucher.code}".` })
     },
+    cancelDeleteVoucher: () => setPendingDeleteVoucher(null),
     onSetVoucherActive: setVoucherActive,
     onCustomerQueryChange: setCustomerQuery,
     onFormFieldChange: (field, value) => {

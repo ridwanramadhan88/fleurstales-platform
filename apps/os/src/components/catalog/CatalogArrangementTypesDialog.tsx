@@ -2,7 +2,7 @@ import { useMemo, useState, type FC } from 'react'
 import { Check, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useCatalogStore } from '../../store/catalogStore'
 import { toast } from '../../hooks/use-toast'
-import { requestAppConfirmation } from '../ui/app-confirm'
+import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog'
 
 interface Props {
@@ -22,6 +22,7 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
   const [newName, setNewName] = useState('')
   const [editingName, setEditingName] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
+  const [confirmRemoveName, setConfirmRemoveName] = useState<string | null>(null)
   const rows = useMemo(() => arrangementTypes.map((name) => ({
     name,
     productCount: products.filter((product) => product.productType === name).length,
@@ -34,6 +35,7 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
       <DialogContent className="grid h-[min(720px,calc(100dvh-2rem))] max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 lg:max-w-2xl">
         <DialogHeader className="border-b border-border/70 px-6 py-5">
@@ -65,15 +67,9 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
                       <p className="mt-1 text-sm text-muted-foreground">{row.productCount} product{row.productCount === 1 ? '' : 's'}</p>
                     </div>
                     <button type="button" aria-label={`Edit ${row.name}`} className={iconButton} onClick={() => { setEditingName(row.name); setDraftName(row.name) }}><Pencil className="size-4" /></button>
-                    <button type="button" aria-label={`Remove ${row.name}`} disabled={row.productCount > 0} className={`${iconButton} text-destructive disabled:cursor-not-allowed disabled:text-muted-foreground/35 disabled:hover:bg-transparent`} onClick={async () => {
+                    <button type="button" aria-label={`Remove ${row.name}`} disabled={row.productCount > 0} className={`${iconButton} text-destructive disabled:cursor-not-allowed disabled:text-muted-foreground/35 disabled:hover:bg-transparent`} onClick={() => {
                       if (row.productCount > 0) return
-                      const confirmed = await requestAppConfirmation({
-                        title: `Remove “${row.name}”?`,
-                        description: 'This unused arrangement type will also be removed from size-guide assignments.',
-                        confirmLabel: 'Remove type',
-                        destructive: true,
-                      })
-                      if (confirmed) showResult(deleteArrangementType(row.name))
+                      setConfirmRemoveName(row.name)
                     }}><Trash2 className="size-4" /></button>
                   </div>
                 )}
@@ -96,5 +92,18 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
         </div>
       </DialogContent>
     </Dialog>
+    <ConfirmActionDialog
+      open={confirmRemoveName !== null}
+      onOpenChange={(nextOpen) => { if (!nextOpen) setConfirmRemoveName(null) }}
+      title={confirmRemoveName ? `Remove “${confirmRemoveName}”?` : 'Remove type?'}
+      description="This unused arrangement type will also be removed from size-guide assignments."
+      confirmLabel="Remove type"
+      destructive
+      onConfirm={() => {
+        if (confirmRemoveName) showResult(deleteArrangementType(confirmRemoveName))
+        setConfirmRemoveName(null)
+      }}
+    />
+    </>
   )
 }
