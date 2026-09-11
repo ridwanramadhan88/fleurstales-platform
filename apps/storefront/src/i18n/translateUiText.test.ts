@@ -234,4 +234,29 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('Inventory is disabled.', 'en')).toBe('Inventory is disabled.')
     expect(translateUiText('Track your Fleurstales order', 'en')).toBe('Track your Fleurstales order')
   })
+  it('covers previously untranslated operational copy (bulk audit Sep 2026)', () => {
+    expect(translateUiText('Track workload, drafts, and orders that need attention.', 'id')).toBe(
+      'Pantau beban kerja, draf, dan pesanan yang perlu perhatian.',
+    )
+    expect(translateUiText('Copy, adjust, validate, and publish weekly branch assignments.', 'id')).toBe(
+      'Salin, sesuaikan, validasi, dan terbitkan penugasan cabang mingguan.',
+    )
+    expect(translateUiText('No check-in was recorded after the scheduled start time.', 'id')).toBe(
+      'Tidak ada absen masuk yang tercatat setelah jam mulai yang dijadwalkan.',
+    )
+    expect(translateUiText('Employee checked in on a scheduled day off.', 'id')).toBe(
+      'Karyawan absen masuk pada hari libur terjadwal.',
+    )
+    expect(translateUiText('Confirm PAID', 'id')).toBe('Konfirmasi Lunas')
+    expect(translateUiText('Review note \u00b7 Optional', 'id')).toBe('Catatan tinjauan \u00b7 Opsional')
+    expect(translateUiText('All paid orders', 'id')).toBe('Semua pesanan lunas')
+    expect(translateUiText('Good morning', 'id')).toBe('Selamat pagi')
+    expect(translateUiText('Assign & start', 'id')).toBe('Tugaskan & mulai')
+    expect(translateUiText('5 staff payroll(s) will be included after generation.', 'id')).toBe(
+      '5 penggajian staf akan disertakan setelah pembuatan.',
+    )
+    expect(translateUiText('Private Finance evidence \u00b7 max 300 KB after compression.', 'id')).toBe(
+      'Bukti privat Keuangan \u00b7 maks. 300 KB setelah kompresi.',
+    )
+  })
 })
