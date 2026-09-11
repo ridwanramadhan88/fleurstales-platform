@@ -1,13 +1,6 @@
 /**
  * @file OrderActivityTimeline.tsx
- * @description Vertical Activity timeline section of OrderDetailsPanel:
- * shows every pipeline stage as a connected stepper (a single line runs
- * through every event), with the current stage highlighted in its stage
- * color so it's clear where the order stands right now, rather than a
- * flat, undifferentiated list. Best-effort matches recorded activity
- * events to each stage by description text, falling back to the order's
- * creation event for the first stage and an "Expected …" scheduled-time
- * label for the final upcoming stage.
+ * @description Compact historical timeline for Order Details activity.
  */
 
 import type { FC } from 'react'
@@ -15,7 +8,6 @@ import type { OrderFulfillment, OrderStatus, OrderTableRow } from '../../types/o
 import type { OrderActivityEvent } from '../../store/orderRuntimeStore'
 import { isTerminalIssueOrder, isWorkflowHappyPathStatus } from '../../domain/orderBusinessRules'
 import { STATUS_LABELS, STATUS_STAGE_STYLE, getOrderStatusOptionsForFulfillment } from './orderTableLabels'
-import { getDisplayScheduleLabel } from './orderTableFormatters'
 
 export interface OrderActivityTimelineProps {
   order: OrderTableRow
@@ -24,9 +16,6 @@ export interface OrderActivityTimelineProps {
   activities: OrderActivityEvent[]
 }
 
-/**
- * @description Formats an activity timestamp for timeline display.
- */
 const formatActivityTime = (event: OrderActivityEvent): string => {
   const date = new Date(event.at)
   return date.toLocaleString('id-ID', {
@@ -44,50 +33,39 @@ export const OrderActivityTimeline: FC<OrderActivityTimelineProps> = ({
   activities,
 }) => {
   const isTerminalIssue = isTerminalIssueOrder(order)
-
-  // Full pipeline for this order's fulfillment type (pending → confirmed →
-  // processing → ready/delivering → delivered/picked up), excluding the
-  // cancelled/failed branch so the happy path reads as a clean sequence of
-  // stages.
-  const pipelineIds: OrderStatus[] = getOrderStatusOptionsForFulfillment(fulfillment, isOrderFuture)
+  const statusOptions = getOrderStatusOptionsForFulfillment(fulfillment, isOrderFuture)
+  const pipelineIds: OrderStatus[] = statusOptions
     .map((option) => option.id)
     .filter(isWorkflowHappyPathStatus)
 
   const currentIndex = isTerminalIssue ? pipelineIds.length : pipelineIds.indexOf(order.status)
-  const finalStageId = pipelineIds[pipelineIds.length - 1]
 
-  // Best-effort match of a recorded activity to a given stage, so completed
-  // stages can show who did it and when instead of just a label.
   const findActivityFor = (statusId: OrderStatus) =>
     activities.find((event) =>
       event.description.toLowerCase().includes(STATUS_LABELS[statusId].toLowerCase()),
     )
 
-  const rows = pipelineIds.map((id, index) => {
-    const state: 'done' | 'current' | 'upcoming' =
-      index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'upcoming'
+  const rows = pipelineIds
+    .map((id, index) => {
+      const state: 'done' | 'current' | 'upcoming' =
+        index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'upcoming'
+      const matchedActivity = findActivityFor(id)
 
-    const matchedActivity = findActivityFor(id)
-    let timeLabel: string | null = null
-    let actorLabel: string | null = null
+      let timeLabel: string | null = null
+      let actorLabel: string | null = null
+      if (index === 0 && !matchedActivity) {
+        timeLabel = order.createdAtLabel
+        actorLabel = 'System'
+      } else if (matchedActivity) {
+        timeLabel = formatActivityTime(matchedActivity)
+        actorLabel = matchedActivity.actor
+      }
 
-    if (index === 0 && !matchedActivity) {
-      // First stage with no explicit activity logged yet falls back to the
-      // order's creation event.
-      timeLabel = order.createdAtLabel
-      actorLabel = 'System'
-    } else if (matchedActivity) {
-      timeLabel = formatActivityTime(matchedActivity)
-      actorLabel = matchedActivity.actor
-    } else if (state === 'upcoming' && id === finalStageId) {
-      // Nothing's happened yet, but we do know when it's expected — show
-      // that instead of leaving it blank.
-      const eta = getDisplayScheduleLabel(order)
-      timeLabel = eta ? `Expected ${eta}` : null
-    }
-
-    return { id, state, timeLabel, actorLabel }
-  })
+      return { id, state, timeLabel, actorLabel }
+    })
+    // Activity is history, not a second progress component. Upcoming stages stay
+    // in the header progress indicator and are intentionally omitted here.
+    .filter((row) => row.state !== 'upcoming')
 
   if (isTerminalIssue) {
     const lastActivity = activities[activities.length - 1]
@@ -99,72 +77,59 @@ export const OrderActivityTimeline: FC<OrderActivityTimelineProps> = ({
     })
   }
 
-  const lastIndex = rows.length - 1
+  const getLabel = (statusId: OrderStatus): string =>
+    statusOptions.find((option) => option.id === statusId)?.label
+      ?? STATUS_LABELS[statusId]
+      ?? statusId
 
   return (
-    <section className="space-y-1 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60">
+    <section className="max-w-2xl py-1">
       <p className="text-sm font-semibold leading-5 text-foreground">Activity timeline</p>
-      <div className="mt-2">
-        {rows.map((row, index) => (
-          <div key={row.id} className="relative flex gap-3 pb-3.5 last:pb-0">
-            {/* Connecting line + dot */}
-            <div className="relative flex w-4 shrink-0 flex-col items-center">
-              <span
-                className={
-                  row.state === 'current'
-                    ? `z-10 mt-0.5 flex size-3.5 shrink-0 rounded-full ${STATUS_STAGE_STYLE[row.id as OrderStatus].currentDot}${STATUS_STAGE_STYLE[row.id as OrderStatus].pulse ? ' animate-pulse' : ''}`
-                    : row.state === 'done'
-                      ? `z-10 mt-0.5 flex size-3.5 shrink-0 rounded-full ${STATUS_STAGE_STYLE[row.id as OrderStatus].doneDot}`
-                      : 'z-10 mt-0.5 flex size-3.5 shrink-0 rounded-full border-2 border-border bg-surface-card'
-                }
-              />
-              {index < lastIndex && (
+      <div className="mt-4">
+        {rows.map((row, index) => {
+          const style = STATUS_STAGE_STYLE[row.id]
+          const isLast = index === rows.length - 1
+          return (
+            <div key={`${row.id}-${index}`} className="relative grid grid-cols-[14px_minmax(0,1fr)] gap-3 pb-4 last:pb-0">
+              <div className="relative flex justify-center">
                 <span
                   className={
-                    row.state === 'upcoming'
-                      ? 'mt-1 w-px flex-1 bg-border/60'
-                      : 'mt-1 w-px flex-1 bg-border'
+                    row.state === 'current'
+                      ? `relative z-10 mt-1 size-2.5 rounded-full ring-4 ring-card ${style.currentDot}${style.pulse ? ' animate-pulse motion-reduce:animate-none' : ''}`
+                      : `relative z-10 mt-1 size-2.5 rounded-full ring-4 ring-card ${style.doneDot}`
                   }
                 />
-              )}
-            </div>
-            {/* min-h reserves room for a stage's optional expanded detail
-                (e.g. a note or address) without breaking the line rhythm
-                above/below it once that's added. */}
-            <div className="min-h-[1.75rem] min-w-0 flex-1 space-y-0.5">
-              <p
-                className={
-                  row.state === 'upcoming'
-                    ? 'text-xs text-muted-foreground'
-                    : 'text-xs text-muted-foreground'
-                }
-              >
-                {row.timeLabel
-                  ? `${row.timeLabel}${row.actorLabel ? ` · ${row.actorLabel}` : ''}`
-                  : '\u00A0'}
-              </p>
-              <p
-                className={
-                  row.state === 'current'
-                    ? `flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold ${STATUS_STAGE_STYLE[row.id as OrderStatus].currentText}`
-                    : row.state === 'done'
-                      ? 'text-sm font-medium text-foreground'
-                      : 'text-sm font-medium text-muted-foreground'
-                }
-              >
-                {pipelineIds[index] &&
-                  getOrderStatusOptionsForFulfillment(fulfillment, isOrderFuture).find(
-                    (option) => option.id === row.id,
-                  )?.label}
-                {row.state === 'current' && (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.06em] text-primary">
-                    Now
-                  </span>
+                {!isLast && (
+                  <span className="absolute left-1/2 top-3.5 h-[calc(100%+0.1rem)] w-px -translate-x-1/2 bg-border/65" aria-hidden="true" />
                 )}
-              </p>
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <p
+                    className={
+                      row.state === 'current'
+                        ? `text-sm font-semibold leading-5 ${style.currentText}`
+                        : 'text-sm font-medium leading-5 text-foreground'
+                    }
+                  >
+                    {getLabel(row.id)}
+                  </p>
+                  {row.state === 'current' && (
+                    <span className="rounded-full bg-primary/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.05em] text-primary">
+                      Now
+                    </span>
+                  )}
+                </div>
+                {(row.timeLabel || row.actorLabel) && (
+                  <p className="mt-0.5 truncate text-xs leading-4 text-muted-foreground">
+                    {row.timeLabel}{row.actorLabel ? ` · ${row.actorLabel}` : ''}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </section>
   )

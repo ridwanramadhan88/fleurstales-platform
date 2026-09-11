@@ -58,32 +58,45 @@ describe('OrderProgressStepper', () => {
     )
   })
 
-  it('shows a three-stage moving window in compact mode', () => {
+  it('keeps the complete lifecycle mounted and moves it behind a clipped mask in compact mode', async () => {
     const { rerender } = render(
-      <OrderProgressStepper options={options} currentIndex={0} compact maxVisibleStages={3} />,
+      <OrderProgressStepper options={options} currentIndex={0} compact />,
     )
 
-    expect(screen.getByText('Pending')).toBeInTheDocument()
-    expect(screen.getByText('Confirmed')).toBeInTheDocument()
-    expect(screen.getByText('Processing')).toBeInTheDocument()
-    expect(screen.queryByText('Ready')).not.toBeInTheDocument()
+    const viewport = screen.getByLabelText('Order progress')
+    const track = viewport.querySelector<HTMLElement>('[data-progress-track]')
+    const stages = viewport.querySelectorAll<HTMLElement>('[data-stage-index]')
 
-    rerender(
-      <OrderProgressStepper options={options} currentIndex={2} compact maxVisibleStages={3} />,
-    )
+    expect(viewport).toHaveAttribute('data-progress-mode', 'full-track-clipped')
+    expect(viewport).toHaveClass('overflow-hidden')
+    for (const option of options) {
+      expect(screen.getByText(option.label)).toBeInTheDocument()
+    }
 
-    expect(screen.queryByText('Pending')).not.toBeInTheDocument()
-    expect(screen.getByText('Confirmed')).toBeInTheDocument()
+    Object.defineProperties(viewport, {
+      clientWidth: { configurable: true, value: 320 },
+    })
+    Object.defineProperties(track, {
+      offsetWidth: { configurable: true, value: 540 },
+      scrollWidth: { configurable: true, value: 540 },
+    })
+    Object.defineProperties(stages[2], {
+      offsetLeft: { configurable: true, value: 216 },
+      offsetWidth: { configurable: true, value: 108 },
+    })
+
+    rerender(<OrderProgressStepper options={options} currentIndex={2} compact />)
+
+    await waitFor(() => {
+      expect(track).toHaveStyle({ transform: 'translate3d(-110px, 0, 0)' })
+      expect(viewport).toHaveAttribute('data-progress-mask-before', 'true')
+      expect(viewport).toHaveAttribute('data-progress-mask-after', 'true')
+    })
+
+    const mask = viewport.querySelector<HTMLElement>('[data-progress-mask]')
+    expect(mask?.style.maskImage).toContain('linear-gradient')
     expect(screen.getByText('Processing').closest('[data-stage-index]')).toHaveAttribute('aria-current', 'step')
-    expect(screen.getByText('Ready')).toBeInTheDocument()
-
-    rerender(
-      <OrderProgressStepper options={options} currentIndex={4} compact maxVisibleStages={3} />,
-    )
-
-    expect(screen.queryByText('Confirmed')).not.toBeInTheDocument()
-    expect(screen.getByText('Processing')).toBeInTheDocument()
-    expect(screen.getByText('Ready')).toBeInTheDocument()
+    expect(screen.getByText('Pending')).toBeInTheDocument()
     expect(screen.getByText('Delivered')).toBeInTheDocument()
   })
 })

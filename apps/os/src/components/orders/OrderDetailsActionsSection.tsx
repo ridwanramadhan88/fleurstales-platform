@@ -1,11 +1,12 @@
 import type { FC } from 'react'
-import { ArrowRight, Check, Copy, X } from 'lucide-react'
+import { ArrowRight, Check, Copy, MessageCircle, X } from 'lucide-react'
 import { OrderPostActionModal } from './OrderPostActionModal'
 import { OrderFinishPhotoDialog } from './OrderFinishPhotoDialog'
 import { getQuickActionLabel, getQuickActionButtonClassName } from './orderStatusBadgeStyles'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { OrderPaymentGateDialog } from './OrderPaymentGateDialog'
 import { AppDialog } from '../ui/app-dialog'
+import { buildWhatsAppLink } from './orderTableWhatsApp'
 
 interface OrderDetailsActionsSectionProps {
   viewModel: OrderDetailsViewModel
@@ -59,6 +60,9 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
   )
   const nextActionLabel = paymentBlocked ? 'Konfirmasi Pembayaran' : nextStatus ? getQuickActionLabel(nextStatus) : ''
   const decisionBusy = storefrontDecisionBusy !== null || storefrontPreviewLoading
+  const customerMessageLink = customerWhatsappNumber
+    ? buildWhatsAppLink(customerWhatsappNumber, '')
+    : ''
 
   return (
     <>
@@ -67,10 +71,23 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
           {isEditing ? (
             <button type="button" onClick={onCancelEdit} className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted sm:text-xs">Cancel edit</button>
           ) : (
-            <button type="button" onClick={onCopyOrderDetails} className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground sm:text-xs">
-              {detailsCopied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-              {detailsCopied ? 'Copied' : 'Copy details'}
-            </button>
+            <>
+              <button type="button" onClick={onCopyOrderDetails} className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground sm:text-xs">
+                {detailsCopied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                {detailsCopied ? 'Copied' : 'Copy details'}
+              </button>
+              {customerMessageLink && (
+                <a
+                  href={customerMessageLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground sm:text-xs"
+                >
+                  <MessageCircle className="size-3.5" />
+                  Message customer
+                </a>
+              )}
+            </>
           )}
         </div>
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FC } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FC } from "react";
 import { CheckCircle2 } from "lucide-react";
 import type { OrderStatus } from "../../types/orders";
 import { cn } from "../../lib/utils";
@@ -10,8 +10,12 @@ interface OrderProgressStepperProps {
   ariaLabel?: string;
   className?: string;
   compact?: boolean;
-  maxVisibleStages?: number;
 }
+
+type HiddenEdges = {
+  before: boolean;
+  after: boolean;
+};
 
 export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
   options,
@@ -19,30 +23,14 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
   ariaLabel = "Order progress",
   className,
   compact = false,
-  maxVisibleStages,
 }) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const stageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [trackOffset, setTrackOffset] = useState(0);
+  const [hiddenEdges, setHiddenEdges] = useState<HiddenEdges>({ before: false, after: false });
   const previousIndexRef = useRef(currentIndex);
   const [poppedIndex, setPoppedIndex] = useState<number | null>(null);
-
-  const visibleStageCount = Math.max(1, Math.min(maxVisibleStages ?? options.length, options.length));
-  const visibleStart = useMemo(() => {
-    if (!maxVisibleStages || options.length <= visibleStageCount) return 0;
-    const half = Math.floor(visibleStageCount / 2);
-    return Math.min(
-      options.length - visibleStageCount,
-      Math.max(0, currentIndex - half),
-    );
-  }, [currentIndex, maxVisibleStages, options.length, visibleStageCount]);
-  const visibleOptions = useMemo(
-    () => options.slice(visibleStart, visibleStart + visibleStageCount),
-    [options, visibleStart, visibleStageCount],
-  );
-  const hasHiddenBefore = visibleStart > 0;
-  const hasHiddenAfter = visibleStart + visibleOptions.length < options.length;
 
   useEffect(() => {
     const previousIndex = previousIndexRef.current;
@@ -55,22 +43,25 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
   }, [currentIndex]);
 
   const centerCurrentStage = useCallback(() => {
-    if (maxVisibleStages) {
-      setTrackOffset(0);
-      return;
-    }
     const viewport = viewportRef.current;
     const track = trackRef.current;
     const currentStage = stageRefs.current[currentIndex];
     if (!viewport || !track || !currentStage) return;
 
     const targetCenter = currentStage.offsetLeft + currentStage.offsetWidth / 2;
-    const maxOffset = Math.max(0, track.offsetWidth - viewport.clientWidth);
-    setTrackOffset(Math.min(
+    const trackWidth = Math.max(track.scrollWidth, track.offsetWidth);
+    const maxOffset = Math.max(0, trackWidth - viewport.clientWidth);
+    const nextOffset = Math.min(
       maxOffset,
       Math.max(0, Math.round(targetCenter - viewport.clientWidth / 2)),
-    ));
-  }, [currentIndex, maxVisibleStages]);
+    );
+
+    setTrackOffset(nextOffset);
+    setHiddenEdges({
+      before: nextOffset > 1,
+      after: nextOffset < maxOffset - 1,
+    });
+  }, [currentIndex]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -87,12 +78,30 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
     };
   }, [centerCurrentStage, options.length]);
 
+  const compactMask = hiddenEdges.before && hiddenEdges.after
+    ? "linear-gradient(to right, transparent 0, black 9%, black 91%, transparent 100%)"
+    : hiddenEdges.before
+      ? "linear-gradient(to right, transparent 0, black 9%, black 100%)"
+      : hiddenEdges.after
+        ? "linear-gradient(to right, black 0, black 91%, transparent 100%)"
+        : "none";
+
+  const maskStyle: CSSProperties = compact
+    ? {
+        WebkitMaskImage: compactMask,
+        maskImage: compactMask,
+      }
+    : {};
+
   return (
     <div
       ref={viewportRef}
+      data-progress-mode={compact ? "full-track-clipped" : "full-track"}
+      data-progress-mask-before={hiddenEdges.before ? "true" : "false"}
+      data-progress-mask-after={hiddenEdges.after ? "true" : "false"}
       className={cn(
         compact
-          ? "relative touch-pan-y overflow-hidden rounded-xl bg-surface-panel/45"
+          ? "relative touch-pan-y overflow-hidden"
           : "relative touch-pan-y rounded-2xl bg-surface-card ring-1 ring-border/60",
         className,
       )}
@@ -101,21 +110,26 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
       <span className="sr-only">
         Step {currentIndex + 1} of {options.length}
       </span>
-      <div className={compact ? "overflow-hidden" : "overflow-visible [clip-path:inset(-0.75rem_0_-2rem_0)]"}>
+      <div
+        data-progress-mask
+        className={compact ? "overflow-hidden" : "overflow-visible [clip-path:inset(-0.75rem_0_-2rem_0)]"}
+        style={maskStyle}
+      >
         <div
           ref={trackRef}
           data-progress-track
           className={cn(
-            "grid w-full min-w-0 items-start will-change-transform",
-            compact ? "px-1.5 py-1.5 sm:px-2" : "px-2 py-3.5 sm:px-4",
+            "grid min-w-0 items-start will-change-transform transition-transform duration-300 ease-out motion-reduce:transition-none",
+            compact ? "w-max px-1 py-1.5" : "w-full px-2 py-3.5 sm:px-4",
           )}
           style={{
-            gridTemplateColumns: `repeat(${visibleOptions.length}, minmax(0, 1fr))`,
+            gridTemplateColumns: compact
+              ? `repeat(${options.length}, 6.75rem)`
+              : `repeat(${options.length}, minmax(0, 1fr))`,
             transform: `translate3d(-${trackOffset}px, 0, 0)`,
           }}
         >
-          {visibleOptions.map((option, visibleIndex) => {
-            const index = visibleStart + visibleIndex;
+          {options.map((option, index) => {
             const style = STATUS_STAGE_STYLE[option.id];
             const state =
               index < currentIndex
@@ -156,7 +170,7 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
                 aria-current={state === "current" ? "step" : undefined}
                 className="relative flex min-w-0 flex-col items-center"
               >
-                {visibleIndex < visibleOptions.length - 1 && (
+                {index < options.length - 1 && (
                   <span
                     aria-hidden="true"
                     className={compact
@@ -177,13 +191,6 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
           })}
         </div>
       </div>
-
-      {compact && hasHiddenBefore && (
-        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-20 w-4 bg-gradient-to-r from-card/80 to-transparent" />
-      )}
-      {compact && hasHiddenAfter && (
-        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-20 w-4 bg-gradient-to-l from-card/80 to-transparent" />
-      )}
     </div>
   );
 };
