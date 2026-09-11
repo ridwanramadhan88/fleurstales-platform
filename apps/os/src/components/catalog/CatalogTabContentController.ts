@@ -24,7 +24,11 @@ import {
 import { buildCatalogCsvTemplate } from '../../domain/catalogCsvDomain'
 import { toast } from '../../hooks/use-toast'
 import type { CatalogTabContentProps } from './CatalogTabContent'
-import { requestAppConfirmation } from '../ui/app-confirm'
+
+export interface PendingBulkDelete {
+  deleteCount: number
+  archiveCount: number
+}
 
 export interface CatalogTabContentViewModel {
   searchQuery: string
@@ -68,6 +72,9 @@ export interface CatalogTabContentViewModel {
   onBulkArchive: () => void
   onBulkUnarchive: () => void
   onBulkDelete: () => void
+  pendingBulkDelete: PendingBulkDelete | null
+  confirmBulkDelete: () => void
+  cancelBulkDelete: () => void
   onExportCsv: () => void
   onDownloadTemplate: () => void
   onImportFile: (event: ChangeEvent<HTMLInputElement>) => void
@@ -137,6 +144,7 @@ export const useCatalogTabContentController = ({
   const [detailProductId, setDetailProductId] = useState<string | null>(null)
   const [manageMode, setManageMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [pendingBulkDelete, setPendingBulkDelete] = useState<PendingBulkDelete | null>(null)
   const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false)
   const [arrangementTypesDialogOpen, setArrangementTypesDialogOpen] = useState(false)
   const [promoFeatureDialogOpen, setPromoFeatureDialogOpen] = useState(false)
@@ -265,7 +273,7 @@ export const useCatalogTabContentController = ({
       setProductsActive(Array.from(selectedIds), true)
       setSelectedIds(new Set())
     },
-    onBulkDelete: async () => {
+    onBulkDelete: () => {
       const selected = products.filter((product) => selectedIds.has(product.id))
       if (selected.length === 0) return
       const referencedIds = new Set(
@@ -279,23 +287,31 @@ export const useCatalogTabContentController = ({
           .map((product) => product.id),
       )
       const deletableIds = selected.map((product) => product.id).filter((id) => !referencedIds.has(id))
-      const archiveCount = referencedIds.size
-      const deleteCount = deletableIds.length
-      const description = archiveCount > 0
-        ? `${deleteCount} unreferenced product${deleteCount === 1 ? '' : 's'} will be deleted. ${archiveCount} product${archiveCount === 1 ? '' : 's'} used by orders will be archived instead.`
-        : `Delete ${deleteCount} product${deleteCount === 1 ? '' : 's'}? This cannot be undone.`
-      const confirmed = await requestAppConfirmation({
-        title: archiveCount > 0 ? 'Clean up selected products?' : 'Delete products?',
-        description,
-        confirmLabel: archiveCount > 0 ? 'Continue' : 'Delete',
-        destructive: deleteCount > 0,
-      })
-      if (!confirmed) return
-      if (archiveCount > 0) setProductsActive(Array.from(referencedIds), false)
-      if (deleteCount > 0) deleteProducts(deletableIds)
-      setSelectedIds(new Set())
-      toast({ description: archiveCount > 0 ? 'Referenced products were archived; unused products were deleted.' : 'Products deleted.' })
+      setPendingBulkDelete({ deleteCount: deletableIds.length, archiveCount: referencedIds.size })
     },
+    pendingBulkDelete,
+    confirmBulkDelete: () => {
+      const pending = pendingBulkDelete
+      setPendingBulkDelete(null)
+      if (!pending) return
+      const selected = products.filter((product) => selectedIds.has(product.id))
+      const referencedIds = new Set(
+        selected
+          .filter((product) =>
+            orders.some((order) =>
+              order.productId === product.id ||
+              order.items?.some((item) => item.productId === product.id),
+            ),
+          )
+          .map((product) => product.id),
+      )
+      const deletableIds = selected.map((product) => product.id).filter((id) => !referencedIds.has(id))
+      if (pending.archiveCount > 0) setProductsActive(Array.from(referencedIds), false)
+      if (pending.deleteCount > 0) deleteProducts(deletableIds)
+      setSelectedIds(new Set())
+      toast({ description: pending.archiveCount > 0 ? 'Referenced products were archived; unused products were deleted.' : 'Products deleted.' })
+    },
+    cancelBulkDelete: () => setPendingBulkDelete(null),
     onExportCsv: () => {
       downloadCsv('fleurstales-catalog.csv', exportCsv())
     },

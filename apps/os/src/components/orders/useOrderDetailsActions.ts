@@ -6,7 +6,6 @@ import type { OrderActor } from '../../domain/orderBusinessRules'
 import { canCancelOrder } from '../../domain/orderBusinessRules'
 import { toast } from '../../hooks/use-toast'
 import { advanceOrderStatus } from './orderTableWorkflow'
-import { requestAppConfirmation } from '../ui/app-confirm'
 import { formatOrderHandoffText } from './orderHandoffText'
 import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'
 import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
@@ -47,15 +46,19 @@ export const useOrderDetailsActions = ({
     return () => { active = false }
   }, [actionModal, order.id, order.orderNumber])
 
-  const onCancelOrder = async () => {
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+
+  const onCancelOrder = () => {
     if (!canAdvance || !isCancellable || order.status === 'cancelled') return
-    const confirmed = await requestAppConfirmation({
-      title: 'Cancel this order?',
-      description: `Cancel order for ${order.customerName}? This can be undone from the toast immediately after.`,
-      confirmLabel: 'Cancel order',
-      destructive: true,
-    })
-    if (!confirmed) return
+    setCancelConfirmOpen(true)
+  }
+
+  const confirmCancelOrder = () => {
+    if (!canAdvance || !isCancellable || order.status === 'cancelled') {
+      setCancelConfirmOpen(false)
+      return
+    }
+    setCancelConfirmOpen(false)
     advanceOrderStatus({ order, nextStatus: 'cancelled', updateOrderStatus, addActivity, actor, quick: false })
   }
 
@@ -137,6 +140,9 @@ export const useOrderDetailsActions = ({
     floristDialogMode,
     isCancellable,
     onCancelOrder,
+    cancelConfirmOpen,
+    onCancelConfirmChange: setCancelConfirmOpen,
+    confirmCancelOrder,
     onMoveToNextStatus,
     onFinishPhotoUploaded,
     onCancelFinishPhotoDialog: () => setShowFinishPhotoDialog(false),

@@ -10,7 +10,6 @@ import type { StockStatusFilter, StockTypeFilter } from './StockFiltersBar'
 import type { StockItemFormSheetProps } from './StockItemFormSheet'
 import type { StockItemDetailSheetProps } from './StockItemDetailSheet'
 import type { StockTabContentProps } from './StockTabContent'
-import { requestAppConfirmation } from '../ui/app-confirm'
 
 export interface StockTabContentViewModel {
   activeBranch: StockTabContentProps['activeBranch']
@@ -47,6 +46,9 @@ export interface StockTabContentViewModel {
   onBulkArchive: () => void
   onBulkUnarchive: () => void
   onBulkDelete: () => void
+  pendingBulkDeleteCount: number | null
+  confirmBulkDelete: () => void
+  cancelBulkDelete: () => void
   onRequestTransfer: StockItemDetailSheetProps['onRequestTransfer']
   onAdvanceTransferStatus: StockItemDetailSheetProps['onAdvanceTransferStatus']
   onRecordLoss: StockItemDetailSheetProps['onRecordLoss']
@@ -69,6 +71,7 @@ export const useStockTabContentController = ({
   const [detailItemId, setDetailItemId] = useState<string | null>(null)
   const [manageMode, setManageMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [pendingBulkDeleteCount, setPendingBulkDeleteCount] = useState<number | null>(null)
 
   const actorName = useUserStore((state) => state.name)
   const userRole = useUserStore((state) => state.role)
@@ -184,14 +187,19 @@ export const useStockTabContentController = ({
       archiveItems(Array.from(selectedIds), false)
       setSelectedIds(new Set())
     },
-    onBulkDelete: async () => {
-      const count = selectedIds.size
-      if (count === 0) return
-      const confirmed = await requestAppConfirmation({ title: 'Delete stock items?', description: `Delete ${count} item${count === 1 ? '' : 's'}? This cannot be undone.`, confirmLabel: 'Delete', destructive: true })
-      if (!confirmed) return
+    onBulkDelete: () => {
+      if (selectedIds.size === 0) return
+      setPendingBulkDeleteCount(selectedIds.size)
+    },
+    pendingBulkDeleteCount,
+    confirmBulkDelete: () => {
+      const count = pendingBulkDeleteCount
+      setPendingBulkDeleteCount(null)
+      if (!count) return
       deleteItems(Array.from(selectedIds))
       setSelectedIds(new Set())
     },
+    cancelBulkDelete: () => setPendingBulkDeleteCount(null),
     onRequestTransfer: ({ itemId, fromBranch, toBranch, quantity }) =>
       requestTransfer({ itemId, fromBranch, toBranch, quantity, actor: actorName }),
     onAdvanceTransferStatus: (transferId, status) =>

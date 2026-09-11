@@ -20,6 +20,7 @@ import { StockItemRow } from './StockItemRow'
 import { StockItemDetailSheet } from './StockItemDetailSheet'
 import { StockItemFormSheet } from './StockItemFormSheet'
 import { BulkActionBar } from '../product/BulkActionBar'
+import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { ListPlus, ListChecks } from 'lucide-react'
 import type { StockTabContentViewModel } from './StockTabContentController'
 
@@ -70,6 +71,9 @@ export const StockTabContent: FC<StockTabContentViewModel> = ({
   onBulkArchive,
   onBulkUnarchive,
   onBulkDelete,
+  pendingBulkDeleteCount,
+  confirmBulkDelete,
+  cancelBulkDelete,
   onRequestTransfer,
   onAdvanceTransferStatus,
   onRecordLoss,
@@ -163,7 +167,20 @@ export const StockTabContent: FC<StockTabContentViewModel> = ({
             ))}
           </div>
         )}
-      </section>
+      <ConfirmActionDialog
+        open={pendingBulkDeleteCount !== null}
+        onOpenChange={(nextOpen) => { if (!nextOpen) cancelBulkDelete() }}
+        title="Delete stock items?"
+        description={
+          pendingBulkDeleteCount !== null
+            ? `Delete ${pendingBulkDeleteCount} item${pendingBulkDeleteCount === 1 ? '' : 's'}? This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmBulkDelete}
+      />
+    </section>
 
       {/* 6. Detail sheet */}
       <StockItemDetailSheet

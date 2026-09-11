@@ -398,6 +398,18 @@ export const ID_NATURAL_TRANSLATIONS: Record<string, string> = {
   'Manual transaction perlu di-Verify Finance.': 'Transaksi manual harus diverifikasi oleh tim Keuangan.',
   'Order selesai, masih Pending Finance.': 'Pesanan selesai dan menunggu konfirmasi tim Keuangan.',
   'Ready sudah di-propose. Menunggu Confirm Admin.': 'Status Siap telah diajukan dan menunggu konfirmasi Admin.',
+  // Fix batch: declarative-confirmation dialog copy (modal layering fix).
+  'Remove type': 'Hapus jenis',
+  'Remove occasion': 'Hapus momen',
+  'This unused arrangement type will also be removed from size-guide assignments.': 'Jenis rangkaian tak terpakai ini juga akan dihapus dari penetapan panduan ukuran.',
+  'No active products use this occasion.': 'Tidak ada produk aktif yang memakai momen ini.',
+  'Delete size guide template?': 'Hapus template panduan ukuran?',
+  'The template and all of its product or arrangement assignments will be removed.': 'Template beserta semua penetapan produk atau rangkaiannya akan dihapus.',
+  'Delete products?': 'Hapus produk?',
+  'Referenced products were archived; unused products were deleted.': 'Produk terpakai diarsipkan; produk tak terpakai dihapus.',
+  'Products deleted.': 'Produk dihapus.',
+  'Delete voucher?': 'Hapus voucher?',
+  'Delete stock items?': 'Hapus item stok?',
   // V2 implementation audit batch 1 — verified EXACT findings (HEAD ff3243d). Contract: Pemilik/SDM/Perangkai Bunga/Keuangan/Pesanan/Pelanggan/Cabang/Penggajian/Kehadiran/Ruang kerja; Ulasan vs Tinjau.
   // V2 batch 2 — D2/D13 companions (single-node refactor support).
   'Oldest items are shown first in their review workspace.': 'Item tertua ditampilkan lebih dulu di ruang kerja tinjauan.',

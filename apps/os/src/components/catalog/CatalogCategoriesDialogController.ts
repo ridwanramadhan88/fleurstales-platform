@@ -3,7 +3,6 @@ import { useCatalogStore } from '../../store/catalogStore'
 import { toast } from '../../hooks/use-toast'
 import type { CatalogCategoryConfig } from '../../store/catalogStoreTypes'
 import type { CatalogCategoriesDialogProps } from './CatalogCategoriesDialog'
-import { requestAppConfirmation } from '../ui/app-confirm'
 import { productUsesCatalogCategory } from '../../domain/catalogCategoryDomain'
 
 export interface CatalogCategoryRow {
@@ -31,7 +30,11 @@ export interface CatalogCategoriesDialogViewModel extends CatalogCategoriesDialo
   onStartEditing: (id: string, currentName: string, currentPrefix: string) => void
   onCancelEditing: () => void
   onCommitEditing: () => void
-  onDelete: (row: CatalogCategoryRow) => Promise<void>
+  onDelete: (row: CatalogCategoryRow) => void
+  pendingDeleteRow: CatalogCategoryRow | null
+  pendingDeleteDescription: string
+  confirmDeleteRow: () => void
+  cancelDeleteRow: () => void
 }
 
 export const useCatalogCategoriesDialogController = ({
@@ -49,6 +52,7 @@ export const useCatalogCategoriesDialogController = ({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [editingPrefix, setEditingPrefix] = useState('')
+  const [pendingDeleteRow, setPendingDeleteRow] = useState<CatalogCategoryRow | null>(null)
 
   const rows = categories.map((category: CatalogCategoryConfig) => ({
     id: category.id,
@@ -112,18 +116,20 @@ export const useCatalogCategoriesDialogController = ({
       }
       cancelEditing()
     },
-    onDelete: async (row) => {
+    onDelete: (row) => {
       if (row.activeProductCount > 0 || row.isProtected) return
-      const inactiveCopy = row.inactiveProductCount > 0
-        ? ` ${row.inactiveProductCount} inactive product${row.inactiveProductCount === 1 ? '' : 's'} will have this occasion removed.${row.inactivePrimaryProductCount > 0 ? ` ${row.inactivePrimaryProductCount} whose main occasion is removed will move to Uncategorized.` : ''}`
-        : ''
-      const confirmed = await requestAppConfirmation({
-        title: `Remove “${row.name}”?`,
-        description: `No active products use this occasion.${inactiveCopy}`,
-        confirmLabel: 'Remove occasion',
-        destructive: true,
-      })
-      if (!confirmed) return
+      setPendingDeleteRow(row)
+    },
+    pendingDeleteRow,
+    pendingDeleteDescription: pendingDeleteRow
+      ? `No active products use this occasion.${pendingDeleteRow.inactiveProductCount > 0
+        ? ` ${pendingDeleteRow.inactiveProductCount} inactive product${pendingDeleteRow.inactiveProductCount === 1 ? '' : 's'} will have this occasion removed.${pendingDeleteRow.inactivePrimaryProductCount > 0 ? ` ${pendingDeleteRow.inactivePrimaryProductCount} whose main occasion is removed will move to Uncategorized.` : ''}`
+        : ''}`
+      : '',
+    confirmDeleteRow: () => {
+      const row = pendingDeleteRow
+      setPendingDeleteRow(null)
+      if (!row) return
       const result = deleteCategory(row.id)
       if (!result.ok) {
         toast({ description: result.reason })
@@ -131,5 +137,6 @@ export const useCatalogCategoriesDialogController = ({
       }
       toast({ description: `Removed occasion “${row.name}”.` })
     },
+    cancelDeleteRow: () => setPendingDeleteRow(null),
   }
 }

@@ -102,6 +102,9 @@ export interface OrderDetailsViewModel {
   onDraftChange: <K extends keyof OrderEditDraft>(field: K, value: OrderEditDraft[K]) => void
   onFulfillmentChange: (fulfillment: OrderFulfillment) => void
   onCancelOrder: () => void
+  cancelConfirmOpen: boolean
+  onCancelConfirmChange: (open: boolean) => void
+  confirmCancelOrder: () => void
   onVerifyOrder: () => void
   onResubmitFinance: () => void
   setResubmissionNote: (value: string) => void
@@ -233,6 +236,8 @@ export const useOrderDetailsController = ({ order, onClose, formatter }: UseOrde
     storefrontPreviewMessage: storefrontConfirmation.storefrontPreviewMessage,
     onDraftChange: editing.onDraftChange, onFulfillmentChange: editing.onFulfillmentChange,
     onCancelOrder: actions.onCancelOrder, onVerifyOrder: finance.onVerifyOrder,
+    cancelConfirmOpen: actions.cancelConfirmOpen, onCancelConfirmChange: actions.onCancelConfirmChange,
+    confirmCancelOrder: actions.confirmCancelOrder,
     onResubmitFinance: finance.onResubmitFinance, setResubmissionNote: finance.setResubmissionNote,
     onApproveRequest: changeRequest.onApproveRequest, onRejectRequest: changeRequest.onRejectRequest,
     onOpenRequestModal: changeRequest.onOpenRequestModal, onCloseRequestModal: changeRequest.onCloseRequestModal,

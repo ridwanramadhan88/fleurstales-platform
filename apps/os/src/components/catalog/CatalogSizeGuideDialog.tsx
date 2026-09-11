@@ -4,10 +4,10 @@ import { Link2, Ruler, Trash2 } from 'lucide-react'
 import { useCatalogStore } from '../../store/catalogStore'
 import { getDataUrlByteSize } from '../../domain/catalogImageDomain'
 import { toast } from '../../hooks/use-toast'
+import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Button } from '../ui/button'
 import { ImageDropInput } from './ImageDropInput'
-import { requestAppConfirmation } from '../ui/app-confirm'
 
 interface CatalogSizeGuideDialogProps {
   open: boolean
@@ -31,6 +31,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
   const [scope, setScope] = useState<AssignmentScope>('product_type')
   const [targetValue, setTargetValue] = useState('')
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const productTypes = useMemo(
     () => [...new Set(products.map((product) => product.productType?.trim()).filter((value): value is string => Boolean(value)))].sort(),
@@ -75,17 +76,17 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
     toast({ description: 'Size guide assigned.' })
   }
 
-  const handleDeleteTemplate = async (templateId: string) => {
-    const confirmed = await requestAppConfirmation({
-      title: 'Delete size guide template?',
-      description: 'The template and all of its product or arrangement assignments will be removed.',
-      confirmLabel: 'Delete template',
-      destructive: true,
-    })
-    if (confirmed) deleteTemplate(templateId)
+  const handleDeleteTemplate = (templateId: string) => {
+    setPendingDeleteId(templateId)
+  }
+
+  const confirmDeleteTemplate = () => {
+    if (pendingDeleteId) deleteTemplate(pendingDeleteId)
+    setPendingDeleteId(null)
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose() }}>
       <DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto">
         <DialogHeader>
@@ -235,6 +236,16 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
         </div>
       </DialogContent>
     </Dialog>
+    <ConfirmActionDialog
+      open={pendingDeleteId !== null}
+      onOpenChange={(nextOpen) => { if (!nextOpen) setPendingDeleteId(null) }}
+      title="Delete size guide template?"
+      description="The template and all of its product or arrangement assignments will be removed."
+      confirmLabel="Delete template"
+      destructive
+      onConfirm={confirmDeleteTemplate}
+    />
+    </>
   )
 }
 
