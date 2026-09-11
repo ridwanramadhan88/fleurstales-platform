@@ -57,4 +57,33 @@ describe('OrderProgressStepper', () => {
       'step',
     )
   })
+
+  it('shows a three-stage moving window in compact mode', () => {
+    const { rerender } = render(
+      <OrderProgressStepper options={options} currentIndex={0} compact maxVisibleStages={3} />,
+    )
+
+    expect(screen.getByText('Pending')).toBeInTheDocument()
+    expect(screen.getByText('Confirmed')).toBeInTheDocument()
+    expect(screen.getByText('Processing')).toBeInTheDocument()
+    expect(screen.queryByText('Ready')).not.toBeInTheDocument()
+
+    rerender(
+      <OrderProgressStepper options={options} currentIndex={2} compact maxVisibleStages={3} />,
+    )
+
+    expect(screen.queryByText('Pending')).not.toBeInTheDocument()
+    expect(screen.getByText('Confirmed')).toBeInTheDocument()
+    expect(screen.getByText('Processing').closest('[data-stage-index]')).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByText('Ready')).toBeInTheDocument()
+
+    rerender(
+      <OrderProgressStepper options={options} currentIndex={4} compact maxVisibleStages={3} />,
+    )
+
+    expect(screen.queryByText('Confirmed')).not.toBeInTheDocument()
+    expect(screen.getByText('Processing')).toBeInTheDocument()
+    expect(screen.getByText('Ready')).toBeInTheDocument()
+    expect(screen.getByText('Delivered')).toBeInTheDocument()
+  })
 })
