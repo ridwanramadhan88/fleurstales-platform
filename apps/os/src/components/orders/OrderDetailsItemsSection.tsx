@@ -175,8 +175,8 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
 
             return (
               <div key={item.id} className="flex items-start justify-between gap-4 py-4">
-                <div className="flex min-w-0 flex-1 items-start gap-3.5">
-                  <div className="size-16 shrink-0 overflow-hidden rounded-2xl bg-surface-panel ring-1 ring-border/30">
+                <div className="flex min-w-0 flex-1 items-start gap-4">
+                  <div className="size-20 shrink-0 overflow-hidden rounded-2xl bg-surface-panel ring-1 ring-border/30 sm:size-24">
                     {itemDisplay?.imageUrl ? (
                       <img
                         src={itemDisplay.imageUrl}
@@ -185,7 +185,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                       />
                     ) : (
                       <span className="flex size-full items-center justify-center text-muted-foreground">
-                        <Package2 className="size-5" />
+                        <Package2 className="size-6" />
                       </span>
                     )}
                   </div>
@@ -198,7 +198,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                         placeholder="Product / item name"
                       />
                     ) : (
-                      <p className="text-sm font-semibold leading-5 text-foreground">
+                      <p className="text-base font-semibold leading-6 text-foreground">
                         {item.productName || itemDisplay?.name || 'Custom order'}
                       </p>
                     )}
