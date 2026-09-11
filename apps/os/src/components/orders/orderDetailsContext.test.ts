@@ -6,9 +6,18 @@ import {
 } from './orderDetailsContext'
 
 describe('order detail contextual tabs', () => {
-  it('keeps one stable Process tab for Admin across active order stages', () => {
-    for (const status of ['pending_verification', 'confirmed', 'processing', 'ready', 'delivering'] as const) {
-      expect(getOrderDetailContextTab({ order: { status }, role: 'admin', financeActionable: false })).toBe('process')
+  it('keeps Order Details primary before confirmation for every role', () => {
+    for (const role of ['admin', 'owner', 'florist'] as const) {
+      expect(getOrderDetailContextTab({ order: { status: 'pending_verification' }, role, financeActionable: false })).toBeNull()
+    }
+    expect(getOrderDetailContextTab({ order: { status: 'pending_verification' }, role: 'finance', financeActionable: true })).toBeNull()
+  })
+
+  it('keeps one stable Process tab for Admin and Owner after confirmation while the order is active', () => {
+    for (const role of ['admin', 'owner'] as const) {
+      for (const status of ['confirmed', 'processing', 'ready', 'delivering'] as const) {
+        expect(getOrderDetailContextTab({ order: { status }, role, financeActionable: false })).toBe('process')
+      }
     }
   })
 
@@ -18,7 +27,7 @@ describe('order detail contextual tabs', () => {
     }
   })
 
-  it('shows Production to Florist only while assigned production work is active', () => {
+  it('shows Production to Florist only while production work is active', () => {
     expect(getOrderDetailContextTab({ order: { status: 'confirmed' }, role: 'florist', financeActionable: false })).toBe('production')
     expect(getOrderDetailContextTab({ order: { status: 'processing' }, role: 'florist', financeActionable: false })).toBe('production')
     expect(getOrderDetailContextTab({ order: { status: 'ready' }, role: 'florist', financeActionable: false })).toBe('production')
@@ -26,19 +35,23 @@ describe('order detail contextual tabs', () => {
     expect(getOrderDetailContextTab({ order: { status: 'delivered' }, role: 'florist', financeActionable: false })).toBeNull()
   })
 
-  it('shows Finance only while Finance has an action on the order', () => {
+  it('shows Finance only after confirmation and while Finance has an action on the order', () => {
     expect(getOrderDetailContextTab({ order: { status: 'processing' }, role: 'finance', financeActionable: true })).toBe('finance')
     expect(getOrderDetailContextTab({ order: { status: 'delivered' }, role: 'finance', financeActionable: true })).toBe('finance')
     expect(getOrderDetailContextTab({ order: { status: 'processing' }, role: 'finance', financeActionable: false })).toBeNull()
   })
 
-  it('shows the lifecycle stepper only to Admin on active operational orders', () => {
-    expect(shouldShowAdminLifecycle('admin', 'processing')).toBe(true)
-    expect(shouldShowAdminLifecycle('owner', 'processing')).toBe(false)
-    expect(shouldShowAdminLifecycle('florist', 'processing')).toBe(false)
-    expect(shouldShowAdminLifecycle('finance', 'processing')).toBe(false)
-    expect(shouldShowAdminLifecycle('admin', 'delivered')).toBe(false)
-    expect(shouldShowAdminLifecycle('admin', 'cancelled')).toBe(false)
+  it('shows the lifecycle stepper to operational roles until the order is finished', () => {
+    for (const role of ['admin', 'owner', 'florist', 'finance'] as const) {
+      expect(shouldShowAdminLifecycle(role, 'pending_verification')).toBe(true)
+      expect(shouldShowAdminLifecycle(role, 'processing')).toBe(true)
+      expect(shouldShowAdminLifecycle(role, 'delivering')).toBe(true)
+      expect(shouldShowAdminLifecycle(role, 'delivered')).toBe(false)
+      expect(shouldShowAdminLifecycle(role, 'picked_up')).toBe(false)
+      expect(shouldShowAdminLifecycle(role, 'cancelled')).toBe(false)
+      expect(shouldShowAdminLifecycle(role, 'failed')).toBe(false)
+    }
+    expect(shouldShowAdminLifecycle('hr', 'processing')).toBe(false)
   })
 
   it('uses the requested contextual tab labels in each UI language', () => {
