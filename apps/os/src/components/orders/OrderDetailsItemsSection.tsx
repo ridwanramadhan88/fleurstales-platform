@@ -175,8 +175,8 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
 
             return (
               <div key={item.id} className="flex items-start justify-between gap-4 py-4">
-                <div className="flex min-w-0 flex-1 items-start gap-4">
-                  <div className="size-20 shrink-0 overflow-hidden rounded-2xl bg-surface-panel ring-1 ring-border/30 sm:size-24">
+                <div className="flex min-w-0 flex-1 items-start gap-5">
+                  <div className="size-40 shrink-0 overflow-hidden rounded-3xl bg-surface-panel ring-1 ring-border/30 sm:size-48">
                     {itemDisplay?.imageUrl ? (
                       <img
                         src={itemDisplay.imageUrl}
@@ -185,11 +185,11 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                       />
                     ) : (
                       <span className="flex size-full items-center justify-center text-muted-foreground">
-                        <Package2 className="size-6" />
+                        <Package2 className="size-8" />
                       </span>
                     )}
                   </div>
-                  <div className="min-w-0 flex-1 pt-0.5">
+                  <div className="min-w-0 flex-1 pt-1">
                     {isEditableCustomLine ? (
                       <input
                         value={draft.productName}
@@ -198,7 +198,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                         placeholder="Product / item name"
                       />
                     ) : (
-                      <p className="text-base font-semibold leading-6 text-foreground">
+                      <p className="text-base font-semibold leading-6 text-foreground sm:text-lg sm:leading-7">
                         {item.productName || itemDisplay?.name || 'Custom order'}
                       </p>
                     )}
