@@ -1,5 +1,6 @@
 import type { OrderStatus, OrderTableRow } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
+import type { UiLanguage } from '../../i18n/uiLanguage'
 
 export type OrderDetailContextTab = 'process' | 'production' | 'finance'
 
@@ -47,7 +48,16 @@ export const getOrderDetailContextTab = ({
   return null
 }
 
-export const getOrderDetailContextLabel = (context: OrderDetailContextTab): string => {
+export const getOrderDetailContextLabel = (
+  context: OrderDetailContextTab,
+  language: UiLanguage,
+): string => {
+  if (language === 'id') {
+    if (context === 'process') return 'Proses'
+    if (context === 'production') return 'Produksi'
+    return 'Keuangan'
+  }
+
   if (context === 'process') return 'Process'
   if (context === 'production') return 'Production'
   return 'Finance'
