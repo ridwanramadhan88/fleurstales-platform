@@ -2,7 +2,7 @@ import type { OrderStatus, OrderTableRow } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
 import type { UiLanguage } from '../../i18n/uiLanguage'
 
-export type OrderDetailContextTab = 'process' | 'production' | 'finance'
+export type OrderDetailContextTab = 'finance'
 
 const ORDER_PROGRESS_STATUSES: OrderStatus[] = [
   'pending_verification',
@@ -12,19 +12,7 @@ const ORDER_PROGRESS_STATUSES: OrderStatus[] = [
   'delivering',
 ]
 
-const ADMIN_PROCESS_STATUSES: OrderStatus[] = [
-  'confirmed',
-  'processing',
-  'ready',
-  'delivering',
-]
-
-const FLORIST_PRODUCTION_STATUSES: OrderStatus[] = [
-  'confirmed',
-  'processing',
-  'ready',
-]
-
+const FINISHED_ORDER_STATUSES: OrderStatus[] = ['delivered', 'picked_up']
 const ORDER_PROGRESS_ROLES: UserRole[] = ['owner', 'admin', 'finance', 'florist']
 
 export const isOrderOperationallyActive = (status: OrderStatus): boolean =>
@@ -44,33 +32,21 @@ export const getOrderDetailContextTab = ({
   role: UserRole
   financeActionable: boolean
 }): OrderDetailContextTab | null => {
-  // Before an order is confirmed, Order Details is the primary workspace.
-  if (order.status === 'pending_verification') return null
-
-  if (role === 'finance') return financeActionable ? 'finance' : null
-
-  if (role === 'florist') {
-    return FLORIST_PRODUCTION_STATUSES.includes(order.status) ? 'production' : null
-  }
-
-  if ((role === 'admin' || role === 'owner') && ADMIN_PROCESS_STATUSES.includes(order.status)) {
-    return 'process'
+  // Active operational work stays in Details + the sticky stage action.
+  // A contextual tab is reserved for exceptional Finance work after the
+  // operational order has already finished.
+  if (
+    role === 'finance'
+    && financeActionable
+    && FINISHED_ORDER_STATUSES.includes(order.status)
+  ) {
+    return 'finance'
   }
 
   return null
 }
 
 export const getOrderDetailContextLabel = (
-  context: OrderDetailContextTab,
+  _context: OrderDetailContextTab,
   language: UiLanguage,
-): string => {
-  if (language === 'id') {
-    if (context === 'process') return 'Proses'
-    if (context === 'production') return 'Produksi'
-    return 'Keuangan'
-  }
-
-  if (context === 'process') return 'Process'
-  if (context === 'production') return 'Production'
-  return 'Finance'
-}
+): string => language === 'id' ? 'Keuangan' : 'Finance'
