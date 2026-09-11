@@ -96,7 +96,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
           </div>
         )}
 
-        <div className="mt-2 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-px pb-10 pt-1 text-sm text-foreground/90">
+        <div className="mt-2 min-h-0 flex-1 px-px overflow-y-auto overflow-x-hidden pb-10 pt-1 text-sm text-foreground/90">
           <div role="tablist" aria-label="Order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
             {tabs.map(([id, label]) => (
               <button
@@ -116,7 +116,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
             ))}
           </div>
 
-          <div role="tabpanel" className="space-y-6 pt-5">
+          <div role="tabpanel" className="space-y-8 pt-5">
             {contextTab && tab === contextTab && (
               <OrderDetailsContextTab viewModel={viewModel} context={contextTab} />
             )}
