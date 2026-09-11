@@ -120,6 +120,7 @@ export interface OrderDetailsViewModel {
   onOpenFloristReassignment: () => void
   onCancelFloristAssignment: () => void
   onFloristAssigned: (order: OrderTableRow) => void
+  onOpenReviewRequest: () => void
   onMarkPaidAndContinue: () => void
   onOpenInitiateRefund: () => void
   onOpenCompleteRefund: () => void
@@ -245,6 +246,7 @@ export const useOrderDetailsController = ({ order, onClose, formatter }: UseOrde
     onSaveChanges: editing.onSaveChanges, onMoveToNextStatus: actions.onMoveToNextStatus,
     onCancelPaymentGate: actions.onCancelPaymentGate, onOpenFloristReassignment: actions.onOpenFloristReassignment,
     onCancelFloristAssignment: actions.onCancelFloristAssignment, onFloristAssigned: actions.onFloristAssigned,
+    onOpenReviewRequest: actions.onOpenReviewRequest,
     onMarkPaidAndContinue: actions.onMarkPaidAndContinue, onOpenInitiateRefund: refund.openInitiateRefund,
     onOpenCompleteRefund: refund.openCompleteRefund, onOpenCancelRefund: refund.openCancelRefund,
     onCloseRefundDialog: refund.closeRefundDialog, onSubmitRefundAction: refund.submitRefundAction,
