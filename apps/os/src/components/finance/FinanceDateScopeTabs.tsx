@@ -15,6 +15,8 @@ import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover'
 import { Calendar } from '../ui/calendar'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { format } from 'date-fns'
+import { id as idLocale } from 'date-fns/locale'
+import { useUiLanguage } from '../../i18n/uiLanguage'
 import type { DateRange } from 'react-day-picker'
 import { tabButtonClass } from '../ui/tabs'
 
@@ -68,6 +70,8 @@ export const FinanceDateScopeTabs: FC<FinanceDateScopeTabsProps> = ({
    * @description Controls whether the custom date popover is open.
    */
   const [isCustomPopoverOpen, setIsCustomPopoverOpen] = useState(false)
+  const language = useUiLanguage((state) => state.language)
+  const dateLocale = language === 'id' ? idLocale : undefined
   /** Draft selection while choosing the start and end dates. The completed range
    * is committed and the popover closes as soon as the end date is selected. */
   const [draftRange, setDraftRange] = useState<DateRange | undefined>(dateRange)
@@ -139,9 +143,9 @@ export const FinanceDateScopeTabs: FC<FinanceDateScopeTabsProps> = ({
                     <span>
                       {dateRange?.from ? (
                         <>
-                          {format(dateRange.from, 'dd MMM')}
+                          {format(dateRange.from, 'dd MMM', { locale: dateLocale })}
                           {dateRange.to && dateRange.to.getTime() !== dateRange.from.getTime()
-                            ? ` - ${format(dateRange.to, 'dd MMM')}`
+                            ? ` - ${format(dateRange.to, 'dd MMM', { locale: dateLocale })}`
                             : ''}
                         </>
                       ) : (

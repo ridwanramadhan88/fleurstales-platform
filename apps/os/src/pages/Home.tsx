@@ -19,6 +19,7 @@ import { BottomTabBarContainer } from '../components/layout/BottomTabBarContaine
 import { NotificationCenter } from '../components/notifications/NotificationCenter'
 import type { NotificationItem } from '../types/notifications'
 import { NewOrderSheetContainer } from '../components/orders/NewOrderSheetContainer'
+import { getDateLocale } from '../i18n/uiLanguage'
 import {
   OrdersSubTabs,
   type OrdersSubTabId,
@@ -89,7 +90,7 @@ const getDashboardHeaderMeta = () => {
   const greeting =
     hours < 12 ? 'Good morning' : hours < 18 ? 'Good afternoon' : 'Good evening'
 
-  const formattedDate = now.toLocaleDateString('en-US', {
+  const formattedDate = now.toLocaleDateString(getDateLocale(), {
     weekday: 'long',
     month: 'short',
     day: 'numeric',

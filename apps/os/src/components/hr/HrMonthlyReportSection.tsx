@@ -152,7 +152,7 @@ export const HrMonthlyReportSection = ({ activeBranch, searchQuery = '', onOpenO
       <div className="space-y-3 md:hidden">
         {visibleRows.map((row) => <article key={row.employeeId} className="rounded-xl bg-card p-3.5 ring-1 ring-border/60">
           <button type="button" onClick={()=>setExpandedEmployeeId((current)=>current===row.employeeId?null:row.employeeId)} className="flex w-full items-start justify-between gap-3 text-left">
-            <div><h3 className="font-semibold text-foreground">{row.employeeName}</h3><p className="text-sm capitalize text-muted-foreground">{row.role}</p></div>
+            <div><h3 className="font-semibold text-foreground">{row.employeeName}</h3><p className="text-sm text-muted-foreground">{row.role === 'hr' ? 'HR' : row.role.charAt(0).toUpperCase() + row.role.slice(1)}</p></div>
             <ChevronDown className={`size-5 text-muted-foreground transition ${expandedEmployeeId===row.employeeId?'rotate-180':''}`} />
           </button>
           <dl className="mt-3 grid grid-cols-2 gap-3 text-sm"><div><dt className="text-muted-foreground">Scheduled</dt><dd className="font-semibold">{row.scheduledDays}</dd></div><div><dt className="text-muted-foreground">Present</dt><dd className="font-semibold">{row.presentDays}</dd></div><div><dt className="text-muted-foreground">Late tasks</dt><dd className="font-semibold">{row.lateTasks}</dd></div><div><dt className="text-muted-foreground">Open problems</dt><dd className="font-semibold">{row.openProblems}</dd></div></dl>
@@ -179,7 +179,7 @@ export const HrMonthlyReportSection = ({ activeBranch, searchQuery = '', onOpenO
               <tr>{['Employee','Scheduled','Branch split','Present','Leave','OFF','Late tasks','Missing punches','Open problems'].map((label)=><th key={label} className={`whitespace-nowrap px-3 py-2 font-medium ${label === 'Employee' ? 'sticky left-0 z-10 bg-surface-panel font-semibold text-foreground' : ''}`}>{label}</th>)}</tr>
             </thead>
             <tbody>{visibleRows.map((row)=><tr key={row.employeeId} onClick={()=>setSelectedEmployeeId(row.employeeId)} className="h-14 cursor-pointer border-t border-border/50 hover:bg-surface-panel/60">
-              <td className="sticky left-0 z-10 bg-card px-3 py-2"><p className="font-semibold text-foreground">{row.employeeName}</p><p className="mt-0.5 text-xs capitalize text-muted-foreground">{row.role}</p></td>
+              <td className="sticky left-0 z-10 bg-card px-3 py-2"><p className="font-semibold text-foreground">{row.employeeName}</p><p className="mt-0.5 text-xs text-muted-foreground">{row.role === 'hr' ? 'HR' : row.role.charAt(0).toUpperCase() + row.role.slice(1)}</p></td>
               <td className="px-3 py-2 font-medium tabular-nums">{row.scheduledDays}</td>
               <td className="px-3 py-2"><p className="whitespace-nowrap text-xs font-medium text-foreground">KDM {row.kedamaianDays} · PHM {row.pahomanDays}</p></td>
               <td className="px-3 py-2 tabular-nums">{row.presentDays}</td>
@@ -205,12 +205,12 @@ export const HrMonthlyReportSection = ({ activeBranch, searchQuery = '', onOpenO
       </div>
 
       <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-2">
-        <p className="text-xs font-medium text-muted-foreground">{currentProblems.length} {resultStatus} {currentProblems.length === 1 ? 'problem' : 'problems'}</p>
+        <p className="text-xs font-medium text-muted-foreground">{`${currentProblems.length} ${resultStatus} ${currentProblems.length === 1 ? 'problem' : 'problems'}`}</p>
       </div>
 
       <div className="space-y-3">{currentProblems.length ? currentProblems.map((problem)=>{
         const status = getHrProblemStatus(problem, reviews[problem.id]?.status)
-        return <article key={problem.id} className="rounded-xl bg-card p-3.5 ring-1 ring-border/60"><div className="flex items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{problem.employeeName}</h3><span className={`rounded-full px-2 py-1 text-xs font-medium ${problem.severity==='critical'?'bg-destructive/10 text-destructive':'bg-warning/10 text-warning'}`}>{SOURCE_LABELS[problem.source]}</span></div><p className="mt-1 text-sm text-muted-foreground">{problem.employeeRole} · {problem.title}</p></div><span className="text-xs capitalize text-muted-foreground">{status.replace('_',' ')}</span></div><p className="mt-3 text-sm text-muted-foreground">{problem.description}</p>{problem.relatedOrderNumber && <p className="mt-2 text-xs font-medium">Order {problem.relatedOrderNumber}</p>}<button type="button" onClick={()=>setSelectedProblem(problem)} className="mt-3 h-11 rounded-full border border-border px-[18px] text-sm font-medium">View details</button></article>
+        return <article key={problem.id} className="rounded-xl bg-card p-3.5 ring-1 ring-border/60"><div className="flex items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{problem.employeeName}</h3><span className={`rounded-full px-2 py-1 text-xs font-medium ${problem.severity==='critical'?'bg-destructive/10 text-destructive':'bg-warning/10 text-warning'}`}>{SOURCE_LABELS[problem.source]}</span></div><p className="mt-1 text-sm text-muted-foreground">{problem.employeeRole} · {problem.title}</p></div><span className="text-xs text-muted-foreground">{status === 'open' ? 'Open' : status === 'under_review' ? 'Under review' : 'Completed'}</span></div><p className="mt-3 text-sm text-muted-foreground">{problem.description}</p>{problem.relatedOrderNumber && <p className="mt-2 text-xs font-medium">Order {problem.relatedOrderNumber}</p>}<button type="button" onClick={()=>setSelectedProblem(problem)} className="mt-3 h-11 rounded-full border border-border px-[18px] text-sm font-medium">View details</button></article>
       }) : <div className="py-8 text-center"><p className="text-sm font-medium text-foreground">No problems in this view</p><p className="mt-1 text-xs text-muted-foreground">Change the status or type filter to review another group.</p></div>}</div>
     </>}
 

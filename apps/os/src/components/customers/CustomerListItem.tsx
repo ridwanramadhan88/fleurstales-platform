@@ -115,13 +115,13 @@ export const CustomerListItem: FC<CustomerListItemProps> = ({
             )}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{metrics.orderCount} orders</span>
-            <span>Rp {formatter.format(metrics.lifetimeSpend)} lifetime</span>
+            <span className="font-medium text-foreground">{`${metrics.orderCount} orders`}</span>
+            <span>{`Rp ${formatter.format(metrics.lifetimeSpend)} lifetime`}</span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 text-2xs text-muted-foreground">
             <span className={activityClass}>{activityLabel}</span>
-            {metrics.lastOrderDateLabel && <span>· Last {metrics.lastOrderDateLabel}</span>}
-            <span>· Score {valueScore}</span>
+            {metrics.lastOrderDateLabel && <span>{`· Last ${metrics.lastOrderDateLabel}`}</span>}
+            <span>{`· Score ${valueScore}`}</span>
           </div>
         </div>
       </button>

@@ -8,6 +8,8 @@ import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover'
 import { Calendar } from '../ui/calendar'
 import { Calendar as CalendarIcon } from 'lucide-react'
 import { format } from 'date-fns'
+import { id as idLocale } from 'date-fns/locale'
+import { useUiLanguage } from '../../i18n/uiLanguage'
 import type { DateRange } from 'react-day-picker'
 import { tabButtonClass } from '../ui/tabs'
 import { useOrdersStore } from '../../store/ordersStore'
@@ -35,6 +37,8 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
   futureOrderDates,
 }) => {
   const allOrders = useOrdersStore((state) => state.orders)
+  const language = useUiLanguage((state) => state.language)
+  const dateLocale = language === 'id' ? idLocale : undefined
   const resolvedFutureOrderDates = useMemo(
     () => futureOrderDates ?? getActiveFutureOrderDates(allOrders),
     [allOrders, futureOrderDates],
@@ -104,9 +108,9 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
                     <span>
                       {dateRange?.from ? (
                         <>
-                          {format(dateRange.from, 'dd MMM')}
+                          {format(dateRange.from, 'dd MMM', { locale: dateLocale })}
                           {dateRange.to && dateRange.to.getTime() !== dateRange.from.getTime()
-                            ? ` - ${format(dateRange.to, 'dd MMM')}`
+                            ? ` - ${format(dateRange.to, 'dd MMM', { locale: dateLocale })}`
                             : ''}
                         </>
                       ) : 'Custom'}

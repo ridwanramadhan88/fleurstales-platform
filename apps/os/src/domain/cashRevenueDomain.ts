@@ -1,3 +1,4 @@
+import { getDateLocale } from '../i18n/uiLanguage'
 import type { BranchId, OrderSource, OrderTableRow } from '../types/orders'
 import type { FinancePaymentMethod } from '../store/financeStoreTypes'
 import type { FinanceTransaction } from '../store/financeStoreTypes'
@@ -134,7 +135,7 @@ export const getCashRevenueTrend = (
     const date = new Date(start)
     date.setDate(date.getDate() + index)
     return {
-      label: date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+      label: date.toLocaleDateString(getDateLocale(), { day: '2-digit', month: 'short' }),
       key: dateKey(date),
       totalIdr: 0,
       orderIds: new Set<string>(),
@@ -172,7 +173,7 @@ export const getCashExpenseTrend = (
   const start = new Date(options.range.startDate); start.setHours(0,0,0,0)
   const end = new Date(options.range.endDate); end.setHours(0,0,0,0)
   const days = Math.round((end.getTime()-start.getTime())/86_400_000)+1
-  const buckets = Array.from({length:Math.max(0,days)},(_,index)=>{const date=new Date(start);date.setDate(date.getDate()+index);return {label:date.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),key:dateKey(date),totalIdr:0,itemCount:0}})
+  const buckets = Array.from({length:Math.max(0,days)},(_,index)=>{const date=new Date(start);date.setDate(date.getDate()+index);return {label:date.toLocaleDateString(getDateLocale(),{day:'2-digit',month:'short'}),key:dateKey(date),totalIdr:0,itemCount:0}})
   transactions.filter((transaction)=>isVerifiedCashExpense(transaction)&&isBranchScoped(transaction,options.branch)).forEach((transaction)=>{const bucket=buckets.find((entry)=>entry.key===dayKey(transaction.transactionDate??transaction.createdAt));if(bucket){bucket.totalIdr+=transaction.amount;bucket.itemCount+=1}})
   return buckets.map((entry)=>({label:entry.label,totalIdr:entry.totalIdr,itemCount:entry.itemCount}))
 }

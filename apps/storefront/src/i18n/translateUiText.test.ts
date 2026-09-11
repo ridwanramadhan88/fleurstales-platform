@@ -183,6 +183,53 @@ describe('natural Indonesian UI copy', () => {
     )
   })
 
+  it('translates batch-3 screenshot findings with the current contract', () => {
+    expect(translateUiText('Manage business, people, and operational defaults.', 'id')).toBe(
+      'Kelola setelan bisnis, people, dan operasional.',
+    )
+    expect(translateUiText('Business health and key actions.', 'id')).toBe(
+      'Kesehatan bisnis dan aksi penting.',
+    )
+    expect(
+      translateUiText('Branches, customers, payment method, and order sources', 'id'),
+    ).toBe('Cabang, pelanggan, metode pembayaran, dan sumber pesanan')
+    expect(translateUiText('Customer Review', 'id')).toBe('Ulasan Pelanggan')
+    expect(translateUiText('VIP rules', 'id')).toBe('Aturan VIP')
+    expect(translateUiText('Needs attention', 'id')).toBe('Perlu perhatian')
+    expect(translateUiText('Search employees by name, phone, role, or ID…', 'id')).toBe(
+      'Cari karyawan berdasarkan nama, telepon, peran, atau ID…',
+    )
+    expect(translateUiText('Approved', 'id')).toBe('Disetujui')
+    expect(translateUiText('Branch split', 'id')).toBe('Pecahan cabang')
+    expect(translateUiText('Open', 'id')).toBe('Terbuka')
+    expect(translateUiText('all', 'id')).toBe('Semua')
+    expect(translateUiText('active', 'id')).toBe('Aktif')
+    expect(translateUiText('inactive', 'id')).toBe('Nonaktif')
+    expect(translateUiText('all branches', 'id')).toBe('semua cabang')
+  })
+
+  it('translates composed count/date helpers while preserving business data', () => {
+    expect(translateUiText('5 orders', 'id')).toBe('5 pesanan')
+    expect(translateUiText('Rp 1165000 lifetime', 'id')).toBe('Total Rp 1165000')
+    expect(translateUiText('· Last Mar 2026', 'id')).toBe('· Terakhir Mar 2026')
+    expect(translateUiText('· Score 45', 'id')).toBe('· Skor 45')
+    expect(translateUiText('0852 · Since Mar 2026', 'id')).toBe('0852 · Sejak Mar 2026')
+    expect(translateUiText('+2 vs yesterday', 'id')).toBe('+2 vs kemarin.')
+    expect(translateUiText('3 open problems', 'id')).toBe('3 masalah terbuka')
+    expect(translateUiText('29 Aug – 11 Sep · Finance confirmed', 'id')).toBe(
+      '29 Aug – 11 Sep · Dikonfirmasi Keuangan',
+    )
+    expect(translateUiText('29 Aug – 11 Sep · Confirmed + Rp 1000 pending', 'id')).toBe(
+      '29 Aug – 11 Sep · Terkonfirmasi + Rp 1000 tertunda',
+    )
+    expect(translateUiText('29 Aug – 11 Sep · confirmed orders', 'id')).toBe(
+      '29 Aug – 11 Sep · pesanan terkonfirmasi',
+    )
+    expect(translateUiText('29 Aug – 11 Sep · per confirmed order', 'id')).toBe(
+      '29 Aug – 11 Sep · per pesanan terkonfirmasi',
+    )
+  })
+
   it('returns original English when selected', () => {
     expect(translateUiText('Inventory is disabled.', 'en')).toBe('Inventory is disabled.')
     expect(translateUiText('Track your Fleurstales order', 'en')).toBe('Track your Fleurstales order')

@@ -35,6 +35,12 @@ const ATTENDANCE_OPTIONS: { value: AttendanceStatus; label: string }[] = [
 
 const roleLabel = (role: string) => role === 'hr' ? 'HR' : role[0].toUpperCase() + role.slice(1)
 
+const STATUS_FILTER_LABELS: Record<EmployeeStatusFilter, string> = {
+  all: 'All',
+  active: 'Active',
+  inactive: 'Inactive',
+}
+
 export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
   const signedInRole = useUserStore((state) => state.role)
   const attendanceReviewCases = useHrStore((state) => state.attendanceReviewCases)
@@ -72,7 +78,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       <section aria-label="Employee filters" className="flex flex-col gap-3 border-y border-border/60 py-3 md:flex-row md:items-center">
         <select aria-label="Filter employees by role" value={employeeRoleFilter} onChange={(event) => vm.onEmployeeRoleFilterChange(event.target.value as typeof employeeRoleFilter)} className={`${inputClass} md:w-56`}><option value="all">All roles</option>{assignableRoles.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}</select>
         <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto px-1 py-1 md:flex-wrap md:overflow-visible md:px-0">
-          {(['all', 'active', 'inactive'] as EmployeeStatusFilter[]).map((option) => <FilterChip key={option} active={option === statusFilter} onClick={() => vm.onStatusFilterChange(option)} className="capitalize">{option}</FilterChip>)}
+          {(['all', 'active', 'inactive'] as EmployeeStatusFilter[]).map((option) => <FilterChip key={option} active={option === statusFilter} onClick={() => vm.onStatusFilterChange(option)}>{STATUS_FILTER_LABELS[option]}</FilterChip>)}
         </div>
       </section>
 
@@ -87,7 +93,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
               {readiness.state === 'active' && !readiness.setupComplete && <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning">Setup required</span>}
             </div>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">{employee.phone || 'No WhatsApp'} · Since {new Date(employee.hireDate).toLocaleDateString(getDateLocale(), { month: 'short', year: 'numeric' })}</p>
+          <p className="mt-3 text-xs text-muted-foreground">{`${employee.phone || 'No WhatsApp'} · Since ${new Date(employee.hireDate).toLocaleDateString(getDateLocale(), { month: 'short', year: 'numeric' })}`}</p>
           {readiness.missing.length > 0 && <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">Missing: {readiness.missing.join(', ')}</p>}
           {employee.systemRole === 'florist' && <div className="mt-3 rounded-lg bg-muted/40 p-2.5"><p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All-time order performance</p><div className="grid grid-cols-3 gap-2 text-center"><div><p className="text-sm font-semibold leading-5">{performance.floristAssigned}</p><p className="text-2xs text-muted-foreground">Assigned</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristCompleted}</p><p className="text-2xs text-muted-foreground">Completed</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristProcessing}</p><p className="text-2xs text-muted-foreground">Processing</p></div></div></div>}
           {employee.systemRole === 'admin' && <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs"><span className="mr-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All time</span><span className="font-semibold">{performance.adminStartedProcessing}</span> orders moved to Processing</div>}
@@ -172,7 +178,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
               <Field label="Name" error={profileErrors.name}><input disabled={!selectedAccountEditable} value={detailsForm.name} onChange={(e) => vm.onDetailsFieldChange('name', e.target.value)} className={fieldInputClass(profileErrors.name)} /></Field>
               <Field label="WhatsApp" error={profileErrors.phone}><input disabled={!selectedAccountEditable} value={detailsForm.phone} onChange={(e) => vm.onDetailsFieldChange('phone', e.target.value)} className={fieldInputClass(profileErrors.phone)} /></Field>
               <Field label="Hire date" error={profileErrors.hireDate}><DatePickerField value={detailsForm.hireDate} onChange={(value) => vm.onDetailsFieldChange('hireDate', value)} className={`h-10 rounded-lg bg-card text-sm ${profileErrors.hireDate ? 'ring-2 ring-destructive/40' : ''}`} /></Field>
-              <Field label="Status"><div className="flex h-10 items-center gap-2"><span className="capitalize">{detailsEmployee.status}</span>{selectedAccountEditable && canManageEmployeeStatus && <button type="button" aria-label={detailsEmployee.status === 'active' ? 'Deactivate' : 'Activate'} onClick={() => vm.onRequestEmployeeStatusChange(detailsEmployee)} className={`rounded-full border px-3 py-1 text-xs ${detailsEmployee.status === 'active' ? 'border-destructive/30 text-destructive' : 'border-success/30 text-success'}`}>{detailsEmployee.status === 'active' ? 'Deactivate' : 'Activate'}</button>}</div></Field>
+              <Field label="Status"><div className="flex h-10 items-center gap-2"><span>{STATUS_FILTER_LABELS[detailsEmployee.status]}</span>{selectedAccountEditable && canManageEmployeeStatus && <button type="button" aria-label={detailsEmployee.status === 'active' ? 'Deactivate' : 'Activate'} onClick={() => vm.onRequestEmployeeStatusChange(detailsEmployee)} className={`rounded-full border px-3 py-1 text-xs ${detailsEmployee.status === 'active' ? 'border-destructive/30 text-destructive' : 'border-success/30 text-success'}`}>{detailsEmployee.status === 'active' ? 'Deactivate' : 'Activate'}</button>}</div></Field>
             </div>
             {selectedAccountEditable && <div className="mt-3 flex justify-end"><button type="button" onClick={vm.onSaveEmployeeProfile} className="bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Save profile</button></div>}
           </section>

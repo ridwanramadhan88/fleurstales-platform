@@ -17,6 +17,8 @@ import {
 } from 'recharts'
 import { Download, FileText, Calendar as CalendarIcon, ChevronDown, TrendingUp, TrendingDown, Minus, ChevronRight, ArrowLeft, ReceiptText } from 'lucide-react'
 import { format } from 'date-fns'
+import { id as idLocale } from 'date-fns/locale'
+import { useUiLanguage } from '../../i18n/uiLanguage'
 import type { DateRange } from 'react-day-picker'
 import type { CompareMode, RevenueDrilldownKey, TrendMetric } from './RevenueDashboardController'
 import { OverviewStatCard, OverviewStatGrid } from '../ui/overview-card'
@@ -130,6 +132,8 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
 }) => {
   /** @description Controls the custom-range popover, same pattern as the Orders date filter. */
   const [isCustomPopoverOpen, setIsCustomPopoverOpen] = useState(false)
+  const language = useUiLanguage((state) => state.language)
+  const dateLocale = language === 'id' ? idLocale : undefined
   /** Draft selection while choosing the start and end dates. The completed range
    * is committed and the popover closes as soon as the end date is selected. */
   const [draftRange, setDraftRange] = useState<DateRange | undefined>(customRange)
@@ -324,7 +328,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
                       </div>
                       <p className="mt-1 truncate text-xs text-muted-foreground">{item.subtitle}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted-foreground">
-                        {item.date && <span>{format(new Date(item.date), 'dd MMM yyyy, HH:mm')}</span>}
+                        {item.date && <span>{format(new Date(item.date), 'dd MMM yyyy, HH:mm', { locale: dateLocale })}</span>}
                         <span>{item.branch}</span>
                       </div>
                     </div>
@@ -436,7 +440,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
               const isActive = trendPeriod === option
               return (
                 <FilterChip key={option} active={isActive} data-active={isActive} onClick={() => onTrendPeriodChange(option)} className="shrink-0">
-                  {option}d
+                  {option}{language === 'id' ? ' hari' : 'd'}
                 </FilterChip>
               )
             })}
@@ -451,9 +455,9 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
                   <span>
                     {trendPeriod === 'custom' && customRange?.from ? (
                       <>
-                        {format(customRange.from, 'dd MMM')}
+                        {format(customRange.from, 'dd MMM', { locale: dateLocale })}
                         {customRange.to && customRange.to.getTime() !== customRange.from.getTime()
-                          ? ` - ${format(customRange.to, 'dd MMM')}`
+                          ? ` - ${format(customRange.to, 'dd MMM', { locale: dateLocale })}`
                           : ''}
                       </>
                     ) : (

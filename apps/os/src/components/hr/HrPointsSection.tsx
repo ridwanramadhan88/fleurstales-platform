@@ -46,6 +46,19 @@ const formatPeriodLabel = (value: string) => {
 
 type View = 'overview' | 'rules'
 
+const VIEW_LABELS: Record<View, string> = { overview: 'Overview', rules: 'Rules' }
+const POINT_TAB_LABELS: Record<'pending' | 'approved' | 'all', string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  all: 'All',
+}
+const POINT_ACTION_TITLES: Record<'approve' | 'reject' | 'reverse', string> = {
+  approve: 'Approve point entry',
+  reject: 'Reject point entry',
+  reverse: 'Reverse point entry',
+}
+const roleLabel = (value: string) => (value === 'hr' ? 'HR' : value.charAt(0).toUpperCase() + value.slice(1))
+
 export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) => {
   const role = useUserStore((state) => state.role)
   const actorName = useUserStore((state) => state.name)
@@ -176,9 +189,9 @@ export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) 
             type="button"
             onClick={() => setView(item)}
             aria-current={view === item ? 'page' : undefined}
-            className={settingsTabButtonClass({ active:view === item, level:'primary', className:'h-9 scroll-mx-1 px-0.5 text-sm capitalize' })}
+            className={settingsTabButtonClass({ active:view === item, level:'primary', className:'h-9 scroll-mx-1 px-0.5 text-sm' })}
           >
-            {item}
+            {VIEW_LABELS[item]}
           </button>
         ))}
       </nav>
@@ -195,7 +208,7 @@ export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) 
     <section className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-border/60">
       <div className="flex items-center gap-1.5"><h2 className="text-sm font-semibold leading-5">Employee point progress</h2><InfoHint label="About point progress">{`Approved points and estimated bonus for ${formatPeriodLabel(periodKey)}.`}</InfoHint></div>
       {summaries.length === 0 ? <p className="rounded-lg bg-surface-panel p-4 text-xs text-muted-foreground">No eligible employee or point activity in this period.</p> : <div className="grid gap-3 lg:grid-cols-2">{summaries.map((summary) => <article key={summary.employeeId} className="rounded-xl border border-border/60 p-4">
-        <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold leading-5">{summary.employeeName}</p><p className="text-xs capitalize text-muted-foreground">{summary.role}</p></div><div className="text-right"><p className="text-sm font-semibold leading-5">{summary.approvedNetPoints} approved</p><p className="text-xs text-muted-foreground">Est. bonus {formatIdr(summary.estimatedBonusIdr)}</p></div></div>
+        <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold leading-5">{summary.employeeName}</p><p className="text-xs text-muted-foreground">{roleLabel(summary.role)}</p></div><div className="text-right"><p className="text-sm font-semibold leading-5">{summary.approvedNetPoints} approved</p><p className="text-xs text-muted-foreground">Est. bonus {formatIdr(summary.estimatedBonusIdr)}</p></div></div>
         {summary.role === 'admin' && <ProgressBlock label="Eligible collect orders" completed={summary.adminEligibleOrders} minimum={summary.adminMinimumIncluded} eligible={summary.adminPointEligibleOrders} pointsEach={rules.collectOrderPoints} />}
         <div className="mt-3 grid grid-cols-3 divide-x divide-border/60 rounded-lg bg-surface-panel px-2 py-2 text-center text-2xs"><div><p className="text-muted-foreground">Pending</p><p className="font-semibold">{summary.pendingPoints}</p></div><div><p className="text-success">Positive</p><p className="font-semibold text-success">+{summary.approvedPositivePoints}</p></div><div><p className="text-destructive">Minus</p><p className="font-semibold text-destructive">-{summary.approvedNegativePoints}</p></div></div>
       </article>)}</div>}
@@ -203,7 +216,7 @@ export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) 
 
     <section className="rounded-xl bg-card p-4 ring-1 ring-border/60">
       <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-1.5"><h2 className="text-sm font-semibold leading-5">Point reviews</h2><InfoHint label="About point reviews">Review pending point entries and create manual adjustments when needed.</InfoHint></div><button onClick={() => setShowAdd(true)} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground">Manual adjustment</button></div>
-      <div className="mt-3 inline-flex rounded-full bg-surface-track p-1 ring-1 ring-border/60">{(['pending', 'approved', 'all'] as const).map((item) => <button key={item} onClick={() => setTab(item)} className={`rounded-full px-3 py-1.5 text-xs capitalize ${tab === item ? 'bg-surface-selected text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}>{item}</button>)}</div>
+      <div className="mt-3 inline-flex rounded-full bg-surface-track p-1 ring-1 ring-border/60">{(['pending', 'approved', 'all'] as const).map((item) => <button key={item} onClick={() => setTab(item)} className={`rounded-full px-3 py-1.5 text-xs ${tab === item ? 'bg-surface-selected text-primary-foreground shadow-sm' : 'text-muted-foreground'}`}>{POINT_TAB_LABELS[item]}</button>)}</div>
       <div className="mt-3 space-y-2">{visible.length === 0 ? <p className="rounded-lg bg-surface-panel p-4 text-xs text-muted-foreground">No point entries in this view.</p> : visible.map((entry) => {
         const employee = employees.find((item) => item.id === entry.employeeId)
         const isAutomaticOrderEntry = entry.sourceType === 'order'
@@ -235,7 +248,7 @@ export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) 
       <div className="flex justify-end gap-2"><button onClick={() => { setShowAdd(false); setAdjustmentDirection(null); setError(null) }} className="h-11 rounded-full border border-border px-[18px] text-sm">Cancel</button><button disabled={!adjustmentDirection || !Number(points) || !reason.trim()} onClick={submitAdjustment} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground disabled:bg-muted disabled:text-muted-foreground">{adjustmentDirection && Number(points) ? `Create ${adjustmentDirection === 'positive' ? '+' : '−'}${Number(points)} point entry` : 'Create pending entry'}</button></div>
     </div></div>}
 
-    {selected && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"><div className="w-full space-y-4 rounded-2xl bg-card p-5 shadow-ios-lg ring-1 ring-border/60 sm:max-w-2xl sm:p-6"><h3 className="font-semibold capitalize">{action} point entry</h3><p className="text-xs text-muted-foreground">{selected.points > 0 ? '+' : ''}{selected.points} points · {selected.reason}</p><label className="space-y-1"><span className="text-xs">{action === 'approve' ? 'Review note · Optional' : action === 'reject' ? 'Rejection reason · Required' : 'Reversal reason · Required'}</span><textarea value={note} onChange={(event) => setNote(event.target.value)} className="min-h-24 w-full rounded-lg border border-border bg-background p-3 text-sm"/></label>{error && <p role="alert" className="text-xs text-destructive">{error}</p>}<div className="flex justify-end gap-2"><button onClick={() => setSelected(null)} className="h-11 rounded-full border border-border px-[18px] text-sm">Cancel</button><button onClick={submitReview} className="bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Confirm</button></div></div></div>}
+    {selected && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"><div className="w-full space-y-4 rounded-2xl bg-card p-5 shadow-ios-lg ring-1 ring-border/60 sm:max-w-2xl sm:p-6"><h3 className="font-semibold">{POINT_ACTION_TITLES[action]}</h3><p className="text-xs text-muted-foreground">{selected.points > 0 ? '+' : ''}{selected.points} points · {selected.reason}</p><label className="space-y-1"><span className="text-xs">{action === 'approve' ? 'Review note · Optional' : action === 'reject' ? 'Rejection reason · Required' : 'Reversal reason · Required'}</span><textarea value={note} onChange={(event) => setNote(event.target.value)} className="min-h-24 w-full rounded-lg border border-border bg-background p-3 text-sm"/></label>{error && <p role="alert" className="text-xs text-destructive">{error}</p>}<div className="flex justify-end gap-2"><button onClick={() => setSelected(null)} className="h-11 rounded-full border border-border px-[18px] text-sm">Cancel</button><button onClick={submitReview} className="bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Confirm</button></div></div></div>}
   </section>
 }
 

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { format } from 'date-fns'
+import { id as idLocale } from 'date-fns/locale'
+import { getUiLanguage } from '../../i18n/uiLanguage'
 import type { DateRange } from 'react-day-picker'
 import { isOrderFinished } from '../../domain/orderBusinessRules'
 import { getCashRevenueSummary, getCashRevenueTrend, getCashExpenseTrend, getCashMetricPeriodCompare, getCashIncomeExpense, getCashMetricBranchCompare, getCashRevenueByBranch, getTopCustomersByVerifiedCash, getPaymentMethodBreakdown, getRevenueBySourceFromVerifiedCash, resolveCashRange, previousEqualRange, isVerifiedCollectedIncome, isVerifiedOrderRefund, isVerifiedCashExpense } from '../../domain/cashRevenueDomain'
@@ -67,7 +69,8 @@ const downloadCsv = (filename: string, csv: string) => {
 }
 
 /** @description Short date label for the trend header, matching the Orders date picker's style. */
-const formatShortDate = (date: Date): string => format(date, 'dd MMM')
+const formatShortDate = (date: Date): string =>
+  format(date, 'dd MMM', { locale: getUiLanguage() === 'id' ? idLocale : undefined })
 
 /** @description Trend period selector: fixed presets, or an explicit custom range. */
 export type TrendPeriod = 7 | 14 | 30 | 'custom'
