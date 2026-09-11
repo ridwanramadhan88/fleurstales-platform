@@ -58,15 +58,18 @@ describe('OrderProgressStepper', () => {
     )
   })
 
-  it('shows a three-stage moving window in compact mode', () => {
+  it('shows a three-stage moving window with continuation cues in compact mode', () => {
     const { rerender } = render(
       <OrderProgressStepper options={options} currentIndex={0} compact maxVisibleStages={3} />,
     )
 
+    const viewport = screen.getByLabelText('Order progress')
     expect(screen.getByText('Pending')).toBeInTheDocument()
     expect(screen.getByText('Confirmed')).toBeInTheDocument()
     expect(screen.getByText('Processing')).toBeInTheDocument()
     expect(screen.queryByText('Ready')).not.toBeInTheDocument()
+    expect(viewport.querySelector('[data-progress-continuation="before"]')).not.toBeInTheDocument()
+    expect(viewport.querySelector('[data-progress-continuation="after"]')).toBeInTheDocument()
 
     rerender(
       <OrderProgressStepper options={options} currentIndex={2} compact maxVisibleStages={3} />,
@@ -76,6 +79,8 @@ describe('OrderProgressStepper', () => {
     expect(screen.getByText('Confirmed')).toBeInTheDocument()
     expect(screen.getByText('Processing').closest('[data-stage-index]')).toHaveAttribute('aria-current', 'step')
     expect(screen.getByText('Ready')).toBeInTheDocument()
+    expect(viewport.querySelector('[data-progress-continuation="before"]')).toBeInTheDocument()
+    expect(viewport.querySelector('[data-progress-continuation="after"]')).toBeInTheDocument()
 
     rerender(
       <OrderProgressStepper options={options} currentIndex={4} compact maxVisibleStages={3} />,
@@ -85,5 +90,7 @@ describe('OrderProgressStepper', () => {
     expect(screen.getByText('Processing')).toBeInTheDocument()
     expect(screen.getByText('Ready')).toBeInTheDocument()
     expect(screen.getByText('Delivered')).toBeInTheDocument()
+    expect(viewport.querySelector('[data-progress-continuation="before"]')).toBeInTheDocument()
+    expect(viewport.querySelector('[data-progress-continuation="after"]')).not.toBeInTheDocument()
   })
 })
