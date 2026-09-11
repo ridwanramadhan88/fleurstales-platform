@@ -2,7 +2,7 @@
  * @file OrderDetailsPanel.tsx
  * @description Order details drawer shell for a single order.
  */
-import { useEffect, useMemo, useState, type FC } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FC } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { useUiLanguage } from '../../i18n/uiLanguage'
 import { OrderActivityTimeline } from './OrderActivityTimeline'
@@ -15,6 +15,7 @@ import { OrderDetailsItemsSection } from './OrderDetailsItemsSection'
 import { OrderDetailsMetaSection } from './OrderDetailsMetaSection'
 import { OrderDetailsNotesSection } from './OrderDetailsNotesSection'
 import { OrderStatusStepper } from './OrderStatusStepper'
+import { OrderActionSuccessOverlay, type OrderActionSuccessKind } from './OrderActionSuccessOverlay'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import {
   getOrderDetailContextLabel,
@@ -26,8 +27,14 @@ import { AppSheet } from '../ui/app-sheet'
 import { AssignFloristDialog } from './AssignFloristDialog'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { StaffReviewHistory } from '../customers/StaffReviewHistory'
+import type { OrderTableRow } from '../../types/orders'
 
 type OrderDetailTab = OrderDetailContextTab | 'details' | 'activity'
+
+type SuccessTransition = {
+  kind: OrderActionSuccessKind
+  subtitle?: string
+}
 
 export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   const {
@@ -45,6 +52,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
     onCancelFloristAssignment,
     onFloristAssigned,
     onOpenReviewRequest,
+    actionModal,
   } = viewModel
   const language = useUiLanguage((state) => state.language)
 
@@ -55,6 +63,8 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   )
   const defaultTab: OrderDetailTab = contextTab ?? 'details'
   const [tab, setTab] = useState<OrderDetailTab>(defaultTab)
+  const [successTransition, setSuccessTransition] = useState<SuccessTransition | null>(null)
+  const previousStatusRef = useRef(order.status)
   const showLifecycle = shouldShowAdminLifecycle(currentUserRole, order.status)
   const isFinished = order.status === 'delivered' || order.status === 'picked_up'
 
@@ -63,12 +73,51 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   useEffect(() => { setTab(defaultTab) }, [order.orderNumber, defaultTab])
   useEffect(() => { if (isEditing) setTab('details') }, [isEditing])
 
+  // A terminal transition is only celebrated when the order actually changed
+  // into its finished state. Reopening the review action later does not replay it.
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current
+    previousStatusRef.current = order.status
+    const wasFinished = previousStatus === 'delivered' || previousStatus === 'picked_up'
+    if (!wasFinished && isFinished && actionModal === 'review') {
+      setSuccessTransition({
+        kind: 'completed',
+        subtitle: order.status === 'picked_up' ? 'Sudah diambil' : 'Terkirim',
+      })
+    }
+  }, [actionModal, isFinished, order.status])
+
+  const handleFloristAssigned = useCallback((assignedOrder: OrderTableRow) => {
+    const startedProduction = floristDialogMode === 'assign-and-process'
+    onFloristAssigned(assignedOrder)
+    if (startedProduction) {
+      setSuccessTransition({
+        kind: 'processing',
+        subtitle: assignedOrder.florist ? `Ditugaskan ke ${assignedOrder.florist}` : undefined,
+      })
+    }
+  }, [floristDialogMode, onFloristAssigned])
+
+  const handleSuccessComplete = useCallback(() => {
+    const kind = successTransition?.kind
+    setSuccessTransition(null)
+    if (kind === 'processing') onClose()
+  }, [onClose, successTransition?.kind])
+
   const tabs = useMemo<Array<[OrderDetailTab, string]>>(() => {
     const items: Array<[OrderDetailTab, string]> = []
     if (contextTab) items.push([contextTab, getOrderDetailContextLabel(contextTab, language)])
     items.push(['details', 'Details'], ['activity', 'Activity'])
     return items
   }, [contextTab, language])
+
+  const lifecycle = showLifecycle ? (
+    <OrderStatusStepper
+      fulfillment={order.fulfillment}
+      isOrderFuture={isOrderFuture}
+      status={order.status}
+    />
+  ) : undefined
 
   return (
     <>
@@ -82,21 +131,9 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         headerClassName="sr-only"
         contentClassName="gap-0 overflow-hidden rounded-t-2xl bg-card px-5 pb-4 pt-5 shadow-ios-lg ring-1 ring-border/60 sm:right-auto sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 md:max-w-3xl lg:h-[90vh] lg:max-h-[90vh] lg:max-w-5xl"
       >
-        <OrderDetailsHeader viewModel={viewModel} />
+        <OrderDetailsHeader viewModel={viewModel} progress={lifecycle} />
 
-        {/* Keep the lifecycle indicator only for Admin while the order is actively
-            moving through the operational pipeline. Activity owns the history. */}
-        {showLifecycle && (
-          <div className="mb-2">
-            <OrderStatusStepper
-              fulfillment={order.fulfillment}
-              isOrderFuture={isOrderFuture}
-              status={order.status}
-            />
-          </div>
-        )}
-
-        <div className="mt-2 min-h-0 flex-1 px-px overflow-y-auto overflow-x-hidden pb-10 pt-1 text-sm text-foreground/90">
+        <div className="mt-1 min-h-0 flex-1 px-px overflow-y-auto overflow-x-hidden pb-10 pt-1 text-sm text-foreground/90">
           <div role="tablist" aria-label="Order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
             {tabs.map(([id, label]) => (
               <button
@@ -132,7 +169,9 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                     </span>
                   </summary>
                   <div className="space-y-5 border-t border-border/60 p-4">
-                    <OrderDetailsItemsSection viewModel={viewModel} />
+                    <div className="[&_.size-16]:!size-20">
+                      <OrderDetailsItemsSection viewModel={viewModel} />
+                    </div>
                     <OrderDetailsMetaSection viewModel={viewModel} />
                   </div>
                 </details>
@@ -238,7 +277,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
           order={order}
           mode={floristDialogMode ?? 'assign-and-process'}
           onCancel={onCancelFloristAssignment}
-          onAssigned={onFloristAssigned}
+          onAssigned={handleFloristAssigned}
         />
       )}
 
@@ -251,6 +290,14 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         destructive
         onConfirm={viewModel.confirmCancelOrder}
       />
+
+      {successTransition && (
+        <OrderActionSuccessOverlay
+          kind={successTransition.kind}
+          subtitle={successTransition.subtitle}
+          onComplete={handleSuccessComplete}
+        />
+      )}
     </>
   )
 }
