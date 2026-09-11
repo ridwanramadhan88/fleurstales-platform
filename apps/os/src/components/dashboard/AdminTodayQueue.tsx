@@ -69,7 +69,7 @@ export function AdminTodayQueue({
           </p>
           {activeOrders.length > 0 && (
             <p className="mt-1 text-xs font-medium text-muted-foreground">
-              Showing {Math.min(visibleOrders.length, activeOrders.length)} of {activeOrders.length} active order{activeOrders.length === 1 ? '' : 's'}.
+              {`Showing ${Math.min(visibleOrders.length, activeOrders.length)} of ${activeOrders.length} active order${activeOrders.length === 1 ? '' : 's'}.`}
             </p>
           )}
         </div>

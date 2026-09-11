@@ -5,6 +5,7 @@ import { useHrStore } from '../../store/hrStore'
 import type { Employee, ScheduleShift } from '../../store/hrStoreTypes'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useUserStore } from '../../store/userStore'
+import { getDateLocale } from '../../i18n/uiLanguage'
 import {
   canEditScheduling,
   getEffectiveScheduleForDate,
@@ -26,8 +27,8 @@ import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 interface Props { activeBranch: BranchFilter; searchQuery?: string }
 
 const roleLabel = (value: string) => value === 'hr' ? 'HR' : value.charAt(0).toUpperCase() + value.slice(1)
-const formatDay = (date: string) => new Intl.DateTimeFormat('en-GB', { weekday:'short', day:'2-digit', month:'short' }).format(new Date(`${date}T00:00:00`))
-const formatCompactDate = (date: string) => new Intl.DateTimeFormat('en-GB', { day:'2-digit', month:'short' }).format(new Date(`${date}T00:00:00`))
+const formatDay = (date: string, locale?: string) => new Intl.DateTimeFormat(getDateLocale(locale), { weekday: 'short', day: '2-digit', month: 'short' }).format(new Date(`${date}T00:00:00`))
+const formatCompactDate = (date: string, locale?: string) => new Intl.DateTimeFormat(getDateLocale(locale), { day: '2-digit', month: 'short' }).format(new Date(`${date}T00:00:00`))
 const emptyShift = (): ScheduleShift => ({ mode:'off', isWorking:false, branchId:'', startTime:'00:00', endTime:'00:00' })
 
 const weekContextLabel = (weekStart: string) => {
@@ -212,7 +213,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
         title: 'Weekly scheduling',
         subtitle: `${formatDay(weekDates[0])} - ${formatDay(weekDates[6])} · ${activeBranch === 'All' ? 'All branches' : activeBranch}`,
         status,
-        dateLabels: weekDates.map(formatDay),
+        dateLabels: weekDates.map((date) => formatDay(date)),
         rows,
         stats: [
           { label: 'Staff', value: staff.length },

@@ -33,3 +33,17 @@ export const useUiLanguage = create<UiLanguageState>((set, get) => ({
 }))
 
 export const getUiLanguage = (): UiLanguage => useUiLanguage.getState().language
+
+/**
+ * BCP 47 locale for Intl date/time/number formatting that follows the app
+ * UI language. Centralizes the mapping so individual components never
+ * hardcode 'en-GB'/'en-US' for user-visible dates again.
+ */
+export const getDateLocale = (explicit?: string): string => {
+  if (explicit) return explicit
+  try {
+    return getUiLanguage() === 'id' ? 'id-ID' : 'en-GB'
+  } catch {
+    return 'en-GB'
+  }
+}

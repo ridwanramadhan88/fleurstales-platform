@@ -199,7 +199,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
           value: `${compareTotals.difference >= 0 ? '+' : '−'}${formatIdr(Math.abs(compareTotals.difference))}`,
           helper: compareMode === 'income_expense'
             ? `${compareTotals.seriesA > 0 ? ((compareTotals.difference / compareTotals.seriesA) * 100).toFixed(1) : '0.0'}% margin · Revenue minus expense`
-            : `${compareTotals.percentChange === null ? 'No comparison baseline' : `${compareTotals.percentChange >= 0 ? '+' : ''}${compareTotals.percentChange.toFixed(1)}%`} · ${firstLabel} minus ${secondLabel}`,
+            : `${compareTotals.percentChange === null ? 'No comparison baseline' : `${compareTotals.percentChange >= 0 ? '+' : ''}${compareTotals.percentChange.toFixed(1)}%`} · ${firstLabel} − ${secondLabel}`,
           tone: differenceTone,
         },
       ]
@@ -603,7 +603,7 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
                       : percentText}
                   </p>
                   <p className="mt-2 text-2xs text-muted-foreground">
-                    {compareMode === 'income_expense' ? 'Revenue minus expense' : `${firstLabel} minus ${secondLabel}`}
+                    {compareMode === 'income_expense' ? 'Revenue minus expense' : `${firstLabel} − ${secondLabel}`}
                   </p>
                   <p className="mt-2 inline-flex items-center gap-1 text-2xs font-semibold text-foreground">View sources <ChevronRight className="size-3 transition-transform group-hover:translate-x-0.5" /></p>
                 </button>

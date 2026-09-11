@@ -5,8 +5,9 @@ import { useUserStore } from '../../store/userStore'
 import { getMondayForDate, getWeekDates, toIsoDate } from '../../domain/hrSchedulingDomain'
 import { StatusChip } from '../ui/chip'
 import { surfaceCardClass } from '../ui/card'
+import { getDateLocale } from '../../i18n/uiLanguage'
 
-const formatDay = (date:string) => new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'2-digit',month:'short'}).format(new Date(`${date}T00:00:00`))
+const formatDay = (date: string, locale?: string) => new Intl.DateTimeFormat(getDateLocale(locale), { weekday: 'short', day: '2-digit', month: 'short' }).format(new Date(`${date}T00:00:00`))
 
 export const MySchedulePanel:FC = () => {
   const employeeId = useUserStore((state)=>state.employeeId)

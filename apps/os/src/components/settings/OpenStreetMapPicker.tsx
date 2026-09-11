@@ -271,7 +271,7 @@ export const OpenStreetMapPicker: FC<Props> = ({
             </span>
             <div>
               <p className="text-2xs font-semibold text-foreground">Attendance zone</p>
-              <p className="mt-0.5 text-2xs leading-4 text-muted-foreground">Accepted within {radiusMeters.toLocaleString('en-US')} m of this pin.</p>
+              <p className="mt-0.5 text-2xs leading-4 text-muted-foreground">Accepted within {radiusMeters.toLocaleString('id-ID')} m of this pin.</p>
             </div>
           </div>
         </div>

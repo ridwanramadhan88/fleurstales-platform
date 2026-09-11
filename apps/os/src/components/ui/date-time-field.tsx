@@ -3,6 +3,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock } from 'luci
 import { cn } from '@/lib/utils'
 import { Calendar } from './calendar'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
+import { getDateLocale, useUiLanguage } from '../../i18n/uiLanguage'
 
 const parseDateValue = (value: string): Date | undefined => {
   if (!value) return undefined
@@ -18,10 +19,10 @@ const formatDateValue = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
-const formatDisplayDate = (value: string): string => {
+const formatDisplayDate = (value: string, locale?: string): string => {
   const date = parseDateValue(value)
   if (!date) return ''
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(getDateLocale(locale), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -58,6 +59,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
   const [open, setOpen] = React.useState(false)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
   const selectedDate = parseDateValue(value)
+  const language = useUiLanguage((state) => state.language)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -73,7 +75,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
           )}
         >
           <span className="truncate">
-            {value ? formatDisplayDate(value) : placeholder}
+            {value ? formatDisplayDate(value, language === 'id' ? 'id-ID' : 'en-GB') : placeholder}
           </span>
           <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
         </button>
@@ -121,10 +123,10 @@ const parseMonthValue = (value: string): Date | undefined => {
 const formatMonthValue = (date: Date): string =>
   `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`
 
-const formatDisplayMonth = (value: string): string => {
+const formatDisplayMonth = (value: string, locale?: string): string => {
   const date = parseMonthValue(value)
   if (!date) return ''
-  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(date)
+  return new Intl.DateTimeFormat(getDateLocale(locale), { month: 'long', year: 'numeric' }).format(date)
 }
 
 /** Month selector using the same solid product popover surface as date fields, without day cells. */
@@ -139,6 +141,7 @@ export const MonthPickerField: React.FC<MonthPickerFieldProps> = ({
 }) => {
   const [open, setOpen] = React.useState(false)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
+  const language = useUiLanguage((state) => state.language)
   const selectedMonth = parseMonthValue(value)
   const [visibleYear, setVisibleYear] = React.useState(() => selectedMonth?.getFullYear() ?? new Date().getFullYear())
 
@@ -147,8 +150,8 @@ export const MonthPickerField: React.FC<MonthPickerFieldProps> = ({
   }, [open, selectedMonth?.getFullYear()])
 
   const monthNames = React.useMemo(
-    () => Array.from({ length: 12 }, (_, month) => new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(new Date(2020, month, 1))),
-    [],
+    () => Array.from({ length: 12 }, (_, month) => new Intl.DateTimeFormat(getDateLocale(language), { month: 'short' }).format(new Date(2020, month, 1))),
+    [language],
   )
 
   const chooseMonth = (monthIndex: number) => {
@@ -169,7 +172,7 @@ export const MonthPickerField: React.FC<MonthPickerFieldProps> = ({
           ref={triggerRef}
           id={id}
           type="button"
-          aria-label={`Select month: ${value ? formatDisplayMonth(value) : placeholder}`}
+          aria-label={`Select month: ${value ? formatDisplayMonth(value, language === 'id' ? 'id-ID' : 'en-GB') : placeholder}`}
           className={cn(
             'flex h-11 w-full items-center justify-between gap-1.5 whitespace-nowrap rounded-full border border-border/70 bg-card px-4 text-left text-sm text-foreground outline-none transition hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25',
             !value && 'text-muted-foreground',
@@ -177,7 +180,7 @@ export const MonthPickerField: React.FC<MonthPickerFieldProps> = ({
           )}
         >
           <span className="min-w-0 truncate">
-            <span className="font-medium text-foreground">{value ? formatDisplayMonth(value) : placeholder}</span>
+            <span className="font-medium text-foreground">{value ? formatDisplayMonth(value, language === 'id' ? 'id-ID' : 'en-GB') : placeholder}</span>
             {secondaryText && <span className="ml-2 text-muted-foreground">{secondaryText}</span>}
           </span>
           {!hideIcon && <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />}

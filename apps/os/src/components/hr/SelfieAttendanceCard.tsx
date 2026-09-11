@@ -6,6 +6,7 @@ import { useUserStore } from '../../store/userStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { nowInJakarta } from '../../domain/orderTimingDomain'
 import { compressSelfieToSquareJpeg, estimateDataUrlBytes } from '../../domain/selfieImageDomain'
+import { getDateLocale } from '../../i18n/uiLanguage'
 import { findNearestAttendanceBranch, type GeoPoint } from '../../domain/attendanceLocationDomain'
 import { InfoDisclosure } from '../ui/info-disclosure'
 import { StatusChip } from '../ui/chip'
@@ -13,7 +14,7 @@ import { surfaceCardClass } from '../ui/card'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
 
 const stopStream = (stream: MediaStream | null) => stream?.getTracks().forEach((track) => track.stop())
-const formatTime = (iso?: string) => iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'
+const formatTime = (iso?: string) => iso ? new Date(iso).toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit' }) : '—'
 const minutesOfDay = (value: string) => { const [hour, minute] = value.split(':').map(Number); return hour * 60 + minute }
 const minutesUntilShiftEnd = (current: string, end: string) => {
   const now = minutesOfDay(current)
@@ -359,12 +360,12 @@ export const SelfieAttendanceCard: FC = () => {
               ) : checkOutAvailable ? (
                 <div className="rounded-xl border border-warning/30 bg-warning/5 p-3">
                   <p className="text-sm font-semibold leading-5">Check-out available</p>
-                <p className="mt-1 text-xs text-muted-foreground">Your shift ends at {todayShift?.endTime}. Capture a new selfie to check out.</p>
+                <p className="mt-1 text-xs text-muted-foreground">{`Your shift ends at ${todayShift?.endTime}. Capture a new selfie to check out.`}</p>
                   {captureArea('check-out')}
                 </div>
               ) : (
                 <InfoDisclosure title="Check-out availability">
-                <p>Check-out becomes available {attendanceSettings.checkoutGraceMinutes} minutes before the end of today&apos;s dated shift{todayShift?.endTime ? ` at ${todayShift.endTime}` : ''}.</p>
+                <p>{`Check-out becomes available ${attendanceSettings.checkoutGraceMinutes} minutes before the end of today's dated shift${todayShift?.endTime ? ` at ${todayShift.endTime}` : ''}.`}</p>
                 </InfoDisclosure>
               )}
             </div>

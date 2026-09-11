@@ -47,7 +47,7 @@ export const OwnerAttentionQueue: FC<OwnerAttentionQueueProps> = ({ onNavigate }
               Owner attention
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              {totalAttention} decision{totalAttention === 1 ? '' : 's'} waiting for you. Oldest items are shown first in their review workspace.
+              {`${totalAttention} decision${totalAttention === 1 ? '' : 's'} waiting for you.`} Oldest items are shown first in their review workspace.
             </p>
           </div>
         </div>
