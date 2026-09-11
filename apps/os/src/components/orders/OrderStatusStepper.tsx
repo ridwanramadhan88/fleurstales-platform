@@ -31,7 +31,9 @@ export const OrderStatusStepper: FC<OrderStatusStepperProps> = ({
     <OrderProgressStepper
       options={options}
       currentIndex={currentIndex}
-      className="mb-4"
+      compact
+      maxVisibleStages={3}
+      className="w-full"
     />
   );
 };
