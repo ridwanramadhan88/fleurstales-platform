@@ -4,8 +4,15 @@ import type { UiLanguage } from '../../i18n/uiLanguage'
 
 export type OrderDetailContextTab = 'process' | 'production' | 'finance'
 
-const ADMIN_ACTIVE_STATUSES: OrderStatus[] = [
+const ORDER_PROGRESS_STATUSES: OrderStatus[] = [
   'pending_verification',
+  'confirmed',
+  'processing',
+  'ready',
+  'delivering',
+]
+
+const ADMIN_PROCESS_STATUSES: OrderStatus[] = [
   'confirmed',
   'processing',
   'ready',
@@ -18,13 +25,15 @@ const FLORIST_PRODUCTION_STATUSES: OrderStatus[] = [
   'ready',
 ]
 
+const ORDER_PROGRESS_ROLES: UserRole[] = ['owner', 'admin', 'finance', 'florist']
+
 export const isOrderOperationallyActive = (status: OrderStatus): boolean =>
-  ADMIN_ACTIVE_STATUSES.includes(status)
+  ORDER_PROGRESS_STATUSES.includes(status)
 
 export const shouldShowAdminLifecycle = (
   role: UserRole,
   status: OrderStatus,
-): boolean => role === 'admin' && isOrderOperationallyActive(status)
+): boolean => ORDER_PROGRESS_ROLES.includes(role) && isOrderOperationallyActive(status)
 
 export const getOrderDetailContextTab = ({
   order,
@@ -35,13 +44,16 @@ export const getOrderDetailContextTab = ({
   role: UserRole
   financeActionable: boolean
 }): OrderDetailContextTab | null => {
+  // Before an order is confirmed, Order Details is the primary workspace.
+  if (order.status === 'pending_verification') return null
+
   if (role === 'finance') return financeActionable ? 'finance' : null
 
   if (role === 'florist') {
     return FLORIST_PRODUCTION_STATUSES.includes(order.status) ? 'production' : null
   }
 
-  if ((role === 'admin' || role === 'owner') && isOrderOperationallyActive(order.status)) {
+  if ((role === 'admin' || role === 'owner') && ADMIN_PROCESS_STATUSES.includes(order.status)) {
     return 'process'
   }
 
