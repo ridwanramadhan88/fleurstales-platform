@@ -92,7 +92,7 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
       ref={viewportRef}
       className={cn(
         compact
-          ? "relative touch-pan-y overflow-hidden rounded-xl bg-surface-panel/45"
+          ? "relative touch-pan-y overflow-hidden"
           : "relative touch-pan-y rounded-2xl bg-surface-card ring-1 ring-border/60",
         className,
       )}
@@ -107,7 +107,7 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
           data-progress-track
           className={cn(
             "grid w-full min-w-0 items-start will-change-transform",
-            compact ? "px-1.5 py-1.5 sm:px-2" : "px-2 py-3.5 sm:px-4",
+            compact ? "px-1 py-1.5" : "px-2 py-3.5 sm:px-4",
           )}
           style={{
             gridTemplateColumns: `repeat(${visibleOptions.length}, minmax(0, 1fr))`,
@@ -179,10 +179,24 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
       </div>
 
       {compact && hasHiddenBefore && (
-        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-20 w-4 bg-gradient-to-r from-card/80 to-transparent" />
+        <>
+          <span
+            aria-hidden="true"
+            data-progress-continuation="before"
+            className="pointer-events-none absolute left-0 top-[15px] z-[5] h-0.5 w-[16.666%] bg-gradient-to-r from-transparent via-border to-border"
+          />
+          <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-20 w-8 bg-gradient-to-r from-card via-card/65 to-transparent" />
+        </>
       )}
       {compact && hasHiddenAfter && (
-        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-20 w-4 bg-gradient-to-l from-card/80 to-transparent" />
+        <>
+          <span
+            aria-hidden="true"
+            data-progress-continuation="after"
+            className="pointer-events-none absolute right-0 top-[15px] z-[5] h-0.5 w-[16.666%] bg-gradient-to-r from-border via-border to-transparent"
+          />
+          <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-20 w-8 bg-gradient-to-l from-card via-card/65 to-transparent" />
+        </>
       )}
     </div>
   );
