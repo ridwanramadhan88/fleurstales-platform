@@ -491,7 +491,7 @@ export const ID_EXACT_TRANSLATIONS: Record<string, string> = {
   'No late orders, urgent due times, payment blocks, or stock issues need action right now.': 'Tidak ada masalah yang perlu ditangani.',
   'Revenue (confirmed) uses Finance-verified collections. Estimated revenue includes finished orders awaiting confirmation. Scoped to': 'Revenue dikonfirmasi oleh Finance. Estimasi termasuk Order selesai yang masih pending. Scope:',
   '— use the branch switcher in the top bar to change this.': '— ubah Branch dari bar atas.',
-  'all branches': 'semua Branch',
+  'all branches': 'semua cabang',
   'Branches, customers, payment status, and order sources': 'Analisis Branch, Customer, pembayaran, dan sumber Order',
   'Change requests awaiting review': 'Permintaan perubahan menunggu review',
   'Submitted by Admin/Owner on locked (finished) orders. Approving a cancellation voids it immediately; approving an edit only unlocks it for them to make the change themselves.': 'Review perubahan untuk Order yang terkunci.',
