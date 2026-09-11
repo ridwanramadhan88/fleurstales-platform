@@ -110,6 +110,12 @@ export const useOrderDetailsActions = ({
     }
   }
 
+  const onOpenReviewRequest = () => {
+    if (order.status !== 'delivered' && order.status !== 'picked_up') return
+    setReadyTrackingUrl(undefined)
+    setActionModal('review')
+  }
+
   const onMarkPaidAndContinue = () => {
     // Payment confirmation is a separate step. The payment RPC refreshes the
     // order store; close this dialog and require an explicit Process Order click.
@@ -159,6 +165,7 @@ export const useOrderDetailsActions = ({
       })
       setFloristDialogMode(null)
     },
+    onOpenReviewRequest,
     onMarkPaidAndContinue,
     onCloseActionModal: () => setActionModal(null),
     onCopyAddress,
