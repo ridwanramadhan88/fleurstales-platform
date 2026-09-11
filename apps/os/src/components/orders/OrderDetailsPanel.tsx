@@ -4,6 +4,7 @@
  */
 import { useEffect, useMemo, useState, type FC } from 'react'
 import { MessageCircle } from 'lucide-react'
+import { useUiLanguage } from '../../i18n/uiLanguage'
 import { OrderActivityTimeline } from './OrderActivityTimeline'
 import { OrderDetailsActionsSection } from './OrderDetailsActionsSection'
 import { OrderDetailsContextTab } from './OrderDetailsContextTab'
@@ -45,6 +46,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
     onFloristAssigned,
     onOpenReviewRequest,
   } = viewModel
+  const language = useUiLanguage((state) => state.language)
 
   const financeActionable = canVerifyThisOrder || canCompleteRefund || canCancelRefund
   const contextTab = useMemo(
@@ -63,10 +65,10 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
 
   const tabs = useMemo<Array<[OrderDetailTab, string]>>(() => {
     const items: Array<[OrderDetailTab, string]> = []
-    if (contextTab) items.push([contextTab, getOrderDetailContextLabel(contextTab)])
+    if (contextTab) items.push([contextTab, getOrderDetailContextLabel(contextTab, language)])
     items.push(['details', 'Details'], ['activity', 'Activity'])
     return items
-  }, [contextTab])
+  }, [contextTab, language])
 
   return (
     <>
