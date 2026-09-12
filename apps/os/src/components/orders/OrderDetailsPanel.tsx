@@ -149,7 +149,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       >
         <OrderDetailsHeader viewModel={panelViewModel} progress={lifecycle} />
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-px pb-6 pt-0 text-sm text-foreground/90">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-px pb-10 pt-0 text-sm text-foreground/90">
           <div role="tablist" aria-label="Order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
             {tabs.map(([id, label]) => (
               <button
