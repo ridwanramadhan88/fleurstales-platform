@@ -8,13 +8,20 @@ export interface TransactionLedgerViewModel {
   defaultBranch?: import('../../types/orders').BranchFilter
 }
 
+const isPostedTransaction = (transaction: FinanceTransaction): boolean =>
+  transaction.source !== 'order_payment' || transaction.status === 'verified'
+
 export const useTransactionLedgerController = ({
   transactions,
   canEditManual,
   defaultBranch,
-}: TransactionLedgerProps): TransactionLedgerViewModel => ({
-  transactions,
-  canEditManual,
-  defaultBranch,
-  isVisible: transactions.length > 0 || canEditManual,
-})
+}: TransactionLedgerProps): TransactionLedgerViewModel => {
+  const postedTransactions = transactions.filter(isPostedTransaction)
+
+  return {
+    transactions: postedTransactions,
+    canEditManual,
+    defaultBranch,
+    isVisible: postedTransactions.length > 0 || canEditManual,
+  }
+}
