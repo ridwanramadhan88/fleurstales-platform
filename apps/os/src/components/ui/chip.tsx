@@ -16,11 +16,12 @@ import { useActiveItemScroll } from '@/hooks/useActiveItemScroll'
  *   rectangular cards, solid icon circles, or plain unstyled text.
  */
 
-export type ChipTone = 'primary' | 'destructive' | 'warning' | 'info' | 'success' | 'neutral'
+export type ChipTone = 'primary' | 'destructive' | 'danger' | 'warning' | 'info' | 'success' | 'neutral'
 
 const TONE_TINT: Record<ChipTone, string> = {
   primary: 'bg-primary/10 text-primary',
   destructive: 'bg-surface-error text-destructive ring-1 ring-destructive/25',
+  danger: 'bg-surface-error text-destructive ring-1 ring-destructive/25',
   warning: 'bg-surface-warning text-warning ring-1 ring-warning/25',
   info: 'bg-surface-info text-info ring-1 ring-info/25',
   success: 'bg-surface-success text-success ring-1 ring-success/25',
@@ -30,6 +31,7 @@ const TONE_TINT: Record<ChipTone, string> = {
 const TONE_DOT: Record<ChipTone, string> = {
   primary: 'bg-primary',
   destructive: 'bg-destructive',
+  danger: 'bg-destructive',
   warning: 'bg-warning',
   info: 'bg-info',
   success: 'bg-success',
@@ -108,7 +110,6 @@ export const StatusChip = React.forwardRef<HTMLSpanElement, StatusChipProps>(
   },
 )
 StatusChip.displayName = 'StatusChip'
-
 
 export interface ChipRowProps extends React.HTMLAttributes<HTMLDivElement> {
   activeKey?: unknown
