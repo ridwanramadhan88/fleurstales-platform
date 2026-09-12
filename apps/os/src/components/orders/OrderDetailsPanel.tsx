@@ -64,9 +64,25 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   const defaultTab: OrderDetailTab = contextTab ?? 'details'
   const [tab, setTab] = useState<OrderDetailTab>(defaultTab)
   const [successTransition, setSuccessTransition] = useState<SuccessTransition | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(true)
   const previousStatusRef = useRef(order.status)
   const showLifecycle = shouldShowAdminLifecycle(currentUserRole, order.status)
   const isFinished = order.status === 'delivered' || order.status === 'picked_up'
+
+  const requestClose = useCallback(() => {
+    setSheetOpen(false)
+  }, [])
+
+  useEffect(() => {
+    if (sheetOpen) return undefined
+    const timeout = window.setTimeout(() => onClose(), 320)
+    return () => window.clearTimeout(timeout)
+  }, [onClose, sheetOpen])
+
+  const panelViewModel = useMemo<OrderDetailsViewModel>(
+    () => ({ ...viewModel, onClose: requestClose }),
+    [requestClose, viewModel],
+  )
 
   // Each order opens on the role-relevant work tab. When the current work is
   // completed (for example Delivered or Finance reconciled), fall back to Details.
@@ -101,8 +117,8 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   const handleSuccessComplete = useCallback(() => {
     const kind = successTransition?.kind
     setSuccessTransition(null)
-    if (kind === 'processing') onClose()
-  }, [onClose, successTransition?.kind])
+    if (kind === 'processing') requestClose()
+  }, [requestClose, successTransition?.kind])
 
   const tabs = useMemo<Array<[OrderDetailTab, string]>>(() => {
     const items: Array<[OrderDetailTab, string]> = []
@@ -122,18 +138,18 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   return (
     <>
       <AppSheet
-        open
-        onOpenChange={(nextOpen) => { if (!nextOpen) onClose() }}
+        open={sheetOpen}
+        onOpenChange={(nextOpen) => { if (!nextOpen) requestClose() }}
         title={<span className="sr-only">Order {order.orderNumber} details</span>}
         side="bottom"
         size="standard"
         hideCloseButton
         headerClassName="sr-only"
-        contentClassName="gap-0 overflow-hidden rounded-t-2xl bg-card px-5 pb-4 pt-5 shadow-ios-lg ring-1 ring-border/60 sm:right-auto sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 md:max-w-3xl lg:h-[90vh] lg:max-h-[90vh] lg:max-w-5xl"
+        contentClassName="gap-0 overflow-hidden rounded-t-2xl bg-card px-5 pb-4 pt-5 shadow-ios-lg ring-1 ring-border/60 data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none sm:right-auto sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 md:max-w-3xl lg:h-[90vh] lg:max-h-[90vh] lg:max-w-5xl"
       >
-        <OrderDetailsHeader viewModel={viewModel} progress={lifecycle} />
+        <OrderDetailsHeader viewModel={panelViewModel} progress={lifecycle} />
 
-        <div className="mt-1 min-h-0 flex-1 px-px overflow-y-auto overflow-x-hidden pb-10 pt-1 text-sm text-foreground/90">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-px pb-6 pt-0 text-sm text-foreground/90">
           <div role="tablist" aria-label="Order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
             {tabs.map(([id, label]) => (
               <button
@@ -153,9 +169,9 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
             ))}
           </div>
 
-          <div role="tabpanel" className="space-y-8 pt-5">
+          <div role="tabpanel" className="space-y-8 pb-2 pt-5">
             {contextTab && tab === contextTab && (
-              <OrderDetailsContextTab viewModel={viewModel} context={contextTab} />
+              <OrderDetailsContextTab viewModel={panelViewModel} context={contextTab} />
             )}
 
             {tab === 'details' && (
@@ -170,9 +186,9 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                   </summary>
                   <div className="space-y-5 border-t border-border/60 p-4">
                     <div className="[&_.size-16]:!size-20">
-                      <OrderDetailsItemsSection viewModel={viewModel} />
+                      <OrderDetailsItemsSection viewModel={panelViewModel} />
                     </div>
-                    <OrderDetailsMetaSection viewModel={viewModel} />
+                    <OrderDetailsMetaSection viewModel={panelViewModel} />
                   </div>
                 </details>
 
@@ -185,7 +201,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                     </span>
                   </summary>
                   <div className="space-y-4 border-t border-border/60 p-4">
-                    <OrderDetailsDeliverySection viewModel={viewModel} />
+                    <OrderDetailsDeliverySection viewModel={panelViewModel} />
                   </div>
                 </details>
 
@@ -198,7 +214,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                     </span>
                   </summary>
                   <div className="space-y-4 border-t border-border/60 p-4">
-                    <OrderDetailsNotesSection viewModel={viewModel} />
+                    <OrderDetailsNotesSection viewModel={panelViewModel} />
                   </div>
                 </details>
 
@@ -212,7 +228,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                       </span>
                     </summary>
                     <div className="border-t border-border/60 p-4">
-                      <OrderDetailsFinanceSection viewModel={viewModel} mode="content" />
+                      <OrderDetailsFinanceSection viewModel={panelViewModel} mode="content" />
                     </div>
                   </details>
                 )}
@@ -266,11 +282,11 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
           </div>
         </div>
 
-        <OrderDetailsActionsSection viewModel={viewModel} />
+        <OrderDetailsActionsSection viewModel={panelViewModel} />
       </AppSheet>
 
       {/* Modal state must stay mounted regardless of the selected content tab. */}
-      <OrderDetailsFinanceSection viewModel={viewModel} mode="dialogs" />
+      <OrderDetailsFinanceSection viewModel={panelViewModel} mode="dialogs" />
 
       {showFloristAssignment && (
         <AssignFloristDialog
