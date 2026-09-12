@@ -105,6 +105,9 @@ export interface FinanceTransactionEditRecord {
     description: string
     transactionDate?: string
     manualEntryReason?: string
+    transactionCode?: string
+    proofPath?: string
+    proofFileName?: string
   }
 }
 
@@ -126,7 +129,14 @@ export interface FinanceTransaction {
   orderNumber?: string
   payrollProposalId?: string
   payrollPeriodId?: string
+  /** Payment/provider reference. Kept separate from the Finance transaction code. */
   reference?: string
+  /** Shared code used by manual entries and reconciled order payments. */
+  transactionCode?: string
+  /** Private Storage object path for supporting transaction evidence. */
+  proofPath?: string
+  /** Original file name retained for the Finance UI. */
+  proofFileName?: string
   source?: FinanceTransactionSource
   entryMode?: FinanceTransactionEntryMode
   transactionDate?: string
