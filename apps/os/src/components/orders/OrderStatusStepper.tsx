@@ -32,7 +32,7 @@ export const OrderStatusStepper: FC<OrderStatusStepperProps> = ({
       options={options}
       currentIndex={currentIndex}
       compact
-      className="w-full max-w-[28rem] lg:ml-auto"
+      className="w-full"
     />
   );
 };
