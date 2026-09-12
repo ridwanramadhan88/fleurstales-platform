@@ -14,7 +14,7 @@ describe('StorefrontOrderStatusBar', () => {
     const current = screen.getByText('Diproses').closest('li')
     expect(current).toHaveAttribute('aria-current', 'step')
     const currentNode = current?.children[1]
-    expect(currentNode?.className).toContain('animate-[pulse_3s_ease-in-out_infinite]')
+    expect(currentNode?.className).toContain('animate-[pulse_6s_ease-in-out_infinite]')
   })
 
   it('uses the shorter pickup lifecycle', () => {
