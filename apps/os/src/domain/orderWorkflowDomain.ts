@@ -2,9 +2,9 @@
  * @file orderWorkflowDomain.ts
  * @description Pure order workflow and Finance reconciliation rules.
  *
- * Admin confirms the customer payment before production. Finance performs the
- * final reconciliation only after fulfillment is finished, so reconciliation
- * becomes the first Finance gate before a payment is posted to Transaction List.
+ * Admin confirms the customer payment before production and Finance performs
+ * the final reconciliation separately. Fulfillment state is informational for
+ * Finance: an order may still be In Progress when its payment is reconciled.
  * Finished orders remain locked from direct edits unless an approved
  * correction/change-request flow explicitly unlocks them.
  */
@@ -80,7 +80,7 @@ export const canDirectlyEditOrder = (
   _role: UserRole,
 ): boolean => !isOrderLocked(order)
 
-/** Admin-confirmed paid orders wait for fulfillment, then enter Finance. */
+/** Admin-confirmed paid orders wait here until Finance makes the final call. */
 export const isPendingFinanceVerification = (order: OrderTableRow): boolean =>
   order.paymentStatus === 'paid' &&
   !isVoidedRevenueOrder(order) &&
@@ -101,7 +101,6 @@ export type OrderFinanceDecisionCode =
   | 'ORDER_NOT_FOUND'
   | 'ORDER_CANCELLED'
   | 'ORDER_VOIDED'
-  | 'ORDER_NOT_FINISHED'
   | 'ALREADY_VERIFIED'
   | 'PAYMENT_NOT_CONFIRMED'
   | 'INVALID_PAYMENT_INFO'
@@ -154,14 +153,6 @@ export const canMakeOrderFinanceDecision = ({
       allowed: false,
       code: 'ORDER_VOIDED',
       reason: 'A voided order carries no revenue to decide.',
-    }
-  }
-
-  if (!isOrderFinished(order)) {
-    return {
-      allowed: false,
-      code: 'ORDER_NOT_FINISHED',
-      reason: 'Finance reconciliation is available only after the order is finished.',
     }
   }
 
