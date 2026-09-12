@@ -58,45 +58,30 @@ describe('OrderProgressStepper', () => {
     )
   })
 
-  it('keeps the complete lifecycle mounted and moves it behind a clipped mask in compact mode', async () => {
-    const { rerender } = render(
-      <OrderProgressStepper options={options} currentIndex={0} compact />,
+  it('fits the complete lifecycle in compact mode without clipping or masking stages', () => {
+    render(
+      <OrderProgressStepper options={options} currentIndex={2} compact />,
     )
 
     const viewport = screen.getByLabelText('Order progress')
     const track = viewport.querySelector<HTMLElement>('[data-progress-track]')
-    const stages = viewport.querySelectorAll<HTMLElement>('[data-stage-index]')
+    const mask = viewport.querySelector<HTMLElement>('[data-progress-mask]')
 
-    expect(viewport).toHaveAttribute('data-progress-mode', 'full-track-clipped')
-    expect(viewport).toHaveClass('overflow-hidden')
+    expect(viewport).toHaveAttribute('data-progress-mode', 'full-track-fit')
+    expect(viewport).not.toHaveClass('overflow-hidden')
+    expect(viewport).toHaveAttribute('data-progress-mask-before', 'false')
+    expect(viewport).toHaveAttribute('data-progress-mask-after', 'false')
+    expect(track).toHaveClass('w-full')
+    expect(track).toHaveStyle({ transform: 'translate3d(0, 0, 0)' })
+    expect(mask).toHaveClass('overflow-visible')
+    expect(mask?.style.maskImage).toBe('')
+
     for (const option of options) {
       expect(screen.getByText(option.label)).toBeInTheDocument()
     }
-
-    Object.defineProperties(viewport, {
-      clientWidth: { configurable: true, value: 320 },
-    })
-    Object.defineProperties(track, {
-      offsetWidth: { configurable: true, value: 540 },
-      scrollWidth: { configurable: true, value: 540 },
-    })
-    Object.defineProperties(stages[2], {
-      offsetLeft: { configurable: true, value: 216 },
-      offsetWidth: { configurable: true, value: 108 },
-    })
-
-    rerender(<OrderProgressStepper options={options} currentIndex={2} compact />)
-
-    await waitFor(() => {
-      expect(track).toHaveStyle({ transform: 'translate3d(-110px, 0, 0)' })
-      expect(viewport).toHaveAttribute('data-progress-mask-before', 'true')
-      expect(viewport).toHaveAttribute('data-progress-mask-after', 'true')
-    })
-
-    const mask = viewport.querySelector<HTMLElement>('[data-progress-mask]')
-    expect(mask?.style.maskImage).toContain('linear-gradient')
-    expect(screen.getByText('Processing').closest('[data-stage-index]')).toHaveAttribute('aria-current', 'step')
-    expect(screen.getByText('Pending')).toBeInTheDocument()
-    expect(screen.getByText('Delivered')).toBeInTheDocument()
+    expect(screen.getByText('Processing').closest('[data-stage-index]')).toHaveAttribute(
+      'aria-current',
+      'step',
+    )
   })
 })
