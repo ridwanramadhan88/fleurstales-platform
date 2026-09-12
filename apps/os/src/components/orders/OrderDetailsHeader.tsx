@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import type { FC, ReactNode } from 'react'
 import { MoreVertical, Pencil, RotateCcw, X, XCircle } from 'lucide-react'
 import { StatusChip } from '../ui/chip'
 import {
@@ -17,9 +17,10 @@ import { InfoHint } from '../ui/info-hint'
 
 interface OrderDetailsHeaderProps {
   viewModel: OrderDetailsViewModel
+  progress?: ReactNode
 }
 
-export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) => {
+export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, progress }) => {
   const {
     order,
     onClose,
@@ -168,6 +169,8 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel }) =
           {productDisplay.name}
         </p>
       </div>
+
+      {progress && <div className="mt-2 w-full">{progress}</div>}
     </header>
   )
 }
