@@ -121,15 +121,17 @@ const paymentRowsForOrders = (
   orders: OrderTableRow[],
   transactions: FinanceTransaction[],
 ): FinanceQueueRow[] => {
-  const orderPayments = transactions.filter(
+  const pendingOrderPayments = transactions.filter(
     (transaction) =>
       transaction.source === 'order_payment' &&
       Boolean(transaction.orderNumber) &&
-      transaction.status !== 'rejected',
+      transaction.status === 'pending',
   )
 
   return orders.flatMap((order) => {
-    const matching = orderPayments
+    if (!isOrderFinished(order)) return []
+
+    const matching = pendingOrderPayments
       .filter((transaction) => transaction.orderNumber === order.orderNumber)
       .sort(
         (a, b) =>
@@ -139,12 +141,11 @@ const paymentRowsForOrders = (
     if (matching.length === 0) return []
 
     const latest = matching[matching.length - 1]
-    const terminal = isOrderFinished(order) || order.status === 'cancelled' || order.status === 'failed'
     const recordedAmount = matching.reduce((sum, transaction) => sum + transaction.amount, 0)
 
     return [{
       order,
-      status: terminal ? 'complete' : 'in_progress',
+      status: 'complete' as const,
       paymentAmountIdr: Math.max(order.paidAmountIdr ?? 0, recordedAmount),
       paymentMethod: latest.method,
       accountId: latest.accountId,
@@ -197,8 +198,8 @@ export const useOrderVerificationQueueController = ({
   }, [dateScopedRows, searchQuery])
 
   const statusCounts = useMemo(() => ({
-    inProgress: searchScopedRows.filter((row) => row.status === 'in_progress').length,
-    complete: searchScopedRows.filter((row) => row.status === 'complete').length,
+    inProgress: 0,
+    complete: searchScopedRows.length,
   }), [searchScopedRows])
 
   const queueRows = useMemo(
