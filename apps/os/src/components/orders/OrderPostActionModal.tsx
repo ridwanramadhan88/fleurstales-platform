@@ -1,4 +1,5 @@
 import type { FC } from 'react'
+import { createPortal } from 'react-dom'
 import { CheckCheck, CheckCircle2, Copy, MessageCircle, Star, Truck, XCircle } from 'lucide-react'
 
 export interface OrderPostActionModalProps {
@@ -14,6 +15,7 @@ export interface OrderPostActionModalProps {
   previewMessage?: string
   previewSending?: boolean
   onSendPreviewWhatsApp?: () => void
+  onReviewRequestSent?: () => void
 }
 
 export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
@@ -29,12 +31,13 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
   previewMessage,
   previewSending,
   onSendPreviewWhatsApp,
+  onReviewRequestSent,
 }) => {
-  if (!kind) return null
+  if (!kind || typeof document === 'undefined') return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 backdrop-blur-[2px] sm:items-center sm:p-4"
       onClick={(event) => { event.stopPropagation(); onClose() }}
     >
       <div
@@ -77,7 +80,16 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
             <div className="rounded-lg bg-surface-panel px-3 py-2.5 text-sm text-foreground/90">{readyMessage}</div>
             <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
               <button type="button" onClick={onClose} className="inline-flex h-11 items-center justify-center rounded-full px-[18px] text-sm font-medium text-muted-foreground hover:bg-muted">Close</button>
-              <a href={whatsAppLink} target="_blank" rel="noreferrer" onClick={onClose} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-success px-5 text-sm font-medium text-white shadow-ios-sm">
+              <a
+                href={whatsAppLink}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  onClose()
+                  onReviewRequestSent?.()
+                }}
+                className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-success px-5 text-sm font-medium text-white shadow-ios-sm"
+              >
                 <MessageCircle className="size-3.5" /> Send review request
               </a>
             </div>
@@ -120,7 +132,8 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
