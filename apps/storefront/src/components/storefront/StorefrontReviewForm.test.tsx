@@ -34,7 +34,7 @@ const details: PublicOrderTrackingDetails = {
 }
 
 describe('StorefrontReviewForm', () => {
-  it('prefills known customer data and uses horizontal star ratings', async () => {
+  it('prefills known customer data, keeps WhatsApp read-only text, and uses compact star ratings', async () => {
     const user = userEvent.setup()
     render(
       <StorefrontReviewForm
@@ -44,16 +44,19 @@ describe('StorefrontReviewForm', () => {
       />,
     )
 
-    expect(screen.getByDisplayValue('Rani Anggraini')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('rani@email.com')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('081234567890')).toHaveAttribute('readonly')
-    expect(screen.getByDisplayValue('Kedaton')).toBeInTheDocument()
+    expect(screen.getByLabelText(/Nama lengkap/)).toHaveValue('Rani Anggraini')
+    expect(screen.getByLabelText('Email')).toHaveValue('rani@email.com')
+    expect(screen.getByText('WhatsApp pesanan')).toBeInTheDocument()
+    expect(screen.getByText('081234567890')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('081234567890')).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/Domisili/)).toHaveValue('Kedaton')
 
     const rating = screen.getByRole('group', { name: 'Product quality' })
-    const stars = within(rating).getAllByRole('button', { name: /Rate [1-5] out of 5/ })
+    const stars = within(rating).getAllByRole('button', { name: /Nilai [1-5] dari 5/ })
     expect(stars).toHaveLength(5)
 
-    await user.click(within(rating).getByRole('button', { name: 'Rate 4 out of 5' }))
-    expect(within(rating).getByText('4 / 5')).toBeInTheDocument()
+    await user.click(within(rating).getByRole('button', { name: 'Nilai 4 dari 5' }))
+    expect(within(rating).getByText('4/5')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Kirim review & aktifkan diskon' })).toBeEnabled()
   })
 })
