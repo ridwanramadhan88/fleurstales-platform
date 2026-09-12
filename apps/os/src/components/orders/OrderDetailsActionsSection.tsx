@@ -66,7 +66,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
 
   return (
     <>
-      <section className="safe-area-bottom z-20 isolate -mx-5 -mb-4 flex shrink-0 items-center justify-between gap-2 border-t border-border/45 bg-surface-footer px-5 pt-3 shadow-[0_-1px_0_rgba(0,0,0,0.02)] sm:-mx-5 sm:-mb-5 sm:rounded-b-2xl sm:px-5">
+      <section className="safe-area-bottom z-20 isolate -mx-5 -mb-4 flex shrink-0 items-center justify-between gap-2 border-t border-border/55 bg-surface-footer px-5 pb-3 pt-3 shadow-[0_-8px_18px_-18px_rgba(0,0,0,0.45)] sm:-mx-6 sm:-mb-5 sm:rounded-b-2xl sm:px-6 sm:pb-3.5 sm:pt-3.5">
         <div className="flex items-center gap-2">
           {isEditing ? (
             <button type="button" onClick={onCancelEdit} className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted sm:text-xs">Cancel edit</button>
