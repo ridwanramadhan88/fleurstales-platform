@@ -81,6 +81,7 @@ describe('OrderProgressStepper', () => {
     }
     const current = screen.getByText('Processing').closest('[data-stage-index]')
     expect(current).toHaveAttribute('aria-current', 'step')
-    expect(current?.querySelector('span')?.className).toContain('animate-[pulse_6s_ease-in-out_infinite]')
+    const currentNode = current?.children[1]
+    expect(currentNode?.className).toContain('animate-[pulse_6s_ease-in-out_infinite]')
   })
 })
