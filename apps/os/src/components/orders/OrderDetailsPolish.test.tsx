@@ -42,13 +42,17 @@ const makeViewModel = (
   }) as unknown as OrderDetailsViewModel
 
 describe('order details collection polish', () => {
-  it('shows the admin collection label without hiding it on mobile', () => {
+  it('shows the admin collection label without hiding it on mobile and separates the fixed header', () => {
     render(<OrderDetailsHeader viewModel={makeViewModel()} />)
 
     const label = screen.getByText('Awaiting Finance Reconciliation')
     expect(label).toBeInTheDocument()
     expect(label.className).not.toContain('hidden')
     expect(screen.queryByText('Awaiting Finance')).not.toBeInTheDocument()
+
+    const header = label.closest('header')
+    expect(header).toHaveAttribute('data-order-details-header')
+    expect(header).toHaveClass('border-b', 'border-border/80', 'pb-3')
   })
 
   it('keeps greeting and operational-note editing behind the main edit action', () => {

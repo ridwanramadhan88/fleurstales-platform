@@ -52,7 +52,8 @@ export const OrdersTableFilters: FC<OrdersTableFiltersProps> = ({ viewModel }) =
       </div>
       <ChipRow activeKey={statusGroupFilter} edge="card" className="pr-5">
         {STATUS_GROUP_FILTER_OPTIONS.flatMap((option) => {
-          const chips = [<FilterChip key={option.id} active={statusGroupFilter === option.id} onClick={() => onStatusGroupFilterChange(option.id as UiStatusGroup | 'all')} className="shrink-0">{option.label}{option.id === 'new' && newOrderCount > 0 && <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-foreground/25 px-1 text-2xs font-semibold text-primary-foreground">{newOrderCount}</span>}</FilterChip>]
+          const isActive = statusGroupFilter === option.id
+          const chips = [<FilterChip key={option.id} active={isActive} onClick={() => onStatusGroupFilterChange(option.id as UiStatusGroup | 'all')} className="shrink-0">{option.label}{option.id === 'new' && newOrderCount > 0 && <span className={`ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-2xs font-semibold ring-1 ${isActive ? 'bg-primary-foreground/20 text-primary-foreground ring-primary-foreground/25' : 'bg-primary/10 text-primary ring-primary/25'}`}>{newOrderCount}</span>}</FilterChip>]
           if (option.id === 'new') chips.push(<FilterChip key="drafts" active={statusGroupFilter === 'drafts'} onClick={() => onStatusGroupFilterChange('drafts')} className="shrink-0">Drafts{draftCount > 0 && <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-muted-foreground/20 px-1 text-2xs font-semibold">{draftCount}</span>}</FilterChip>)
           return chips
         })}
