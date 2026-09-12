@@ -1,5 +1,5 @@
 import type { FC, KeyboardEvent } from 'react'
-import { CheckCircle2, Clock3, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { formatIdrCurrency } from '../../lib/formatters'
 import { useSettingsStore } from '../../store/settingsStore'
 import type { FinanceQueueRow } from './OrderVerificationQueueController'
@@ -36,7 +36,6 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ 
     : row.accountId === 'legacy:unassigned' || !row.accountId
       ? 'Unassigned account'
       : bankAccounts.find((account) => account.id === row.accountId)?.bankName ?? row.accountId
-  const complete = row.status === 'complete'
   const refunded = row.order.paymentStatus === 'refunded' || Boolean(row.order.refundCompletedAt)
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
@@ -58,10 +57,6 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate text-sm font-semibold text-foreground">{row.order.customerName}</p>
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-semibold ${complete ? 'bg-success/10 text-success' : 'bg-info/10 text-info'}`}>
-              {complete ? <CheckCircle2 className="size-3" /> : <Clock3 className="size-3" />}
-              {complete ? 'Complete' : 'In Progress'}
-            </span>
             {refunded && (
               <span className="rounded-full bg-warning/10 px-2.5 py-1 text-2xs font-semibold text-warning">Refunded</span>
             )}
@@ -83,11 +78,6 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ 
               <p className="mt-0.5 font-medium text-foreground">{formatPaidAt(row.paymentConfirmedAt)}</p>
             </div>
           </div>
-          {row.transactionStatus !== 'verified' && (
-            <p className="mt-2 text-2xs font-medium text-warning">
-              Legacy ledger status: {row.transactionStatus}. No Finance approval action is required in this workflow.
-            </p>
-          )}
         </div>
 
         <div className="shrink-0 sm:text-right">
@@ -96,7 +86,7 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({ 
             {formatIdrCurrency(row.paymentAmountIdr)}
           </p>
           <span className="mt-2 inline-flex items-center gap-1.5 text-2xs font-semibold text-primary">
-            View evidence <ExternalLink className="size-3" />
+            Rekonsiliasi <ExternalLink className="size-3" />
           </span>
         </div>
       </div>
