@@ -111,7 +111,7 @@ export const OrderFinanceReviewSheet: FC<OrderFinanceReviewSheetViewModel> = ({
           urgency={urgency}
         />
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-10 px-px pt-0 text-sm text-foreground/90">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-px pb-10 pt-0 text-sm text-foreground/90">
           <div role="tablist" aria-label="Finance order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
             {([['details', 'Detail'], ['activity', 'Aktivitas']] as const).map(([id, label]) => (
               <button

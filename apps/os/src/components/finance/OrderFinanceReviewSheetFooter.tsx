@@ -58,7 +58,7 @@ export const OrderFinanceReviewSheetFooter: FC<OrderFinanceReviewSheetFooterProp
             </button>
             <button type="button" onClick={onConfirmAction} disabled={decisionBusy || actionNote.trim().length < 5} className="inline-flex h-11 items-center gap-2 rounded-full bg-warning px-[18px] text-sm font-semibold text-warning-foreground disabled:opacity-40">
               {decisionBusy && <Loader2 className="size-4 animate-spin" />}
-              Kirim koreksi
+              Send correction request
             </button>
           </div>
         </div>
@@ -84,7 +84,7 @@ export const OrderFinanceReviewSheetFooter: FC<OrderFinanceReviewSheetFooterProp
           )}
           <div className="flex items-center justify-end gap-2">
             <button type="button" onClick={() => onStartAction('correction')} disabled={decisionBusy} className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-warning/30 bg-warning/5 px-[18px] text-sm font-semibold text-warning disabled:opacity-40">
-              <AlertTriangle className="size-4" /> Perlu koreksi
+              <AlertTriangle className="size-4" /> Needs correction
             </button>
             <button
               type="button"
