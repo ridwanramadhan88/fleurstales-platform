@@ -79,9 +79,8 @@ describe('OrderProgressStepper', () => {
     for (const option of options) {
       expect(screen.getByText(option.label)).toBeInTheDocument()
     }
-    expect(screen.getByText('Processing').closest('[data-stage-index]')).toHaveAttribute(
-      'aria-current',
-      'step',
-    )
+    const current = screen.getByText('Processing').closest('[data-stage-index]')
+    expect(current).toHaveAttribute('aria-current', 'step')
+    expect(current?.querySelector('span')?.className).toContain('animate-[pulse_6s_ease-in-out_infinite]')
   })
 })
