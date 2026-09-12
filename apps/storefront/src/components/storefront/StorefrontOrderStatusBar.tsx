@@ -87,7 +87,7 @@ export const StorefrontOrderStatusBar: FC<StorefrontOrderStatusBarProps> = ({
                 reached
                   ? 'bg-[#00813f] text-white'
                   : 'border border-black/15 bg-[var(--sf-cream)] text-black/25'
-              } ${current ? 'animate-[pulse_3s_ease-in-out_infinite] motion-reduce:animate-none' : ''}`}
+              } ${current ? 'animate-[pulse_6s_ease-in-out_infinite] motion-reduce:animate-none' : ''}`}
             >
               {done ? (
                 <Check className="size-4" strokeWidth={2.2} />
