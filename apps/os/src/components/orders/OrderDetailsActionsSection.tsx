@@ -180,6 +180,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
         deliveryAddress={order.deliveryAddress}
         addressCopied={addressCopied}
         onCopyAddress={onCopyAddress}
+        onReviewRequestSent={onClose}
       />
 
       <OrderPostActionModal

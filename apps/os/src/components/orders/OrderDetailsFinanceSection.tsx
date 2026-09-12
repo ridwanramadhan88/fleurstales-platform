@@ -5,11 +5,30 @@ import { OrderRefundPanel } from './OrderRefundPanel'
 import { OrderRefundDialog } from './OrderRefundDialog'
 import { OrderPaymentProofSummary } from './OrderPaymentProofSummary'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
+import { InfoHint } from '../ui/info-hint'
+import type { OrderPaymentEvent } from '../../types/orders'
 
 interface OrderDetailsFinanceSectionProps {
   viewModel: OrderDetailsViewModel
   mode?: 'all' | 'content' | 'dialogs'
 }
+
+const PAYMENT_EVENT_LABEL: Record<OrderPaymentEvent['type'], string> = {
+  payment_received: 'Pembayaran diterima',
+  payment_reversed: 'Pembayaran dibatalkan',
+  payment_status_adjusted: 'Status pembayaran disesuaikan',
+  refund_initiated: 'Pengembalian dana dimulai',
+  refund_completed: 'Pengembalian dana selesai',
+  refund_cancelled: 'Pengembalian dana dibatalkan',
+}
+
+const formatPaymentEventTime = (value: string) =>
+  new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
 
 export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = ({
   viewModel,
@@ -37,10 +56,14 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
     onResubmitFinance,
     canVerifyThisOrder,
     onVerifyOrder,
+    formatter,
+    isEditing,
   } = viewModel
 
   const showContent = mode !== 'dialogs'
   const showDialogs = mode !== 'content'
+  const paymentHistory = [...(order.paymentHistory ?? [])].reverse()
+  const showPendingPayment = !paymentHistory.length && order.paymentStatus !== 'paid'
 
   return (
     <>
@@ -109,6 +132,57 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
           )}
 
           <OrderRefundPanel viewModel={viewModel} />
+
+          {!isEditing && (paymentHistory.length > 0 || showPendingPayment) && (
+            <section className="space-y-2 border-t border-border/60 pt-3">
+              <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground/80">
+                Riwayat pembayaran
+              </p>
+              <div className="space-y-1.5">
+                {paymentHistory.map((event) => {
+                  const isReceived = event.type === 'payment_received'
+                  const isMoneyOut = event.type === 'payment_reversed' || event.type === 'refund_completed'
+                  const toneClass = isReceived ? 'text-success' : 'text-warning'
+                  const amountLabel = event.amountIdr > 0
+                    ? `${isReceived ? '+' : isMoneyOut ? '−' : ''}Rp ${formatter.format(event.amountIdr)}`
+                    : '—'
+
+                  return (
+                    <div key={event.id} className={`flex min-w-0 items-center gap-1.5 ${toneClass}`}>
+                      <span className="shrink-0 text-xs font-semibold">{PAYMENT_EVENT_LABEL[event.type]}</span>
+                      <InfoHint
+                        label={`${PAYMENT_EVENT_LABEL[event.type]} details`}
+                        className="size-6 text-current hover:text-current"
+                        contentClassName="w-auto max-w-xs"
+                      >
+                        {isReceived
+                          ? `Dikonfirmasi oleh ${event.actorName} · ${formatPaymentEventTime(event.occurredAt)}`
+                          : `${event.actorName} · ${formatPaymentEventTime(event.occurredAt)}`}
+                      </InfoHint>
+                      <span aria-hidden="true" className="mx-1 min-w-4 flex-1 border-t border-dashed border-border/70" />
+                      <span className="shrink-0 text-xs font-semibold">{amountLabel}</span>
+                    </div>
+                  )
+                })}
+
+                {showPendingPayment && (
+                  <div className="flex min-w-0 items-center gap-1.5 text-warning">
+                    <span className="shrink-0 text-xs font-semibold">Pembayaran belum diterima</span>
+                    <InfoHint
+                      label="Status pembayaran"
+                      className="size-6 text-current hover:text-current"
+                    >
+                      Belum dikonfirmasi
+                    </InfoHint>
+                    <span aria-hidden="true" className="mx-1 min-w-4 flex-1 border-t border-dashed border-border/70" />
+                    <span className="shrink-0 text-xs font-semibold">
+                      Rp {formatter.format(order.paidAmountIdr ?? 0)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
         </div>
       )}
 

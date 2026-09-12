@@ -8,10 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
-import {
-  PAYMENT_STATUS_LABELS,
-  getOrderStatusOptionsForFulfillment,
-} from './orderTableLabels'
+import { getOrderStatusOptionsForFulfillment } from './orderTableLabels'
 import { formatIdrText } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 
@@ -109,50 +106,6 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
           <p className="w-full text-2xs text-muted-foreground">Status pembayaran hanya dikendalikan oleh Konfirmasi Pembayaran dan alur pengembalian dana.</p>
         </section>
       ) : null}
-
-      {!isEditing && Boolean(order.paymentHistory?.length) && (
-        <section className="space-y-2 px-0 py-1 sm:px-1">
-          <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground/80">
-            Payment history
-          </p>
-          <div className="space-y-2">
-            {[...(order.paymentHistory ?? [])].reverse().map((event) => (
-              <div
-                key={event.id}
-                className="flex items-start justify-between gap-3 border-t border-border/50 pt-2 first:border-t-0 first:pt-0"
-              >
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground">
-                    {event.type === 'payment_received'
-                      ? 'Payment received'
-                      : event.type === 'payment_reversed'
-                        ? 'Payment reversed'
-                        : event.type === 'refund_initiated'
-                          ? 'Refund initiated'
-                          : event.type === 'refund_completed'
-                            ? 'Refund completed'
-                            : 'Payment status adjusted'}
-                  </p>
-                  <p className="truncate text-2xs text-muted-foreground">
-                    {event.actorName} ·{' '}
-                    {new Date(event.occurredAt).toLocaleString('id-ID', {
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-                <p className="shrink-0 text-xs font-semibold text-foreground">
-                  {event.amountIdr > 0
-                    ? `${event.type === 'payment_received' ? '+' : '-'}Rp ${formatter.format(event.amountIdr)}`
-                    : PAYMENT_STATUS_LABELS[event.resultingStatus]}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section className="space-y-5 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60">
         <div className="flex items-center justify-between gap-3">

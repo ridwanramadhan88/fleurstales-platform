@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FC } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FC } from "react";
 import { CheckCircle2 } from "lucide-react";
 import type { OrderStatus } from "../../types/orders";
 import { cn } from "../../lib/utils";
@@ -43,6 +43,12 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
   }, [currentIndex]);
 
   const centerCurrentStage = useCallback(() => {
+    if (compact) {
+      setTrackOffset(0);
+      setHiddenEdges({ before: false, after: false });
+      return;
+    }
+
     const viewport = viewportRef.current;
     const track = trackRef.current;
     const currentStage = stageRefs.current[currentIndex];
@@ -61,7 +67,7 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
       before: nextOffset > 1,
       after: nextOffset < maxOffset - 1,
     });
-  }, [currentIndex]);
+  }, [compact, currentIndex]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -78,30 +84,15 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
     };
   }, [centerCurrentStage, options.length]);
 
-  const compactMask = hiddenEdges.before && hiddenEdges.after
-    ? "linear-gradient(to right, transparent 0, black 9%, black 91%, transparent 100%)"
-    : hiddenEdges.before
-      ? "linear-gradient(to right, transparent 0, black 9%, black 100%)"
-      : hiddenEdges.after
-        ? "linear-gradient(to right, black 0, black 91%, transparent 100%)"
-        : "none";
-
-  const maskStyle: CSSProperties = compact
-    ? {
-        WebkitMaskImage: compactMask,
-        maskImage: compactMask,
-      }
-    : {};
-
   return (
     <div
       ref={viewportRef}
-      data-progress-mode={compact ? "full-track-clipped" : "full-track"}
+      data-progress-mode={compact ? "full-track-fit" : "full-track"}
       data-progress-mask-before={hiddenEdges.before ? "true" : "false"}
       data-progress-mask-after={hiddenEdges.after ? "true" : "false"}
       className={cn(
         compact
-          ? "relative touch-pan-y overflow-hidden"
+          ? "relative touch-pan-y"
           : "relative touch-pan-y rounded-2xl bg-surface-card ring-1 ring-border/60",
         className,
       )}
@@ -112,21 +103,18 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
       </span>
       <div
         data-progress-mask
-        className={compact ? "overflow-hidden" : "overflow-visible [clip-path:inset(-0.75rem_0_-2rem_0)]"}
-        style={maskStyle}
+        className={compact ? "overflow-visible" : "overflow-visible [clip-path:inset(-0.75rem_0_-2rem_0)]"}
       >
         <div
           ref={trackRef}
           data-progress-track
           className={cn(
             "grid min-w-0 items-start will-change-transform transition-transform duration-300 ease-out motion-reduce:transition-none",
-            compact ? "w-max px-1 py-1.5" : "w-full px-2 py-3.5 sm:px-4",
+            compact ? "w-full px-1 py-1.5" : "w-full px-2 py-3.5 sm:px-4",
           )}
           style={{
-            gridTemplateColumns: compact
-              ? `repeat(${options.length}, 6.75rem)`
-              : `repeat(${options.length}, minmax(0, 1fr))`,
-            transform: `translate3d(-${trackOffset}px, 0, 0)`,
+            gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+            transform: compact ? "translate3d(0, 0, 0)" : `translate3d(-${trackOffset}px, 0, 0)`,
           }}
         >
           {options.map((option, index) => {
@@ -139,23 +127,26 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
                   : "upcoming";
             const Icon = state === "done" ? CheckCircle2 : STATUS_ICONS[option.id];
             const justPopped = poppedIndex === index;
+            const slowPulse = style.pulse
+              ? " animate-[pulse_3s_ease-in-out_infinite] motion-reduce:animate-none"
+              : "";
             const nodeClass = compact
               ? state === "current"
-                ? `relative z-10 flex size-8 items-center justify-center rounded-full text-white transition-all duration-300 ease-out motion-reduce:transition-none ${style.currentDot}${style.pulse ? " animate-pulse motion-reduce:animate-none" : ""}`
+                ? `relative z-10 flex size-8 items-center justify-center rounded-full text-white transition-all duration-300 ease-out motion-reduce:transition-none ${style.currentDot}${slowPulse}`
                 : state === "done"
                   ? `relative z-10 flex size-8 items-center justify-center rounded-full text-white transition-all duration-300 ease-out motion-reduce:transition-none ${style.doneDot}${justPopped ? " animate-dot-pop motion-reduce:animate-none" : ""}`
                   : "relative z-10 flex size-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-all duration-300 ease-out motion-reduce:transition-none"
               : state === "current"
-                ? `relative z-10 flex size-11 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.currentDot}${style.pulse ? " animate-pulse" : ""}`
+                ? `relative z-10 flex size-11 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.currentDot}${slowPulse}`
                 : state === "done"
                   ? `relative z-10 flex size-11 items-center justify-center rounded-full text-white transition-all duration-300 ease-out ${style.doneDot}${justPopped ? " animate-dot-pop" : ""}`
                   : "relative z-10 flex size-11 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-all duration-300 ease-out";
             const labelClass = compact
               ? state === "current"
-                ? `mt-1 w-full truncate px-1 text-center text-[11px] font-semibold leading-3 ${style.currentText}`
+                ? `mt-1 w-full px-0.5 text-center text-[10px] font-semibold leading-3 sm:text-[11px] ${style.currentText}`
                 : state === "done"
-                  ? "mt-1 w-full truncate px-1 text-center text-[11px] font-medium leading-3 text-foreground"
-                  : "mt-1 w-full truncate px-1 text-center text-[11px] font-medium leading-3 text-muted-foreground"
+                  ? "mt-1 w-full px-0.5 text-center text-[10px] font-medium leading-3 text-foreground sm:text-[11px]"
+                  : "mt-1 w-full px-0.5 text-center text-[10px] font-medium leading-3 text-muted-foreground sm:text-[11px]"
               : state === "current"
                 ? `mt-2 w-full px-1 text-center text-xs font-semibold leading-4 sm:text-sm ${style.currentText}`
                 : state === "done"

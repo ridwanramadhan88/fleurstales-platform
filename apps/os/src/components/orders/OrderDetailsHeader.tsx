@@ -50,14 +50,22 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
 
   return (
     <header className="mb-2">
-      <div className="flex min-h-9 items-center justify-between gap-3">
-        <p className="shrink-0 text-2xs font-semibold text-muted-foreground">
-          Order
-        </p>
+      <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex min-w-0 items-center gap-1 text-2xs font-semibold text-muted-foreground">
+          <span className="shrink-0">Order</span>
+          <span aria-hidden="true" className="text-muted-foreground/55">·</span>
+          <span className="truncate text-foreground/75">{order.orderNumber}</span>
+          <InfoHint label="Order information" align="start" className="size-6">
+            <div className="space-y-1">
+              <p><span className="font-medium text-foreground">Cabang:</span> {order.branch}</p>
+              <p><span className="font-medium text-foreground">Dibuat:</span> {formatOrderCreatedAtLabel(order.createdAtLabel)}</p>
+            </div>
+          </InfoHint>
+        </div>
 
-        <div className="flex min-w-0 items-center justify-end gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
           {locked && !order.financeVerified && (
-            <span className="inline-flex max-w-[12rem] shrink items-center truncate rounded-full bg-warning/10 px-2.5 py-1 text-2xs font-semibold text-warning ring-1 ring-warning/20">
+            <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-warning/10 px-2.5 py-1 text-2xs font-semibold text-warning ring-1 ring-warning/20">
               {currentUserRole === 'admin' ? 'Awaiting Finance Reconciliation' : 'Awaiting Finance'}
             </span>
           )}
@@ -138,43 +146,31 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
         </div>
       </div>
 
-      <div className={`mt-1.5 grid min-w-0 gap-2 ${progress ? 'lg:grid-cols-[minmax(0,0.85fr)_minmax(24rem,1.15fr)] lg:items-center lg:gap-5' : ''}`}>
-        <div className="min-w-0 space-y-0.5">
-          {!isEditing ? (
-            <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold leading-6 text-foreground">
-              <span className="truncate">{order.customerName}</span>
-              {STATUS_GROUP_FROM_STATUS[order.status] === 'new' && (
-                <span className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary">
-                  New
-                </span>
-              )}
-            </h2>
-          ) : (
-            <input
-              type="text"
-              value={draft.customerName}
-              onChange={(event) => onDraftChange('customerName', event.target.value)}
-              className="h-10 w-full max-w-xs rounded-xl border border-border/70 bg-surface-panel px-3.5 text-base font-semibold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25"
-              placeholder="Customer name"
-            />
-          )}
-          <p className="truncate text-sm font-semibold leading-5 text-foreground sm:text-base">
-            {productDisplay.name}
-          </p>
-          <p className="flex min-w-0 items-center gap-1 text-2xs text-muted-foreground sm:text-xs">
-            <span className="truncate">
-              {order.orderNumber} · {order.branch} · {formatOrderCreatedAtLabel(order.createdAtLabel)}
-            </span>
-            <InfoHint label="Exact order timestamp" align="end">{order.createdAtLabel}</InfoHint>
-          </p>
-        </div>
-
-        {progress && (
-          <div className="min-w-0 pt-1 lg:pt-0">
-            {progress}
-          </div>
+      <div className="mt-1.5 min-w-0 space-y-0.5">
+        {!isEditing ? (
+          <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold leading-6 text-foreground">
+            <span className="truncate">{order.customerName}</span>
+            {STATUS_GROUP_FROM_STATUS[order.status] === 'new' && (
+              <span className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary">
+                New
+              </span>
+            )}
+          </h2>
+        ) : (
+          <input
+            type="text"
+            value={draft.customerName}
+            onChange={(event) => onDraftChange('customerName', event.target.value)}
+            className="h-10 w-full max-w-xs rounded-xl border border-border/70 bg-surface-panel px-3.5 text-base font-semibold text-foreground outline-none transition placeholder:font-normal placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25"
+            placeholder="Customer name"
+          />
         )}
+        <p className="truncate text-sm font-semibold leading-5 text-foreground sm:text-base">
+          {productDisplay.name}
+        </p>
       </div>
+
+      {progress && <div className="mt-2 w-full">{progress}</div>}
     </header>
   )
 }
