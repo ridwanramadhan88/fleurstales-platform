@@ -49,7 +49,10 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
     (canEdit || canRequestChange || canInitiateRefund)
 
   return (
-    <header className="mb-2">
+    <header
+      data-order-details-header
+      className="-mx-5 mb-0 border-b border-border/80 bg-card px-5 pb-3 shadow-[0_8px_18px_-16px_rgba(0,0,0,0.5)] sm:-mx-6 sm:px-6 sm:pb-3.5"
+    >
       <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex min-w-0 items-center gap-1 text-2xs font-semibold text-muted-foreground">
           <span className="shrink-0">Order</span>
@@ -170,7 +173,7 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
         </p>
       </div>
 
-      {progress && <div className="mt-2 w-full">{progress}</div>}
+      {progress && <div className="mt-2.5 w-full">{progress}</div>}
     </header>
   )
 }
