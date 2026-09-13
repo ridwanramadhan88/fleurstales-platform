@@ -4,10 +4,10 @@ import { installHrManagedEmployeeAccessMutation } from '../../store/hrManagedEmp
 import { HrTabContent, type HrTabContentProps } from './HrTabContent'
 import { useHrTabContentController } from './HrTabContentController'
 
+installHrManagedEmployeeAccessMutation()
+
 export const HrTabContentContainer: FC<HrTabContentProps> = (props) => {
   const role = useUserStore((state) => state.role)
-  if (role === 'hr') installHrManagedEmployeeAccessMutation()
-
   const viewModel = useHrTabContentController(props)
   const canEditCredentials = viewModel.canEditCredentials || (role === 'hr' && viewModel.canManageEmployeeDetails)
 
