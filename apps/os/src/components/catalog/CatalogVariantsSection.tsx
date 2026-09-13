@@ -114,7 +114,7 @@ export const CatalogVariantsSection: FC<Props> = ({
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <VariantField label="Nama ukuran · Wajib">
+                <VariantField label="Size name · Required">
                   <Select
                     value={parts.size || undefined}
                     onValueChange={(value) => updateVariant(index, { size: formatCatalogVariantLabel(value, parts.option) })}
