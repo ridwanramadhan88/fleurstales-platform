@@ -1,4 +1,5 @@
 import type {
+  CatalogSizeGuideSize,
   CatalogSizeGuideTarget,
   CatalogSizeGuideTemplate,
   CatalogStoreSet,
@@ -8,6 +9,36 @@ import { generateId } from '../lib/id'
 import { isSectionEditAuthorized } from '../config/authorization'
 
 const STORAGE_KEY = 'fleurstales.catalog.size-guides.v1'
+const BOUQUET_STANDARD_NAME = 'Bouquet Standard'
+const DEFAULT_TEMPLATE_CREATED_AT = '2026-09-10T00:00:00.000Z'
+
+export const BOUQUET_STANDARD_SIZES: CatalogSizeGuideSize[] = [
+  { id: 'bouquet-standard-small', name: 'Small' },
+  { id: 'bouquet-standard-medium', name: 'Medium' },
+  { id: 'bouquet-standard-large', name: 'Large' },
+]
+
+const defaultBouquetTemplate = (): CatalogSizeGuideTemplate => ({
+  id: 'guide-bouquet-standard',
+  name: BOUQUET_STANDARD_NAME,
+  sizes: BOUQUET_STANDARD_SIZES.map((item) => ({ ...item })),
+  imageUrl: '',
+  storagePath: 'logical/bouquet-standard.jpg',
+  byteSize: 0,
+  width: 800,
+  height: 800,
+  createdAt: DEFAULT_TEMPLATE_CREATED_AT,
+  updatedAt: DEFAULT_TEMPLATE_CREATED_AT,
+})
+
+const normalizeTemplate = (template: CatalogSizeGuideTemplate): CatalogSizeGuideTemplate => ({
+  ...template,
+  sizes: Array.isArray(template.sizes) && template.sizes.length > 0
+    ? template.sizes
+    : template.name.trim().toLowerCase() === BOUQUET_STANDARD_NAME.toLowerCase()
+      ? BOUQUET_STANDARD_SIZES.map((item) => ({ ...item }))
+      : [],
+})
 
 interface PersistedSizeGuides {
   templates: CatalogSizeGuideTemplate[]
@@ -23,21 +54,24 @@ const persist = (state: Pick<CatalogStoreState, 'sizeGuideTemplates' | 'sizeGuid
 }
 
 export const loadPersistedSizeGuides = (): PersistedSizeGuides => {
-  if (typeof localStorage === 'undefined') return { templates: [], targets: [] }
+  if (typeof localStorage === 'undefined') return { templates: [defaultBouquetTemplate()], targets: [] }
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '') as Partial<PersistedSizeGuides>
+    const templates = Array.isArray(parsed.templates)
+      ? parsed.templates.map((template) => normalizeTemplate(template as CatalogSizeGuideTemplate))
+      : []
     return {
-      templates: Array.isArray(parsed.templates) ? parsed.templates : [],
+      templates: templates.length > 0 ? templates : [defaultBouquetTemplate()],
       targets: Array.isArray(parsed.targets) ? parsed.targets : [],
     }
   } catch {
-    return { templates: [], targets: [] }
+    return { templates: [defaultBouquetTemplate()], targets: [] }
   }
 }
 
 type SizeGuideActions = Pick<
   CatalogStoreState,
-  'saveSizeGuideTemplate' | 'deleteSizeGuideTemplate' | 'assignSizeGuide' | 'removeSizeGuideTarget'
+  'saveSizeGuideTemplate' | 'addSizeGuideTemplateSize' | 'deleteSizeGuideTemplate' | 'assignSizeGuide' | 'removeSizeGuideTarget'
 >
 
 export const createCatalogSizeGuideActions = (set: CatalogStoreSet): SizeGuideActions => ({
@@ -50,6 +84,7 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet): SizeGuideAc
       const template: CatalogSizeGuideTemplate = {
         id,
         name: input.name.trim(),
+        sizes: existing?.sizes ?? [],
         imageUrl: input.imageUrl,
         storagePath: existing?.storagePath,
         byteSize: input.byteSize,
@@ -68,6 +103,28 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet): SizeGuideAc
       return next
     })
     return id
+  },
+
+  addSizeGuideTemplateSize: (templateId, name) => {
+    if (!isSectionEditAuthorized('catalog')) return false
+    const cleanName = name.trim()
+    if (!cleanName) return false
+    let added = false
+    set((state) => {
+      const template = state.sizeGuideTemplates.find((item) => item.id === templateId)
+      if (!template || template.sizes.some((item) => item.name.toLowerCase() === cleanName.toLowerCase())) return state
+      added = true
+      const now = new Date().toISOString()
+      const next = {
+        sizeGuideTemplates: state.sizeGuideTemplates.map((item) => item.id === templateId
+          ? { ...item, sizes: [...item.sizes, { id: generateId('guide_size'), name: cleanName }], updatedAt: now }
+          : item),
+        sizeGuideTargets: state.sizeGuideTargets,
+      }
+      persist(next)
+      return next
+    })
+    return added
   },
 
   deleteSizeGuideTemplate: (templateId) => {
@@ -130,3 +187,6 @@ export const resolveCatalogSizeGuide = (
     template.id === templateId && (options?.includeLogical === true || template.byteSize > 0),
   )
 }
+
+export const getDefaultCatalogSizeGuide = (templates: CatalogSizeGuideTemplate[]): CatalogSizeGuideTemplate | undefined =>
+  templates.find((template) => template.name.trim().toLowerCase() === BOUQUET_STANDARD_NAME.toLowerCase()) ?? templates[0]
