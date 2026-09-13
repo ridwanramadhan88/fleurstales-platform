@@ -204,13 +204,6 @@ const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccas
   return { occasions, products }
 }
 
-const snapshotHash = (state: CatalogStoreState): string => JSON.stringify({
-  ...buildRemoteSnapshot(state),
-  sizeGuideTemplates: state.sizeGuideTemplates,
-  sizeGuideTargets: state.sizeGuideTargets,
-  arrangementTypes: state.arrangementTypes,
-})
-
 const productImageHash = (product: CatalogProduct): string => JSON.stringify(
   buildCatalogImageStoragePlan(product).images.map((image) => ({
     id: image.id,
@@ -225,6 +218,14 @@ const productImageHash = (product: CatalogProduct): string => JSON.stringify(
   })),
 )
 
+const snapshotHash = (state: CatalogStoreState): string => JSON.stringify({
+  ...buildRemoteSnapshot(state),
+  productImages: state.products.map((product) => ({ id: product.id, hash: productImageHash(product) })),
+  sizeGuideTemplates: state.sizeGuideTemplates,
+  sizeGuideTargets: state.sizeGuideTargets,
+  arrangementTypes: state.arrangementTypes,
+})
+
 let suppressLocalSync = false
 let catalogUnsubscribe: (() => void) | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
@@ -235,6 +236,20 @@ let storefrontFocusAttached = false
 let saveInFlight = false
 let saveRequestedWhileSaving = false
 const remoteImageHashes = new Map<string, string>()
+
+const applySyncedProductImages = (
+  synced: Awaited<ReturnType<typeof syncCatalogProductImagesToRemote>>,
+): void => {
+  suppressLocalSync = true
+  try {
+    useCatalogStore.setState((state) => ({
+      products: state.products.map((item) => item.id === synced.product.id ? synced.product : item),
+    }))
+  } finally {
+    suppressLocalSync = false
+  }
+  remoteImageHashes.set(synced.product.id, productImageHash(synced.product))
+}
 
 const applyRemoteCatalog = (
   occasions: SharedOccasion[],
@@ -448,25 +463,26 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
   setBridgeStatus({ phase: 'saving', writable: true, message: undefined })
   try {
     let workingRevision = remoteRevision
+    const newProductIds = new Set(
+      currentState.products
+        .filter((product) => !remoteImageHashes.has(product.id))
+        .map((product) => product.id),
+    )
+
+    // Existing products already have a remote parent row, so their image
+    // metadata can safely be synchronized before replacing the Catalog
+    // snapshot. Brand-new products must wait until replaceSnapshot creates
+    // that parent row or the product_images FK rejects the save.
     for (const product of currentState.products) {
+      if (newProductIds.has(product.id)) continue
       const imageHash = productImageHash(product)
       if (remoteImageHashes.get(product.id) === imageHash) continue
       const synced = await syncCatalogProductImagesToRemote(product, workingRevision)
       workingRevision = synced.revision
-      // Image metadata replacement advances the shared Catalog revision. Keep
-      // the browser's authoritative revision current even if a later stage
-      // (arrangement types / size guides) fails.
       remoteRevision = workingRevision
-      suppressLocalSync = true
-      try {
-        useCatalogStore.setState((state) => ({
-          products: state.products.map((item) => item.id === synced.product.id ? synced.product : item),
-        }))
-      } finally {
-        suppressLocalSync = false
-      }
-      remoteImageHashes.set(synced.product.id, productImageHash(synced.product))
+      applySyncedProductImages(synced)
     }
+
     const snapshot = buildRemoteSnapshot(useCatalogStore.getState())
     const result = await shared.repositories.catalogAdmin.replaceSnapshot({
       baseRevision: workingRevision,
@@ -476,7 +492,26 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
     // Commit the revision immediately after this revision-advancing stage.
     // lastSyncedHash remains unchanged until the complete pipeline succeeds,
     // so a later failure stays visibly dirty and can be retried safely.
-    remoteRevision = result.revision
+    workingRevision = result.revision
+    remoteRevision = workingRevision
+
+    // New products exist remotely only after replaceSnapshot. Sync their
+    // images now, chaining the returned revision so the rest of the save
+    // pipeline continues from the authoritative Catalog revision.
+    for (const product of useCatalogStore.getState().products) {
+      if (!newProductIds.has(product.id)) continue
+      const imageHash = productImageHash(product)
+      const plan = buildCatalogImageStoragePlan(product)
+      if (plan.images.length === 0) {
+        remoteImageHashes.set(product.id, imageHash)
+        continue
+      }
+      const synced = await syncCatalogProductImagesToRemote(product, workingRevision)
+      workingRevision = synced.revision
+      remoteRevision = workingRevision
+      applySyncedProductImages(synced)
+    }
+
     await shared.repositories.catalogAdmin.replaceFlowerRecipes({
       baseRevision: remoteRevision,
       products: snapshot.products,
