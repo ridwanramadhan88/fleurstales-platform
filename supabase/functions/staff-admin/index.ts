@@ -30,6 +30,7 @@ type RemoveRequest = {
   action:'remove'
   employeeId:string
   reason:string
+  forceResolve?:boolean
 }
 
 type StaffRequest = InviteRequest | UpdateRequest | RemoveRequest
@@ -121,9 +122,10 @@ Deno.serve(async (request) => {
       const removal=body as RemoveRequest
       if (!employeeId || removal.reason?.trim().length<3) return json({error:'INVALID_STAFF_REMOVAL'},400)
       if (!['owner','hr'].includes(actorProfile.role)) return json({error:'HR_OR_OWNER_REQUIRED'},403)
-      const { data:prepared, error:prepareError }=await userClient.rpc('prepare_unused_staff_removal',{
+      const { data:prepared, error:prepareError }=await userClient.rpc('prepare_staff_removal',{
         p_employee_id:employeeId,
         p_reason:removal.reason.trim(),
+        p_force:Boolean(removal.forceResolve),
       })
       if (prepareError) return json({error:'STAFF_REMOVAL_PREPARE_FAILED',message:prepareError.message},400)
       if (!prepared?.allowed) return json({error:'EMPLOYEE_REMOVAL_BLOCKED',blockers:prepared?.blockers ?? {}},409)
@@ -139,7 +141,7 @@ Deno.serve(async (request) => {
         p_request_id:prepared.requestId,
       })
       if (finalizeError || !finalized?.removed) return json({error:'STAFF_REMOVAL_FINALIZE_FAILED',message:finalizeError?.message ?? 'Removal was not finalized.'},400)
-      return json({ok:true,employeeId,removed:true})
+      return json({ok:true,employeeId,removed:true,forceResolved:Boolean(prepared.forceResolved)})
     }
     const accessBody = body as InviteRequest | UpdateRequest
     const username = accessBody.username?.trim().toLowerCase()
