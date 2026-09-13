@@ -1,5 +1,5 @@
-import type { FC } from 'react'
-import { Plus } from 'lucide-react'
+import { useEffect, useState, type FC } from 'react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import type { CatalogProductImage } from '../../store/catalogStoreTypes'
 import {
   CATALOG_IMAGE_MAX_COUNT,
@@ -23,9 +23,17 @@ const normalizeOrder = (images: CatalogProductImage[]): CatalogProductImage[] =>
 
 export const CatalogProductImagesField: FC<Props> = ({ images, onChange, productName }) => {
   const ordered = normalizeOrder(images)
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  useEffect(() => {
+    setActiveIndex((current) => Math.min(current, Math.max(ordered.length - 1, 0)))
+  }, [ordered.length])
+
   const replaceAt = (index: number, value: string | undefined) => {
     if (!value) {
-      onChange(normalizeOrder(ordered.filter((_, imageIndex) => imageIndex !== index)))
+      const next = normalizeOrder(ordered.filter((_, imageIndex) => imageIndex !== index))
+      onChange(next)
+      setActiveIndex((current) => Math.min(current, Math.max(next.length - 1, 0)))
       return
     }
 
@@ -48,7 +56,7 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
   const append = (value: string | undefined) => {
     if (!value || ordered.length >= CATALOG_IMAGE_MAX_COUNT) return
     const index = ordered.length
-    onChange(normalizeOrder([
+    const next = normalizeOrder([
       ...ordered,
       createLocalCatalogProductImage({
         id: generateId('img'),
@@ -57,32 +65,67 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
         sortOrder: index,
         isPrimary: index === 0,
       }),
-    ]))
+    ])
+    onChange(next)
+    setActiveIndex(index)
   }
 
-  return (
-    <div className="space-y-4">
-      {ordered.map((image, index) => (
-        <ImageDropInput
-          key={image.id}
-          value={image.url}
-          onChange={(value) => replaceAt(index, value)}
-          label={index === 0 ? 'Primary product photo' : `Gallery photo ${index + 1}`}
-        />
-      ))}
+  const goPrevious = () => setActiveIndex((current) => current <= 0 ? ordered.length - 1 : current - 1)
+  const goNext = () => setActiveIndex((current) => current >= ordered.length - 1 ? 0 : current + 1)
+  const activeImage = ordered[activeIndex]
 
-      {ordered.length < CATALOG_IMAGE_MAX_COUNT && (
-        <div className="space-y-1.5">
+  return (
+    <div className="space-y-3">
+      {activeImage ? (
+        <div className="space-y-3">
+          <div className="relative w-fit max-w-full">
+            <ImageDropInput
+              key={activeImage.id}
+              value={activeImage.url}
+              onChange={(value) => replaceAt(activeIndex, value)}
+              label={activeIndex === 0 ? 'Primary product photo' : `Gallery photo ${activeIndex + 1}`}
+            />
+            {ordered.length > 1 && (
+              <>
+                <button type="button" onClick={goPrevious} aria-label="Previous product photo" className="absolute left-2 top-[110px] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button type="button" onClick={goNext} aria-label="Next product photo" className="absolute right-2 top-[110px] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
+                  <ChevronRight className="size-4" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {ordered.length > 1 && (
+            <div className="flex max-w-[360px] gap-2 overflow-x-auto pb-1" aria-label="Product photo carousel">
+              {ordered.map((image, index) => (
+                <button key={image.id} type="button" onClick={() => setActiveIndex(index)} aria-label={`View product photo ${index + 1}`} className={`size-14 shrink-0 overflow-hidden rounded-lg bg-muted ring-2 ${index === activeIndex ? 'ring-primary' : 'ring-transparent'}`}>
+                  <img src={image.url} alt={image.altText ?? `${productName ?? 'Product'} ${index + 1}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-2xs text-muted-foreground">Photo {activeIndex + 1} of {ordered.length} · first photo is the storefront thumbnail.</p>
+        </div>
+      ) : (
+        <ImageDropInput
+          value={undefined}
+          onChange={append}
+          label="Primary product photo"
+        />
+      )}
+
+      {ordered.length > 0 && ordered.length < CATALOG_IMAGE_MAX_COUNT && (
+        <div className="space-y-1.5 border-t border-border/60 pt-3">
           <ImageDropInput
             value={undefined}
             onChange={append}
-            label={ordered.length === 0 ? 'Primary product photo' : 'Add gallery photo'}
+            label="Add gallery photo"
           />
-          {ordered.length > 0 && (
-            <p className="flex max-w-[220px] items-center gap-1.5 text-2xs text-muted-foreground">
-              <Plus className="size-3" /> Up to {CATALOG_IMAGE_MAX_COUNT} ordered product photos. The first image is the storefront thumbnail.
-            </p>
-          )}
+          <p className="flex max-w-[360px] items-center gap-1.5 text-2xs text-muted-foreground">
+            <Plus className="size-3" /> Up to {CATALOG_IMAGE_MAX_COUNT} ordered product photos.
+          </p>
         </div>
       )}
     </div>

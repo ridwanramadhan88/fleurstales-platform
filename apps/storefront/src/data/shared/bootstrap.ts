@@ -9,8 +9,6 @@ import type {
   StaffAccessRepository,
 } from './repositoryContracts'
 import {
-  createCatalogAdminRepository,
-  createCatalogReadRepository,
   createCustomerAdminRepository,
   createOrdersAdminRepository,
   createStoreAdminRepository,
@@ -18,6 +16,10 @@ import {
   createStorefrontCheckoutRepository,
   createStaffAccessRepository,
 } from './repositories'
+import {
+  createCatalogAdminRepositoryWithSizeGuideSizes,
+  createCatalogReadRepositoryWithSizeGuideSizes,
+} from './sizeGuideTemplateRepository'
 import { resolveSupabaseConfig, type SupabaseConfigState } from './supabaseConfig'
 import { SupabaseHttpClient, type SupabaseAuthTokenProvider } from './supabaseHttpClient'
 import { rememberStorefrontCheckoutResult } from './storefrontCheckoutResult'
@@ -48,8 +50,8 @@ export const bootstrapSharedData = (tokenProvider?: SupabaseAuthTokenProvider): 
     enabled: true,
     repositories: {
       client,
-      catalog: createCatalogReadRepository(client),
-      catalogAdmin: createCatalogAdminRepository(client),
+      catalog: createCatalogReadRepositoryWithSizeGuideSizes(client),
+      catalogAdmin: createCatalogAdminRepositoryWithSizeGuideSizes(client),
       store: createStoreReadRepository(client),
       storeAdmin: createStoreAdminRepository(client),
       customersAdmin: createCustomerAdminRepository(client),

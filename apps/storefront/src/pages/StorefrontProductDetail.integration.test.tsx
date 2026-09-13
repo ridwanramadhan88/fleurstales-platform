@@ -32,6 +32,7 @@ describe('storefront product detail page', () => {
       sizeGuideTemplates: [{
         id: 'guide_test',
         name: 'Bouquet size guide',
+        sizes: [{ id: 'guide-test-medium', name: 'Medium' }],
         imageUrl: 'data:image/jpeg;base64,/9j/2Q==',
         byteSize: 7,
         width: 800,

@@ -5,6 +5,7 @@ import { resolveCatalogSizeGuide } from './catalogStoreSizeGuideActions'
 const template = (id: string): CatalogSizeGuideTemplate => ({
   id,
   name: id,
+  sizes: [],
   imageUrl: 'data:image/jpeg;base64,AA==',
   byteSize: 1,
   width: 800,

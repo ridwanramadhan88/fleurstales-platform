@@ -32,9 +32,17 @@ export interface CatalogCategoryConfig {
   prefix: string
 }
 
-export interface CatalogSizeGuideTemplate {
+export interface CatalogSizeGuideSize {
   id: string
   name: string
+}
+
+export interface CatalogSizeGuideTemplate {
+  id: string
+  /** Parent/category name, e.g. "Bouquet Standard". */
+  name: string
+  /** Reusable sellable sizes within the template/category. */
+  sizes: CatalogSizeGuideSize[]
   imageUrl: string
   storagePath?: string
   byteSize: number
@@ -98,7 +106,7 @@ export interface CatalogVariant {
   id: string
   /** Auto-generated, read-only, unique. E.g. "BOQ-FRE-RSB-05R-001". */
   sku: string
-  /** Size label, e.g. "05R", "Small", "Medium". */
+  /** Sellable variant label. The canonical template size comes first; a manual option may follow. */
   size: string
   /** Sell price in IDR for this variant. */
   price: number
@@ -192,6 +200,7 @@ export interface CatalogStoreState {
   /** User-managed arrangement types used by product forms and size-guide targeting. */
   arrangementTypes: string[]
   saveSizeGuideTemplate: (input: { id?: string; name: string; imageUrl: string; byteSize: number }) => string
+  addSizeGuideTemplateSize: (templateId: string, name: string) => boolean
   deleteSizeGuideTemplate: (templateId: string) => void
   assignSizeGuide: (input:
     | { templateId: string; scope: 'product_type'; productType: string }
