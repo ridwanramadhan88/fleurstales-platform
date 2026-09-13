@@ -16,7 +16,7 @@ describe('catalog size-template and image-carousel regressions', () => {
   })
 
   it('uses a template-backed size dropdown while keeping the option manual', () => {
-    expect(variantsSource).toContain('Nama ukuran · Wajib')
+    expect(variantsSource).toContain('Size name · Required')
     expect(variantsSource).toContain('Varian / opsi · Manual')
     expect(variantsSource).toContain('getDefaultCatalogSizeGuide')
     expect(variantsSource).not.toContain('placeholder="Example: 05R"')
