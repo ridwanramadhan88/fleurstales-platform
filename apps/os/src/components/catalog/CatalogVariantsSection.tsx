@@ -137,7 +137,7 @@ export const CatalogVariantsSection: FC<Props> = ({
                   />
                 </VariantField>
 
-                <VariantField label="Status · Wajib">
+                <VariantField label="Status · Required">
                   <Select
                     value={row.status}
                     onValueChange={(value) =>
