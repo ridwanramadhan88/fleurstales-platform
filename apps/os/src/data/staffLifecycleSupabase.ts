@@ -16,7 +16,7 @@ export interface ProvisionStaffInput {
 const formatRemovalBlockers = (blockers:unknown):string => {
   if (!blockers || typeof blockers !== 'object') return 'This employee has operational history and cannot be permanently removed.'
   const labels=Object.entries(blockers as Record<string,unknown>).filter(([,value])=>Number(value)>0).map(([key,value])=>`${value} ${key}`)
-  return labels.length ? `Permanent removal is blocked by ${labels.join(', ')}. Deactivate the employee instead.` : 'This employee has operational history and cannot be permanently removed.'
+  return labels.length ? `Permanent removal is blocked by ${labels.join(', ')}. Use Force resolve only when those linked records should be cleared.` : 'This employee has operational history and cannot be permanently removed.'
 }
 
 const staffFunctionError = async (error: unknown, fallback: string): Promise<Error> => {
@@ -76,12 +76,12 @@ export const syncStaffAccessProfileSupabase = async (employee: Employee, passwor
   if (data?.error) throw new Error(data.message ?? data.error)
 }
 
-export const removeStaffEmployeeSupabase = async (employeeId:string, reason:string):Promise<void> => {
+export const removeStaffEmployeeSupabase = async (employeeId:string, reason:string, forceResolve=false):Promise<void> => {
   if (!isSupabaseConfigured()) return
   const client=getSupabaseAuthClient()
   if (!client) throw new Error('Supabase Auth is not configured.')
   const { data, error }=await client.functions.invoke('staff-admin',{
-    body:{ action:'remove', employeeId, reason },
+    body:{ action:'remove', employeeId, reason, forceResolve },
   })
   if (error) throw await staffFunctionError(error, 'Unable to permanently remove the employee.')
   if (data?.error) {
