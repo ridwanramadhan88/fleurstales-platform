@@ -11,7 +11,7 @@ export const DEFAULT_COMPANY_WEEKLY_SCHEDULE: DefaultWeeklySchedule = {
   thursday: { mode:'follow_branch_hours', isWorking: true, startTime: '09:00', endTime: '18:00' },
   friday: { mode:'follow_branch_hours', isWorking: true, startTime: '09:00', endTime: '18:00' },
   saturday: { mode:'follow_branch_hours', isWorking: true, startTime: '09:00', endTime: '18:00' },
-  sunday: { mode:'off', isWorking: false, startTime: '09:00', endTime: '18:00' },
+  sunday: { mode:'follow_branch_hours', isWorking: true, startTime: '09:00', endTime: '18:00' },
 }
 
 const schedulingAccessLevel = (role: UserRole, permissions: OwnerSettingsStateValue['permissions']): AccessLevel => getAccessLevel(role, 'scheduling', permissions)
