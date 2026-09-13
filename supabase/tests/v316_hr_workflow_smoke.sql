@@ -3,6 +3,7 @@
 do $$
 declare
   v_prepare_source text;
+  v_prepare_core_source text;
   v_finalize_source text;
   v_blocker_source text;
   v_payroll_trigger_source text;
@@ -33,10 +34,15 @@ begin
   end if;
 
   select pg_get_functiondef('public.prepare_unused_staff_removal(text,text)'::regprocedure) into v_prepare_source;
-  if position('HR_OR_OWNER_REQUIRED' in v_prepare_source)=0
-     or position('HR_PROTECTED_ROLE' in v_prepare_source)=0
-     or position('hr.edit_employee' in v_prepare_source)=0
-     or position('employee_removal_blockers' in v_prepare_source)=0 then
+  if position('prepare_staff_removal' in v_prepare_source)=0 then
+    raise exception 'Legacy staff-removal entry point no longer delegates to secured preparation';
+  end if;
+
+  select pg_get_functiondef('public.prepare_staff_removal(text,text,boolean)'::regprocedure) into v_prepare_core_source;
+  if position('HR_OR_OWNER_REQUIRED' in v_prepare_core_source)=0
+     or position('HR_PROTECTED_ROLE' in v_prepare_core_source)=0
+     or position('hr.edit_employee' in v_prepare_core_source)=0
+     or position('employee_removal_blockers' in v_prepare_core_source)=0 then
     raise exception 'Staff-removal preparation lost role, capability, or history enforcement';
   end if;
 
