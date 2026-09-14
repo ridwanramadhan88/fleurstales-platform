@@ -35,7 +35,8 @@ export const FinancePostedTransactionEditor: FC = () => {
     const openEditor = (event: Event) => {
       const id = (event as CustomEvent<string>).detail
       const target = transactions.find((item) => item.id === id)
-      if (!target || target.source === 'transfer') return
+      const entryMode = target?.entryMode ?? (target?.isSystemGenerated ? 'automatic' : 'manual')
+      if (!target || entryMode !== 'manual' || (target.source ?? 'manual') !== 'manual' || target.isSystemGenerated) return
       setTransactionId(id)
       setAccountId(target.accountId ?? 'legacy:unassigned')
       setAmount(String(target.amount))
