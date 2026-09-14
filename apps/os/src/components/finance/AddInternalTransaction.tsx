@@ -64,7 +64,6 @@ const formatAmount = (digits: string) => digits ? Number(digits).toLocaleString(
 export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
   branches,
   defaultBranch,
-  actorName,
   actorRole,
 }) => {
   const transactions = useFinanceStore((state) => state.transactions)
