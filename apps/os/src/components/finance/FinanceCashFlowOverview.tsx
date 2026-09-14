@@ -169,7 +169,7 @@ export const FinanceCashFlowOverview: FC = () => {
             <div key={account.id} className="rounded-xl bg-surface-panel px-4 py-3 ring-1 ring-border/60">
               <p className="truncate text-xs font-medium text-muted-foreground">{account.label}</p>
               <p className={`mt-1 text-lg font-semibold tabular-nums ${account.balance < 0 ? 'text-destructive' : ''}`}>{formatIdr(account.balance)}</p>
-              {account.id === LEGACY_ACCOUNT_ID && <p className="mt-1 text-2xs text-warning">Assign these legacy rows to a real account from Transactions.</p>}
+              {account.id === LEGACY_ACCOUNT_ID && <p className="mt-1 text-2xs text-warning">Historical transactions without a confirmed account stay here until they are resolved through a controlled Finance cleanup.</p>}
             </div>
           ))}
         </div>

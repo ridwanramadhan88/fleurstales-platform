@@ -62,7 +62,7 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'orders.submit_change_request', label:'Request Locked Changes', description:'Submit edit or cancellation requests for locked orders.', parentSection:'orders', group:'Orders' },
   { id:'orders.resolve_change_request', label:'Resolve Order Change Requests', description:'Approve or reject locked-order change requests.', parentSection:'orders', group:'Orders' },
   { id:'finance.view_order_verification', label:'View Order Reconciliation', description:'View Admin-confirmed payments and their order workflow state.', parentSection:'finance', group:'Finance' },
-  { id:'finance.verify_order', label:'Reconcile Order Payment', description:'Make the final Finance confirmation before an order payment enters balance and revenue.', parentSection:'finance', group:'Finance' },
+  { id:'finance.verify_order', label:'Reconcile Order Payment', description:'Review Admin-confirmed payment evidence and mark it Reconciled or Needs Correction without moving cash again.', parentSection:'finance', group:'Finance' },
   { id:'finance.view_payroll', label:'View Payroll', description:'View payroll proposals.', parentSection:'finance', group:'Finance' },
   { id:'finance.approve_employee_payroll', label:'Approve Employee Payroll', description:'Approve one employee payroll.', parentSection:'finance', group:'Finance' },
   { id:'finance.approve_all_payroll', label:'Approve All Payroll', description:'Approve remaining payroll items.', parentSection:'finance', group:'Finance' },
