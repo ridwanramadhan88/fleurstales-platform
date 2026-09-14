@@ -2,6 +2,7 @@ import React from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFinanceStore } from '../../store/financeStore'
+import { saveManualFinanceTransaction } from '../../data/financeManualTransaction'
 import { AddInternalTransaction } from './AddInternalTransaction'
 
 vi.mock('../../data/financeTransactionProof', () => ({
@@ -12,13 +13,20 @@ vi.mock('../../data/financeTransactionProof', () => ({
   removeFinanceTransactionProof: vi.fn(async () => undefined),
 }))
 
+vi.mock('../../data/financeManualTransaction', () => ({
+  saveManualFinanceTransaction: vi.fn(async () => 'txn-test'),
+}))
+
 const attachProof = () => {
   const proof = new File(['proof'], 'proof.png', { type: 'image/png' })
   fireEvent.change(screen.getByLabelText(/Upload bukti/i), { target: { files: [proof] } })
 }
 
 describe('AddInternalTransaction', () => {
-  beforeEach(() => useFinanceStore.setState({ transactions:[], customCategories:[], categoryOverrides:[] }))
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useFinanceStore.setState({ transactions:[], customCategories:[], categoryOverrides:[] })
+  })
 
   it('is available only to Finance', () => {
     const { rerender } = render(<AddInternalTransaction branches={['Kedamaian']} actorName="HR" actorRole="hr" />)
@@ -42,12 +50,12 @@ describe('AddInternalTransaction', () => {
     fireEvent.click(screen.getByRole('button', { name:'Save transaction' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent('Manual transaction recorded.')
-    expect(useFinanceStore.getState().transactions[0]).toMatchObject({
+    expect(saveManualFinanceTransaction).toHaveBeenCalledWith(expect.objectContaining({
       type:'expense', category:'utilities', branch:'All', scope:'company', amount:250000,
-      method:'cash', status:'verified', name:'Electricity bill', description:'', actor:'Finance',
-      accountId:'cash:main', transactionCode:'-', proofPath:'finance-user/2026-09-13/test-proof.png',
-      proofFileName:'proof.png',
-    })
+      method:'cash', name:'Electricity bill', note:'', manualEntryReason:'',
+      accountId:'cash:main', transactionCode:'', proofPath:'finance-user/2026-09-13/test-proof.png',
+      proofFileName:'proof.png', transferFee:0,
+    }))
   })
 
   it('reveals and requires Branch only when Specific branch is selected', () => {
@@ -78,10 +86,11 @@ describe('AddInternalTransaction', () => {
     fireEvent.change(screen.getByPlaceholderText('Explain why this automatic category is being entered manually.'), { target:{ value:'Historical payroll import' } })
     fireEvent.click(screen.getByRole('button', { name:'Save transaction' }))
     expect(await screen.findByRole('status')).toHaveTextContent('Manual transaction recorded.')
-    expect(useFinanceStore.getState().transactions[0]).toMatchObject({
-      category:'payroll', entryMode:'manual', status:'verified', manualEntryReason:'Historical payroll import',
-      transactionCode:'-', proofPath:'finance-user/2026-09-13/test-proof.png', proofFileName:'proof.png',
-    })
+    expect(saveManualFinanceTransaction).toHaveBeenCalledWith(expect.objectContaining({
+      type:'expense', category:'payroll', entryMode: undefined,
+      manualEntryReason:'Historical payroll import', accountId:'cash:main',
+      transactionCode:'', proofPath:'finance-user/2026-09-13/test-proof.png', proofFileName:'proof.png',
+    }))
   })
 
   it('uses focused category drawers and shows category descriptions', () => {
