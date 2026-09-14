@@ -253,7 +253,7 @@ export const FinanceCashFlowOverview: FC = () => {
             <div key={account.id} className="rounded-xl bg-surface-panel px-4 py-3 ring-1 ring-border/60">
               <p className="truncate text-xs font-medium text-muted-foreground">{account.label}</p>
               <p className={`mt-1 text-lg font-semibold tabular-nums ${account.balance < 0 ? 'text-destructive' : ''}`}>{formatIdr(account.balance)}</p>
-              {account.id === LEGACY_ACCOUNT_ID && <p className="mt-1 text-2xs text-warning">Historical rows need controlled account cleanup; automatic source-owned entries stay immutable.</p>}
+              {account.id === LEGACY_ACCOUNT_ID && <p className="mt-1 text-2xs text-warning">Historical transactions without a confirmed account stay here until controlled cleanup; automatic source-owned entries stay immutable.</p>}
             </div>
           ))}
         </div>
