@@ -3,7 +3,7 @@ import type { FinanceWorkspaceModule } from '../../domain/financeWorkspaceDomain
 export type FinanceWorkspaceFocus =
   | { module: 'order_verification'; view: 'all' | 'needs_correction' }
   | { module: 'refunds'; view: 'pending' }
-  | { module: 'payroll'; view: 'review' | 'ready' }
+  | { module: 'payroll'; view: 'review' | 'ready' | 'history' }
   | { module: 'ledger'; view: 'legacy' }
 
 const NAVIGATION_EVENT = 'finance-workspace-navigate'
