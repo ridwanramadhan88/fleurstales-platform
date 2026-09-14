@@ -1,4 +1,4 @@
-import { useMemo, useState, type FC } from 'react'
+import { useEffect, useMemo, useState, type FC } from 'react'
 import { ExternalLink, ShieldCheck } from 'lucide-react'
 import type { OrderTableRow } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
@@ -13,6 +13,7 @@ import { completeOrderRefundWithAccount } from '../../data/orderRefundCompletion
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
+import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
 
 type RefundQueueTab = 'pending' | 'completed' | 'all'
 
@@ -45,7 +46,8 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
   actorRole,
   onOpenOrder,
 }) => {
-  const [activeTab, setActiveTab] = useState<RefundQueueTab>('pending')
+  const [initialFocus] = useState(() => consumeFinanceWorkspaceFocus('refunds'))
+  const [activeTab, setActiveTab] = useState<RefundQueueTab>(initialFocus?.view === 'pending' ? 'pending' : 'pending')
   const [pendingAction, setPendingAction] = useState<{ type: 'complete' | 'cancel'; orderNumber: string } | null>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [refundAccountId, setRefundAccountId] = useState('')
@@ -59,6 +61,10 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
   const bankAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
   const canViewRefunds = hasActionPermission(actorRole, 'finance.view_refunds', actionPermissions, permissions)
   const canManageRefunds = hasActionPermission(actorRole, 'finance.approve_refund', actionPermissions, permissions)
+
+  useEffect(() => subscribeFinanceWorkspaceFocus('refunds', () => {
+    setActiveTab('pending')
+  }), [])
 
   const activeBankAccounts = useMemo(
     () => bankAccounts

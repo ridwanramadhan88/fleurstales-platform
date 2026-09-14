@@ -2,6 +2,7 @@ import { useMemo, useState, type FC, type FormEvent } from 'react'
 import {
   AlertCircle,
   ArrowLeftRight,
+  ArrowUpRight,
   BadgeDollarSign,
   CheckCircle2,
   ClipboardCheck,
@@ -19,6 +20,7 @@ import { createFinanceCashFlowEntry, type CashFlowEntryKind } from '../../data/f
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
+import { requestFinanceWorkspaceNavigation } from './financeWorkspaceNavigation'
 
 const formatIdr = (value: number): string => `Rp ${Math.round(value).toLocaleString('id-ID')}`
 const CASH_ACCOUNT_ID = 'cash:main'
@@ -216,24 +218,34 @@ export const FinanceCashFlowOverview: FC = () => {
               label="Reconciliation"
               value={attention.awaiting + attention.correction}
               helper={`${attention.awaiting} awaiting review · ${attention.correction} needs correction`}
+              actions={[
+                { label: 'Open orders', onClick: () => requestFinanceWorkspaceNavigation({ module: 'order_verification', view: 'all' }) },
+                ...(attention.correction > 0 ? [{ label: 'Needs correction', onClick: () => requestFinanceWorkspaceNavigation({ module: 'order_verification' as const, view: 'needs_correction' as const }) }] : []),
+              ]}
             />
             <AttentionCard
               icon={RotateCcw}
               label="Refunds"
               value={attention.refunds}
               helper="Pending refunds waiting for completion"
+              actions={[{ label: 'Pending refunds', onClick: () => requestFinanceWorkspaceNavigation({ module: 'refunds', view: 'pending' }) }]}
             />
             <AttentionCard
               icon={BadgeDollarSign}
               label="Payroll"
               value={attention.payrollReview + attention.payrollReady}
               helper={`${attention.payrollReview} to review · ${attention.payrollReady} ready to pay`}
+              actions={[
+                { label: 'Review', onClick: () => requestFinanceWorkspaceNavigation({ module: 'payroll', view: 'review' }) },
+                { label: 'Ready to Pay', onClick: () => requestFinanceWorkspaceNavigation({ module: 'payroll', view: 'ready' }) },
+              ]}
             />
             <AttentionCard
               icon={AlertCircle}
               label="Account cleanup"
               value={attention.legacyRows}
               helper="Legacy / unassigned ledger rows"
+              actions={[{ label: 'Open legacy rows', onClick: () => requestFinanceWorkspaceNavigation({ module: 'ledger', view: 'legacy' }) }]}
             />
           </div>
         )}
@@ -339,7 +351,8 @@ const AttentionCard: FC<{
   label: string
   value: number
   helper: string
-}> = ({ icon: Icon, label, value, helper }) => (
+  actions: Array<{ label: string; onClick: () => void }>
+}> = ({ icon: Icon, label, value, helper, actions }) => (
   <div className={`rounded-xl px-4 py-3 ring-1 ${value > 0 ? 'bg-warning/5 ring-warning/20' : 'bg-surface-panel ring-border/60'}`}>
     <div className="flex items-center justify-between gap-3">
       <span className="flex size-8 items-center justify-center rounded-full bg-background/80 text-muted-foreground ring-1 ring-border/60">
@@ -349,5 +362,17 @@ const AttentionCard: FC<{
     </div>
     <p className="mt-3 text-xs font-semibold text-foreground">{label}</p>
     <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{helper}</p>
+    <div className="mt-3 flex flex-wrap gap-1.5">
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          type="button"
+          onClick={action.onClick}
+          className="inline-flex h-8 items-center gap-1 rounded-lg bg-background px-2.5 text-[11px] font-semibold text-foreground ring-1 ring-border/60 transition hover:bg-card"
+        >
+          {action.label}<ArrowUpRight className="size-3" />
+        </button>
+      ))}
+    </div>
   </div>
 )

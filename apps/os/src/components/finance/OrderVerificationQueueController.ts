@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useFinanceStore } from '../../store/financeStore'
@@ -12,6 +12,7 @@ import type { OrderVerificationQueueProps } from './OrderVerificationQueue'
 import type { FinanceOrderStatusFilter } from './FinanceOrderFilterBar'
 import type { FinanceDateScopeId } from './FinanceDateScopeTabs'
 import { toast } from '../../hooks/use-toast'
+import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
 
 export type OrderReconciliationStatus = 'in_progress' | 'complete'
 
@@ -27,6 +28,7 @@ export interface FinanceQueueRow {
 }
 
 export interface FinanceQueueStatusCounts {
+  needsCorrection: number
   inProgress: number
   complete: number
 }
@@ -164,6 +166,7 @@ export const useOrderVerificationQueueController = ({
   searchQuery = '',
   onSearchQueryChange,
   showHeading = true,
+  initialStatusFilter,
 }: OrderVerificationQueueProps): OrderVerificationQueueViewModel => {
   const transactions = useFinanceStore((state) => state.transactions)
   const approveChangeRequest = useOrdersStore((state) => state.approveChangeRequest)
@@ -172,10 +175,20 @@ export const useOrderVerificationQueueController = ({
   const branchId = useUserStore((state) => state.branchId)
   const actor = { employeeId, name: actorName, role: userRole, branchId }
 
+  const [initialFocus] = useState(() => consumeFinanceWorkspaceFocus('order_verification'))
   const [reviewingOrder, setReviewingOrder] = useState<OrderTableRow | null>(null)
-  const [statusFilter, setStatusFilter] = useState<FinanceOrderStatusFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<FinanceOrderStatusFilter>(() =>
+    initialStatusFilter ?? (initialFocus?.view === 'needs_correction' ? 'needs_correction' : 'all'),
+  )
   const [dateScope, setDateScope] = useState<FinanceDateScopeId>('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+
+  useEffect(() => subscribeFinanceWorkspaceFocus('order_verification', (focus) => {
+    setStatusFilter(focus.view === 'needs_correction' ? 'needs_correction' : 'all')
+    setDateScope('all')
+    setDateRange(undefined)
+    onSearchQueryChange?.('')
+  }), [onSearchQueryChange])
 
   const postedRows = useMemo(
     () => paymentRowsForOrders(orders, transactions),
@@ -197,13 +210,18 @@ export const useOrderVerificationQueueController = ({
   }, [dateScopedRows, searchQuery])
 
   const statusCounts = useMemo(() => ({
+    needsCorrection: searchScopedRows.filter((row) => row.order.financeVerificationStatus === 'rejected').length,
     inProgress: searchScopedRows.filter((row) => row.status === 'in_progress').length,
     complete: searchScopedRows.filter((row) => row.status === 'complete').length,
   }), [searchScopedRows])
 
   const queueRows = useMemo(
     () => searchScopedRows
-      .filter((row) => statusFilter === 'all' || row.status === statusFilter)
+      .filter((row) => {
+        if (statusFilter === 'all') return true
+        if (statusFilter === 'needs_correction') return row.order.financeVerificationStatus === 'rejected'
+        return row.status === statusFilter
+      })
       .sort(
         (a, b) =>
           Date.parse(b.paymentConfirmedAt) - Date.parse(a.paymentConfirmedAt) ||

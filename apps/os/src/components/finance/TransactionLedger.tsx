@@ -1,4 +1,4 @@
-import { useMemo, useState, type FC, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, type FC, type KeyboardEvent } from 'react'
 import { ExternalLink, FileCheck2, Pencil, ReceiptText, Search } from 'lucide-react'
 import type {
   FinanceCategory,
@@ -16,6 +16,8 @@ import { toast } from '../../hooks/use-toast'
 import type { TransactionLedgerViewModel } from './TransactionLedgerController'
 import { StatusChip } from '../ui/chip'
 import { OrderFinanceReviewSheetContainer } from './OrderFinanceReviewSheetContainer'
+import { FinanceTransactionDetailSheet } from './FinanceTransactionDetailSheet'
+import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
 
 type SourceTab = 'all' | 'orders' | 'payroll' | 'refunds' | 'manual' | 'cashflow'
 type PeriodFilter = 'all' | 'today' | '30d'
@@ -57,26 +59,30 @@ const statusLabel = (transaction: FinanceTransaction) => {
 const directionLabel = (transaction: FinanceTransaction): string =>
   transaction.type === 'income' ? 'In' : 'Out'
 
+const isEditableManualTransaction = (transaction: FinanceTransaction, canEdit: boolean): boolean =>
+  canEdit
+  && transaction.status === 'verified'
+  && isManual(transaction)
+  && (transaction.source ?? 'manual') === 'manual'
+  && !transaction.isSystemGenerated
+
 const TransactionRow: FC<{
   transaction: FinanceTransaction
   canEdit: boolean
   accountLabel: string
+  onOpenDetail: () => void
   onOpenOrder?: () => void
-}> = ({ transaction, canEdit, accountLabel, onOpenOrder }) => {
+}> = ({ transaction, canEdit, accountLabel, onOpenDetail, onOpenOrder }) => {
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const scope = transaction.scope ?? (transaction.branch === 'All' ? 'company' : 'branch')
-  const editable = canEdit
-    && transaction.status === 'verified'
-    && isManual(transaction)
-    && (transaction.source ?? 'manual') === 'manual'
-    && !transaction.isSystemGenerated
+  const editable = isEditableManualTransaction(transaction, canEdit)
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.currentTarget !== event.target) return
-    if (!onOpenOrder || (event.key !== 'Enter' && event.key !== ' ')) return
+    if (event.key !== 'Enter' && event.key !== ' ') return
     event.preventDefault()
-    onOpenOrder()
+    onOpenDetail()
   }
 
   const openProof = async () => {
@@ -93,12 +99,12 @@ const TransactionRow: FC<{
 
   return (
     <article
-      role={onOpenOrder ? 'button' : undefined}
-      tabIndex={onOpenOrder ? 0 : undefined}
-      aria-label={onOpenOrder ? `Open order ${transaction.orderNumber} finance evidence` : undefined}
-      onClick={onOpenOrder}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open transaction ${transaction.transactionCode?.trim() || transaction.id} details`}
+      onClick={onOpenDetail}
       onKeyDown={handleKeyDown}
-      className={`rounded-xl border border-border/60 bg-card px-4 py-3.5 ${onOpenOrder ? 'cursor-pointer transition hover:bg-surface-panel hover:border-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30' : ''}`}
+      className="cursor-pointer rounded-xl border border-border/60 bg-card px-4 py-3.5 transition hover:border-primary/25 hover:bg-surface-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
     >
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -107,11 +113,6 @@ const TransactionRow: FC<{
             <StatusChip tone={transaction.type === 'income' ? 'success' : 'danger'}>{directionLabel(transaction)}</StatusChip>
             <StatusChip tone="neutral">{sourceLabel(transaction)}</StatusChip>
             {transaction.status !== 'verified' && <StatusChip tone="warning">{transaction.status}</StatusChip>}
-            {onOpenOrder && (
-              <span className="inline-flex items-center gap-1 text-2xs font-semibold text-primary">
-                Lihat pesanan <ExternalLink className="size-3" />
-              </span>
-            )}
           </div>
 
           <div className="mt-3 grid gap-x-5 gap-y-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
@@ -149,7 +150,18 @@ const TransactionRow: FC<{
             </div>
           </div>
 
-          {transaction.orderNumber && <p className="mt-2 text-xs font-medium text-foreground/80">Order {transaction.orderNumber}</p>}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {transaction.orderNumber && <p className="text-xs font-medium text-foreground/80">Order {transaction.orderNumber}</p>}
+            {onOpenOrder && (
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); onOpenOrder() }}
+                className="inline-flex items-center gap-1 text-2xs font-semibold text-primary hover:underline"
+              >
+                Open order <ExternalLink className="size-3" />
+              </button>
+            )}
+          </div>
           {transaction.adjustmentReason && <p className="mt-1 text-xs text-muted-foreground">Reason: {transaction.adjustmentReason}</p>}
           {transaction.editHistory?.length ? <p className="mt-1 text-2xs text-muted-foreground">Edited {transaction.editHistory.length}× · latest correction retained in audit history</p> : null}
         </div>
@@ -201,14 +213,28 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
   const actorName = useUserStore((state) => state.name)
   const userRole = useUserStore((state) => state.role)
   const canVerifyOrderPayment = isActionAuthorized(userRole, 'finance.verify_order')
+  const [initialFocus] = useState(() => consumeFinanceWorkspaceFocus('ledger'))
+  const legacyFocus = initialFocus?.view === 'legacy'
   const [sourceTab, setSourceTab] = useState<SourceTab>('all')
   const [search, setSearch] = useState('')
   const [direction, setDirection] = useState<'all' | FinanceTransactionType>('all')
   const [category, setCategory] = useState<'all' | FinanceCategory>('all')
-  const [branch, setBranch] = useState<string>(defaultBranch ?? 'All')
-  const [account, setAccount] = useState<string>('All')
+  const [branch, setBranch] = useState<string>(legacyFocus ? 'All' : defaultBranch ?? 'All')
+  const [account, setAccount] = useState<string>(legacyFocus ? 'legacy:unassigned' : 'All')
   const [period, setPeriod] = useState<PeriodFilter>('all')
   const [reviewingOrderNumber, setReviewingOrderNumber] = useState<string | null>(null)
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
+
+  useEffect(() => subscribeFinanceWorkspaceFocus('ledger', (focus) => {
+    if (focus.view !== 'legacy') return
+    setSourceTab('all')
+    setSearch('')
+    setDirection('all')
+    setCategory('all')
+    setBranch('All')
+    setAccount('legacy:unassigned')
+    setPeriod('all')
+  }), [])
 
   const accountLabels = useMemo(() => new Map<string,string>([
     ...paymentAccounts.map((item) => [item.id, `${item.bankName} · ${item.accountNumber}`] as [string,string]),
@@ -255,6 +281,21 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
   const reviewingOrder = reviewingOrderNumber
     ? orders.find((order) => order.orderNumber === reviewingOrderNumber) ?? null
     : null
+  const selectedTransaction = selectedTransactionId
+    ? transactions.find((transaction) => transaction.id === selectedTransactionId) ?? null
+    : null
+  const selectedLinkedOrder = selectedTransaction?.orderNumber
+    ? orders.find((order) => order.orderNumber === selectedTransaction.orderNumber)
+    : undefined
+  const selectedAccountLabel = selectedTransaction
+    ? accountLabels.get(selectedTransaction.accountId ?? 'legacy:unassigned') ?? selectedTransaction.accountId ?? 'Legacy / unassigned'
+    : '—'
+  const selectedCategoryLabel = selectedTransaction
+    ? getFinanceCategoryLabel(selectedTransaction.category, customCategories, categoryOverrides)
+    : '—'
+  const selectedEditable = selectedTransaction
+    ? isEditableManualTransaction(selectedTransaction, canEditManual)
+    : false
 
   if (!isVisible) return null
 
@@ -302,12 +343,29 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
                 transaction={transaction}
                 canEdit={canEditManual}
                 accountLabel={accountLabels.get(transaction.accountId ?? 'legacy:unassigned') ?? transaction.accountId ?? 'Legacy / unassigned'}
+                onOpenDetail={() => setSelectedTransactionId(transaction.id)}
                 onOpenOrder={linkedOrder ? () => setReviewingOrderNumber(linkedOrder.orderNumber) : undefined}
               />
             )
           })}
         </div>
       )}
+
+      <FinanceTransactionDetailSheet
+        transaction={selectedTransaction}
+        accountLabel={selectedAccountLabel}
+        categoryLabel={selectedCategoryLabel}
+        editable={selectedEditable}
+        onClose={() => setSelectedTransactionId(null)}
+        onEdit={selectedEditable && selectedTransaction ? () => {
+          window.dispatchEvent(new CustomEvent('finance-edit-posted-transaction', { detail: selectedTransaction.id }))
+          setSelectedTransactionId(null)
+        } : undefined}
+        onOpenOrder={selectedLinkedOrder ? () => {
+          setSelectedTransactionId(null)
+          setReviewingOrderNumber(selectedLinkedOrder.orderNumber)
+        } : undefined}
+      />
 
       {reviewingOrder && (
         <OrderFinanceReviewSheetContainer
