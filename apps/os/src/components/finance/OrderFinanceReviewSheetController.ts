@@ -1,3 +1,4 @@
+/** @file OrderFinanceReviewSheetController.ts */
 import { useEffect, useMemo, useState } from 'react'
 import { useCatalogStore } from '../../store/catalogStore'
 import {
@@ -266,7 +267,7 @@ export const useOrderFinanceReviewSheetController = ({
       if (decision === 'reject') {
         toast({
           title: 'Payment returned for correction',
-          description: 'The payment remains outside Finance balance until it is reconciled.',
+          description: 'The received money remains posted to its account while Admin corrects the payment evidence.',
         })
       }
       closeAction()
