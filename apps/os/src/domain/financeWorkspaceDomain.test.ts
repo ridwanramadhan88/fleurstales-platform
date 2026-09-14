@@ -12,9 +12,9 @@ describe('finance workspace privacy', () => {
     expect(getFinanceWorkspaceModules('florist')).toEqual([])
   })
 
-  it('allows Finance to view all finance modules', () => {
+  it('keeps Overview first while preserving the internal reconciliation routes', () => {
     expect(getFinanceWorkspaceModules('finance')).toEqual([
-      'order_verification', 'ledger', 'balance', 'payroll', 'refunds',
+      'balance', 'order_verification', 'refunds', 'ledger', 'payroll',
     ])
   })
 })
