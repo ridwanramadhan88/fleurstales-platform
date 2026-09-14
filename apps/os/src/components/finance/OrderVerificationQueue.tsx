@@ -54,7 +54,7 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
         title="Order Reconciliation"
         hint={
           <InfoHint label="About order reconciliation">
-            Paid orders appear after Admin confirms payment. Finance reconciliation posts the payment to company balance and revenue.
+            Admin-confirmed payments are already posted to their receiving account. Reconciliation reviews the payment and evidence only; it never posts the money a second time.
           </InfoHint>
         }
       />
