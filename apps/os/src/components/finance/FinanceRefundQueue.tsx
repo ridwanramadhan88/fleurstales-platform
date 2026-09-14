@@ -7,6 +7,7 @@ import { useOrdersStore } from '../../store/ordersStore'
 import { useOrderRuntimeStore } from '../../store/orderRuntimeStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { hasActionPermission } from '../../config/actionPermissions'
+import { completeOrderRefundWithAccount } from '../../data/orderRefundCompletion'
 import { toast } from '../../hooks/use-toast'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
@@ -22,6 +23,7 @@ interface FinanceRefundQueueProps {
 }
 
 const formatIdr = (value: number): string => `Rp ${value.toLocaleString('id-ID')}`
+const CASH_ACCOUNT_ID = 'cash:main'
 
 const formatTimestamp = (value?: string): string => {
   if (!value) return '—'
@@ -46,14 +48,26 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
   const [activeTab, setActiveTab] = useState<RefundQueueTab>('pending')
   const [pendingAction, setPendingAction] = useState<{ type: 'complete' | 'cancel'; orderNumber: string } | null>(null)
   const [cancelReason, setCancelReason] = useState('')
+  const [payingAccountId, setPayingAccountId] = useState('')
+  const [transferFee, setTransferFee] = useState('')
+  const [actionBusy, setActionBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const addActivity = useOrderRuntimeStore((state) => state.addActivity)
   const employeeId = useUserStore((state) => state.employeeId)
   const branchId = useUserStore((state) => state.branchId)
   const permissions = useSettingsStore((state) => state.permissions)
   const actionPermissions = useSettingsStore((state) => state.actionPermissions)
+  const paymentAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
   const canViewRefunds = hasActionPermission(actorRole, 'finance.view_refunds', actionPermissions, permissions)
   const canManageRefunds = hasActionPermission(actorRole, 'finance.approve_refund', actionPermissions, permissions)
+
+  const accountOptions = useMemo(() => [
+    ...paymentAccounts
+      .filter((account) => account.isActive !== false)
+      .sort((a, b) => Number(Boolean(b.isDefault)) - Number(Boolean(a.isDefault)) || (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+      .map((account) => ({ id: account.id, label: `${account.bankName} · ${account.accountNumber}` })),
+    { id: CASH_ACCOUNT_ID, label: 'Cash' },
+  ], [paymentAccounts])
 
   const refundOrders = useMemo(
     () => orders.filter((order) => order.paymentStatus === 'refund_pending' || order.paymentStatus === 'refunded'),
@@ -73,30 +87,47 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
     ? orders.find((order) => order.orderNumber === pendingAction.orderNumber)
     : undefined
 
-  const completeRefund = () => {
-    if (!canManageRefunds || !pendingAction || pendingAction.type !== 'complete') return
-    const result = useOrdersStore.getState().completeRefund({
-      orderNumber: pendingAction.orderNumber,
-      expectedRevision: confirmOrder?.revision ?? 1,
-      actor: { employeeId, name: actorName, role: actorRole, branchId },
-    })
+  const openCompleteRefund = (order: OrderTableRow) => {
+    const defaultBank = accountOptions.find((account) => account.id !== CASH_ACCOUNT_ID)?.id ?? ''
+    setPayingAccountId(order.paymentMethod === 'cash' ? CASH_ACCOUNT_ID : defaultBank)
+    setTransferFee('')
+    setActionError(null)
+    setPendingAction({ type: 'complete', orderNumber: order.orderNumber })
+  }
 
-    if (!result.allowed) {
-      setActionError(result.reason)
+  const completeRefund = async () => {
+    if (!canManageRefunds || !pendingAction || pendingAction.type !== 'complete' || !confirmOrder || actionBusy) return
+    if (!payingAccountId) {
+      setActionError('Select the account paying this refund.')
+      return
+    }
+    const feeAmount = Number(transferFee.replace(/\D/g, '')) || 0
+    if (feeAmount > 0 && payingAccountId === CASH_ACCOUNT_ID) {
+      setActionError('Transfer fee is only available for bank/e-wallet accounts.')
       return
     }
 
-    addActivity(pendingAction.orderNumber, {
-      kind: 'system',
-      description: `Refund completed by ${actorName}`,
-      actor: actorName,
-    })
-    toast({
-      title: 'Refund completed',
-      description: `${pendingAction.orderNumber} is now recorded as refunded.`,
-    })
-    setPendingAction(null)
+    setActionBusy(true)
     setActionError(null)
+    try {
+      await completeOrderRefundWithAccount(confirmOrder, payingAccountId, feeAmount)
+      addActivity(pendingAction.orderNumber, {
+        kind: 'system',
+        description: `Refund completed by ${actorName}`,
+        actor: actorName,
+      })
+      toast({
+        title: 'Refund completed',
+        description: `${pendingAction.orderNumber} is refunded from the selected account${feeAmount > 0 ? ' with a separate transfer-fee expense' : ''}.`,
+      })
+      setPendingAction(null)
+      setPayingAccountId('')
+      setTransferFee('')
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Refund could not be completed.')
+    } finally {
+      setActionBusy(false)
+    }
   }
 
   const cancelRefund = () => {
@@ -194,7 +225,7 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
                   </div>
                   {pending && canManageRefunds && (
                     <div className="mt-4 flex min-w-[9.5rem] flex-col items-stretch gap-2 sm:mt-0">
-                      <button type="button" onClick={() => { setActionError(null); setPendingAction({ type: 'complete', orderNumber: order.orderNumber }) }} className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-foreground/90">Complete Refund</button>
+                      <button type="button" onClick={() => openCompleteRefund(order)} className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-foreground/90">Complete Refund</button>
                       <details className="relative"><summary className="flex h-9 cursor-pointer list-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3.5 text-xs font-semibold text-muted-foreground">More actions</summary><div className="absolute right-0 z-20 mt-1 w-40 rounded-xl bg-surface-popover p-2 shadow-lg ring-1 ring-border"><button type="button" onClick={() => { setActionError(null); setCancelReason(''); setPendingAction({ type: 'cancel', orderNumber: order.orderNumber }) }} className="flex h-11 w-full items-center justify-center rounded-full px-[18px] text-sm font-semibold text-destructive hover:bg-destructive/10">Cancel Refund</button></div></details>
                     </div>
                   )}
@@ -208,9 +239,11 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
       <ConfirmActionDialog
         open={Boolean(pendingAction)}
         onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
+          if (!nextOpen && !actionBusy) {
             setPendingAction(null)
             setCancelReason('')
+            setPayingAccountId('')
+            setTransferFee('')
             setActionError(null)
           }
         }}
@@ -219,14 +252,43 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
           pendingAction
             ? pendingAction.type === 'cancel'
               ? `This stops the pending Refund for ${pendingAction.orderNumber} and returns the payment status to Paid.`
-              : `This records ${formatIdr(confirmOrder?.refundAmountIdr ?? 0)} for ${pendingAction.orderNumber} as fully returned and sets the paid amount to zero.`
+              : `This records ${formatIdr(confirmOrder?.refundAmountIdr ?? 0)} for ${pendingAction.orderNumber} as fully returned from the selected account and sets the paid amount to zero.`
             : ''
         }
-        confirmLabel={pendingAction?.type === 'cancel' ? 'Cancel Refund' : 'Complete Refund'}
+        confirmLabel={pendingAction?.type === 'cancel' ? 'Cancel Refund' : actionBusy ? 'Completing…' : 'Complete Refund'}
         destructive={pendingAction?.type === 'cancel'}
-        onConfirm={pendingAction?.type === 'cancel' ? cancelRefund : completeRefund}
+        onConfirm={pendingAction?.type === 'cancel' ? cancelRefund : () => { void completeRefund() }}
       >
         {pendingAction?.type === 'cancel' && <label className="block space-y-1"><span className="text-xs font-medium">Reason</span><textarea value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} placeholder="Why is this Refund cancelled?" className="min-h-20 w-full rounded-lg border border-border bg-background p-3 text-sm" /></label>}
+        {pendingAction?.type === 'complete' && (
+          <div className="space-y-3">
+            <label className="block space-y-1.5 text-xs font-medium">
+              Paying account
+              <select
+                aria-label="Refund paying account"
+                value={payingAccountId}
+                onChange={(event) => { setPayingAccountId(event.target.value); if (event.target.value === CASH_ACCOUNT_ID) setTransferFee('') }}
+                className="h-11 w-full rounded-full border border-border bg-background px-4 text-sm"
+              >
+                <option value="">Select account</option>
+                {accountOptions.map((account) => <option key={account.id} value={account.id}>{account.label}</option>)}
+              </select>
+            </label>
+            <label className="block space-y-1.5 text-xs font-medium">
+              Transfer fee (IDR) · Optional
+              <input
+                aria-label="Refund transfer fee IDR"
+                value={transferFee}
+                onChange={(event) => setTransferFee(event.target.value.replace(/\D/g, ''))}
+                inputMode="numeric"
+                placeholder="0"
+                disabled={payingAccountId === CASH_ACCOUNT_ID}
+                className="h-11 w-full rounded-full border border-border bg-background px-4 text-sm disabled:opacity-50"
+              />
+              <span className="block text-[11px] font-normal text-muted-foreground">If charged, the fee is a separate Money Out line from this same account.</span>
+            </label>
+          </div>
+        )}
         <div className="rounded-xl bg-muted/60 p-3 text-xs">
           <p className="text-muted-foreground">Recorded reason</p>
           <p className="mt-1 font-medium text-foreground">{confirmOrder?.refundReason ?? '—'}</p>
