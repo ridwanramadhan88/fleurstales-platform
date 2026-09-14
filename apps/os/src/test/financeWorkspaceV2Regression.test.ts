@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 
+// Keep this suite as the integration contract for the Finance v2 workspace shell.
 describe('Finance workspace v2 regressions', () => {
   it('presents four top-level Finance workspaces and nests refunds under Reconciliation', () => {
     const tabs = read('src/components/finance/FinanceWorkspaceTabs.tsx')
