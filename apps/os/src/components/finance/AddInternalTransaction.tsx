@@ -17,6 +17,7 @@ import { useFinanceStore } from '../../store/financeStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import type { UserRole } from '../../store/userStore'
 import type { BranchId } from '../../types/orders'
+import { generateId } from '../../lib/id'
 import { AppDialog } from '../ui/app-dialog'
 import { AppSheet } from '../ui/app-sheet'
 import { ActionFooter } from '../ui/action-footer'
@@ -27,6 +28,7 @@ import type {
   FinanceCategory,
   FinancePaymentMethod,
   FinanceScopePolicy,
+  FinanceTransaction,
   FinanceTransactionScope,
   FinanceTransactionType,
 } from '../../store/financeStoreTypes'
@@ -132,6 +134,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
   const [accountId, setAccountId] = useState(defaultTransferAccountId)
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().slice(0, 10))
   const [amountDigits, setAmountDigits] = useState('')
+  const [transferFeeDigits, setTransferFeeDigits] = useState('')
   const [name, setName] = useState('')
   const [method, setMethod] = useState<FinancePaymentMethod>('transfer')
   const [note, setNote] = useState('')
@@ -187,6 +190,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
       setAccountId(transaction.accountId ?? '')
       setTransactionDate((transaction.transactionDate ?? transaction.createdAt).slice(0, 10))
       setAmountDigits(String(transaction.amount))
+      setTransferFeeDigits('')
       setName(transaction.name ?? transaction.description)
       setMethod(transaction.method)
       setNote(transaction.note ?? transaction.description ?? '')
@@ -218,6 +222,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
     setAccountId(defaultTransferAccountId)
     setTransactionDate(new Date().toISOString().slice(0, 10))
     setAmountDigits('')
+    setTransferFeeDigits('')
     setName('')
     setMethod('transfer')
     setNote('')
@@ -238,6 +243,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
     setErrors({})
     setName('')
     setManualEntryReason('')
+    if (value !== 'expense') setTransferFeeDigits('')
   }
 
   const selectCategory = (value: FinanceCategory | '') => {
@@ -264,6 +270,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
     if (saving) return
 
     const amount = Number(amountDigits)
+    const transferFee = Number(transferFeeDigits) || 0
     const next: FieldErrors = {}
     if (!direction) next.direction = 'Choose Money In or Money Out.'
     if (!category) next.category = 'Select a transaction category.'
@@ -325,8 +332,9 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
 
       if (result.transactionId) {
         const normalizedCode = transactionCode.trim().toUpperCase() || '-'
-        useFinanceStore.setState((state) => ({
-          transactions: state.transactions.map((transaction) =>
+        const timestamp = new Date().toISOString()
+        useFinanceStore.setState((state) => {
+          const patched = state.transactions.map((transaction) =>
             transaction.id === result.transactionId
               ? {
                   ...transaction,
@@ -336,8 +344,34 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
                   proofFileName,
                 }
               : transaction,
-          ),
-        }))
+          )
+          if (editingTransactionId || direction !== 'expense' || transferFee <= 0) {
+            return { transactions: patched }
+          }
+          const feeTransaction: FinanceTransaction = {
+            id: generateId('txn'),
+            type: 'expense',
+            category: 'other',
+            branch: (scope === 'branch' ? branch : 'All') as BranchId,
+            scope,
+            accountId,
+            amount: transferFee,
+            method,
+            status: 'verified',
+            name: 'Bank / Transfer Fee',
+            description: `Transfer fee for ${name.trim()}`,
+            reference: result.transactionId,
+            transactionCode: normalizedCode === '-' ? '-' : `${normalizedCode}-FEE`,
+            source: 'manual',
+            entryMode: 'manual',
+            transactionDate: `${transactionDate}T12:00:00+07:00`,
+            note: note.trim() || undefined,
+            actor: actorName,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          }
+          return { transactions: [feeTransaction, ...patched] }
+        })
       }
 
       if (uploadedProofPath && existingProofPath && uploadedProofPath !== existingProofPath) {
@@ -566,6 +600,13 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
                   <input aria-label="Amount IDR" inputMode="numeric" value={formatAmount(amountDigits)} onChange={(event) => setAmountDigits(event.target.value.replace(/\D/g, ''))} className={inputClass} />
                   {errors.amount && <span className="text-xs text-destructive">{errors.amount}</span>}
                 </label>
+                {direction === 'expense' && !editingTransactionId && (
+                  <label className="space-y-1.5 text-xs font-medium sm:col-span-2">
+                    Transfer fee · Optional (IDR)
+                    <input aria-label="Transfer fee IDR" inputMode="numeric" value={formatAmount(transferFeeDigits)} onChange={(event) => setTransferFeeDigits(event.target.value.replace(/\D/g, ''))} className={inputClass} placeholder="0" />
+                    <span className="block text-[11px] font-normal text-muted-foreground">Recorded as a separate Bank / Transfer Fee expense from the same account.</span>
+                  </label>
+                )}
                 <label className="space-y-1.5 text-xs font-medium sm:col-span-2">
                   Transaction Code · Optional
                   <input
