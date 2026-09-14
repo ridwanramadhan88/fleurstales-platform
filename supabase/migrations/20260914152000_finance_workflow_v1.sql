@@ -579,7 +579,7 @@ begin
     v_snapshot,'{employeePayrolls}',
     coalesce((
       select jsonb_agg(
-        case when exists(select 1 from jsonb_array_elements_text(v_employee_ids) eid where eid=e->>'id') then
+        case when v_employee_ids ? (e->>'id') then
           e || jsonb_strip_nulls(jsonb_build_object(
             'status','paid','paidAt',p_payment_date::text,'paidBy',v_actor_name,
             'paymentMethod',v_method,'paymentReference',v_reference,'paymentNote',v_note
