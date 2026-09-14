@@ -66,7 +66,11 @@ const TransactionRow: FC<{
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const scope = transaction.scope ?? (transaction.branch === 'All' ? 'company' : 'branch')
-  const editable = canEdit && transaction.status === 'verified' && transaction.source !== 'transfer'
+  const editable = canEdit
+    && transaction.status === 'verified'
+    && isManual(transaction)
+    && (transaction.source ?? 'manual') === 'manual'
+    && !transaction.isSystemGenerated
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.currentTarget !== event.target) return
