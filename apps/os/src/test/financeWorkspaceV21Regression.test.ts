@@ -8,7 +8,8 @@ describe('Finance workspace v2.1 regressions', () => {
     const overview = read('src/components/finance/FinanceCashFlowOverview.tsx')
     const bridge = read('src/components/finance/financeWorkspaceNavigation.ts')
 
-    expect(overview).toContain("module: 'order_verification', view: 'needs_correction'")
+    expect(overview).toContain("requestFinanceWorkspaceNavigation({ module: 'order_verification'")
+    expect(overview).toContain("view: 'needs_correction'")
     expect(overview).toContain("module: 'refunds', view: 'pending'")
     expect(overview).toContain("module: 'payroll', view: 'review'")
     expect(overview).toContain("module: 'payroll', view: 'ready'")
