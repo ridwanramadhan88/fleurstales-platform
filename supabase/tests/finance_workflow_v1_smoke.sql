@@ -12,9 +12,9 @@ begin
   select pg_get_functiondef('private.sync_order_finance_transactions(text)'::regprocedure)
   into v_sync_source;
 
-  if position("'status','verified'" in v_sync_source)=0
-     or position("'reconciliationStatus'" in v_sync_source)=0
-     or position("else 'pending'" in v_sync_source)>0 then
+  if position('''status'',''verified''' in v_sync_source)=0
+     or position('''reconciliationStatus''' in v_sync_source)=0
+     or position('else ''pending''' in v_sync_source)>0 then
     raise exception 'Admin-confirmed order payments are not posted independently from Finance reconciliation';
   end if;
 
@@ -61,8 +61,8 @@ begin
   into v_transfer_source;
   if position('TRANSFER_DESTINATION_INVALID' in v_transfer_source)=0
      or position('Bank / Transfer Fee' in v_transfer_source)=0
-     or position("'transferDirection','out'" in v_transfer_source)=0
-     or position("'transferDirection','in'" in v_transfer_source)=0 then
+     or position('''transferDirection'',''out''' in v_transfer_source)=0
+     or position('''transferDirection'',''in''' in v_transfer_source)=0 then
     raise exception 'Account transfer lost paired-principal or separate-fee behavior';
   end if;
 
