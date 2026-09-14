@@ -75,6 +75,52 @@ const targetForGroup = (
   return null
 }
 
+const ReconciliationTabs: FC<{
+  modules: FinanceWorkspaceModule[]
+  activeModule: FinanceWorkspaceModule
+  onChange: (module: FinanceWorkspaceModule) => void
+}> = ({ modules, activeModule, onChange }) => {
+  const reconciliationModules = (['order_verification', 'refunds'] as FinanceWorkspaceModule[])
+    .filter((module) => modules.includes(module))
+  if (reconciliationModules.length <= 1) return null
+
+  return (
+    <nav
+      aria-label="Reconciliation views"
+      className="flex w-fit items-center gap-1 rounded-full bg-muted/45 p-1 ring-1 ring-border/50"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeModule === 'order_verification'}
+        onClick={() => onChange('order_verification')}
+        className={cn(
+          'h-8 rounded-full px-3 text-xs font-semibold transition-colors',
+          activeModule === 'order_verification'
+            ? 'bg-card text-foreground shadow-ios-sm'
+            : 'text-muted-foreground hover:text-foreground',
+        )}
+      >
+        Orders
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeModule === 'refunds'}
+        onClick={() => onChange('refunds')}
+        className={cn(
+          'h-8 rounded-full px-3 text-xs font-semibold transition-colors',
+          activeModule === 'refunds'
+            ? 'bg-card text-foreground shadow-ios-sm'
+            : 'text-muted-foreground hover:text-foreground',
+        )}
+      >
+        Refunds
+      </button>
+    </nav>
+  )
+}
+
 export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
   modules,
   activeModule,
@@ -83,16 +129,19 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
   const activeGroup = groupForModule(activeModule)
   const groups = GROUP_ORDER.filter((group) => hasGroup(modules, group))
   const navRef = useActiveItemScroll<HTMLElement>(activeGroup, '[aria-current="page"]')
-  const reconciliationModules = (['order_verification', 'refunds'] as FinanceWorkspaceModule[])
-    .filter((module) => modules.includes(module))
 
   if (groups.length <= 1) {
     const item = GROUP_ITEMS[groups[0] ?? activeGroup]
     return (
-      <header className="space-y-1">
-        <h1 className="font-display text-2xl font-semibold leading-tight">{item.label}</h1>
-        <p className="text-sm leading-5 text-muted-foreground">{item.description}</p>
-      </header>
+      <div className="space-y-3">
+        <header className="space-y-1">
+          <h1 className="font-display text-2xl font-semibold leading-tight">{item.label}</h1>
+          <p className="text-sm leading-5 text-muted-foreground">{item.description}</p>
+        </header>
+        {activeGroup === 'reconciliation' && (
+          <ReconciliationTabs modules={modules} activeModule={activeModule} onChange={onChange} />
+        )}
+      </div>
     )
   }
 
@@ -131,40 +180,8 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
         })}
       </nav>
 
-      {activeGroup === 'reconciliation' && reconciliationModules.length > 1 && (
-        <nav
-          aria-label="Reconciliation views"
-          className="flex w-fit items-center gap-1 rounded-full bg-muted/45 p-1 ring-1 ring-border/50"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeModule === 'order_verification'}
-            onClick={() => onChange('order_verification')}
-            className={cn(
-              'h-8 rounded-full px-3 text-xs font-semibold transition-colors',
-              activeModule === 'order_verification'
-                ? 'bg-card text-foreground shadow-ios-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            Orders
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeModule === 'refunds'}
-            onClick={() => onChange('refunds')}
-            className={cn(
-              'h-8 rounded-full px-3 text-xs font-semibold transition-colors',
-              activeModule === 'refunds'
-                ? 'bg-card text-foreground shadow-ios-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            Refunds
-          </button>
-        </nav>
+      {activeGroup === 'reconciliation' && (
+        <ReconciliationTabs modules={modules} activeModule={activeModule} onChange={onChange} />
       )}
     </div>
   )
