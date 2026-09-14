@@ -4,6 +4,7 @@ import { hasActionPermission } from '../../config/actionPermissions'
 import { usePayrollStore, type EmployeePayrollDraft, type PayrollProposal } from '../../store/payrollStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useUserStore } from '../../store/userStore'
+import { recordPayrollPaymentWithAccount } from '../../data/financePayrollPayment'
 import { PayrollStatusBadge, type PayrollVisualStatus } from '../payroll/PayrollStatusBadge'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import { DatePickerField } from '../ui/date-time-field'
@@ -57,6 +58,7 @@ export const FinancePayrollReview = () => {
   const actorEmployeeId = useUserStore((state) => state.employeeId)
   const permissions = useSettingsStore((state) => state.permissions)
   const actionPermissions = useSettingsStore((state) => state.actionPermissions)
+  const paymentAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
   const canApproveEmployee = hasActionPermission(role, 'finance.approve_employee_payroll', actionPermissions, permissions)
   const canApproveAll = hasActionPermission(role, 'finance.approve_all_payroll', actionPermissions, permissions)
   const canRejectEmployee = hasActionPermission(role, 'finance.reject_employee_payroll', actionPermissions, permissions)
@@ -69,7 +71,14 @@ export const FinancePayrollReview = () => {
   const approveAll = usePayrollStore((state) => state.approvePayrollProposal)
   const approveEmployee = usePayrollStore((state) => state.verifyEmployeePayroll)
   const rejectEmployee = usePayrollStore((state) => state.rejectEmployeePayroll)
-  const recordPayment = usePayrollStore((state) => state.recordPayrollProposalPayment)
+
+  const activePaymentAccounts = useMemo(
+    () => paymentAccounts
+      .filter((account) => account.isActive !== false)
+      .sort((a, b) => Number(Boolean(b.isDefault)) - Number(Boolean(a.isDefault)) || (a.displayOrder ?? 0) - (b.displayOrder ?? 0)),
+    [paymentAccounts],
+  )
+  const defaultPaymentAccountId = activePaymentAccounts[0]?.id ?? ''
 
   const [view, setView] = useState<View>('review')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -79,6 +88,9 @@ export const FinancePayrollReview = () => {
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('Bank transfer')
   const [paymentReference, setPaymentReference] = useState('')
+  const [paymentAccountId, setPaymentAccountId] = useState(defaultPaymentAccountId)
+  const [transferFee, setTransferFee] = useState('')
+  const [paymentBusy, setPaymentBusy] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -108,6 +120,9 @@ export const FinancePayrollReview = () => {
     setPaymentDate('')
     setPaymentReference('')
     setPaymentMethod('Bank transfer')
+    setPaymentAccountId(defaultPaymentAccountId)
+    setTransferFee('')
+    setPaymentBusy(false)
     setFieldErrors({})
     setError(null)
   }
@@ -139,19 +154,48 @@ export const FinancePayrollReview = () => {
       return next
     })
   }
-  const submitPayment = () => {
-    if (!selected) return
-    const result = recordPayment({
-      payrollProposalId: selected.id,
-      paymentDate,
-      paymentMethod,
-      paymentReference,
-      note,
-      actor: { name: actorName, role },
-    })
-    if (!result.ok) { setError(result.reason); setFieldErrors(result.fieldErrors ?? {}); return }
-    reset()
-    setMessage('Final payroll payment recorded.')
+  const changePaymentMethod = (value: string) => {
+    setPaymentMethod(value)
+    if (value === 'Cash') {
+      setPaymentAccountId('cash:main')
+      setTransferFee('')
+    } else if (!paymentAccountId || paymentAccountId === 'cash:main') {
+      setPaymentAccountId(defaultPaymentAccountId)
+    }
+    clearPaymentFieldError('paymentMethod')
+    clearPaymentFieldError('paymentAccountId')
+  }
+  const submitPayment = async () => {
+    if (!selected || paymentBusy) return
+    const nextErrors: Record<string, string> = {}
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) nextErrors.paymentDate = 'Select a valid payment date.'
+    if (!paymentMethod.trim()) nextErrors.paymentMethod = 'Payment method is required.'
+    if (!paymentReference.trim()) nextErrors.paymentReference = 'Payment reference is required.'
+    if (!paymentAccountId) nextErrors.paymentAccountId = 'Select the account that paid this payroll.'
+    if (Object.keys(nextErrors).length) {
+      setFieldErrors(nextErrors)
+      setError('Complete the payroll payment details.')
+      return
+    }
+
+    setPaymentBusy(true)
+    setError(null)
+    try {
+      await recordPayrollPaymentWithAccount({
+        payrollProposalId: selected.id,
+        paymentDate,
+        paymentMethod,
+        paymentReference,
+        financeAccountId: paymentAccountId,
+        transferFee: Number(transferFee) || 0,
+        note,
+      })
+      reset()
+      setMessage('Final payroll payment recorded.')
+    } catch (paymentError) {
+      setError(paymentError instanceof Error ? paymentError.message : 'Payroll payment could not be recorded.')
+      setPaymentBusy(false)
+    }
   }
 
   return (
@@ -353,14 +397,23 @@ export const FinancePayrollReview = () => {
               {paymentOpen && (
                 <div className="mt-4 rounded-2xl border border-border bg-card p-5">
                   <h4 className="text-base font-semibold">Record final payroll payment</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">The payroll amount and optional transfer fee leave the selected account when this is confirmed.</p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <Field label="Payment date" error={fieldErrors.paymentDate}><DatePickerField value={paymentDate} onChange={(value) => { setPaymentDate(value); clearPaymentFieldError('paymentDate') }} /></Field>
-                    <Field label="Payment method" error={fieldErrors.paymentMethod}><select value={paymentMethod} onChange={(e) => { setPaymentMethod(e.target.value); clearPaymentFieldError('paymentMethod') }} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm"><option>Bank transfer</option><option>Cash</option><option>Payroll provider</option><option>Other</option></select></Field>
+                    <Field label="Payment method" error={fieldErrors.paymentMethod}><select value={paymentMethod} onChange={(e) => changePaymentMethod(e.target.value)} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm"><option>Bank transfer</option><option>Cash</option><option>Payroll provider</option><option>Other</option></select></Field>
+                    <Field label="Paid from account" error={fieldErrors.paymentAccountId}>
+                      <select value={paymentAccountId} onChange={(e) => { setPaymentAccountId(e.target.value); clearPaymentFieldError('paymentAccountId') }} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm">
+                        <option value="">Select account</option>
+                        <option value="cash:main">Cash</option>
+                        {activePaymentAccounts.map((account) => <option key={account.id} value={account.id}>{account.bankName} · {account.accountNumber}</option>)}
+                      </select>
+                    </Field>
                     <Field label="Payment reference" error={fieldErrors.paymentReference}><input value={paymentReference} onChange={(e) => { setPaymentReference(e.target.value); clearPaymentFieldError('paymentReference') }} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></Field>
+                    {paymentMethod !== 'Cash' && <Field label="Transfer fee · Optional"><input inputMode="numeric" value={transferFee} onChange={(e) => setTransferFee(e.target.value.replace(/\D/g, ''))} placeholder="0" className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></Field>}
                     <Field label="Note · Optional"><input value={note} onChange={(e) => { setNote(e.target.value); setError(null) }} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></Field>
                   </div>
                   {error && <p className="mt-3 text-xs text-destructive">{error}</p>}
-                  <Footer cancel={reset} confirm={submitPayment} label="Confirm final payment" />
+                  <Footer cancel={reset} confirm={() => { void submitPayment() }} label={paymentBusy ? 'Saving…' : 'Confirm final payment'} disabled={paymentBusy} />
                 </div>
               )}
             </div>
@@ -399,9 +452,9 @@ const Field = ({ label, error, children }: { label: string; error?: string; chil
   <label className="block space-y-1"><span className="text-xs font-medium">{label}</span>{children}{error && <span className="block text-xs text-destructive">{error}</span>}</label>
 )
 
-const Footer = ({ cancel, confirm, label }: { cancel: () => void; confirm: () => void; label: string }) => (
+const Footer = ({ cancel, confirm, label, disabled = false }: { cancel: () => void; confirm: () => void; label: string; disabled?: boolean }) => (
   <div className="mt-3 flex justify-end gap-2">
-    <button onClick={cancel} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium">Cancel</button>
-    <button onClick={confirm} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-semibold text-background">{label}</button>
+    <button disabled={disabled} onClick={cancel} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium disabled:opacity-50">Cancel</button>
+    <button disabled={disabled} onClick={confirm} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-semibold text-background disabled:opacity-50">{label}</button>
   </div>
 )

@@ -39,6 +39,7 @@ import {
   removeFinanceTransactionProof,
   uploadFinanceTransactionProof,
 } from '../../data/financeTransactionProof'
+import { saveManualFinanceTransaction } from '../../data/financeManualTransaction'
 
 interface AddInternalTransactionProps {
   branches: BranchId[]
@@ -100,8 +101,6 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
   const transactions = useFinanceStore((state) => state.transactions)
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
-  const addTransaction = useFinanceStore((state) => state.addTransaction)
-  const updateManualTransaction = useFinanceStore((state) => state.updateManualTransaction)
   const addExpenseCategory = useFinanceStore((state) => state.addExpenseCategory)
   const updateExpenseCategory = useFinanceStore((state) => state.updateExpenseCategory)
   const updateBuiltInCategory = useFinanceStore((state) => state.updateBuiltInCategory)
@@ -132,6 +131,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
   const [accountId, setAccountId] = useState(defaultTransferAccountId)
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().slice(0, 10))
   const [amountDigits, setAmountDigits] = useState('')
+  const [transferFeeDigits, setTransferFeeDigits] = useState('')
   const [name, setName] = useState('')
   const [method, setMethod] = useState<FinancePaymentMethod>('transfer')
   const [note, setNote] = useState('')
@@ -187,6 +187,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
       setAccountId(transaction.accountId ?? '')
       setTransactionDate((transaction.transactionDate ?? transaction.createdAt).slice(0, 10))
       setAmountDigits(String(transaction.amount))
+      setTransferFeeDigits('')
       setName(transaction.name ?? transaction.description)
       setMethod(transaction.method)
       setNote(transaction.note ?? transaction.description ?? '')
@@ -218,6 +219,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
     setAccountId(defaultTransferAccountId)
     setTransactionDate(new Date().toISOString().slice(0, 10))
     setAmountDigits('')
+    setTransferFeeDigits('')
     setName('')
     setMethod('transfer')
     setNote('')
@@ -238,6 +240,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
     setErrors({})
     setName('')
     setManualEntryReason('')
+    if (value !== 'expense') setTransferFeeDigits('')
   }
 
   const selectCategory = (value: FinanceCategory | '') => {
@@ -264,12 +267,14 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
     if (saving) return
 
     const amount = Number(amountDigits)
+    const transferFee = Number(transferFeeDigits) || 0
     const next: FieldErrors = {}
     if (!direction) next.direction = 'Choose Money In or Money Out.'
     if (!category) next.category = 'Select a transaction category.'
     if (!accountId || accountId === 'legacy:unassigned') next.accountId = 'Select the account or cash source affected by this transaction.'
     if (method === 'cash' && accountId !== 'cash:main') next.accountId = 'Cash transactions must use the Cash account.'
     if (method !== 'cash' && accountId === 'cash:main') next.accountId = 'Select a bank/e-wallet account for this payment method.'
+    if (transferFee > 0 && method === 'cash') next.method = 'Transfer fee requires a bank or other non-cash payment method.'
     if (!name.trim()) next.name = 'Transaction is required.'
     if (!(amount > 0)) next.amount = 'Amount must be greater than zero.'
     if (scope === 'branch' && (!branch || branch === 'All')) next.branch = 'Select a Branch.'
@@ -294,51 +299,27 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
         proofPath = uploaded.path
         proofFileName = uploaded.fileName
       }
+      if (!proofPath) throw new Error('Transaction proof is required.')
 
-      const common = {
+      await saveManualFinanceTransaction({
+        transactionId: editingTransactionId ?? undefined,
         type: direction,
         category,
         scope,
         branch,
+        accountId,
         amount,
         method,
         name,
         note,
         manualEntryReason,
         transactionDate: `${transactionDate}T12:00:00+07:00`,
-        actor: { name: actorName, role: actorRole },
-      }
-      const result = editingTransactionId
-        ? updateManualTransaction({
-            transactionId: editingTransactionId,
-            ...common,
-            editReason: editReason.trim() || undefined,
-          })
-        : addTransaction(common)
-
-      if (!result.allowed) {
-        if (uploadedProofPath) await removeFinanceTransactionProof(uploadedProofPath)
-        if (result.field) setErrors((current) => ({ ...current, [result.field!]: result.reason }))
-        else setFormError(result.reason ?? 'Unable to save transaction.')
-        return
-      }
-
-      if (result.transactionId) {
-        const normalizedCode = transactionCode.trim().toUpperCase() || '-'
-        useFinanceStore.setState((state) => ({
-          transactions: state.transactions.map((transaction) =>
-            transaction.id === result.transactionId
-              ? {
-                  ...transaction,
-                  accountId,
-                  transactionCode: normalizedCode,
-                  proofPath,
-                  proofFileName,
-                }
-              : transaction,
-          ),
-        }))
-      }
+        transactionCode,
+        proofPath,
+        proofFileName,
+        transferFee: !editingTransactionId && direction === 'expense' ? transferFee : 0,
+        editReason: editingTransactionId ? editReason : undefined,
+      })
 
       if (uploadedProofPath && existingProofPath && uploadedProofPath !== existingProofPath) {
         await removeFinanceTransactionProof(existingProofPath)
@@ -555,6 +536,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
                   <select value={method} onChange={(event) => changeMethod(event.target.value as FinancePaymentMethod)} className={inputClass}>
                     {methods.map((value) => <option key={value} value={value}>{methodLabel[value]}</option>)}
                   </select>
+                  {errors.method && <span className="text-xs text-destructive">{errors.method}</span>}
                 </label>
                 <label className="space-y-1.5 text-xs font-medium sm:col-span-2">
                   Transaction
@@ -566,6 +548,13 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
                   <input aria-label="Amount IDR" inputMode="numeric" value={formatAmount(amountDigits)} onChange={(event) => setAmountDigits(event.target.value.replace(/\D/g, ''))} className={inputClass} />
                   {errors.amount && <span className="text-xs text-destructive">{errors.amount}</span>}
                 </label>
+                {direction === 'expense' && !editingTransactionId && (
+                  <label className="space-y-1.5 text-xs font-medium sm:col-span-2">
+                    Transfer fee · Optional (IDR)
+                    <input aria-label="Transfer fee IDR" inputMode="numeric" value={formatAmount(transferFeeDigits)} onChange={(event) => setTransferFeeDigits(event.target.value.replace(/\D/g, ''))} className={inputClass} placeholder="0" />
+                    <span className="block text-[11px] font-normal text-muted-foreground">Recorded as a separate Bank / Transfer Fee expense from the same account.</span>
+                  </label>
+                )}
                 <label className="space-y-1.5 text-xs font-medium sm:col-span-2">
                   Transaction Code · Optional
                   <input
