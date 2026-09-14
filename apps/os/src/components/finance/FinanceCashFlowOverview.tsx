@@ -9,6 +9,7 @@ import {
   Landmark,
   PlusCircle,
   RotateCcw,
+  Settings2,
   SlidersHorizontal,
 } from 'lucide-react'
 import { useFinanceStore } from '../../store/financeStore'
@@ -19,6 +20,8 @@ import { useUserStore } from '../../store/userStore'
 import { createFinanceCashFlowEntry, type CashFlowEntryKind } from '../../data/financeCashFlow'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
+import { AppSheet } from '../ui/app-sheet'
+import { FinanceCategorySettingsPanel } from '../settings/FinanceCategorySettingsPanel'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
 import { requestFinanceWorkspaceNavigation } from './financeWorkspaceNavigation'
 
@@ -50,6 +53,7 @@ export const FinanceCashFlowOverview: FC = () => {
   const payrollProposals = usePayrollStore((state) => state.payrollProposals)
   const configuredAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
   const [dialogMode, setDialogMode] = useState<DialogMode>(null)
+  const [configurationOpen, setConfigurationOpen] = useState(false)
   const [accountId, setAccountId] = useState('')
   const [counterpartyAccountId, setCounterpartyAccountId] = useState('')
   const [direction, setDirection] = useState<'income' | 'expense'>('income')
@@ -259,7 +263,12 @@ export const FinanceCashFlowOverview: FC = () => {
       </div>
 
       <div className="rounded-xl border border-border/70 bg-card p-4">
-        <div className="mb-3 flex items-center gap-2"><Landmark className="size-4 text-muted-foreground" /><h3 className="text-sm font-semibold">Account balances</h3></div>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2"><Landmark className="size-4 text-muted-foreground" /><h3 className="text-sm font-semibold">Account balances</h3></div>
+          <button type="button" onClick={() => setConfigurationOpen(true)} className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold text-muted-foreground ring-1 ring-border/60 transition hover:bg-muted hover:text-foreground">
+            <Settings2 className="size-3.5" /> Finance settings
+          </button>
+        </div>
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {balances.map((account) => (
             <div key={account.id} className="rounded-xl bg-surface-panel px-4 py-3 ring-1 ring-border/60">
@@ -270,6 +279,19 @@ export const FinanceCashFlowOverview: FC = () => {
           ))}
         </div>
       </div>
+
+      <AppSheet
+        open={configurationOpen}
+        onOpenChange={setConfigurationOpen}
+        side="responsiveRight"
+        size="wide"
+        title="Finance settings"
+        description="Advanced Finance configuration. Owner can also manage these categories from Settings → Finance."
+      >
+        <div className="overflow-y-auto px-4 pb-6 pt-4 sm:px-5">
+          <FinanceCategorySettingsPanel />
+        </div>
+      </AppSheet>
 
       <AppDialog
         open={dialogMode !== null}
