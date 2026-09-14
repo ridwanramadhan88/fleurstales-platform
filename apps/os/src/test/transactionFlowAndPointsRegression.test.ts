@@ -5,13 +5,17 @@ import { resolve } from 'node:path'
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
 
 describe('transaction flow and Points navigation regression', () => {
-  it('keeps transaction creation direction-first and category-managed', () => {
+  it('keeps transaction creation direction-first and moves category management out of daily Transactions', () => {
     const source = read('src/components/finance/AddInternalTransaction.tsx')
+    const categorySettings = read('src/components/settings/FinanceCategorySettingsPanel.tsx')
     expect(source).toContain('Money In')
     expect(source).toContain('Money Out')
-    expect(source).toContain('Manage categories')
+    expect(source).not.toContain('Manage categories')
+    expect(source).toContain('Settings → Finance')
     expect(source).toContain('Note · Optional')
     expect(source).not.toContain('Add internal transaction')
+    expect(categorySettings).toContain('Transaction categories')
+    expect(categorySettings).toContain('Add category')
   })
 
   it('removes the standalone HR Points Ledger tab', () => {
