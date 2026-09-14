@@ -13,6 +13,7 @@ describe('Finance workflow v1 regressions', () => {
     expect(form).not.toContain('useFinanceStore.setState((state) =>')
     expect(form).not.toContain("generateId('txn')")
     expect(client).toContain("rpc<OperationalDomainResponse>('save_manual_finance_transaction'")
+    expect(client).toContain("transactionCode: input.transactionCode?.trim().toUpperCase() || '-'")
     expect(client).toContain('await refreshFinance()')
   })
 
