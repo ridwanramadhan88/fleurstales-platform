@@ -7,6 +7,7 @@ describe('Finance workspace v2.1 regressions', () => {
   it('makes every Needs Attention area navigate to its exact Finance queue', () => {
     const overview = read('src/components/finance/FinanceCashFlowOverview.tsx')
     const bridge = read('src/components/finance/financeWorkspaceNavigation.ts')
+    const tabs = read('src/components/finance/FinanceWorkspaceTabs.tsx')
 
     expect(overview).toContain("requestFinanceWorkspaceNavigation({ module: 'order_verification'")
     expect(overview).toContain("view: 'needs_correction'")
@@ -16,6 +17,8 @@ describe('Finance workspace v2.1 regressions', () => {
     expect(overview).toContain("module: 'ledger', view: 'legacy'")
     expect(bridge).toContain("const NAVIGATION_EVENT = 'finance-workspace-navigate'")
     expect(bridge).toContain('pendingFocus = focus')
+    expect(tabs).toContain('subscribeFinanceWorkspaceNavigation((module) =>')
+    expect(tabs).toContain('if (modules.includes(module)) onChange(module)')
   })
 
   it('gives reconciliation a first-class Needs correction filter', () => {
