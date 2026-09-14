@@ -38,6 +38,7 @@ export const FinanceCashFlowOverview: FC = () => {
   const [counterpartyAccountId, setCounterpartyAccountId] = useState('')
   const [direction, setDirection] = useState<'income' | 'expense'>('income')
   const [amount, setAmount] = useState('')
+  const [transferFee, setTransferFee] = useState('')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -96,6 +97,7 @@ export const FinanceCashFlowOverview: FC = () => {
     setCounterpartyAccountId(accountOptions[1]?.id ?? '')
     setDirection('income')
     setAmount('')
+    setTransferFee('')
     setNote('')
   }
 
@@ -108,6 +110,7 @@ export const FinanceCashFlowOverview: FC = () => {
     event.preventDefault()
     if (!dialogMode || busy) return
     const numericAmount = Number(amount.replace(/\D/g, ''))
+    const numericTransferFee = Number(transferFee.replace(/\D/g, '')) || 0
     if (!accountId || !(numericAmount > 0)) {
       toast({ title: 'Complete the cash-flow entry', description: 'Select an account and enter an amount greater than zero.', variant: 'destructive' })
       return
@@ -118,6 +121,10 @@ export const FinanceCashFlowOverview: FC = () => {
     }
     if (dialogMode === 'transfer' && (!counterpartyAccountId || counterpartyAccountId === accountId)) {
       toast({ title: 'Choose another destination', description: 'Transfer source and destination must be different.', variant: 'destructive' })
+      return
+    }
+    if (dialogMode === 'transfer' && numericTransferFee > 0 && accountId === CASH_ACCOUNT_ID) {
+      toast({ title: 'Transfer fee is not valid for Cash', description: 'Choose a bank/e-wallet source account or leave the fee empty.', variant: 'destructive' })
       return
     }
 
@@ -131,6 +138,7 @@ export const FinanceCashFlowOverview: FC = () => {
         counterpartyAccountId: dialogMode === 'transfer' ? counterpartyAccountId : undefined,
         transactionDate: new Date().toISOString(),
         note,
+        transferFeeAmount: dialogMode === 'transfer' ? numericTransferFee : 0,
       })
       toast({ title: dialogMode === 'transfer' ? 'Transfer recorded' : dialogMode === 'adjustment' ? 'Balance adjusted' : 'Opening balance recorded' })
       setDialogMode(null)
@@ -180,7 +188,7 @@ export const FinanceCashFlowOverview: FC = () => {
           ? 'Set the starting balance for an account as a ledger entry.'
           : dialogMode === 'adjustment'
             ? 'Correct an account discrepancy with a visible audit reason.'
-            : 'Move money between company accounts without changing company Total.'}
+            : 'Move money between company accounts without changing company Total. Any transfer fee is posted separately as Money Out.'}
       >
         <form onSubmit={submit} className="space-y-4">
           <label className="block space-y-1.5 text-xs font-medium">
@@ -215,6 +223,22 @@ export const FinanceCashFlowOverview: FC = () => {
             Amount (IDR)
             <input value={amount} onChange={(event) => setAmount(event.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="e.g. 5000000" className={inputClass} />
           </label>
+
+          {dialogMode === 'transfer' && (
+            <label className="block space-y-1.5 text-xs font-medium">
+              Transfer fee (IDR) · Optional
+              <input
+                aria-label="Transfer fee IDR"
+                value={transferFee}
+                onChange={(event) => setTransferFee(event.target.value.replace(/\D/g, ''))}
+                inputMode="numeric"
+                placeholder="0"
+                disabled={accountId === CASH_ACCOUNT_ID}
+                className={inputClass}
+              />
+              <span className="block text-[11px] font-normal text-muted-foreground">Posted as a separate Money Out line from the source account.</span>
+            </label>
+          )}
 
           <label className="block space-y-1.5 text-xs font-medium">
             {dialogMode === 'transfer' ? 'Note' : 'Reason'} {dialogMode === 'transfer' ? '(optional)' : ''}
