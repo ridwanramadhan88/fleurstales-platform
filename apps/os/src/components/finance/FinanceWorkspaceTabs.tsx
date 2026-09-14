@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import { useEffect, type FC } from 'react'
 import {
   BadgeDollarSign,
   ClipboardCheck,
@@ -8,6 +8,7 @@ import {
 import type { FinanceWorkspaceModule } from '../../domain/financeWorkspaceDomain'
 import { useActiveItemScroll } from '../../hooks/useActiveItemScroll'
 import { cn } from '../../lib/utils'
+import { subscribeFinanceWorkspaceNavigation } from './financeWorkspaceNavigation'
 
 interface FinanceWorkspaceTabsProps {
   modules: FinanceWorkspaceModule[]
@@ -148,6 +149,10 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
   const activeGroup = groupForModule(activeModule)
   const groups = GROUP_ORDER.filter((group) => hasGroup(modules, group))
   const navRef = useActiveItemScroll<HTMLElement>(activeGroup, '[aria-current="page"]')
+
+  useEffect(() => subscribeFinanceWorkspaceNavigation((module) => {
+    if (modules.includes(module)) onChange(module)
+  }), [modules, onChange])
 
   if (groups.length <= 1) {
     const item = getSingleModuleHeader(activeModule, groups[0] ?? activeGroup)
