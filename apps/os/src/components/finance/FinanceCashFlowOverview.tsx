@@ -38,6 +38,7 @@ export const FinanceCashFlowOverview: FC = () => {
   const [counterpartyAccountId, setCounterpartyAccountId] = useState('')
   const [direction, setDirection] = useState<'income' | 'expense'>('income')
   const [amount, setAmount] = useState('')
+  const [transferFee, setTransferFee] = useState('')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -96,6 +97,7 @@ export const FinanceCashFlowOverview: FC = () => {
     setCounterpartyAccountId(accountOptions[1]?.id ?? '')
     setDirection('income')
     setAmount('')
+    setTransferFee('')
     setNote('')
   }
 
@@ -108,6 +110,7 @@ export const FinanceCashFlowOverview: FC = () => {
     event.preventDefault()
     if (!dialogMode || busy) return
     const numericAmount = Number(amount.replace(/\D/g, ''))
+    const numericTransferFee = Number(transferFee.replace(/\D/g, '')) || 0
     if (!accountId || !(numericAmount > 0)) {
       toast({ title: 'Complete the cash-flow entry', description: 'Select an account and enter an amount greater than zero.', variant: 'destructive' })
       return
@@ -131,6 +134,7 @@ export const FinanceCashFlowOverview: FC = () => {
         counterpartyAccountId: dialogMode === 'transfer' ? counterpartyAccountId : undefined,
         transactionDate: new Date().toISOString(),
         note,
+        transferFee: dialogMode === 'transfer' ? numericTransferFee : undefined,
       })
       toast({ title: dialogMode === 'transfer' ? 'Transfer recorded' : dialogMode === 'adjustment' ? 'Balance adjusted' : 'Opening balance recorded' })
       setDialogMode(null)
@@ -180,7 +184,7 @@ export const FinanceCashFlowOverview: FC = () => {
           ? 'Set the starting balance for an account as a ledger entry.'
           : dialogMode === 'adjustment'
             ? 'Correct an account discrepancy with a visible audit reason.'
-            : 'Move money between company accounts without changing company Total.'}
+            : 'Move principal between company accounts. An optional transfer fee reduces the source account and company Total.'}
       >
         <form onSubmit={submit} className="space-y-4">
           <label className="block space-y-1.5 text-xs font-medium">
@@ -215,6 +219,14 @@ export const FinanceCashFlowOverview: FC = () => {
             Amount (IDR)
             <input value={amount} onChange={(event) => setAmount(event.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="e.g. 5000000" className={inputClass} />
           </label>
+
+          {dialogMode === 'transfer' && (
+            <label className="block space-y-1.5 text-xs font-medium">
+              Transfer fee · Optional (IDR)
+              <input value={transferFee} onChange={(event) => setTransferFee(event.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="0" className={inputClass} />
+              <span className="block text-[11px] font-normal text-muted-foreground">Recorded as a separate Bank / Transfer Fee expense from the source account.</span>
+            </label>
+          )}
 
           <label className="block space-y-1.5 text-xs font-medium">
             {dialogMode === 'transfer' ? 'Note' : 'Reason'} {dialogMode === 'transfer' ? '(optional)' : ''}
