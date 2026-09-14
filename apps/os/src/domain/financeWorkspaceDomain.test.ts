@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getDefaultFinanceWorkspaceModule,
   getFinanceWorkspaceModules,
 } from './financeWorkspaceDomain'
 
@@ -16,5 +17,6 @@ describe('finance workspace privacy', () => {
     expect(getFinanceWorkspaceModules('finance')).toEqual([
       'balance', 'order_verification', 'refunds', 'ledger', 'payroll',
     ])
+    expect(getDefaultFinanceWorkspaceModule('finance')).toBe('balance')
   })
 })
