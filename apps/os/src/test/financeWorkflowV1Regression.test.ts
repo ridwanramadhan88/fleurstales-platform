@@ -43,7 +43,8 @@ describe('Finance workflow v1 regressions', () => {
 
     expect(refunds).toContain("setActionError('Select the account that paid the refund.')")
     expect(refunds).toContain('await completeOrderRefundWithAccount({')
-    expect(client).toContain("rpc('complete_order_refund_with_account'")
+    expect(client).toContain("'complete_order_refund_with_account'")
+    expect(client).toContain('p_finance_account_id: input.financeAccountId')
   })
 
   it('keeps automatic source-owned ledger rows out of generic editing', () => {
@@ -51,6 +52,10 @@ describe('Finance workflow v1 regressions', () => {
     const ledger = read('src/components/finance/TransactionLedger.tsx')
 
     expect(editor).toContain("entryMode !== 'manual'")
-    expect(ledger).toContain("entryMode === 'manual'")
+    expect(ledger).toContain('const isManual = (transaction: FinanceTransaction): boolean => (')
+    expect(ledger).toContain(") === 'manual'")
+    expect(ledger).toContain("&& (transaction.source ?? 'manual') === 'manual'")
+    expect(ledger).toContain('&& !transaction.isSystemGenerated')
+    expect(ledger).toContain('isManual(transaction) && onEditManualTransaction')
   })
 })
