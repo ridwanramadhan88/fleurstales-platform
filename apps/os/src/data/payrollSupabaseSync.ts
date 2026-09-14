@@ -8,6 +8,11 @@ import { browserSupabaseTokenProvider, getSupabaseBrowserSession } from './share
 import { SupabaseHttpError } from './shared/supabaseHttpClient'
 import { subscribePayrollWorkflowMutations, type PayrollWorkflowCommand } from './payrollWorkflowEvents'
 import { toast } from '../hooks/use-toast'
+import {
+  clearPendingPayrollPaymentContext,
+  getPendingPayrollPaymentContext,
+} from './payrollPaymentContext'
+import { reloadConflictedDomain } from './operationalSupabaseSync'
 
 type PayrollStateResponse = {
   domain: 'payroll'
@@ -25,7 +30,7 @@ const RPC_BY_COMMAND: Record<PayrollWorkflowCommand, string> = {
   approve_employee: 'payroll_approve_employee',
   reject_employee: 'payroll_reject_employee',
   approve_all: 'payroll_approve_all',
-  record_payment: 'payroll_record_payment',
+  record_payment: 'payroll_record_payment_with_account',
   adjust_schedule: 'payroll_adjust_schedule',
 }
 
@@ -83,13 +88,32 @@ const persistCommand = async (command: PayrollWorkflowCommand): Promise<void> =>
   const boot = client()
   if (!boot.enabled) return
   const expectedRevision = revision
+  const paymentContext = command === 'record_payment' ? getPendingPayrollPaymentContext() : undefined
   try {
-    const response = await boot.repositories.client.rpc<PayrollStateResponse>(RPC_BY_COMMAND[command], {
-      p_expected_revision: expectedRevision,
-      p_snapshot: snapshot(),
-    })
+    if (command === 'record_payment' && !paymentContext) {
+      throw new Error('Select the payroll paying account before recording payment.')
+    }
+
+    const response = await boot.repositories.client.rpc<PayrollStateResponse>(RPC_BY_COMMAND[command], command === 'record_payment'
+      ? {
+          p_expected_revision: expectedRevision,
+          p_snapshot: snapshot(),
+          p_payroll_proposal_id: paymentContext!.payrollProposalId,
+          p_finance_account_id: paymentContext!.financeAccountId,
+          p_transfer_fee_amount: paymentContext!.transferFeeAmount,
+        }
+      : {
+          p_expected_revision: expectedRevision,
+          p_snapshot: snapshot(),
+        })
     revision = response.revision
+
+    if (command === 'record_payment') {
+      clearPendingPayrollPaymentContext(paymentContext?.payrollProposalId)
+      await reloadConflictedDomain('finance').catch(() => false)
+    }
   } catch (error) {
+    if (command === 'record_payment') clearPendingPayrollPaymentContext(paymentContext?.payrollProposalId)
     const conflict = isConflict(error)
     const message = error instanceof Error ? error.message : 'The payroll change was rejected.'
 
@@ -135,6 +159,7 @@ export const stopPayrollSupabaseSync = (): void => {
   stopListener?.()
   stopListener = undefined
   queue = Promise.resolve()
+  clearPendingPayrollPaymentContext()
 }
 
 export const connectPayrollSupabase = async (): Promise<boolean> => {
