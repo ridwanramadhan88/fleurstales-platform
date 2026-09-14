@@ -87,6 +87,7 @@ export type FinanceTransactionSource =
   | 'opening_balance'
   | 'adjustment'
   | 'transfer'
+  | 'transfer_fee'
 
 export interface FinanceTransactionEditRecord {
   revision: number
