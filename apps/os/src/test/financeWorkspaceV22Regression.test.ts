@@ -1,3 +1,4 @@
+// Full CI release gate for the Finance v2.2 release candidate.
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
