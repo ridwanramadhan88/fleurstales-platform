@@ -38,7 +38,7 @@ const SECTION_DESCRIPTIONS: Record<SettingsSectionId, string> = {
   branches:
     "Manage branch details, operating hours, availability, and delivery settings.",
   "payment-methods":
-    "Configure payment accounts, customer instructions, and branch availability.",
+    "Configure payment accounts, customer instructions, and Finance transaction categories.",
   "staff-roles":
     "Manage enabled roles, employee access defaults, and base salaries.",
   permissions:
