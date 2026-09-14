@@ -17,7 +17,6 @@ import { useFinanceStore } from '../../store/financeStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import type { UserRole } from '../../store/userStore'
 import type { BranchId } from '../../types/orders'
-import { generateId } from '../../lib/id'
 import { AppDialog } from '../ui/app-dialog'
 import { AppSheet } from '../ui/app-sheet'
 import { ActionFooter } from '../ui/action-footer'
@@ -28,7 +27,6 @@ import type {
   FinanceCategory,
   FinancePaymentMethod,
   FinanceScopePolicy,
-  FinanceTransaction,
   FinanceTransactionScope,
   FinanceTransactionType,
 } from '../../store/financeStoreTypes'
@@ -41,6 +39,7 @@ import {
   removeFinanceTransactionProof,
   uploadFinanceTransactionProof,
 } from '../../data/financeTransactionProof'
+import { saveManualFinanceTransaction } from '../../data/financeManualTransaction'
 
 interface AddInternalTransactionProps {
   branches: BranchId[]
@@ -102,8 +101,6 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
   const transactions = useFinanceStore((state) => state.transactions)
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
-  const addTransaction = useFinanceStore((state) => state.addTransaction)
-  const updateManualTransaction = useFinanceStore((state) => state.updateManualTransaction)
   const addExpenseCategory = useFinanceStore((state) => state.addExpenseCategory)
   const updateExpenseCategory = useFinanceStore((state) => state.updateExpenseCategory)
   const updateBuiltInCategory = useFinanceStore((state) => state.updateBuiltInCategory)
@@ -277,6 +274,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
     if (!accountId || accountId === 'legacy:unassigned') next.accountId = 'Select the account or cash source affected by this transaction.'
     if (method === 'cash' && accountId !== 'cash:main') next.accountId = 'Cash transactions must use the Cash account.'
     if (method !== 'cash' && accountId === 'cash:main') next.accountId = 'Select a bank/e-wallet account for this payment method.'
+    if (transferFee > 0 && method === 'cash') next.method = 'Transfer fee requires a bank or other non-cash payment method.'
     if (!name.trim()) next.name = 'Transaction is required.'
     if (!(amount > 0)) next.amount = 'Amount must be greater than zero.'
     if (scope === 'branch' && (!branch || branch === 'All')) next.branch = 'Select a Branch.'
@@ -301,78 +299,27 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
         proofPath = uploaded.path
         proofFileName = uploaded.fileName
       }
+      if (!proofPath) throw new Error('Transaction proof is required.')
 
-      const common = {
+      await saveManualFinanceTransaction({
+        transactionId: editingTransactionId ?? undefined,
         type: direction,
         category,
         scope,
         branch,
+        accountId,
         amount,
         method,
         name,
         note,
         manualEntryReason,
         transactionDate: `${transactionDate}T12:00:00+07:00`,
-        actor: { name: actorName, role: actorRole },
-      }
-      const result = editingTransactionId
-        ? updateManualTransaction({
-            transactionId: editingTransactionId,
-            ...common,
-            editReason: editReason.trim() || undefined,
-          })
-        : addTransaction(common)
-
-      if (!result.allowed) {
-        if (uploadedProofPath) await removeFinanceTransactionProof(uploadedProofPath)
-        if (result.field) setErrors((current) => ({ ...current, [result.field!]: result.reason }))
-        else setFormError(result.reason ?? 'Unable to save transaction.')
-        return
-      }
-
-      if (result.transactionId) {
-        const normalizedCode = transactionCode.trim().toUpperCase() || '-'
-        const timestamp = new Date().toISOString()
-        useFinanceStore.setState((state) => {
-          const patched = state.transactions.map((transaction) =>
-            transaction.id === result.transactionId
-              ? {
-                  ...transaction,
-                  accountId,
-                  transactionCode: normalizedCode,
-                  proofPath,
-                  proofFileName,
-                }
-              : transaction,
-          )
-          if (editingTransactionId || direction !== 'expense' || transferFee <= 0) {
-            return { transactions: patched }
-          }
-          const feeTransaction: FinanceTransaction = {
-            id: generateId('txn'),
-            type: 'expense',
-            category: 'other',
-            branch: (scope === 'branch' ? branch : 'All') as BranchId,
-            scope,
-            accountId,
-            amount: transferFee,
-            method,
-            status: 'verified',
-            name: 'Bank / Transfer Fee',
-            description: `Transfer fee for ${name.trim()}`,
-            reference: result.transactionId,
-            transactionCode: normalizedCode === '-' ? '-' : `${normalizedCode}-FEE`,
-            source: 'manual',
-            entryMode: 'manual',
-            transactionDate: `${transactionDate}T12:00:00+07:00`,
-            note: note.trim() || undefined,
-            actor: actorName,
-            createdAt: timestamp,
-            updatedAt: timestamp,
-          }
-          return { transactions: [feeTransaction, ...patched] }
-        })
-      }
+        transactionCode,
+        proofPath,
+        proofFileName,
+        transferFee: !editingTransactionId && direction === 'expense' ? transferFee : 0,
+        editReason: editingTransactionId ? editReason : undefined,
+      })
 
       if (uploadedProofPath && existingProofPath && uploadedProofPath !== existingProofPath) {
         await removeFinanceTransactionProof(existingProofPath)
@@ -589,6 +536,7 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
                   <select value={method} onChange={(event) => changeMethod(event.target.value as FinancePaymentMethod)} className={inputClass}>
                     {methods.map((value) => <option key={value} value={value}>{methodLabel[value]}</option>)}
                   </select>
+                  {errors.method && <span className="text-xs text-destructive">{errors.method}</span>}
                 </label>
                 <label className="space-y-1.5 text-xs font-medium sm:col-span-2">
                   Transaction
