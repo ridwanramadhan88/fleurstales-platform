@@ -16,10 +16,21 @@ const dateKey = (date: Date): string =>
 
 const isVerified = (transaction: FinanceTransaction): boolean => transaction.status === 'verified'
 
+const COLLECTED_REVENUE_CATEGORIES = new Set<FinanceTransaction['category']>([
+  'order_payment',
+  'walk_in_sale',
+])
+
+const NON_OPERATING_EXPENSE_SOURCES = new Set<NonNullable<FinanceTransaction['source']>>([
+  'opening_balance',
+  'adjustment',
+  'transfer',
+])
+
 export const isVerifiedCollectedIncome = (transaction: FinanceTransaction): boolean =>
   isVerified(transaction) &&
   transaction.type === 'income' &&
-  transaction.category === 'order_payment'
+  COLLECTED_REVENUE_CATEGORIES.has(transaction.category)
 
 export const isVerifiedOrderRefund = (transaction: FinanceTransaction): boolean =>
   isVerified(transaction) &&
@@ -29,7 +40,8 @@ export const isVerifiedOrderRefund = (transaction: FinanceTransaction): boolean 
 export const isVerifiedCashExpense = (transaction: FinanceTransaction): boolean =>
   isVerified(transaction) &&
   transaction.type === 'expense' &&
-  transaction.category !== 'order_refund'
+  transaction.category !== 'order_refund' &&
+  !NON_OPERATING_EXPENSE_SOURCES.has(transaction.source ?? 'manual')
 
 const isBranchScoped = (
   transaction: FinanceTransaction,
