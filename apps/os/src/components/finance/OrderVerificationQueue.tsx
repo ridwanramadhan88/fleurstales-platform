@@ -4,7 +4,7 @@ import type { OrderTableRow } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
 import { OrderFinanceReviewSheetContainer } from './OrderFinanceReviewSheetContainer'
 import { ChangeRequestList } from './ChangeRequestList'
-import { FinanceOrderFilterBar } from './FinanceOrderFilterBar'
+import { FinanceOrderFilterBar, type FinanceOrderStatusFilter } from './FinanceOrderFilterBar'
 import { OrderVerificationQueueRow } from './OrderVerificationQueueRow'
 import type { OrderVerificationQueueViewModel } from './OrderVerificationQueueController'
 import { InfoHint } from '../ui/info-hint'
@@ -22,6 +22,8 @@ export interface OrderVerificationQueueProps {
   searchQuery?: string
   onSearchQueryChange?: (value: string) => void
   showHeading?: boolean
+  /** Optional deep-link focus used by the Finance Overview. */
+  initialStatusFilter?: FinanceOrderStatusFilter
 }
 
 export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
