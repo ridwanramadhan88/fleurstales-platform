@@ -35,7 +35,8 @@ export const FinancePostedTransactionEditor: FC = () => {
     const openEditor = (event: Event) => {
       const id = (event as CustomEvent<string>).detail
       const target = transactions.find((item) => item.id === id)
-      if (!target || target.source === 'transfer') return
+      const entryMode = target?.entryMode ?? (target?.isSystemGenerated ? 'automatic' : 'manual')
+      if (!target || target.source === 'transfer' || target.isSystemGenerated || entryMode !== 'manual') return
       setTransactionId(id)
       setAccountId(target.accountId ?? 'legacy:unassigned')
       setAmount(String(target.amount))
@@ -58,6 +59,12 @@ export const FinancePostedTransactionEditor: FC = () => {
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (!transaction || busy) return
+    const entryMode = transaction.entryMode ?? (transaction.isSystemGenerated ? 'automatic' : 'manual')
+    if (transaction.isSystemGenerated || entryMode !== 'manual' || transaction.source === 'transfer') {
+      toast({ title: 'Use the source workflow', description: 'Automatic Finance entries can only be corrected from their order, refund, payroll, or transfer workflow.', variant: 'destructive' })
+      setTransactionId(null)
+      return
+    }
     const numericAmount = Number(amount.replace(/\D/g, ''))
     if (!(numericAmount > 0) || !accountId) {
       toast({ title: 'Complete the transaction', description: 'Account and amount are required.', variant: 'destructive' })
