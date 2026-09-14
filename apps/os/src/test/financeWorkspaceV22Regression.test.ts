@@ -4,8 +4,9 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string) => readFileSync(path, 'utf8')
 
 describe('Finance workspace v2.2 regressions', () => {
-  it('keeps category configuration in Settings → Finance instead of daily Transactions', () => {
+  it('moves category configuration out of daily Transactions without removing Finance access', () => {
     const transactions = read('src/components/finance/AddInternalTransaction.tsx')
+    const overview = read('src/components/finance/FinanceCashFlowOverview.tsx')
     const financeSettings = read('src/components/settings/FinanceCategorySettingsPanel.tsx')
     const paymentSettings = read('src/components/settings/PaymentMethodSettings.tsx')
     const settingsController = read('src/components/settings/SettingsCenterController.ts')
@@ -13,6 +14,8 @@ describe('Finance workspace v2.2 regressions', () => {
     expect(transactions).not.toContain('Manage categories')
     expect(transactions).not.toContain('title="Expense categories"')
     expect(transactions).toContain('Settings → Finance')
+    expect(overview).toContain('Finance settings')
+    expect(overview).toContain('<FinanceCategorySettingsPanel />')
     expect(financeSettings).toContain('Transaction categories')
     expect(financeSettings).toContain('addExpenseCategory')
     expect(financeSettings).toContain('updateBuiltInCategory')
