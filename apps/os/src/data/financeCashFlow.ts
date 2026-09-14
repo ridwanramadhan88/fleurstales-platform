@@ -38,6 +38,7 @@ export const createFinanceCashFlowEntry = async (input: {
   counterpartyAccountId?: string
   transactionDate?: string
   note?: string
+  transferFee?: number
 }): Promise<void> => {
   const revision = await getFinanceRevision()
   await getClient().rpc('create_finance_cashflow_entry', {
@@ -49,6 +50,7 @@ export const createFinanceCashFlowEntry = async (input: {
     p_counterparty_account_id: input.counterpartyAccountId ?? null,
     p_transaction_date: input.transactionDate ?? null,
     p_note: input.note?.trim() || null,
+    p_transfer_fee: Math.max(0, Math.round(input.transferFee ?? 0)),
   })
   await refreshFinance()
 }
@@ -69,7 +71,7 @@ export const editPostedFinanceTransaction = async (input: {
   reason: string
 }): Promise<void> => {
   const revision = await getFinanceRevision()
-  await getClient().rpc('edit_finance_transaction', {
+  await getClient().rpc('edit_manual_finance_transaction', {
     p_expected_revision: revision,
     p_transaction_id: input.transactionId,
     p_patch: input.patch as unknown as Json,
