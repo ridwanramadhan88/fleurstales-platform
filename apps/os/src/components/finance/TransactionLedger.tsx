@@ -17,7 +17,11 @@ import type { TransactionLedgerViewModel } from './TransactionLedgerController'
 import { StatusChip } from '../ui/chip'
 import { OrderFinanceReviewSheetContainer } from './OrderFinanceReviewSheetContainer'
 import { FinanceTransactionDetailSheet } from './FinanceTransactionDetailSheet'
-import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
+import {
+  consumeFinanceWorkspaceFocus,
+  requestFinanceWorkspaceNavigation,
+  subscribeFinanceWorkspaceFocus,
+} from './financeWorkspaceNavigation'
 
 type SourceTab = 'all' | 'orders' | 'payroll' | 'refunds' | 'manual' | 'cashflow'
 type PeriodFilter = 'all' | 'today' | '30d'
@@ -51,8 +55,8 @@ const sourceLabel = (transaction: FinanceTransaction) => {
 }
 
 const statusLabel = (transaction: FinanceTransaction) => {
-  if (transaction.status === 'pending') return 'Pending Finance reconciliation'
-  if (transaction.status === 'rejected') return 'Rejected'
+  if (transaction.status === 'pending') return 'Pending'
+  if (transaction.status === 'rejected') return 'Needs correction'
   return 'Posted'
 }
 
@@ -112,7 +116,7 @@ const TransactionRow: FC<{
             <p className="truncate text-sm font-semibold">{transaction.name ?? transaction.description}</p>
             <StatusChip tone={transaction.type === 'income' ? 'success' : 'danger'}>{directionLabel(transaction)}</StatusChip>
             <StatusChip tone="neutral">{sourceLabel(transaction)}</StatusChip>
-            {transaction.status !== 'verified' && <StatusChip tone="warning">{transaction.status}</StatusChip>}
+            {transaction.status !== 'verified' && <StatusChip tone="warning">{statusLabel(transaction)}</StatusChip>}
           </div>
 
           <div className="mt-3 grid gap-x-5 gap-y-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
@@ -330,7 +334,11 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
       </div>
 
       {visible.length === 0 ? (
-        <div className="flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-border"><ReceiptText className="size-5 text-muted-foreground" /><p className="mt-2 font-semibold">No transactions in this view</p></div>
+        <div className="flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-border px-5 text-center">
+          <ReceiptText className="size-5 text-muted-foreground" />
+          <p className="mt-2 font-semibold">No transactions in this view</p>
+          <p className="mt-1 max-w-md text-xs text-muted-foreground">Adjust the source, account, branch, date, category, or search filters to see other ledger entries.</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {visible.map((transaction) => {
@@ -364,6 +372,11 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
         onOpenOrder={selectedLinkedOrder ? () => {
           setSelectedTransactionId(null)
           setReviewingOrderNumber(selectedLinkedOrder.orderNumber)
+        } : undefined}
+        onOpenPayroll={selectedTransaction?.payrollProposalId ? () => {
+          const proposalId = selectedTransaction.payrollProposalId
+          setSelectedTransactionId(null)
+          requestFinanceWorkspaceNavigation({ module: 'payroll', view: 'history', proposalId })
         } : undefined}
       />
 
