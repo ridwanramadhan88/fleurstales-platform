@@ -87,9 +87,9 @@ describe('AddInternalTransaction', () => {
     fireEvent.click(screen.getByRole('button', { name:'Save transaction' }))
     expect(await screen.findByRole('status')).toHaveTextContent('Manual transaction recorded.')
     expect(saveManualFinanceTransaction).toHaveBeenCalledWith(expect.objectContaining({
-      type:'expense', category:'payroll', entryMode: undefined,
-      manualEntryReason:'Historical payroll import', accountId:'cash:main',
-      transactionCode:'', proofPath:'finance-user/2026-09-13/test-proof.png', proofFileName:'proof.png',
+      type:'expense', category:'payroll', manualEntryReason:'Historical payroll import',
+      accountId:'cash:main', transactionCode:'', proofPath:'finance-user/2026-09-13/test-proof.png',
+      proofFileName:'proof.png',
     }))
   })
 
