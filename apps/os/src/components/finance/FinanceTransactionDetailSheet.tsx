@@ -14,6 +14,7 @@ interface FinanceTransactionDetailSheetProps {
   onClose: () => void
   onEdit?: () => void
   onOpenOrder?: () => void
+  onOpenPayroll?: () => void
 }
 
 const formatIdr = (value: number): string => `Rp ${Math.round(value).toLocaleString('id-ID')}`
@@ -57,6 +58,7 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
   onClose,
   onEdit,
   onOpenOrder,
+  onOpenPayroll,
 }) => {
   if (!transaction) return null
 
@@ -120,6 +122,11 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
             {onOpenOrder && transaction.orderNumber && (
               <button type="button" onClick={onOpenOrder} className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-xs font-semibold">
                 <ExternalLink className="size-4" /> Open order
+              </button>
+            )}
+            {onOpenPayroll && transaction.payrollProposalId && (
+              <button type="button" onClick={onOpenPayroll} className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-xs font-semibold">
+                <ExternalLink className="size-4" /> Open payroll
               </button>
             )}
             {editable && onEdit && (
@@ -186,7 +193,7 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
               ))}
             </div>
           ) : (
-            <p className="rounded-xl border border-dashed border-border px-4 py-5 text-center text-xs text-muted-foreground">No ledger edits recorded.</p>
+            <p className="rounded-xl border border-dashed border-border px-4 py-5 text-center text-xs text-muted-foreground">No corrections recorded for this transaction.</p>
           )}
         </section>
       </div>

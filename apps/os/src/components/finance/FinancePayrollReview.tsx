@@ -32,6 +32,9 @@ const viewLabels: Record<View, string> = {
   history: 'History',
 }
 
+const payrollViewFromFocus = (view?: 'review' | 'ready' | 'history'): View =>
+  view === 'ready' ? 'ready' : view === 'history' ? 'history' : 'review'
+
 const getProposalVisualStatus = (
   proposal: PayrollProposal,
   approved: number,
@@ -82,8 +85,8 @@ export const FinancePayrollReview = () => {
   const defaultPaymentAccountId = activePaymentAccounts[0]?.id ?? ''
 
   const [initialFocus] = useState(() => consumeFinanceWorkspaceFocus('payroll'))
-  const [view, setView] = useState<View>(() => initialFocus?.view === 'ready' ? 'ready' : 'review')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [view, setView] = useState<View>(() => payrollViewFromFocus(initialFocus?.view))
+  const [selectedId, setSelectedId] = useState<string | null>(() => initialFocus?.proposalId ?? null)
   const [decision, setDecision] = useState<Decision | null>(null)
   const [note, setNote] = useState('')
   const [paymentOpen, setPaymentOpen] = useState(false)
@@ -99,8 +102,8 @@ export const FinancePayrollReview = () => {
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null)
 
   useEffect(() => subscribeFinanceWorkspaceFocus('payroll', (focus) => {
-    setView(focus.view === 'ready' ? 'ready' : 'review')
-    setSelectedId(null)
+    setView(payrollViewFromFocus(focus.view))
+    setSelectedId(focus.proposalId ?? null)
     setExpandedDraftId(null)
   }), [])
 
@@ -242,7 +245,7 @@ export const FinancePayrollReview = () => {
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border/60 px-5 py-8 text-center">
           <p className="text-sm font-semibold">No payroll proposals in this view</p>
-          <p className="mt-1 text-xs text-muted-foreground">Proposals matching the selected status will appear here.</p>
+          <p className="mt-1 text-xs text-muted-foreground">{view === 'review' ? 'HR-submitted proposals that need Finance review will appear here.' : view === 'ready' ? 'Approved proposals waiting for final payment will appear here.' : 'Paid and resolved payroll proposals will appear here.'}</p>
         </div>
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">

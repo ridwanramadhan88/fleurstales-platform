@@ -48,7 +48,7 @@ export interface SettingsNavItem {
 export const SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
   { id: 'store-profile', label: 'Store Profile', available: true },
   { id: 'branches', label: 'Branches', available: true },
-  { id: 'payment-methods', label: 'Payment Methods', available: true },
+  { id: 'payment-methods', label: 'Finance', available: true },
   { id: 'staff-roles', label: 'Staff & Roles', available: true },
   { id: 'permissions', label: 'Permissions', available: true },
   { id: 'attendance', label: 'Attendance', available: true },
@@ -502,9 +502,6 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
       return
     }
 
-    // Validation passed — stage the change and ask for explicit
-    // confirmation (with a summary of what's about to change) instead of
-    // committing straight away.
     setSaveThenLeave(continueAfterSave)
     setPendingSave(normalizedEditValue)
     setSaveConfirmationOpen(true)

@@ -93,26 +93,9 @@ describe('AddInternalTransaction', () => {
     }))
   })
 
-  it('uses focused category drawers and shows category descriptions', () => {
+  it('keeps category configuration out of the daily transaction surface', () => {
     render(<AddInternalTransaction branches={['Kedamaian']} actorName="Finance" actorRole="finance" />)
-    fireEvent.click(screen.getByRole('button', { name:'Manage categories' }))
-    expect(screen.getByText('Created automatically when final payroll payment is recorded.')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name:'Add category' }))
-    expect(screen.getByText('Create a reusable manual expense category.')).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Expense category name'), { target:{ value:'Delivery' } })
-    fireEvent.change(screen.getByLabelText('Expense category description'), { target:{ value:'Courier and local delivery costs.' } })
-    fireEvent.click(screen.getByRole('button', { name:'Add category' }))
-    expect(useFinanceStore.getState().customCategories[0]).toMatchObject({ name:'Delivery', description:'Courier and local delivery costs.', direction:'expense', active:true })
-    expect(screen.getByText('Courier and local delivery costs.')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name:'Edit Payroll' }))
-    expect(screen.getByText(/System key:/)).toHaveTextContent('payroll')
-    fireEvent.change(screen.getByLabelText('Expense category name'), { target:{ value:'Team payroll' } })
-    fireEvent.click(screen.getByRole('button', { name:'Save category' }))
-    expect(useFinanceStore.getState().categoryOverrides[0]).toMatchObject({ categoryId:'payroll', label:'Team payroll' })
-
-    fireEvent.click(screen.getByRole('button', { name:'Archive Delivery' }))
-    expect(useFinanceStore.getState().customCategories[0]?.active).toBe(false)
+    expect(screen.queryByRole('button', { name:'Manage categories' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name:'Add transaction' })).toBeInTheDocument()
   })
 })
