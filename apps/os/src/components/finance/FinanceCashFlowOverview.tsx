@@ -1,6 +1,18 @@
 import { useMemo, useState, type FC, type FormEvent } from 'react'
-import { ArrowLeftRight, Landmark, PlusCircle, SlidersHorizontal } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeftRight,
+  BadgeDollarSign,
+  CheckCircle2,
+  ClipboardCheck,
+  Landmark,
+  PlusCircle,
+  RotateCcw,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { useFinanceStore } from '../../store/financeStore'
+import { useOrdersStore } from '../../store/ordersStore'
+import { usePayrollStore } from '../../store/payrollStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useUserStore } from '../../store/userStore'
 import { createFinanceCashFlowEntry, type CashFlowEntryKind } from '../../data/financeCashFlow'
@@ -32,6 +44,8 @@ type DialogMode = CashFlowEntryKind | null
 export const FinanceCashFlowOverview: FC = () => {
   const role = useUserStore((state) => state.role)
   const transactions = useFinanceStore((state) => state.transactions)
+  const orders = useOrdersStore((state) => state.orders)
+  const payrollProposals = usePayrollStore((state) => state.payrollProposals)
   const configuredAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
   const [dialogMode, setDialogMode] = useState<DialogMode>(null)
   const [accountId, setAccountId] = useState('')
@@ -89,6 +103,27 @@ export const FinanceCashFlowOverview: FC = () => {
     const total = balances.reduce((sum, account) => sum + account.balance, 0)
     return { total, moneyIn, moneyOut, net: moneyIn - moneyOut }
   }, [balances, transactions])
+
+  const attention = useMemo(() => {
+    const postedOrderNumbers = new Set(
+      transactions
+        .filter((transaction) => transaction.status === 'verified' && transaction.source === 'order_payment' && transaction.orderNumber)
+        .map((transaction) => transaction.orderNumber as string),
+    )
+    const reconciliationOrders = orders.filter(
+      (order) => postedOrderNumbers.has(order.orderNumber) && !order.financeVerified,
+    )
+    const correction = reconciliationOrders.filter((order) => order.financeVerificationStatus === 'rejected').length
+    const awaiting = Math.max(0, reconciliationOrders.length - correction)
+    const refunds = orders.filter((order) => order.paymentStatus === 'refund_pending').length
+    const payrollReview = payrollProposals.filter((proposal) => ['submitted_to_finance', 'returned_to_hr'].includes(proposal.status)).length
+    const payrollReady = payrollProposals.filter((proposal) => proposal.status === 'finance_approved').length
+    const legacyRows = transactions.filter(
+      (transaction) => transaction.status === 'verified' && (!transaction.accountId || transaction.accountId === LEGACY_ACCOUNT_ID),
+    ).length
+    const total = awaiting + correction + refunds + payrollReview + payrollReady + legacyRows
+    return { awaiting, correction, refunds, payrollReview, payrollReady, legacyRows, total }
+  }, [orders, payrollProposals, transactions])
 
   if (role !== 'finance') return null
 
@@ -148,12 +183,61 @@ export const FinanceCashFlowOverview: FC = () => {
   const inputClass = 'h-11 w-full rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-foreground/40 focus:ring-2 focus:ring-foreground/10'
 
   return (
-    <section className="space-y-5" aria-label="Cash Flow">
+    <section className="space-y-5" aria-label="Finance overview">
       <FinanceModuleHeader
-        title="Cash Flow"
-        description="Ledger-derived company balance and current-month operating cash flow."
+        title="Overview"
+        description="Cash position, current-month movement, and Finance work that needs attention."
         actions={<><button type="button" onClick={() => open('opening_balance')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"><PlusCircle className="size-4" />Opening Balance</button><button type="button" onClick={() => open('adjustment')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"><SlidersHorizontal className="size-4" />Adjust</button><button type="button" onClick={() => open('transfer')} className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"><ArrowLeftRight className="size-4" />Transfer</button></>}
       />
+
+      <div className="rounded-xl bg-card p-4 ring-1 ring-border/70 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold">Needs Attention</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">Work queues and data-quality items that still need a Finance action.</p>
+          </div>
+          {attention.total > 0 && (
+            <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">{attention.total} open</span>
+          )}
+        </div>
+
+        {attention.total === 0 ? (
+          <div className="mt-4 flex items-center gap-3 rounded-xl bg-success/5 px-4 py-3 ring-1 ring-success/15">
+            <CheckCircle2 className="size-5 shrink-0 text-success" />
+            <div>
+              <p className="text-sm font-semibold">All caught up</p>
+              <p className="text-xs text-muted-foreground">No reconciliation, refund, payroll, or account-cleanup items are waiting.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <AttentionCard
+              icon={ClipboardCheck}
+              label="Reconciliation"
+              value={attention.awaiting + attention.correction}
+              helper={`${attention.awaiting} awaiting review · ${attention.correction} needs correction`}
+            />
+            <AttentionCard
+              icon={RotateCcw}
+              label="Refunds"
+              value={attention.refunds}
+              helper="Pending refunds waiting for completion"
+            />
+            <AttentionCard
+              icon={BadgeDollarSign}
+              label="Payroll"
+              value={attention.payrollReview + attention.payrollReady}
+              helper={`${attention.payrollReview} to review · ${attention.payrollReady} ready to pay`}
+            />
+            <AttentionCard
+              icon={AlertCircle}
+              label="Account cleanup"
+              value={attention.legacyRows}
+              helper="Legacy / unassigned ledger rows"
+            />
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <MetricCard label="Total Balance" value={metrics.total} />
@@ -169,7 +253,7 @@ export const FinanceCashFlowOverview: FC = () => {
             <div key={account.id} className="rounded-xl bg-surface-panel px-4 py-3 ring-1 ring-border/60">
               <p className="truncate text-xs font-medium text-muted-foreground">{account.label}</p>
               <p className={`mt-1 text-lg font-semibold tabular-nums ${account.balance < 0 ? 'text-destructive' : ''}`}>{formatIdr(account.balance)}</p>
-              {account.id === LEGACY_ACCOUNT_ID && <p className="mt-1 text-2xs text-warning">Historical transactions without a confirmed account stay here until they are resolved through a controlled Finance cleanup.</p>}
+              {account.id === LEGACY_ACCOUNT_ID && <p className="mt-1 text-2xs text-warning">Historical transactions without a confirmed account stay here until controlled cleanup; automatic source-owned entries stay immutable.</p>}
             </div>
           ))}
         </div>
@@ -247,5 +331,23 @@ const MetricCard: FC<{ label: string; value: number }> = ({ label, value }) => (
   <div className="rounded-xl bg-card p-4 ring-1 ring-border/70">
     <p className="text-xs font-medium text-muted-foreground">{label}</p>
     <p className={`mt-2 text-xl font-semibold tabular-nums ${value < 0 ? 'text-destructive' : ''}`}>{formatIdr(value)}</p>
+  </div>
+)
+
+const AttentionCard: FC<{
+  icon: typeof AlertCircle
+  label: string
+  value: number
+  helper: string
+}> = ({ icon: Icon, label, value, helper }) => (
+  <div className={`rounded-xl px-4 py-3 ring-1 ${value > 0 ? 'bg-warning/5 ring-warning/20' : 'bg-surface-panel ring-border/60'}`}>
+    <div className="flex items-center justify-between gap-3">
+      <span className="flex size-8 items-center justify-center rounded-full bg-background/80 text-muted-foreground ring-1 ring-border/60">
+        <Icon className="size-4" />
+      </span>
+      <span className={`text-lg font-semibold tabular-nums ${value > 0 ? 'text-warning' : 'text-muted-foreground'}`}>{value}</span>
+    </div>
+    <p className="mt-3 text-xs font-semibold text-foreground">{label}</p>
+    <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{helper}</p>
   </div>
 )
