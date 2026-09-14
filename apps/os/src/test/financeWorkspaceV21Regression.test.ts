@@ -51,7 +51,8 @@ describe('Finance workspace v2.1 regressions', () => {
     const payroll = read('src/components/finance/FinancePayrollReview.tsx')
     const refunds = read('src/components/finance/FinanceRefundQueue.tsx')
 
-    expect(payroll).toContain("setView(focus.view === 'ready' ? 'ready' : 'review')")
+    expect(payroll).toContain('setView(payrollViewFromFocus(focus.view))')
+    expect(payroll).toContain('setSelectedId(focus.proposalId ?? null)')
     expect(payroll).toContain('await recordPayrollPaymentWithAccount({')
     expect(refunds).toContain("subscribeFinanceWorkspaceFocus('refunds'")
     expect(refunds).toContain("setActiveTab('pending')")
