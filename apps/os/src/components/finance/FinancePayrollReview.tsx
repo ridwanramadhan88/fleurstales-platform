@@ -1,5 +1,5 @@
 import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { hasActionPermission } from '../../config/actionPermissions'
 import { usePayrollStore, type EmployeePayrollDraft, type PayrollProposal } from '../../store/payrollStore'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -9,6 +9,7 @@ import { PayrollStatusBadge, type PayrollVisualStatus } from '../payroll/Payroll
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import { DatePickerField } from '../ui/date-time-field'
 import { InfoDisclosure } from '../ui/info-disclosure'
+import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
 
 const formatIdr = (value: number) => `Rp${Math.round(value).toLocaleString('id-ID')}`
 const formatPeriod = (start?: string, end?: string) => start && end ? `${start}–${end}` : ''
@@ -80,7 +81,8 @@ export const FinancePayrollReview = () => {
   )
   const defaultPaymentAccountId = activePaymentAccounts[0]?.id ?? ''
 
-  const [view, setView] = useState<View>('review')
+  const [initialFocus] = useState(() => consumeFinanceWorkspaceFocus('payroll'))
+  const [view, setView] = useState<View>(() => initialFocus?.view === 'ready' ? 'ready' : 'review')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [decision, setDecision] = useState<Decision | null>(null)
   const [note, setNote] = useState('')
@@ -95,6 +97,12 @@ export const FinancePayrollReview = () => {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null)
+
+  useEffect(() => subscribeFinanceWorkspaceFocus('payroll', (focus) => {
+    setView(focus.view === 'ready' ? 'ready' : 'review')
+    setSelectedId(null)
+    setExpandedDraftId(null)
+  }), [])
 
   const selected = selectedId ? proposals.find((item) => item.id === selectedId) ?? null : null
   const filtered = proposals.filter((proposal) => {
