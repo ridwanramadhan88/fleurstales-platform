@@ -87,7 +87,7 @@ const ReconciliationTabs: FC<{
   return (
     <nav
       aria-label="Reconciliation views"
-      className="flex w-fit items-center gap-1 rounded-full bg-muted/45 p-1 ring-1 ring-border/50"
+      className="flex w-fit items-center gap-1 rounded-xl bg-muted/45 p-1 ring-1 ring-border/50"
     >
       <button
         type="button"
@@ -95,7 +95,7 @@ const ReconciliationTabs: FC<{
         aria-selected={activeModule === 'order_verification'}
         onClick={() => onChange('order_verification')}
         className={cn(
-          'h-8 rounded-full px-3 text-xs font-semibold transition-colors',
+          'h-8 rounded-lg px-3 text-xs font-semibold transition-colors',
           activeModule === 'order_verification'
             ? 'bg-card text-foreground shadow-ios-sm'
             : 'text-muted-foreground hover:text-foreground',
@@ -109,7 +109,7 @@ const ReconciliationTabs: FC<{
         aria-selected={activeModule === 'refunds'}
         onClick={() => onChange('refunds')}
         className={cn(
-          'h-8 rounded-full px-3 text-xs font-semibold transition-colors',
+          'h-8 rounded-lg px-3 text-xs font-semibold transition-colors',
           activeModule === 'refunds'
             ? 'bg-card text-foreground shadow-ios-sm'
             : 'text-muted-foreground hover:text-foreground',
@@ -119,6 +119,25 @@ const ReconciliationTabs: FC<{
       </button>
     </nav>
   )
+}
+
+const getSingleModuleHeader = (
+  activeModule: FinanceWorkspaceModule,
+  activeGroup: FinanceWorkspaceGroup,
+) => {
+  if (activeModule === 'order_verification') {
+    return {
+      label: 'Order Reconciliation',
+      description: 'Review received order payments and their evidence.',
+    }
+  }
+  if (activeModule === 'refunds') {
+    return {
+      label: 'Refunds',
+      description: 'Review pending refunds and complete actual money movement.',
+    }
+  }
+  return GROUP_ITEMS[activeGroup]
 }
 
 export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
@@ -131,7 +150,7 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
   const navRef = useActiveItemScroll<HTMLElement>(activeGroup, '[aria-current="page"]')
 
   if (groups.length <= 1) {
-    const item = GROUP_ITEMS[groups[0] ?? activeGroup]
+    const item = getSingleModuleHeader(activeModule, groups[0] ?? activeGroup)
     return (
       <div className="space-y-3">
         <header className="space-y-1">
