@@ -29,7 +29,7 @@ export interface TransactionLedgerProps {
 const formatIdr = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 const businessDate = (transaction: FinanceTransaction) => (transaction.transactionDate ?? transaction.createdAt).slice(0, 10)
 const isManual = (transaction: FinanceTransaction) => (transaction.entryMode ?? (transaction.isSystemGenerated ? 'automatic' : 'manual')) === 'manual'
-const isCashFlowUtility = (transaction: FinanceTransaction) => ['opening_balance','adjustment','transfer'].includes(transaction.source ?? '')
+const isCashFlowUtility = (transaction: FinanceTransaction) => ['opening_balance','adjustment','transfer','transfer_fee'].includes(transaction.source ?? '')
 const sourceMatches = (transaction: FinanceTransaction, tab: SourceTab) =>
   tab === 'all' ||
   (tab === 'orders' && transaction.source === 'order_payment') ||
@@ -45,6 +45,7 @@ const sourceLabel = (transaction: FinanceTransaction) => {
   if (transaction.source === 'opening_balance') return 'Opening Balance'
   if (transaction.source === 'adjustment') return 'Adjustment'
   if (transaction.source === 'transfer') return 'Transfer'
+  if (transaction.source === 'transfer_fee') return 'Transfer fee'
   return 'Manual'
 }
 
@@ -66,7 +67,12 @@ const TransactionRow: FC<{
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const scope = transaction.scope ?? (transaction.branch === 'All' ? 'company' : 'branch')
-  const editable = canEdit && transaction.status === 'verified' && transaction.source !== 'transfer'
+  const entryMode = transaction.entryMode ?? (transaction.isSystemGenerated ? 'automatic' : 'manual')
+  const editable = canEdit
+    && transaction.status === 'verified'
+    && entryMode === 'manual'
+    && !transaction.isSystemGenerated
+    && transaction.source !== 'transfer'
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.currentTarget !== event.target) return
