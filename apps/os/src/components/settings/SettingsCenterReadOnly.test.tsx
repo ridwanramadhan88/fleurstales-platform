@@ -16,7 +16,7 @@ describe('Owner Settings read-only presentation', () => {
     const sections = [
       'Store Profile',
       'Branches',
-      'Payment Methods',
+      'Finance',
       'Staff & Roles',
       'Permissions',
       'Attendance',
