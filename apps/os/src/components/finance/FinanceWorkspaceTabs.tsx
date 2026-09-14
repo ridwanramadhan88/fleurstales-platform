@@ -1,4 +1,4 @@
-import { useEffect, type FC } from 'react'
+import { useEffect, useMemo, type FC } from 'react'
 import {
   BadgeDollarSign,
   ClipboardCheck,
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import type { FinanceWorkspaceModule } from '../../domain/financeWorkspaceDomain'
 import { useActiveItemScroll } from '../../hooks/useActiveItemScroll'
+import { useFinanceStore } from '../../store/financeStore'
+import { useOrdersStore } from '../../store/ordersStore'
 import { cn } from '../../lib/utils'
 import { subscribeFinanceWorkspaceNavigation } from './financeWorkspaceNavigation'
 
@@ -81,8 +83,23 @@ const ReconciliationTabs: FC<{
   activeModule: FinanceWorkspaceModule
   onChange: (module: FinanceWorkspaceModule) => void
 }> = ({ modules, activeModule, onChange }) => {
+  const orders = useOrdersStore((state) => state.orders)
+  const transactions = useFinanceStore((state) => state.transactions)
   const reconciliationModules = (['order_verification', 'refunds'] as FinanceWorkspaceModule[])
     .filter((module) => modules.includes(module))
+
+  const counts = useMemo(() => {
+    const postedOrderNumbers = new Set(
+      transactions
+        .filter((transaction) => transaction.status === 'verified' && transaction.source === 'order_payment' && transaction.orderNumber)
+        .map((transaction) => transaction.orderNumber as string),
+    )
+    return {
+      orders: orders.filter((order) => postedOrderNumbers.has(order.orderNumber) && !order.financeVerified).length,
+      refunds: orders.filter((order) => order.paymentStatus === 'refund_pending').length,
+    }
+  }, [orders, transactions])
+
   if (reconciliationModules.length <= 1) return null
 
   return (
@@ -102,7 +119,7 @@ const ReconciliationTabs: FC<{
             : 'text-muted-foreground hover:text-foreground',
         )}
       >
-        Orders
+        Orders <span className="ml-1 rounded-md bg-muted px-1.5 py-0.5 tabular-nums text-[10px] text-muted-foreground">{counts.orders}</span>
       </button>
       <button
         type="button"
@@ -116,7 +133,7 @@ const ReconciliationTabs: FC<{
             : 'text-muted-foreground hover:text-foreground',
         )}
       >
-        Refunds
+        Refunds <span className="ml-1 rounded-md bg-muted px-1.5 py-0.5 tabular-nums text-[10px] text-muted-foreground">{counts.refunds}</span>
       </button>
     </nav>
   )
