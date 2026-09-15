@@ -50,6 +50,35 @@ export const getEmployeeReadiness = ({
 export const isEmployeeOperationallyReady = (params: Parameters<typeof getEmployeeReadiness>[0]): boolean =>
   getEmployeeReadiness(params).state === 'active'
 
+/**
+ * Payroll eligibility follows the employee's historical employment window, not
+ * their current login/roster status. A separated employee therefore remains in
+ * the payroll period that contains their final employment day.
+ *
+ * Legacy inactive employees without an employment end date stay excluded. We
+ * deliberately do not invent a historical separation date for old records.
+ */
+export const doesEmploymentOverlapPeriod = (
+  employee: Pick<Employee, 'hireDate' | 'employmentEndDate' | 'status'>,
+  periodStart: string,
+  periodEnd: string,
+): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(periodStart) || !/^\d{4}-\d{2}-\d{2}$/.test(periodEnd) || periodStart > periodEnd) return false
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(employee.hireDate) || employee.hireDate > periodEnd) return false
+  if (employee.employmentEndDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(employee.employmentEndDate)) return false
+    return employee.employmentEndDate >= periodStart
+  }
+  return employee.status === 'active'
+}
+
+/** Partial-period employment needs an explicit HR pay decision; no proration formula is assumed. */
+export const isPartialPeriodEmployment = (
+  employee: Pick<Employee, 'hireDate' | 'employmentEndDate'>,
+  periodStart: string,
+  periodEnd: string,
+): boolean => employee.hireDate > periodStart || Boolean(employee.employmentEndDate && employee.employmentEndDate < periodEnd)
+
 export interface EmployeeRemovalBlocker {
   key: 'attendance' | 'attendanceReviews' | 'orders' | 'payroll' | 'points' | 'publishedSchedules' | 'scheduleHistory'
   label: string
