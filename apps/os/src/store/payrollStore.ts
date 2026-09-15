@@ -11,6 +11,7 @@ import { useSettingsStore } from './settingsStore'
 import { hasActionPermission } from '../config/actionPermissions'
 import { isActionAuthorized } from '../config/authorization'
 import { useHrStore } from './hrStore'
+import { doesEmploymentOverlapPeriod, isPartialPeriodEmployment } from '../domain/hrEmployeeLifecycleDomain'
 import { useFinanceStore } from './financeStore'
 import type { EmployeePointEntry } from './hrStoreTypes'
 import type { UserRole } from './userStore'
@@ -289,8 +290,8 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const activeProposal = get().payrollProposals.find((item) => item.payrollPeriodId === payrollPeriodId && item.status !== 'resolved')
     const defaultPolicy = buildPayrollCalculationPolicy(payrollSettings.pointValueIdr)
     const proposalPolicy = activeProposal?.calculationPolicy ?? defaultPolicy
-    const employees = hr.employees.filter((employee) => employee.status === 'active' && employee.hireDate <= period.periodEnd && employee.systemRole !== 'owner')
-    if (!employees.length) return { ok:false, code:'empty_payroll', reason:'No active employees are eligible for this payroll period.' }
+    const employees = hr.employees.filter((employee) => employee.systemRole !== 'owner' && doesEmploymentOverlapPeriod(employee, period.periodStart, period.periodEnd))
+    if (!employees.length) return { ok:false, code:'empty_payroll', reason:'No employees overlap this payroll period.' }
     const currentPeriodDrafts = get().employeePayrolls.filter((draft) => draft.payrollPeriodId === payrollPeriodId)
     if (currentPeriodDrafts.some((draft) => draft.status === 'pending_finance_review')) return { ok:false, code:'invalid_status', reason:'Payroll currently under Finance review cannot be regenerated.' }
     const manualDrafts = currentPeriodDrafts.filter((draft) => draft.entryMode === 'manual' && draft.status !== 'resolved')
@@ -460,9 +461,19 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
     const mixedPolicy = proposalDrafts.some((draft) => draft.entryMode !== 'manual' && draft.calculationPolicy && !sameCalculationPolicy(draft.calculationPolicy, proposalPolicy))
     if (mixedPolicy) return { ok:false, code:'calculation_mismatch', reason:'Payroll rows were generated with different calculation policies. Regenerate the returned rows before submission.' }
 
-    const warningMessages = useHrStore.getState().employeePointEntries.some((entry) => entry.status === 'pending' && isPointEntryInsidePayrollPeriod(entry, period.periodStart, period.periodEnd))
-      ? ['Point entries remain pending review.']
-      : []
+    const partialPeriodEmployeeNames = proposalDrafts.flatMap((draft) => {
+      if (draft.entryMode === 'manual') return []
+      const employee = hrStore.employees.find((item) => item.id === draft.employeeId)
+      return employee && isPartialPeriodEmployment(employee, period.periodStart, period.periodEnd) ? [employee.name] : []
+    })
+    const warningMessages = [
+      ...(hrStore.employeePointEntries.some((entry) => entry.status === 'pending' && isPointEntryInsidePayrollPeriod(entry, period.periodStart, period.periodEnd))
+        ? ['Point entries remain pending review.']
+        : []),
+      ...(partialPeriodEmployeeNames.length
+        ? [`Partial-period employment: ${partialPeriodEmployeeNames.join(', ')}. Verify salary treatment before Finance review.`]
+        : []),
+    ]
     const validationFailure = proposalDrafts.find((draft) => !validateWithPolicy(draft, proposalPolicy).ok)
     if (validationFailure) return { ok:false, code:'calculation_mismatch', reason:`Payroll calculation is invalid for ${validationFailure.employeeName}.` }
 
