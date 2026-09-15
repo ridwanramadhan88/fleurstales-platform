@@ -62,7 +62,7 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'orders.assign', label:'Assign Florists', description:'Assign or reassign a florist to an order.', parentSection:'orders', group:'Orders' },
   { id:'orders.advance_status', label:'Advance Order Status', description:'Move an order through its permitted fulfillment workflow.', parentSection:'orders', group:'Orders' },
   { id:'orders.submit_change_request', label:'Request Locked Changes', description:'Submit edit or cancellation requests for locked orders.', parentSection:'orders', group:'Orders' },
-  { id:'orders.resolve_change_request', label:'Resolve Order Change Requests', description:'Approve or reject locked-order change requests.', parentSection:'finance', group:'Orders' },
+  { id:'orders.resolve_change_request', label:'Resolve Order Change Requests', description:'Approve or reject locked-order change requests.', parentSection:'orders', group:'Orders' },
   { id:'finance.view_order_verification', label:'View Order Reconciliation', description:'View Admin-confirmed payments and their order workflow state.', parentSection:'finance', group:'Finance' },
   { id:'finance.verify_order', label:'Reconcile Order Payment', description:'Review Admin-confirmed payment evidence and mark it Reconciled or Needs Correction without moving cash again.', parentSection:'finance', group:'Finance' },
   { id:'finance.view_payroll', label:'View Payroll', description:'View payroll proposals.', parentSection:'finance', group:'Finance' },
