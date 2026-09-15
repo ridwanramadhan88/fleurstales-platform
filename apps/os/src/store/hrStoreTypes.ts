@@ -28,7 +28,16 @@ export interface Employee {
   systemRole: UserRole
   status: EmployeeStatus
   phone: string
+  /** First day of employment, stored as YYYY-MM-DD. */
   hireDate: string
+  /** Final day of employment, inclusive. Inactive legacy rows may not have one. */
+  employmentEndDate?: string
+  /** Human-readable reason captured when employment is ended. */
+  separationReason?: string
+  /** Audit timestamp for the status transition that ended employment. */
+  separatedAt?: string
+  /** Display name of the actor who ended employment. */
+  separatedBy?: string
   /** Supabase Auth email for production staff login. */
   email?: string
   /** Lowercase login identifier for the internal demo app. */
