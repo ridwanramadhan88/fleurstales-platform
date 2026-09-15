@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FC } from 'react'
-import { CalendarRange, CheckCircle2, LockKeyhole, RotateCcw, ShieldAlert } from 'lucide-react'
+import { BarChart3, CalendarRange, CheckCircle2, ChevronLeft, LockKeyhole, RotateCcw, ShieldAlert } from 'lucide-react'
 import { isActionAuthorized } from '../../config/authorization'
 import {
   getFinancePeriods,
@@ -11,6 +11,7 @@ import { toast } from '../../hooks/use-toast'
 import { useUserStore } from '../../store/userStore'
 import { AppDialog } from '../ui/app-dialog'
 import { AppSheet } from '../ui/app-sheet'
+import { FinancePeriodReport } from './FinancePeriodReport'
 
 const jakartaMonthKey = (): string => {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -54,6 +55,7 @@ export const FinancePeriodControls: FC = () => {
   const [loading, setLoading] = useState(true)
   const [busyMonth, setBusyMonth] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [reportMonth, setReportMonth] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingPeriodAction | null>(null)
   const [reason, setReason] = useState('')
 
@@ -82,6 +84,17 @@ export const FinancePeriodControls: FC = () => {
   if (role !== 'finance') return null
 
   const current = periods[0]
+  const reportPeriod = reportMonth ? periods.find((period) => period.periodMonth === reportMonth) : undefined
+
+  const openPeriods = () => {
+    setReportMonth(null)
+    setSheetOpen(true)
+  }
+
+  const openReport = (periodMonth: string) => {
+    setReportMonth(periodMonth)
+    setSheetOpen(true)
+  }
 
   const changeStatus = async (period: FinancePeriodSummary, status: FinancePeriodStatus, actionReason?: string) => {
     if (busyMonth) return
@@ -139,105 +152,129 @@ export const FinancePeriodControls: FC = () => {
             </p>
           </div>
         </div>
-        <button type="button" onClick={() => setSheetOpen(true)} className="h-9 rounded-lg px-3 text-xs font-semibold ring-1 ring-border/70 transition hover:bg-muted">
-          Manage periods
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {current && (
+            <button type="button" onClick={() => openReport(current.periodMonth)} className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold ring-1 ring-border/70 transition hover:bg-muted">
+              <BarChart3 className="size-3.5" /> View report
+            </button>
+          )}
+          <button type="button" onClick={openPeriods} className="h-9 rounded-lg px-3 text-xs font-semibold ring-1 ring-border/70 transition hover:bg-muted">
+            Manage periods
+          </button>
+        </div>
       </div>
 
       <AppSheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChange={(open) => {
+          setSheetOpen(open)
+          if (!open) setReportMonth(null)
+        }}
         side="responsiveRight"
         size="wide"
-        title="Accounting periods"
-        description="Review and close completed months. Closed periods freeze their Finance ledger history until an authorized reopen."
+        title={reportPeriod ? `${formatMonth(reportPeriod.periodMonth)} report` : 'Accounting periods'}
+        description={reportPeriod
+          ? 'Period balances, operating cash flow, account movement, and source breakdown from the verified Finance ledger.'
+          : 'Review and close completed months. Closed periods freeze their Finance ledger history until an authorized reopen.'}
       >
-        <div className="space-y-3 overflow-y-auto px-4 pb-6 pt-4 sm:px-5">
-          {loading && <p className="text-sm text-muted-foreground">Loading accounting periods…</p>}
-          {!loading && periods.map((period) => {
-            const monthKey = period.periodMonth.slice(0, 7)
-            const isCurrent = monthKey === currentMonth
-            const busy = busyMonth === period.periodMonth
-            const blockers = blockerItems(period).filter(([, count]) => count > 0)
-            return (
-              <article key={period.periodMonth} className="rounded-xl border border-border/70 bg-card p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-semibold">{formatMonth(period.periodMonth)}</h3>
-                      <span className={`rounded-md px-2 py-0.5 text-2xs font-semibold ${period.status === 'closed' ? 'bg-success/10 text-success' : period.status === 'review' ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'}`}>
-                        {statusLabel[period.status]}
-                      </span>
-                      {isCurrent && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-2xs font-semibold text-primary">Current</span>}
+        {reportPeriod ? (
+          <div className="space-y-4 overflow-y-auto px-4 pb-6 pt-4 sm:px-5">
+            <button type="button" onClick={() => setReportMonth(null)} className="inline-flex h-9 items-center gap-2 rounded-lg px-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground">
+              <ChevronLeft className="size-4" /> Back to periods
+            </button>
+            <FinancePeriodReport period={reportPeriod} />
+          </div>
+        ) : (
+          <div className="space-y-3 overflow-y-auto px-4 pb-6 pt-4 sm:px-5">
+            {loading && <p className="text-sm text-muted-foreground">Loading accounting periods…</p>}
+            {!loading && periods.map((period) => {
+              const monthKey = period.periodMonth.slice(0, 7)
+              const isCurrent = monthKey === currentMonth
+              const busy = busyMonth === period.periodMonth
+              const blockers = blockerItems(period).filter(([, count]) => count > 0)
+              return (
+                <article key={period.periodMonth} className="rounded-xl border border-border/70 bg-card p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-semibold">{formatMonth(period.periodMonth)}</h3>
+                        <span className={`rounded-md px-2 py-0.5 text-2xs font-semibold ${period.status === 'closed' ? 'bg-success/10 text-success' : period.status === 'review' ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'}`}>
+                          {statusLabel[period.status]}
+                        </span>
+                        {isCurrent && <span className="rounded-md bg-primary/10 px-2 py-0.5 text-2xs font-semibold text-primary">Current</span>}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {period.status === 'closed'
+                          ? `Closed${period.closedBy ? ` by ${period.closedBy}` : ''}${period.closedAt ? ` · ${new Date(period.closedAt).toLocaleDateString('en-GB')}` : ''}`
+                          : period.blockerTotal === 0
+                            ? 'Close checklist is clear.'
+                            : `${period.blockerTotal} item${period.blockerTotal === 1 ? '' : 's'} must be resolved before close.`}
+                      </p>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {period.status === 'closed'
-                        ? `Closed${period.closedBy ? ` by ${period.closedBy}` : ''}${period.closedAt ? ` · ${new Date(period.closedAt).toLocaleDateString('en-GB')}` : ''}`
-                        : period.blockerTotal === 0
-                          ? 'Close checklist is clear.'
-                          : `${period.blockerTotal} item${period.blockerTotal === 1 ? '' : 's'} must be resolved before close.`}
-                    </p>
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {period.status === 'open' && canClose && (
-                      <button type="button" disabled={busy} onClick={() => void changeStatus(period, 'review')} className="h-9 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50">
-                        Start review
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button type="button" onClick={() => setReportMonth(period.periodMonth)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-semibold">
+                        <BarChart3 className="size-3.5" /> View report
                       </button>
-                    )}
-                    {period.status === 'review' && canClose && (
-                      <>
-                        <button type="button" disabled={busy} onClick={() => void changeStatus(period, 'open')} className="h-9 rounded-lg px-3 text-xs font-semibold text-muted-foreground disabled:opacity-50">
-                          Return to Open
+                      {period.status === 'open' && canClose && (
+                        <button type="button" disabled={busy} onClick={() => void changeStatus(period, 'review')} className="h-9 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50">
+                          Start review
                         </button>
-                        {!isCurrent && (
-                          <button
-                            type="button"
-                            disabled={busy || period.blockerTotal > 0}
-                            onClick={() => { setReason(''); setPendingAction({ period, target:'closed' }) }}
-                            className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-45"
-                          >
-                            <LockKeyhole className="size-3.5" /> Close month
+                      )}
+                      {period.status === 'review' && canClose && (
+                        <>
+                          <button type="button" disabled={busy} onClick={() => void changeStatus(period, 'open')} className="h-9 rounded-lg px-3 text-xs font-semibold text-muted-foreground disabled:opacity-50">
+                            Return to Open
                           </button>
-                        )}
-                      </>
-                    )}
-                    {period.status === 'closed' && canReopen && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => { setReason(''); setPendingAction({ period, target:'open' }) }}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50"
-                      >
-                        <RotateCcw className="size-3.5" /> Reopen
-                      </button>
-                    )}
+                          {!isCurrent && (
+                            <button
+                              type="button"
+                              disabled={busy || period.blockerTotal > 0}
+                              onClick={() => { setReason(''); setPendingAction({ period, target:'closed' }) }}
+                              className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-45"
+                            >
+                              <LockKeyhole className="size-3.5" /> Close month
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {period.status === 'closed' && canReopen && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => { setReason(''); setPendingAction({ period, target:'open' }) }}
+                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50"
+                        >
+                          <RotateCcw className="size-3.5" /> Reopen
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {period.status === 'review' && isCurrent && (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/55 px-3 py-2 text-xs text-muted-foreground">
-                    <ShieldAlert className="size-4 shrink-0" /> Current month can be reviewed now, but it cannot be closed until the month has ended.
-                  </div>
-                )}
+                  {period.status === 'review' && isCurrent && (
+                    <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/55 px-3 py-2 text-xs text-muted-foreground">
+                      <ShieldAlert className="size-4 shrink-0" /> Current month can be reviewed now, but it cannot be closed until the month has ended.
+                    </div>
+                  )}
 
-                {blockers.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {blockers.map(([label, count]) => (
-                      <span key={label} className="rounded-md bg-warning/10 px-2 py-1 text-2xs font-medium text-warning">{label}: {count}</span>
-                    ))}
-                  </div>
-                ) : period.status !== 'closed' ? (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-success"><CheckCircle2 className="size-4" /> No close blockers.</div>
-                ) : null}
+                  {blockers.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {blockers.map(([label, count]) => (
+                        <span key={label} className="rounded-md bg-warning/10 px-2 py-1 text-2xs font-medium text-warning">{label}: {count}</span>
+                      ))}
+                    </div>
+                  ) : period.status !== 'closed' ? (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-success"><CheckCircle2 className="size-4" /> No close blockers.</div>
+                  ) : null}
 
-                {period.status === 'closed' && !canReopen && (
-                  <p className="mt-3 text-xs text-muted-foreground">Reopening requires the separately granted <span className="font-medium text-foreground">Reopen Accounting Period</span> permission and an audit reason.</p>
-                )}
-              </article>
-            )
-          })}
-        </div>
+                  {period.status === 'closed' && !canReopen && (
+                    <p className="mt-3 text-xs text-muted-foreground">Reopening requires the separately granted <span className="font-medium text-foreground">Reopen Accounting Period</span> permission and an audit reason.</p>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        )}
       </AppSheet>
 
       <AppDialog
