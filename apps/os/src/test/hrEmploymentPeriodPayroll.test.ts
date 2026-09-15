@@ -55,6 +55,7 @@ describe('HR employment-period payroll eligibility', () => {
     expect(store).not.toContain("employee.status === 'active' && employee.hireDate <= period.periodEnd")
     expect(store).toContain('Partial-period employment:')
     expect(store).toContain('Verify salary treatment before Finance review.')
+    expect(store).not.toContain('proratedBaseSalaryIdr')
   })
 
   it('records separation metadata before the status transition is persisted', () => {
@@ -69,5 +70,6 @@ describe('HR employment-period payroll eligibility', () => {
     expect(migration).toContain('PAYROLL_EMPLOYMENT_COVERAGE_MISMATCH')
     expect(migration).toContain('private.assert_payroll_employment_coverage')
     expect(migration).toContain("private.apply_payroll_workflow_state('generate', p_expected_revision, p_snapshot)")
+    expect(migration).toContain('grant execute on function public.payroll_generate(bigint,jsonb) to authenticated')
   })
 })
