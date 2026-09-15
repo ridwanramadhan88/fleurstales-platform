@@ -2,7 +2,11 @@ import type { FC } from 'react'
 import { ClipboardCheck } from 'lucide-react'
 import type { OrderTableRow } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
+import { useFinanceStore } from '../../store/financeStore'
+import { useSettingsStore } from '../../store/settingsStore'
+import { getFinanceCategoryLabel } from '../../domain/financeTransactionCategoryDomain'
 import { OrderFinanceReviewSheetContainer } from './OrderFinanceReviewSheetContainer'
+import { FinanceTransactionDetailSheet } from './FinanceTransactionDetailSheet'
 import { ChangeRequestList } from './ChangeRequestList'
 import { FinanceOrderFilterBar, type FinanceOrderStatusFilter } from './FinanceOrderFilterBar'
 import { OrderVerificationQueueRow } from './OrderVerificationQueueRow'
@@ -35,94 +39,138 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
   onSearchQueryChange,
   showHeading,
   reviewingOrder,
+  ledgerTransaction,
+  ledgerLinkedOrder,
   dateScope,
   dateRange,
+  monthFilter,
+  monthOptions,
   statusFilter,
   statusCounts,
   dateScopedCount,
   filteredCount,
+  totalPostedCount,
   ordersWithRequests,
   queueRows,
   onDateScopeChange,
   onDateRangeChange,
+  onMonthFilterChange,
   onStatusFilterChange,
   onSelectOrder,
+  onSelectLedgerTransaction,
   onApproveChangeRequest,
   onRejectChangeRequest,
-}) => (
-  <section aria-label="Order reconciliation" className="space-y-6">
-    {showHeading && (
-      <FinanceModuleHeader
-        title="Order Reconciliation"
-        hint={
-          <InfoHint label="About order reconciliation">
-            Admin-confirmed payments are already posted to their receiving account. Reconciliation reviews the payment and evidence only; it never posts the money a second time.
-          </InfoHint>
-        }
-      />
-    )}
+}) => {
+  const bankAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
+  const customCategories = useFinanceStore((state) => state.customCategories)
+  const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
 
-    {ordersWithRequests.length > 0 && (
-      <ChangeRequestList
-        orders={ordersWithRequests}
-        canResolveRequest={canResolveRequest}
-        actorName={actorName}
-        onSelectOrder={onSelectOrder}
-        onApprove={onApproveChangeRequest}
-        onReject={onRejectChangeRequest}
-      />
-    )}
+  const ledgerAccountLabel = ledgerTransaction
+    ? ledgerTransaction.accountId === 'cash:main'
+      ? 'Cash'
+      : ledgerTransaction.accountId === 'legacy:unassigned' || !ledgerTransaction.accountId
+        ? 'Legacy / unassigned'
+        : bankAccounts.find((account) => account.id === ledgerTransaction.accountId)?.bankName ?? ledgerTransaction.accountId
+    : '—'
+  const ledgerCategoryLabel = ledgerTransaction
+    ? getFinanceCategoryLabel(ledgerTransaction.category, customCategories, categoryOverrides)
+    : '—'
 
-    <div className="space-y-3">
-      <FinanceOrderFilterBar
-        dateScope={dateScope}
-        onDateScopeChange={onDateScopeChange}
-        dateRange={dateRange}
-        onDateRangeChange={onDateRangeChange}
-        dateScopedCount={dateScopedCount}
-        filteredCount={filteredCount}
-        statusFilter={statusFilter}
-        onStatusFilterChange={onStatusFilterChange}
-        statusCounts={statusCounts}
-        searchQuery={searchQuery}
-        onSearchQueryChange={onSearchQueryChange}
-      />
-
-      {queueRows.length === 0 ? (
-        <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-card px-6 py-8 text-center shadow-ios-sm ring-1 ring-border/60">
-          <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-            <ClipboardCheck className="size-5" />
-          </span>
-          <div className="space-y-1">
-            <p className="text-sm font-semibold leading-5 text-foreground">No paid orders in this view</p>
-            <p className="max-w-sm text-xs text-muted-foreground">
-              Orders appear after Admin confirms full payment. Try another date range or status filter.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {queueRows.map((row) => (
-            <OrderVerificationQueueRow
-              key={row.transactionId}
-              row={row}
-              onOpen={() => onSelectOrder(row.order)}
-            />
-          ))}
-        </div>
+  return (
+    <section aria-label="Order reconciliation" className="space-y-6">
+      {showHeading && (
+        <FinanceModuleHeader
+          title="Order Reconciliation"
+          hint={
+            <InfoHint label="About order reconciliation">
+              Admin-confirmed payments are already posted to their receiving account. Reconciliation reviews the payment and evidence only; it never posts the money a second time.
+            </InfoHint>
+          }
+        />
       )}
-    </div>
 
-    {reviewingOrder && (
-      <OrderFinanceReviewSheetContainer
-        order={reviewingOrder}
-        onClose={() => onSelectOrder(null)}
-        canVerify={canVerify}
-        actorName={actorName}
-        userRole={userRole}
+      {ordersWithRequests.length > 0 && (
+        <ChangeRequestList
+          orders={ordersWithRequests}
+          canResolveRequest={canResolveRequest}
+          actorName={actorName}
+          onSelectOrder={onSelectOrder}
+          onApprove={onApproveChangeRequest}
+          onReject={onRejectChangeRequest}
+        />
+      )}
+
+      <div className="space-y-3">
+        <FinanceOrderFilterBar
+          dateScope={dateScope}
+          onDateScopeChange={onDateScopeChange}
+          dateRange={dateRange}
+          onDateRangeChange={onDateRangeChange}
+          monthFilter={monthFilter}
+          monthOptions={monthOptions}
+          onMonthFilterChange={onMonthFilterChange}
+          dateScopedCount={dateScopedCount}
+          filteredCount={filteredCount}
+          statusFilter={statusFilter}
+          onStatusFilterChange={onStatusFilterChange}
+          statusCounts={statusCounts}
+          searchQuery={searchQuery}
+          onSearchQueryChange={onSearchQueryChange}
+        />
+
+        {queueRows.length === 0 ? (
+          <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-card px-6 py-8 text-center shadow-ios-sm ring-1 ring-border/60">
+            <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <ClipboardCheck className="size-5" />
+            </span>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold leading-5 text-foreground">
+                {totalPostedCount === 0 ? 'No payments to reconcile yet' : 'No reconciliation items match these filters'}
+              </p>
+              <p className="max-w-sm text-xs text-muted-foreground">
+                {totalPostedCount === 0
+                  ? 'Orders appear here after Admin confirms full payment. The money is already posted at that point.'
+                  : 'Try another month, payment-date range, reconciliation status, or search term.'}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {queueRows.map((row) => (
+              <OrderVerificationQueueRow
+                key={row.transactionId}
+                row={row}
+                onOpenOrder={() => onSelectOrder(row.order)}
+                onOpenLedger={() => onSelectLedgerTransaction(row.transactionId)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {reviewingOrder && (
+        <OrderFinanceReviewSheetContainer
+          order={reviewingOrder}
+          onClose={() => onSelectOrder(null)}
+          canVerify={canVerify}
+          actorName={actorName}
+          userRole={userRole}
+        />
+      )}
+
+      <FinanceTransactionDetailSheet
+        transaction={ledgerTransaction}
+        accountLabel={ledgerAccountLabel}
+        categoryLabel={ledgerCategoryLabel}
+        editable={false}
+        onClose={() => onSelectLedgerTransaction(null)}
+        onOpenOrder={ledgerLinkedOrder ? () => {
+          onSelectLedgerTransaction(null)
+          onSelectOrder(ledgerLinkedOrder)
+        } : undefined}
       />
-    )}
-  </section>
-)
+    </section>
+  )
+}
 
 export default OrderVerificationQueue
