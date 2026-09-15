@@ -25,9 +25,9 @@ describe('Finance workspace v2.1 regressions', () => {
     const filter = read('src/components/finance/FinanceOrderFilterBar.tsx')
     const controller = read('src/components/finance/OrderVerificationQueueController.ts')
 
-    expect(filter).toContain("'all' | 'needs_correction' | 'in_progress' | 'complete'")
+    expect(filter).toContain("'all' | 'awaiting_review' | 'needs_correction' | 'reconciled'")
     expect(filter).toContain("['needs_correction', 'Needs correction', statusCounts.needsCorrection]")
-    expect(controller).toContain("row.order.financeVerificationStatus === 'rejected'")
+    expect(controller).toContain('reconciliationStatus: getFinanceReconciliationStatus(order)')
     expect(controller).toContain("focus.view === 'needs_correction' ? 'needs_correction' : 'all'")
   })
 
