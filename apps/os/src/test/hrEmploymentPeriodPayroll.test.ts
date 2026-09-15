@@ -65,10 +65,12 @@ describe('HR employment-period payroll eligibility', () => {
     expect(lifecycle).toContain('separatedBy: item.separatedBy ?? separatedBy')
   })
 
-  it('keeps a server-side coverage guard on payroll generation', () => {
+  it('keeps an authorized server-side coverage guard on payroll generation', () => {
     const migration = readFileSync('../../supabase/migrations/20260916090000_hr_employment_period_payroll.sql', 'utf8')
     expect(migration).toContain('PAYROLL_EMPLOYMENT_COVERAGE_MISMATCH')
     expect(migration).toContain('private.assert_payroll_employment_coverage')
+    expect(migration).toContain("private.current_staff_role() not in ('owner','hr')")
+    expect(migration).toContain("raise exception 'HR_PAYROLL_COMMAND_FORBIDDEN'")
     expect(migration).toContain("private.apply_payroll_workflow_state('generate', p_expected_revision, p_snapshot)")
     expect(migration).toContain('grant execute on function public.payroll_generate(bigint,jsonb) to authenticated')
   })
