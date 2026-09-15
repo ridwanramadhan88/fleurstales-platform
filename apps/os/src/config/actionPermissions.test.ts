@@ -43,4 +43,9 @@ describe('action permissions', () => {
     expect(guarded.owner['settings.edit_permissions']).toBe(true)
     expect(guarded.admin['settings.edit_permissions']).toBe(false)
   })
+
+  it('allows normal Finance month close but keeps reopening separately gated', () => {
+    expect(hasActionPermission('finance','finance.close_period',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
+    expect(hasActionPermission('finance','finance.reopen_period',DEFAULT_ACTION_PERMISSIONS,DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+  })
 })
