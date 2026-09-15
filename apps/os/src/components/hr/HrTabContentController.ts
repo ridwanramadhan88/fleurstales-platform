@@ -10,7 +10,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { getAttendanceForEmployeeOnDate, getBranchEmployees, getFilteredEmployees, getHrSummary, type EmployeeStatusFilter } from '../../domain/hrDomain'
 import type { HrTabContentProps } from './HrTabContent'
 import { canSetEmployeeActiveState } from '../../domain/hrStatusDomain'
-import { canViewScheduling } from '../../domain/hrSchedulingDomain'
+import { canViewScheduling, getEffectiveScheduleForDate } from '../../domain/hrSchedulingDomain'
 import { isHrManagedEmployee } from '../../domain/hrManagedEmployeeDomain'
 import { canCreateStaffAccount, getCreatableAccountRoles } from '../../domain/staffAccountDomain'
 import { provisionStaffAccountSupabase, syncStaffAccessProfileSupabase } from '../../data/staffLifecycleSupabase'
@@ -133,6 +133,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   const actionPermissions = useSettingsStore((state) => state.actionPermissions)
   const staffRoles = useSettingsStore((state) => state.staffRoles)
   const payrollSettings = useSettingsStore((state) => state.payroll)
+  const getSchedulingSettingsForDate = useSettingsStore((state) => state.getSchedulingSettingsForDate)
   const hrManagedRoles = staffRoles.hrManagedRoles
   const configuredBranches = useSettingsStore((state) => state.branches)
   const branches = configuredBranches.filter((branch) => branch.isActive)
@@ -204,6 +205,8 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
 
   const employees = useHrStore((state) => state.employees)
   const attendance = useHrStore((state) => state.attendance)
+  const employeeDefaultSchedules = useHrStore((state) => state.employeeDefaultSchedules)
+  const scheduleOverrides = useHrStore((state) => state.scheduleOverrides)
   const addEmployee = useHrStore((state) => state.addEmployee)
   const createStaffAccount = useHrStore((state) => state.createStaffAccount)
   const updateEmployeeProfile = useHrStore((state) => state.updateEmployeeProfile)
@@ -214,7 +217,20 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   const today = todayIsoDate()
 
   const branchEmployees = useMemo(() => getBranchEmployees(employees, activeBranch).filter((employee) => role === 'owner' ? true : isHrManagedEmployee(employee, 'employees', hrManagedRoles)), [employees, activeBranch, role, hrManagedRoles])
-  const summary = useMemo(() => getHrSummary(branchEmployees, attendance, today), [branchEmployees, attendance, today])
+  const expectedAttendanceEmployeeIds = useMemo(() => {
+    const scheduling = getSchedulingSettingsForDate(today)
+    return new Set(branchEmployees
+      .filter((employee) => employee.status === 'active')
+      .filter((employee) => getEffectiveScheduleForDate({
+        employee,
+        date: today,
+        defaults: employeeDefaultSchedules,
+        overrides: scheduleOverrides,
+        settings: { scheduling, branches: configuredBranches },
+      }).shift.isWorking)
+      .map((employee) => employee.id))
+  }, [branchEmployees, configuredBranches, employeeDefaultSchedules, getSchedulingSettingsForDate, scheduleOverrides, today])
+  const summary = useMemo(() => getHrSummary(branchEmployees, attendance, today, expectedAttendanceEmployeeIds), [branchEmployees, attendance, expectedAttendanceEmployeeIds, today])
   const filteredEmployees = useMemo(() => getFilteredEmployees(branchEmployees, statusFilter).filter((employee) => {
     const query = employeeSearch.trim().toLowerCase()
     const matchesSearch = !query || [employee.name, employee.phone, employee.email ?? '', employee.username ?? ''].some((value) => value.toLowerCase().includes(query))
@@ -232,7 +248,6 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       productionAuth: usesProductionPassword,
     }),
   })), [attendance, filteredEmployees, payrollSettings.baseSalaryByRole, today, usesProductionPassword])
-
 
   const emptyNewEmployeeForm = createEmptyHrForm(assignableRoles.includes(staffRoles.defaultRole) ? staffRoles.defaultRole : (assignableRoles[0] ?? 'florist'))
   const hasUnsavedNewEmployee = Boolean(
