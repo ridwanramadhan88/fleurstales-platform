@@ -26,6 +26,8 @@ describe('Finance v3.4 accounting period audit and permission polish', () => {
     expect(data).toContain('export interface FinancePeriodAction')
     expect(data).toContain("rpc<FinancePeriodAction[]>('get_finance_period_actions'")
     expect(data).toContain("rpc<FinancePeriodSummary>('set_finance_period_status'")
+    expect(data).toContain('subscribeFinancePeriodActionsChanged')
+    expect(data).toContain('notifyFinancePeriodActionsChanged()')
   })
 
   it('renders actor, role, reason and Jakarta time as read-only history', () => {
@@ -39,6 +41,7 @@ describe('Finance v3.4 accounting period audit and permission polish', () => {
     expect(history).toContain('entry.reason')
     expect(history).toContain("timeZone: 'Asia/Jakarta'")
     expect(history).toContain('WIB')
+    expect(history).toContain('subscribeFinancePeriodActionsChanged')
     expect(controls).toContain('<FinancePeriodAuditHistory />')
   })
 
