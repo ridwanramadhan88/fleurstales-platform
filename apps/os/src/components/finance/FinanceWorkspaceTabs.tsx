@@ -11,6 +11,7 @@ import { useFinanceStore } from '../../store/financeStore'
 import { useOrdersStore } from '../../store/ordersStore'
 import { cn } from '../../lib/utils'
 import { subscribeFinanceWorkspaceNavigation } from './financeWorkspaceNavigation'
+import { FinancePeriodControls } from './FinancePeriodControls'
 
 interface FinanceWorkspaceTabsProps {
   modules: FinanceWorkspaceModule[]
@@ -182,6 +183,7 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
         {activeGroup === 'reconciliation' && (
           <ReconciliationTabs modules={modules} activeModule={activeModule} onChange={onChange} />
         )}
+        {activeGroup === 'overview' && <FinancePeriodControls />}
       </div>
     )
   }
@@ -224,6 +226,7 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
       {activeGroup === 'reconciliation' && (
         <ReconciliationTabs modules={modules} activeModule={activeModule} onChange={onChange} />
       )}
+      {activeGroup === 'overview' && <FinancePeriodControls />}
     </div>
   )
 }
