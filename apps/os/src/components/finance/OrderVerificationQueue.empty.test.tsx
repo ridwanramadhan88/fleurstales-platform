@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { OrderVerificationQueueContainer } from './OrderVerificationQueueContainer'
 
 describe('Order Reconciliation empty states', () => {
-  it('keeps the Finance page visible with no paid orders', () => {
+  it('keeps the Finance page visible with no posted order payments', () => {
     render(
       <OrderVerificationQueueContainer
         orders={[]}
@@ -18,8 +18,9 @@ describe('Order Reconciliation empty states', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Order Reconciliation' })).toBeInTheDocument()
-    expect(screen.getByText('No paid orders in this view')).toBeInTheDocument()
-    expect(screen.getByText(/Orders appear after Admin confirms full payment/)).toBeInTheDocument()
+    expect(screen.getByText('No payments to reconcile yet')).toBeInTheDocument()
+    expect(screen.getByText(/Orders appear here after Admin confirms full payment/)).toBeInTheDocument()
+    expect(screen.getByText(/money is already posted at that point/)).toBeInTheDocument()
     expect(screen.queryByText('How reconciliation works')).not.toBeInTheDocument()
   })
 })
