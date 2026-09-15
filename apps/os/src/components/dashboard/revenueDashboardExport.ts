@@ -37,12 +37,13 @@ export const getEstimatedUnconfirmedOrders = (input: {
   branch: 'all' | string
   range: RevenueDashboardRange | null
 }): OrderTableRow[] => {
-  if (!input.range) return []
+  const range = input.range
+  if (!range) return []
   const confirmedOrderNumbers = getGloballyConfirmedOrderNumbers(input.transactions)
   return input.orders.filter((order) => {
     if (input.branch !== 'all' && order.branch !== input.branch) return false
     if (!isOrderFinished(order) || !order.completedAt) return false
-    if (!orderIsInRange(order, input.range)) return false
+    if (!orderIsInRange(order, range)) return false
     if (order.financeVerified) return false
     return !confirmedOrderNumbers.has(order.orderNumber)
   })
