@@ -7,9 +7,16 @@ import type { OrderTableRow } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
 import { useUserStore } from '../../store/userStore'
 import { isOrderFinished } from '../../domain/orderBusinessRules'
+import {
+  financeReconciliationPriority,
+  formatFinanceReconciliationMonth,
+  getFinanceReconciliationStatus,
+  jakartaMonthKeyFromTimestamp,
+  type FinanceReconciliationStatus,
+} from '../../domain/financeReconciliationDomain'
 import { getLocalDateString, nowInJakarta, toJakarta } from '../orders/orderTableFormatters'
 import type { OrderVerificationQueueProps } from './OrderVerificationQueue'
-import type { FinanceOrderStatusFilter } from './FinanceOrderFilterBar'
+import type { FinanceOrderMonthOption, FinanceOrderStatusFilter } from './FinanceOrderFilterBar'
 import type { FinanceDateScopeId } from './FinanceDateScopeTabs'
 import { toast } from '../../hooks/use-toast'
 import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
@@ -19,18 +26,21 @@ export type OrderReconciliationStatus = 'in_progress' | 'complete'
 export interface FinanceQueueRow {
   order: OrderTableRow
   status: OrderReconciliationStatus
+  reconciliationStatus: FinanceReconciliationStatus
   paymentAmountIdr: number
   paymentMethod: FinanceTransaction['method']
   accountId?: string
   paymentConfirmedAt: string
   transactionId: string
   transactionStatus: FinanceTransaction['status']
+  transactionCode?: string
+  reference?: string
 }
 
 export interface FinanceQueueStatusCounts {
+  awaitingReview: number
   needsCorrection: number
-  inProgress: number
-  complete: number
+  reconciled: number
 }
 
 export interface OrderVerificationQueueViewModel {
@@ -42,18 +52,25 @@ export interface OrderVerificationQueueViewModel {
   onSearchQueryChange?: (value: string) => void
   showHeading: boolean
   reviewingOrder: OrderTableRow | null
+  ledgerTransaction: FinanceTransaction | null
+  ledgerLinkedOrder: OrderTableRow | null
   dateScope: FinanceDateScopeId
   dateRange: DateRange | undefined
+  monthFilter: string
+  monthOptions: FinanceOrderMonthOption[]
   statusFilter: FinanceOrderStatusFilter
   statusCounts: FinanceQueueStatusCounts
   dateScopedCount: number
   filteredCount: number
+  totalPostedCount: number
   ordersWithRequests: OrderTableRow[]
   queueRows: FinanceQueueRow[]
   onDateScopeChange: (scope: FinanceDateScopeId) => void
   onDateRangeChange: (range?: DateRange) => void
+  onMonthFilterChange: (month: string) => void
   onStatusFilterChange: (filter: FinanceOrderStatusFilter) => void
   onSelectOrder: (order: OrderTableRow | null) => void
+  onSelectLedgerTransaction: (transactionId: string | null) => void
   onApproveChangeRequest: (orderNumber: string, actorName: string, note: string) => void
   onRejectChangeRequest: (orderNumber: string, actorName: string, note?: string) => void
 }
@@ -114,12 +131,15 @@ const orderSearchText = (row: FinanceQueueRow): string =>
     row.order.branch,
     row.accountId,
     row.paymentMethod,
+    row.transactionCode,
+    row.reference,
+    row.reconciliationStatus,
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase()
 
-const paymentRowsForOrders = (
+export const paymentRowsForOrders = (
   orders: OrderTableRow[],
   transactions: FinanceTransaction[],
 ): FinanceQueueRow[] => {
@@ -147,15 +167,27 @@ const paymentRowsForOrders = (
     return [{
       order,
       status: terminal ? 'complete' : 'in_progress',
+      reconciliationStatus: getFinanceReconciliationStatus(order),
       paymentAmountIdr: Math.max(order.paidAmountIdr ?? 0, recordedAmount),
       paymentMethod: latest.method,
       accountId: latest.accountId,
       paymentConfirmedAt: latest.transactionDate ?? latest.createdAt,
       transactionId: latest.id,
       transactionStatus: latest.status,
+      transactionCode: latest.transactionCode,
+      reference: latest.reference,
     }]
   })
 }
+
+export const sortFinanceReconciliationRows = (rows: FinanceQueueRow[]): FinanceQueueRow[] =>
+  [...rows].sort((a, b) => {
+    const priority = financeReconciliationPriority(a.reconciliationStatus)
+      - financeReconciliationPriority(b.reconciliationStatus)
+    if (priority !== 0) return priority
+    return Date.parse(b.paymentConfirmedAt) - Date.parse(a.paymentConfirmedAt)
+      || a.order.orderNumber.localeCompare(b.order.orderNumber)
+  })
 
 export const useOrderVerificationQueueController = ({
   orders,
@@ -177,16 +209,19 @@ export const useOrderVerificationQueueController = ({
 
   const [initialFocus] = useState(() => consumeFinanceWorkspaceFocus('order_verification'))
   const [reviewingOrder, setReviewingOrder] = useState<OrderTableRow | null>(null)
+  const [selectedLedgerTransactionId, setSelectedLedgerTransactionId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<FinanceOrderStatusFilter>(() =>
     initialStatusFilter ?? (initialFocus?.view === 'needs_correction' ? 'needs_correction' : 'all'),
   )
   const [dateScope, setDateScope] = useState<FinanceDateScopeId>('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  const [monthFilter, setMonthFilter] = useState('all')
 
   useEffect(() => subscribeFinanceWorkspaceFocus('order_verification', (focus) => {
     setStatusFilter(focus.view === 'needs_correction' ? 'needs_correction' : 'all')
     setDateScope('all')
     setDateRange(undefined)
+    setMonthFilter('all')
     onSearchQueryChange?.('')
   }), [onSearchQueryChange])
 
@@ -195,12 +230,25 @@ export const useOrderVerificationQueueController = ({
     [orders, transactions],
   )
 
+  const monthOptions = useMemo<FinanceOrderMonthOption[]>(() => {
+    const counts = new Map<string, number>()
+    for (const row of postedRows) {
+      const month = jakartaMonthKeyFromTimestamp(row.paymentConfirmedAt)
+      if (!month) continue
+      counts.set(month, (counts.get(month) ?? 0) + 1)
+    }
+    return [...counts.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([value, count]) => ({ value, label: formatFinanceReconciliationMonth(value), count }))
+  }, [postedRows])
+
   const dateScopedRows = useMemo(
     () => postedRows.filter((row) => {
+      if (monthFilter !== 'all' && jakartaMonthKeyFromTimestamp(row.paymentConfirmedAt) !== monthFilter) return false
       const transaction = transactions.find((item) => item.id === row.transactionId)
       return transaction ? isWithinPaymentScope(transaction, dateScope, dateRange) : false
     }),
-    [postedRows, transactions, dateScope, dateRange],
+    [postedRows, transactions, dateScope, dateRange, monthFilter],
   )
 
   const searchScopedRows = useMemo(() => {
@@ -210,23 +258,15 @@ export const useOrderVerificationQueueController = ({
   }, [dateScopedRows, searchQuery])
 
   const statusCounts = useMemo(() => ({
-    needsCorrection: searchScopedRows.filter((row) => row.order.financeVerificationStatus === 'rejected').length,
-    inProgress: searchScopedRows.filter((row) => row.status === 'in_progress').length,
-    complete: searchScopedRows.filter((row) => row.status === 'complete').length,
+    awaitingReview: searchScopedRows.filter((row) => row.reconciliationStatus === 'awaiting_review').length,
+    needsCorrection: searchScopedRows.filter((row) => row.reconciliationStatus === 'needs_correction').length,
+    reconciled: searchScopedRows.filter((row) => row.reconciliationStatus === 'reconciled').length,
   }), [searchScopedRows])
 
   const queueRows = useMemo(
-    () => searchScopedRows
-      .filter((row) => {
-        if (statusFilter === 'all') return true
-        if (statusFilter === 'needs_correction') return row.order.financeVerificationStatus === 'rejected'
-        return row.status === statusFilter
-      })
-      .sort(
-        (a, b) =>
-          Date.parse(b.paymentConfirmedAt) - Date.parse(a.paymentConfirmedAt) ||
-          a.order.orderNumber.localeCompare(b.order.orderNumber),
-      ),
+    () => sortFinanceReconciliationRows(
+      searchScopedRows.filter((row) => statusFilter === 'all' || row.reconciliationStatus === statusFilter),
+    ),
     [searchScopedRows, statusFilter],
   )
 
@@ -241,6 +281,13 @@ export const useOrderVerificationQueueController = ({
     })
   }, [orders, searchQuery])
 
+  const ledgerTransaction = selectedLedgerTransactionId
+    ? transactions.find((transaction) => transaction.id === selectedLedgerTransactionId) ?? null
+    : null
+  const ledgerLinkedOrder = ledgerTransaction?.orderNumber
+    ? orders.find((order) => order.orderNumber === ledgerTransaction.orderNumber) ?? null
+    : null
+
   return {
     canVerify,
     canResolveRequest,
@@ -250,18 +297,25 @@ export const useOrderVerificationQueueController = ({
     onSearchQueryChange,
     showHeading,
     reviewingOrder,
+    ledgerTransaction,
+    ledgerLinkedOrder,
     dateScope,
     dateRange,
+    monthFilter,
+    monthOptions,
     statusFilter,
     statusCounts,
     dateScopedCount: searchScopedRows.length,
     filteredCount: queueRows.length,
+    totalPostedCount: postedRows.length,
     ordersWithRequests,
     queueRows,
     onDateScopeChange: setDateScope,
     onDateRangeChange: setDateRange,
+    onMonthFilterChange: setMonthFilter,
     onStatusFilterChange: setStatusFilter,
     onSelectOrder: setReviewingOrder,
+    onSelectLedgerTransaction: setSelectedLedgerTransactionId,
     onApproveChangeRequest: (orderNumber, _requestActor, note) => {
       const order = orders.find((item) => item.orderNumber === orderNumber)
       if (!order) return
