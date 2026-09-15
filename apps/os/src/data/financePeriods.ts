@@ -40,6 +40,17 @@ export interface FinancePeriodAction {
   createdAt: string
 }
 
+const periodActionListeners = new Set<() => void>()
+
+export const subscribeFinancePeriodActionsChanged = (listener: () => void): (() => void) => {
+  periodActionListeners.add(listener)
+  return () => periodActionListeners.delete(listener)
+}
+
+const notifyFinancePeriodActionsChanged = () => {
+  for (const listener of periodActionListeners) listener()
+}
+
 const getClient = () => {
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
   if (!shared.enabled) throw new Error('Supabase is not configured.')
@@ -64,9 +75,12 @@ export const setFinancePeriodStatus = async (input: {
   periodMonth: string
   status: FinancePeriodStatus
   reason?: string
-}): Promise<FinancePeriodSummary> =>
-  getClient().rpc<FinancePeriodSummary>('set_finance_period_status', {
+}): Promise<FinancePeriodSummary> => {
+  const result = await getClient().rpc<FinancePeriodSummary>('set_finance_period_status', {
     p_period_month: input.periodMonth,
     p_status: input.status,
     p_reason: input.reason?.trim() || null,
   })
+  notifyFinancePeriodActionsChanged()
+  return result
+}
