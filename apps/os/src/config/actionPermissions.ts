@@ -24,6 +24,8 @@ export type ActionCapability =
   | 'finance.view_ledger'
   | 'finance.create_ledger_entry'
   | 'finance.edit_ledger_entry'
+  | 'finance.close_period'
+  | 'finance.reopen_period'
   | 'hr.view_employees'
   | 'hr.create_employee'
   | 'hr.edit_employee'
@@ -74,6 +76,8 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'finance.view_ledger', label:'View Transactions', description:'Read transaction entries and account balances.', parentSection:'finance', group:'Finance' },
   { id:'finance.create_ledger_entry', label:'Create Transactions', description:'Add Money In, Money Out, opening balance, adjustment, or transfer entries.', parentSection:'finance', group:'Finance' },
   { id:'finance.edit_ledger_entry', label:'Edit Posted Transactions', description:'Edit posted ledger entries through the audited Finance command.', parentSection:'finance', group:'Finance' },
+  { id:'finance.close_period', label:'Close Accounting Period', description:'Move a Finance month through Review and close it after all blockers are resolved.', parentSection:'finance', group:'Finance' },
+  { id:'finance.reopen_period', label:'Reopen Accounting Period', description:'Reopen a closed Finance month with a mandatory audit reason.', parentSection:'finance', group:'Finance' },
   { id:'hr.view_employees', label:'View Employees', description:'Open employee records.', parentSection:'hr', group:'HR' },
   { id:'hr.create_employee', label:'Create Employees', description:'Create a staff account.', parentSection:'hr', group:'HR' },
   { id:'hr.edit_employee', label:'Edit Employees', description:'Edit staff profile and role.', parentSection:'hr', group:'HR' },
@@ -102,7 +106,7 @@ const OWNER_DEFAULT_CAPABILITIES = CAPABILITY_REGISTRY
 export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
   owner: withEnabled(...OWNER_DEFAULT_CAPABILITIES),
   admin: withEnabled('orders.read_all','orders.create','orders.edit','orders.assign','orders.advance_status','orders.submit_change_request'),
-  finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.verify_order','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry'),
+  finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.verify_order','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry','finance.close_period'),
   hr: withEnabled('orders.read_all','hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
 }
@@ -129,6 +133,8 @@ export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
   'finance.view_ledger': ['finance'],
   'finance.create_ledger_entry': ['finance'],
   'finance.edit_ledger_entry': ['finance'],
+  'finance.close_period': ['finance'],
+  'finance.reopen_period': ['finance'],
   'hr.view_employees': ['owner','hr'],
   'hr.create_employee': ['owner','hr'],
   'hr.edit_employee': ['owner','hr'],
