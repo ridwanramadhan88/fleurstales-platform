@@ -20,6 +20,14 @@ declare
   v_expected_employee_ids text[] := array[]::text[];
   v_generated_employee_ids text[] := array[]::text[];
 begin
+  if (select auth.uid()) is null then
+    raise exception 'AUTH_REQUIRED' using errcode = '42501';
+  end if;
+
+  if private.current_staff_role() not in ('owner','hr') then
+    raise exception 'HR_PAYROLL_COMMAND_FORBIDDEN' using errcode = '42501';
+  end if;
+
   select coalesce(snapshot, '{}'::jsonb)
     into v_previous
   from private.operational_domain_state
