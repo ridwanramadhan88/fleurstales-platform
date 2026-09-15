@@ -101,7 +101,10 @@ export const createOrderChangeRequestActions = (
       }
       const updatedOrder = finalizeOrderMutation({
         before: target!,
-        after: transition.order,
+        after: {
+          ...transition.order,
+          pendingChangeRequest: undefined,
+        },
         actor,
         action: 'order.change_request.cancel.approve',
         reason: request.reason,
