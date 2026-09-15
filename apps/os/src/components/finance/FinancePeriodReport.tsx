@@ -1,7 +1,8 @@
 import { useMemo, type FC } from 'react'
-import { ArrowDownRight, ArrowUpRight, LockKeyhole, Scale, WalletCards } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Download, LockKeyhole, Scale, WalletCards } from 'lucide-react'
 import type { FinancePeriodSummary } from '../../data/financePeriods'
 import { buildFinancePeriodReport } from '../../domain/financePeriodReportDomain'
+import { downloadFinancePeriodXlsx, buildFinancePeriodXlsx } from '../../lib/financePeriodXlsxExport'
 import { useFinanceStore } from '../../store/financeStore'
 import { useSettingsStore } from '../../store/settingsStore'
 
@@ -56,6 +57,17 @@ export const FinancePeriodReport: FC<{ period: FinancePeriodSummary }> = ({ peri
     })
   }, [accountLabels, configuredAccounts, report.accounts])
 
+  const exportWorkbook = () => {
+    const workbook = buildFinancePeriodXlsx({
+      report,
+      transactions,
+      accounts,
+      accountLabels: Object.fromEntries(accountLabels),
+      periodStatus: period.status,
+    })
+    downloadFinancePeriodXlsx(`fleurstales-finance-${period.periodMonth.slice(0, 7)}.xlsx`, workbook)
+  }
+
   return (
     <section className="space-y-4" aria-label={`${formatMonth(period.periodMonth)} Finance report`}>
       <div className="rounded-xl border border-border/70 bg-card p-4 sm:p-5">
@@ -70,11 +82,21 @@ export const FinancePeriodReport: FC<{ period: FinancePeriodSummary }> = ({ peri
               {period.status === 'closed' ? ' Closed-period ledger history is locked, so this report remains reproducible.' : ' Open and Review reports update as the ledger changes.'}
             </p>
           </div>
-          {period.status === 'closed' && (
-            <div className="flex items-center gap-2 rounded-lg bg-success/5 px-3 py-2 text-xs text-success ring-1 ring-success/15">
-              <LockKeyhole className="size-4" /> Locked ledger
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={exportWorkbook}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-semibold transition hover:bg-muted"
+              aria-label={`Download ${formatMonth(period.periodMonth)} Finance report as Excel workbook`}
+            >
+              <Download className="size-3.5" /> XLSX
+            </button>
+            {period.status === 'closed' && (
+              <div className="flex items-center gap-2 rounded-lg bg-success/5 px-3 py-2 text-xs text-success ring-1 ring-success/15">
+                <LockKeyhole className="size-4" /> Locked ledger
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
