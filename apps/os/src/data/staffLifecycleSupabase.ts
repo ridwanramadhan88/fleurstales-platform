@@ -1,5 +1,7 @@
 import type { Employee } from '../store/hrStoreTypes'
 import type { UserRole } from '../store/userStore'
+import { useUserStore } from '../store/userStore'
+import { todayIsoDate, useHrStore } from '../store/hrStore'
 import { getSupabaseAuthClient } from '../api/supabaseAuth'
 import { isSupabaseConfigured } from './shared/supabaseConfig'
 
@@ -43,6 +45,37 @@ const staffFunctionError = async (error: unknown, fallback: string): Promise<Err
   return new Error(fallback)
 }
 
+const applyLocalEmploymentStatusMetadata = (requested: Employee): void => {
+  const current = useHrStore.getState().employees.find((item) => item.id === requested.id)
+  if (!current || current.status === requested.status) return
+
+  if (requested.status === 'inactive') {
+    const separatedAt = new Date().toISOString()
+    const separatedBy = useUserStore.getState().name.trim() || 'HR'
+    useHrStore.setState((state) => ({
+      employees: state.employees.map((item) => item.id === requested.id ? {
+        ...item,
+        employmentEndDate: item.employmentEndDate ?? todayIsoDate(),
+        separationReason: item.separationReason ?? 'Employee deactivated',
+        separatedAt: item.separatedAt ?? separatedAt,
+        separatedBy: item.separatedBy ?? separatedBy,
+      } : item),
+    }))
+    return
+  }
+
+  // Reactivation starts a new current-employment state. Historical payroll
+  // rows keep their own snapshots; the employee record must not carry a stale
+  // end date into future payroll eligibility checks.
+  useHrStore.setState((state) => ({
+    employees: state.employees.map((item) => {
+      if (item.id !== requested.id) return item
+      const { employmentEndDate: _employmentEndDate, separationReason: _separationReason, separatedAt: _separatedAt, separatedBy: _separatedBy, ...activeEmployee } = item
+      return activeEmployee
+    }),
+  }))
+}
+
 export const provisionStaffAccountSupabase = async (input: ProvisionStaffInput): Promise<void> => {
   if (!isSupabaseConfigured()) return
   const client = getSupabaseAuthClient()
@@ -56,7 +89,10 @@ export const provisionStaffAccountSupabase = async (input: ProvisionStaffInput):
 }
 
 export const syncStaffAccessProfileSupabase = async (employee: Employee, password?: string): Promise<void> => {
-  if (!isSupabaseConfigured()) return
+  if (!isSupabaseConfigured()) {
+    applyLocalEmploymentStatusMetadata(employee)
+    return
+  }
   const client = getSupabaseAuthClient()
   if (!client) return
   const { data, error } = await client.functions.invoke('staff-admin', {
@@ -74,6 +110,7 @@ export const syncStaffAccessProfileSupabase = async (employee: Employee, passwor
   })
   if (error) throw await staffFunctionError(error, 'Unable to synchronize the staff login account.')
   if (data?.error) throw new Error(data.message ?? data.error)
+  applyLocalEmploymentStatusMetadata(employee)
 }
 
 export const removeStaffEmployeeSupabase = async (employeeId:string, reason:string, forceResolve=false):Promise<void> => {
