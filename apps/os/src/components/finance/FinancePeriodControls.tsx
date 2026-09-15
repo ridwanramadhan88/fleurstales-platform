@@ -11,6 +11,7 @@ import { toast } from '../../hooks/use-toast'
 import { useUserStore } from '../../store/userStore'
 import { AppDialog } from '../ui/app-dialog'
 import { AppSheet } from '../ui/app-sheet'
+import { FinancePeriodAuditHistory } from './FinancePeriodAuditHistory'
 import { FinancePeriodReport } from './FinancePeriodReport'
 
 const jakartaMonthKey = (): string => {
@@ -243,7 +244,7 @@ export const FinancePeriodControls: FC = () => {
                           type="button"
                           disabled={busy}
                           onClick={() => { setReason(''); setPendingAction({ period, target:'open' }) }}
-                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-semibold disabled:opacity-50"
+                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-warning/40 bg-warning/5 px-3 text-xs font-semibold text-warning disabled:opacity-50"
                         >
                           <RotateCcw className="size-3.5" /> Reopen
                         </button>
@@ -267,12 +268,17 @@ export const FinancePeriodControls: FC = () => {
                     <div className="mt-3 flex items-center gap-2 text-xs text-success"><CheckCircle2 className="size-4" /> No close blockers.</div>
                   ) : null}
 
+                  {period.status !== 'closed' && !canClose && (
+                    <p className="mt-3 text-xs text-muted-foreground">Changing accounting-period status requires the <span className="font-medium text-foreground">Close Accounting Period</span> permission.</p>
+                  )}
+
                   {period.status === 'closed' && !canReopen && (
-                    <p className="mt-3 text-xs text-muted-foreground">Reopening requires the separately granted <span className="font-medium text-foreground">Reopen Accounting Period</span> permission and an audit reason.</p>
+                    <p className="mt-3 text-xs text-muted-foreground">Reopening requires the separately granted <span className="font-medium text-foreground">Reopen Accounting Period</span> permission and an audit reason. Owner can grant this sensitive Finance capability from Permissions.</p>
                   )}
                 </article>
               )
             })}
+            {!loading && <FinancePeriodAuditHistory />}
           </div>
         )}
       </AppSheet>
@@ -285,10 +291,16 @@ export const FinancePeriodControls: FC = () => {
         description={pendingAction
           ? pendingAction.target === 'closed'
             ? `Close ${formatMonth(pendingAction.period.periodMonth)} and freeze its Finance ledger history.`
-            : `Reopen ${formatMonth(pendingAction.period.periodMonth)}. This action is audited.`
+            : `Reopen ${formatMonth(pendingAction.period.periodMonth)}. This unfreezes the month and the action is recorded in audit history.`
           : ''}
       >
         <div className="space-y-4">
+          {pendingAction?.target === 'open' && (
+            <div className="flex gap-3 rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-foreground">
+              <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warning" />
+              <p><span className="font-semibold">Sensitive action.</span> Reopening makes this month’s Finance ledger editable again for authorized Finance actions. Later edits can change balances and reports for this period. The reopen actor, time, and reason stay in read-only audit history.</p>
+            </div>
+          )}
           <label className="block space-y-1.5 text-xs font-medium">
             Reason
             <textarea
