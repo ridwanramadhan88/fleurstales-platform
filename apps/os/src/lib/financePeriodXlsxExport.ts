@@ -1,3 +1,4 @@
+import { strToU8, zipSync } from 'fflate'
 import type {
   FinancePeriodAccountReport,
   FinancePeriodReport,
@@ -5,7 +6,6 @@ import type {
 import { jakartaMonthKey } from '../domain/financePeriodReportDomain'
 import type { FinanceTransaction } from '../store/financeStoreTypes'
 
-const encoder = new TextEncoder()
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 const LEGACY_ACCOUNT_ID = 'legacy:unassigned'
 
@@ -26,6 +26,7 @@ const money = (value: number): StyledCell => cell(value, 'currency')
 const header = (value: string): StyledCell => cell(value, 'header')
 
 const xmlEscape = (value: unknown): string => String(value ?? '')
+  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
   .replace(/>/g, '&gt;')
@@ -66,138 +67,22 @@ const worksheetXml = (rows: WorkbookCell[][]): string => {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><sheetData>${renderedRows}</sheetData></worksheet>`
 }
 
-const crcTable = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < 256; index += 1) {
-    let value = index
-    for (let bit = 0; bit < 8; bit += 1) value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1)
-    table[index] = value >>> 0
-  }
-  return table
-})()
-
-const crc32 = (bytes: Uint8Array): number => {
-  let crc = 0xffffffff
-  for (const byte of bytes) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8)
-  return (crc ^ 0xffffffff) >>> 0
-}
-
-const writeUint16 = (view: DataView, offset: number, value: number): void => view.setUint16(offset, value, true)
-const writeUint32 = (view: DataView, offset: number, value: number): void => view.setUint32(offset, value >>> 0, true)
-
-const concatBytes = (chunks: Uint8Array[]): Uint8Array => {
-  const size = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
-  const result = new Uint8Array(size)
-  let offset = 0
-  for (const chunk of chunks) {
-    result.set(chunk, offset)
-    offset += chunk.length
-  }
-  return result
-}
-
-const dosTimestamp = (date: Date): { time: number; day: number } => {
-  const year = Math.max(1980, date.getFullYear())
-  return {
-    time: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
-    day: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate(),
-  }
-}
-
-const zipStore = (files: Array<{ path: string; content: string }>): Uint8Array => {
-  const localParts: Uint8Array[] = []
-  const centralParts: Uint8Array[] = []
-  const timestamp = dosTimestamp(new Date())
-  let localOffset = 0
-
-  for (const file of files) {
-    const name = encoder.encode(file.path)
-    const data = encoder.encode(file.content)
-    const checksum = crc32(data)
-
-    const localHeader = new Uint8Array(30)
-    const localView = new DataView(localHeader.buffer)
-    writeUint32(localView, 0, 0x04034b50)
-    writeUint16(localView, 4, 20)
-    writeUint16(localView, 6, 0x0800)
-    writeUint16(localView, 8, 0)
-    writeUint16(localView, 10, timestamp.time)
-    writeUint16(localView, 12, timestamp.day)
-    writeUint32(localView, 14, checksum)
-    writeUint32(localView, 18, data.length)
-    writeUint32(localView, 22, data.length)
-    writeUint16(localView, 26, name.length)
-    writeUint16(localView, 28, 0)
-    localParts.push(localHeader, name, data)
-
-    const centralHeader = new Uint8Array(46)
-    const centralView = new DataView(centralHeader.buffer)
-    writeUint32(centralView, 0, 0x02014b50)
-    writeUint16(centralView, 4, 20)
-    writeUint16(centralView, 6, 20)
-    writeUint16(centralView, 8, 0x0800)
-    writeUint16(centralView, 10, 0)
-    writeUint16(centralView, 12, timestamp.time)
-    writeUint16(centralView, 14, timestamp.day)
-    writeUint32(centralView, 16, checksum)
-    writeUint32(centralView, 20, data.length)
-    writeUint32(centralView, 24, data.length)
-    writeUint16(centralView, 28, name.length)
-    writeUint16(centralView, 30, 0)
-    writeUint16(centralView, 32, 0)
-    writeUint16(centralView, 34, 0)
-    writeUint16(centralView, 36, 0)
-    writeUint32(centralView, 38, 0)
-    writeUint32(centralView, 42, localOffset)
-    centralParts.push(centralHeader, name)
-
-    localOffset += localHeader.length + name.length + data.length
-  }
-
-  const localData = concatBytes(localParts)
-  const centralData = concatBytes(centralParts)
-  const end = new Uint8Array(22)
-  const endView = new DataView(end.buffer)
-  writeUint32(endView, 0, 0x06054b50)
-  writeUint16(endView, 4, 0)
-  writeUint16(endView, 6, 0)
-  writeUint16(endView, 8, files.length)
-  writeUint16(endView, 10, files.length)
-  writeUint32(endView, 12, centralData.length)
-  writeUint32(endView, 16, localData.length)
-  writeUint16(endView, 20, 0)
-
-  return concatBytes([localData, centralData, end])
-}
-
-const workbookFiles = (sheets: WorksheetSpec[]): Array<{ path: string; content: string }> => {
+const workbookFiles = (sheets: WorksheetSpec[]): Record<string, Uint8Array> => {
   const sheetOverrides = sheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')
   const sheetEntries = sheets.map((sheet, index) => `<sheet name="${xmlEscape(sheet.name)}" sheetId="${index + 1}" r:id="rId${index + 2}"/>`).join('')
   const sheetRelationships = sheets.map((_, index) => `<Relationship Id="rId${index + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join('')
 
-  return [
-    {
-      path: '[Content_Types].xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheetOverrides}</Types>`,
-    },
-    {
-      path: '_rels/.rels',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
-    },
-    {
-      path: 'xl/workbook.xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheetEntries}</sheets></workbook>`,
-    },
-    {
-      path: 'xl/_rels/workbook.xml.rels',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${sheetRelationships}</Relationships>`,
-    },
-    {
-      path: 'xl/styles.xml',
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#\,##0;[Red]-#\,##0"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Aptos"/></font><font><b/><sz val="11"/><name val="Aptos"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
-    },
-    ...sheets.map((sheet, index) => ({ path: `xl/worksheets/sheet${index + 1}.xml`, content: worksheetXml(sheet.rows) })),
-  ]
+  const files: Record<string, string> = {
+    '[Content_Types].xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheetOverrides}</Types>`,
+    '_rels/.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    'xl/workbook.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheetEntries}</sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${sheetRelationships}</Relationships>`,
+    'xl/styles.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0;[Red]-#,##0"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Aptos"/></font><font><b/><sz val="11"/><name val="Aptos"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
+  }
+  sheets.forEach((sheet, index) => {
+    files[`xl/worksheets/sheet${index + 1}.xml`] = worksheetXml(sheet.rows)
+  })
+  return Object.fromEntries(Object.entries(files).map(([path, content]) => [path, strToU8(content)]))
 }
 
 const transactionSource = (transaction: FinanceTransaction): string => transaction.source ?? 'manual'
@@ -284,16 +169,18 @@ export const buildFinancePeriodXlsx = (input: {
     ]),
   ]
 
-  return zipStore(workbookFiles([
+  return zipSync(workbookFiles([
     { name: 'Summary', rows: summaryRows },
     { name: 'Transactions', rows: transactionRows },
     { name: 'By Account', rows: accountRows },
     { name: 'By Source', rows: sourceRows },
-  ]))
+  ]), { level: 0 })
 }
 
 export const downloadFinancePeriodXlsx = (filename: string, workbook: Uint8Array): void => {
-  const blob = new Blob([workbook], { type: XLSX_MIME })
+  const buffer = new ArrayBuffer(workbook.byteLength)
+  new Uint8Array(buffer).set(workbook)
+  const blob = new Blob([buffer], { type: XLSX_MIME })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
