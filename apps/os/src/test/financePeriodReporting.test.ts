@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { buildFinancePeriodReport } from '../domain/financePeriodReportDomain'
 import type { FinanceTransaction } from '../store/financeStoreTypes'
 
-const transaction = (input: Partial<FinanceTransaction> & Pick<FinanceTransaction, 'id' | 'type' | 'amount' | 'source' | 'transactionDate' | 'accountId'>): FinanceTransaction => ({
+type TestTransactionInput = Partial<FinanceTransaction> & Pick<FinanceTransaction, 'id' | 'type' | 'amount'> & {
+  source: NonNullable<FinanceTransaction['source']>
+  transactionDate: string
+  accountId: string
+}
+
+const transaction = (input: TestTransactionInput): FinanceTransaction => ({
   category: input.type === 'income' ? 'other_income' : 'other',
   branch: 'All' as FinanceTransaction['branch'],
   method: input.accountId === 'cash:main' ? 'cash' : 'transfer',
