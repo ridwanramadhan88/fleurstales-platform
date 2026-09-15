@@ -132,6 +132,7 @@ export interface FinanceStoreState {
     paymentDate: string
     paymentMethod: string
     paymentReference: string
+    accountId?: string
     note?: string
     idempotencyKey: string
     actor: string
@@ -394,18 +395,21 @@ export const useFinanceStore = create<FinanceStoreState>((set, get) => ({
     return { allowed:true, transactionId }
   },
 
-  recordPayrollExpense: ({ payrollProposalId, payrollPeriodId, periodLabel, amount, paymentDate, paymentMethod, paymentReference, note, idempotencyKey, actor }) => {
+  recordPayrollExpense: ({ payrollProposalId, payrollPeriodId, periodLabel, amount, paymentDate, paymentMethod, paymentReference, accountId, note, idempotencyKey, actor }) => {
     if (!(amount > 0)) return { allowed:false, reason:'Payroll expense amount must be greater than zero.' }
     const normalizedMethod = paymentMethod.trim()
     const normalizedReference = paymentReference.trim()
+    const normalizedAccountId = (accountId ?? '').trim()
     if (!normalizedMethod || !normalizedReference) return { allowed:false, reason:'Payroll payment method and reference are required.' }
+    if (!normalizedAccountId) return { allowed:false, reason:'Payroll payment requires a paid-from account.' }
     const occurredAt = `${paymentDate}T12:00:00+07:00`
     const mappedMethod = mapPayrollPaymentMethod(normalizedMethod)
     const duplicate = findDuplicate(get().transactions, idempotencyKey)
     if (duplicate) {
       if (duplicate.source !== 'payroll' || duplicate.payrollProposalId !== payrollProposalId) return { allowed:false, reason:'Idempotency key is already attached to a different ledger command.' }
+      if (duplicate.accountId && duplicate.accountId !== normalizedAccountId) return { allowed:false, reason:'Payroll payment is already attached to a different paid-from account.' }
       set((state) => ({ transactions:state.transactions.map((item) => item.id === duplicate.id ? {
-        ...item, amount, method:mappedMethod, status:'verified' as const, name:`Payroll ${periodLabel}`, description:`Payroll payment · ${periodLabel}`,
+        ...item, accountId:normalizedAccountId, amount, method:mappedMethod, status:'verified' as const, name:`Payroll ${periodLabel}`, description:`Payroll payment · ${periodLabel}`,
         payrollPeriodId, reference:normalizedReference, note, actor, transactionDate:occurredAt, groupType:'payroll_cycle', groupKey:payrollPeriodId, groupLabel:periodLabel, entryMode:'automatic', scope:'company', updatedAt:nowIso(),
       } : item) }))
       return { allowed:true, transactionId:duplicate.id, duplicate:true }
@@ -413,7 +417,7 @@ export const useFinanceStore = create<FinanceStoreState>((set, get) => ({
     const transactionId = generateId('txn')
     const timestamp = nowIso()
     const transaction: FinanceTransaction = {
-      id:transactionId, type:'expense', category:'payroll', branch:'All', scope:'company', amount, method:mappedMethod, status:'verified',
+      id:transactionId, type:'expense', category:'payroll', branch:'All', scope:'company', accountId:normalizedAccountId, amount, method:mappedMethod, status:'verified',
       name:`Payroll ${periodLabel}`, description:`Payroll payment · ${periodLabel}`, payrollProposalId, payrollPeriodId,
       reference:normalizedReference, source:'payroll', entryMode:'automatic', transactionDate:occurredAt, groupType:'payroll_cycle', groupKey:payrollPeriodId, groupLabel:periodLabel, sourceEventId:payrollProposalId, idempotencyKey, isSystemGenerated:true,
       note, actor, createdAt:timestamp, updatedAt:timestamp,

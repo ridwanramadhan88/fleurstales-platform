@@ -1,7 +1,8 @@
 import { Check, ChevronDown, CircleAlert, CircleCheck, MoreHorizontal, Plus, type LucideIcon } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { validatePayrollForFinance } from '../../domain/payrollFinanceReviewDomain'
-import { useHrStore } from '../../store/hrStore'
+import { doesEmploymentOverlapPeriod, isPartialPeriodEmployment } from '../../domain/hrEmployeeLifecycleDomain'
+import { todayIsoDate, useHrStore } from '../../store/hrStore'
 import { usePayrollStore, type EmployeePayrollDraft, type PayrollManualPayeeType, type PayrollProposal } from '../../store/payrollStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useUserStore } from '../../store/userStore'
@@ -79,7 +80,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const [resolutionReason, setResolutionReason] = useState('')
   const [salaryEmployeeId, setSalaryEmployeeId] = useState<string | null>(null)
   const [salary, setSalary] = useState('')
-  const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10))
+  const [effectiveFrom, setEffectiveFrom] = useState(todayIsoDate())
   const [pointRejectEntryId, setPointRejectEntryId] = useState<string | null>(null)
   const [pointRejectReason, setPointRejectReason] = useState('')
   const [message, setMessage] = useState<string | null>(null)
@@ -91,7 +92,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const latestPeriod = useMemo(() => periods.slice().sort((a, b) => b.paymentDate.localeCompare(a.paymentDate))[0], [periods])
   useEffect(() => { if (!selectedMonth && latestPeriod) setSelectedMonth(latestPeriod.paymentDate.slice(0, 7)) }, [latestPeriod, selectedMonth])
 
-  const monthKey = selectedMonth ?? latestPeriod?.paymentDate.slice(0, 7) ?? new Date().toISOString().slice(0, 7)
+  const monthKey = selectedMonth ?? latestPeriod?.paymentDate.slice(0, 7) ?? todayIsoDate().slice(0, 7)
   const period = periods.find((item) => item.paymentDate.slice(0, 7) === monthKey)
   const allPeriodDrafts = useMemo(
     () => period ? drafts.filter((draft) => draft.payrollPeriodId === period.id) : [],
@@ -110,7 +111,10 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const generatedDrafts = activeDrafts.filter((draft) => draft.entryMode !== 'manual')
   const manualDrafts = activeDrafts.filter((draft) => draft.entryMode === 'manual')
   const eligibleEmployees = period
-    ? employees.filter((employee) => employee.status === 'active' && employee.systemRole !== 'owner' && employee.hireDate <= period.periodEnd)
+    ? employees.filter((employee) => employee.systemRole !== 'owner' && doesEmploymentOverlapPeriod(employee, period.periodStart, period.periodEnd))
+    : []
+  const partialPeriodEmployees = period
+    ? eligibleEmployees.filter((employee) => isPartialPeriodEmployment(employee, period.periodStart, period.periodEnd))
     : []
   const missingSalaryEmployees = period
     ? eligibleEmployees.filter((employee) => {
@@ -132,7 +136,10 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const approvedCount = activeDrafts.filter((draft) => ['finance_verified', 'paid'].includes(draft.status)).length
   const rejectedCount = activeDrafts.filter((draft) => draft.status === 'finance_rejected').length
   const locked = proposal ? ['submitted_to_finance', 'finance_approved', 'paid'].includes(proposal.status) : false
-  const draftCoverageComplete = activeDrafts.length > 0 && generatedDrafts.length === eligibleEmployees.length
+  const generatedEmployeeIds = new Set(generatedDrafts.map((draft) => draft.employeeId))
+  const draftCoverageComplete = activeDrafts.length > 0
+    && generatedDrafts.length === eligibleEmployees.length
+    && eligibleEmployees.every((employee) => generatedEmployeeIds.has(employee.id))
   const readinessItems: ReadinessItem[] = [
     {
       label: 'Employee coverage', severity:'blocker',
@@ -151,12 +158,19 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
     {
       label: 'Attendance reviewed', severity:'blocker',
       complete: pendingAttendance.length === 0,
-      detail: pendingAttendance.length === 0 ? 'No attendance warnings are waiting for HR.' : `${pendingAttendance.length} attendance warning(s) must be confirmed or corrected before payroll submission.`,
+      detail: pendingAttendance.length === 0 ? 'No attendance items are waiting for HR.' : `${pendingAttendance.length} attendance item(s) must be confirmed or corrected before payroll submission.`,
     },
     {
-      label: 'Point adjustments reviewed', severity:'warning',
+      label: 'Point adjustments', severity:'warning',
       complete: pendingPoints.length === 0,
       detail: pendingPoints.length === 0 ? 'No manual point adjustments are waiting for review.' : `${pendingPoints.length} manual point adjustment(s) are pending and excluded until approved.`,
+    },
+    {
+      label: 'Employment dates', severity:'warning',
+      complete: partialPeriodEmployees.length === 0,
+      detail: partialPeriodEmployees.length === 0
+        ? 'No staff joined or left during this payroll period.'
+        : `${partialPeriodEmployees.map((employee) => employee.name).join(', ')} joined or left during this period. Confirm salary treatment before Finance review.`,
     },
     {
       label: 'Calculations valid', severity:'blocker',
@@ -181,7 +195,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   }
   const handleSubmit = () => {
     if (!period) return
-    if (warnings.length > 0 && typeof window !== 'undefined' && !window.confirm(`Submit payroll with ${warnings.length} warning(s)? Unresolved warnings will remain visible to Finance.`)) return
+    if (warnings.length > 0 && typeof window !== 'undefined' && !window.confirm(`Send payroll with ${warnings.length} review item${warnings.length === 1 ? '' : 's'}? Review items stay visible to Finance; pending point adjustments remain excluded until approved.`)) return
     const result = submit({ payrollPeriodId: period.id, actor: { name: actorName, role } })
     if (!result.ok) { setError(result.reason); setMessage(null); return }
     setError(null)
@@ -264,7 +278,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
     const current = compensations.filter((item) => item.employeeId === employeeId && !item.effectiveTo).sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0]
     setSalaryEmployeeId(employeeId)
     setSalary(String(current?.baseSalaryIdr ?? ''))
-    setEffectiveFrom(new Date().toISOString().slice(0, 10))
+    setEffectiveFrom(todayIsoDate())
     setError(null)
   }
   const saveSalary = () => {
@@ -329,7 +343,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
               title={currentAction.disabled && blockers.length ? blockers.map((item) => item.detail).join(' ') : undefined}
               className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
             >
-              {warnings.length && !currentAction.disabled ? `${currentAction.label} with ${warnings.length} warning${warnings.length === 1 ? '' : 's'}` : currentAction.label}
+              {currentAction.label}
             </button>
           )}
         </div>
@@ -360,17 +374,16 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
           >
             <div>
               <h3 className="text-sm font-semibold">Payroll readiness</h3>
-              <p className="text-xs text-muted-foreground">{blockers.length ? `${blockers.length} blocker${blockers.length === 1 ? '' : 's'}` : warnings.length ? `Ready with ${warnings.length} warning${warnings.length === 1 ? '' : 's'}` : 'Ready to send to Finance'}</p>
+              <p className="text-xs text-muted-foreground">{blockers.length ? `${blockers.length} blocker${blockers.length === 1 ? '' : 's'}` : warnings.length ? `Ready · ${warnings.length} review item${warnings.length === 1 ? '' : 's'}` : 'Ready to send to Finance'}</p>
             </div>
             <span className="flex items-center gap-2">
               {blockers.length === 0 && <Check className="size-5 text-success" />}
               <ChevronDown className={`size-5 text-muted-foreground transition-transform md:hidden ${readinessOpen ? 'rotate-180' : ''}`} />
             </span>
           </button>
-          <div className={`${readinessOpen ? 'grid' : 'hidden'} mt-3 gap-2 sm:grid-cols-2 md:grid xl:grid-cols-5`}>
+          <div className={`${readinessOpen ? 'grid' : 'hidden'} mt-3 gap-2 sm:grid-cols-2 md:grid xl:grid-cols-6`}>
             {readinessItems.map((item) => <ReadinessRow key={item.label} item={item} />)}
           </div>
-          {warnings.length > 0 && <p className={`${readinessOpen ? 'block' : 'hidden'} mt-3 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning md:block`}>{warnings.map((item) => item.detail).join(' · ')} These warnings do not block submission.</p>}
         </div>
 
         {pendingPoints.length > 0 && (
