@@ -1,6 +1,11 @@
 import { Clock3, History, LockKeyhole, RotateCcw, Undo2 } from 'lucide-react'
 import { useEffect, useState, type FC } from 'react'
-import { getFinancePeriodActions, type FinancePeriodAction, type FinancePeriodActionType } from '../../data/financePeriods'
+import {
+  getFinancePeriodActions,
+  subscribeFinancePeriodActionsChanged,
+  type FinancePeriodAction,
+  type FinancePeriodActionType,
+} from '../../data/financePeriods'
 
 const actionLabel: Record<FinancePeriodActionType, string> = {
   start_review: 'Moved to Review',
@@ -44,16 +49,27 @@ export const FinancePeriodAuditHistory: FC = () => {
 
   useEffect(() => {
     let active = true
-    setLoading(true)
-    setError(null)
-    void getFinancePeriodActions(6)
-      .then((result) => { if (active) setActions(result) })
-      .catch((reason) => {
+
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const result = await getFinancePeriodActions(6)
+        if (active) setActions(result)
+      } catch (reason) {
         if (!active) return
         setError(reason instanceof Error ? reason.message : 'Audit history could not be loaded.')
-      })
-      .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    void load()
+    const unsubscribe = subscribeFinancePeriodActionsChanged(() => { void load() })
+    return () => {
+      active = false
+      unsubscribe()
+    }
   }, [])
 
   return (
