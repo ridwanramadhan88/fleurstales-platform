@@ -1,5 +1,3 @@
-import type { CatalogProductImage } from '../../store/catalogStoreTypes'
-
 declare module './contracts' {
   interface SharedProductVariant {
     /** Stable reusable child-size identity. Optional for legacy rows. */
