@@ -36,7 +36,7 @@ export const useCatalogStore = create<CatalogStoreState>((set, get) => ({
   ...createCatalogArrangementTypeActions(set, get),
   ...createCatalogProductActions(set),
   ...createCatalogCsvActions(set, get),
-  ...createCatalogSizeGuideActions(set),
+  ...createCatalogSizeGuideActions(set, get),
 }))
 
 export type {

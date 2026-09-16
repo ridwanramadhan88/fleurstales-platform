@@ -12,8 +12,8 @@ describe('Catalog cleanup regressions', () => {
 
     expect(form).toContain('size="workspace"')
     expect(form).toContain('h-[100dvh]')
-    expect(form).toContain('title="Product information"')
-    expect(form).toContain('title="Variants"')
+    expect(form).toContain('title="Informasi produk"')
+    expect(form).toContain('title="Ukuran & varian"')
     expect(form).not.toContain('Advanced setup')
     expect(form).not.toContain('CatalogRecipeSection')
     expect(form).not.toContain('CatalogPromoSection')
@@ -25,10 +25,10 @@ describe('Catalog cleanup regressions', () => {
     expect(details).toContain('CatalogProductImagesField')
     expect(images).toContain('Primary product photo')
 
-    expect(variants).toContain('Size name · Required')
-    expect(variants).toContain('Status · Required')
-    expect(variants).toContain('Selling price · Required')
-    expect(variants).toContain('SKU generated on save')
+    expect(variants).toContain('Ukuran · Wajib')
+    expect(variants).toContain('label="Status"')
+    expect(variants).toContain('Harga jual · Wajib')
+    expect(variants).toContain('SKU dibuat saat disimpan')
   })
 
   it('uses dynamic underline category tabs and direct Catalog actions', () => {
