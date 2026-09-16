@@ -1,16 +1,6 @@
 /**
  * @file catalogStore.ts
- * @description Raw state + wiring for the product Catalog. Mirrors
- * ordersStore.ts: this file only holds state and composes actions from
- * focused sibling modules — category CRUD, product CRUD, and CSV
- * import/export each live in their own catalogStoreXActions.ts file, with
- * validation and construction logic pushed further down into the domain
- * layer (see domain/catalogCategoryDomain.ts, domain/catalogIdDomain.ts).
- *
- * Product ID and variant SKU are system-generated identifiers per the
- * Product Catalog System Specification v2.0: they are always produced here
- * (never accepted from callers), are read-only once set, and — for Product
- * ID — never reused even after a product is deleted (see `deletedProductIds`).
+ * @description Raw state + wiring for the product Catalog.
  */
 
 import { create } from 'zustand'
@@ -36,7 +26,7 @@ export const useCatalogStore = create<CatalogStoreState>((set, get) => ({
   ...createCatalogArrangementTypeActions(set, get),
   ...createCatalogProductActions(set),
   ...createCatalogCsvActions(set, get),
-  ...createCatalogSizeGuideActions(set),
+  ...createCatalogSizeGuideActions(set, get),
 }))
 
 export type {
