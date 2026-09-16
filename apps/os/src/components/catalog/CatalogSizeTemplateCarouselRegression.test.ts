@@ -16,16 +16,16 @@ describe('catalog size-template and image-carousel regressions', () => {
   })
 
   it('uses a template-backed size dropdown while keeping the option manual', () => {
-    expect(variantsSource).toContain('Size name · Required')
-    expect(variantsSource).toContain('Varian / opsi · Manual')
+    expect(variantsSource).toContain('Ukuran · Wajib')
+    expect(variantsSource).toContain('Opsi tambahan · Opsional')
     expect(variantsSource).toContain('getDefaultCatalogSizeGuide')
     expect(variantsSource).not.toContain('placeholder="Example: 05R"')
   })
 
   it('supports adding sub-sizes to a template category', () => {
-    expect(guideSource).toContain('Template category')
+    expect(guideSource).toContain('Template ukuran')
     expect(guideSource).toContain('addSizeGuideTemplateSize')
-    expect(guideSource).toContain('Add size')
+    expect(guideSource).toContain('Tambah ukuran')
   })
 
   it('keeps view and edit product photos square and carousel-based', () => {
