@@ -14,6 +14,8 @@ export interface ResolvedStorefrontOrderItem {
   productNameSnapshot: string
   variantSkuSnapshot: string
   variantSizeSnapshot: string
+  /** Transaction-time recipe. Later catalog edits must not rewrite production history. */
+  flowerRecipeSnapshot: Array<{ flowerName: string; quantity: number; unit: 'stem' | 'bunch' }>
   quantity: number
   unitPriceIdr: number
 }
@@ -90,6 +92,11 @@ export const resolveStorefrontOrderPricing = ({
       productNameSnapshot: product.name,
       variantSkuSnapshot: variant.sku,
       variantSizeSnapshot: variant.size,
+      flowerRecipeSnapshot: (variant.flowerRecipe ?? []).map((item) => ({
+        flowerName: item.flowerName,
+        quantity: item.quantity,
+        unit: item.unit,
+      })),
       quantity: requested.quantity,
       unitPriceIdr: money(variant.price),
     }
