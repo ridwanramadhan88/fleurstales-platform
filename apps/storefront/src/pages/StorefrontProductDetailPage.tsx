@@ -22,7 +22,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "../components/ui/dialog";
-import { getStorefrontProductGallery } from "../components/storefront/storefrontProductImages";
+import { getStorefrontVariantGallery } from "../components/storefront/storefrontProductImages";
 import { getPromoPercentLabel } from "../domain/catalogDomain";
 import { useScrollThresholdCartBar } from "../hooks/useScrollThresholdCartBar";
 import { useCatalogStore } from "../store/catalogStore";
@@ -49,9 +49,6 @@ interface Props {
     variant?: CatalogVariant,
   ) => void;
 }
-
-const getProductImages = (product: CatalogProduct): string[] =>
-  getStorefrontProductGallery(product);
 
 const getActiveVariants = (product: CatalogProduct): CatalogVariant[] =>
   product.variants.filter((variant) => variant.status === "active");
@@ -104,19 +101,22 @@ export const StorefrontProductDetailPage: FC<Props> = ({
 }) => {
   const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates);
   const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets);
-  const images = useMemo(() => getProductImages(product), [product]);
   const activeVariants = useMemo(() => getActiveVariants(product), [product]);
-  const [activeImage, setActiveImage] = useState(images[0] ?? null);
   const [selectedVariantId, setSelectedVariantId] = useState(
     activeVariants.length === 1 ? activeVariants[0]?.id ?? "" : "",
   );
+  const selectedVariant = activeVariants.find((variant) => variant.id === selectedVariantId);
+  const images = useMemo(
+    () => getStorefrontVariantGallery(product, selectedVariant),
+    [product, selectedVariant],
+  );
+  const [activeImage, setActiveImage] = useState<string | null>(images[0] ?? null);
   const [quantity, setQuantity] = useState(1);
   const [sizingInfoOpen, setSizingInfoOpen] = useState(false);
   const [galleryDirection, setGalleryDirection] = useState<"previous" | "next">("next");
   const touchStartX = useRef<number | null>(null);
   const priceSectionRef = useRef<HTMLDivElement | null>(null);
 
-  const selectedVariant = activeVariants.find((variant) => variant.id === selectedVariantId);
   const lowestActivePriceIdr = activeVariants.reduce(
     (lowest, variant) => Math.min(lowest, variant.price),
     Number.POSITIVE_INFINITY,
@@ -145,14 +145,27 @@ export const StorefrontProductDetailPage: FC<Props> = ({
     () => resolveCatalogSizeGuide(product, sizeGuideTemplates, sizeGuideTargets),
     [product, sizeGuideTargets, sizeGuideTemplates],
   );
+  const selectedSizeGuideOption = useMemo(() => {
+    if (!sizeGuide || !selectedVariant) return undefined;
+    return sizeGuide.sizes.find((size) => size.id === selectedVariant.sizeOptionId)
+      ?? sizeGuide.sizes.find((size) => size.name.trim().toLowerCase() === selectedVariant.size.trim().toLowerCase());
+  }, [selectedVariant, sizeGuide]);
+  const selectedSizeGuideImageUrl = selectedSizeGuideOption?.guideImageUrl ?? sizeGuide?.imageUrl ?? undefined;
+  const selectedSizeGuideLabel = selectedVariant
+    ? `${sizeGuide?.name ?? "Size guide"} · ${selectedVariant.size}`
+    : sizeGuide?.name ?? "Size guide";
+
+  useEffect(() => {
+    setSelectedVariantId(activeVariants.length === 1 ? activeVariants[0]?.id ?? "" : "");
+    setQuantity(1);
+    setSizingInfoOpen(false);
+    window.scrollTo({ top: 0 });
+  }, [product.productId]);
 
   useEffect(() => {
     setActiveImage(images[0] ?? null);
     setGalleryDirection("next");
-    setSelectedVariantId(activeVariants.length === 1 ? activeVariants[0]?.id ?? "" : "");
-    setQuantity(1);
-    window.scrollTo({ top: 0 });
-  }, [activeVariants, images, product.productId, product.variants]);
+  }, [images, selectedVariantId]);
 
   const showGalleryImage = (index: number, direction: "previous" | "next") => {
     if (images.length === 0) return;
@@ -262,21 +275,21 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                     <GalleryArrow direction="next" />
                   </button>
                   <div
-                  className="absolute inset-x-0 bottom-[5%] z-10 flex items-center justify-center"
-                  aria-label="Product gallery images"
-                >
-                  {images.map((image, index) => (
-                    <button
-                      key={`${image}-${index}`}
-                      type="button"
-                      onClick={() => showGalleryImage(index, index < activeImageIndex ? "previous" : "next")}
-                      className={`storefront-gallery-dot ${
-                        index === activeImageIndex ? "storefront-gallery-dot--active" : ""
-                      }`}
-                      aria-label={`View product image ${index + 1}`}
-                      aria-pressed={index === activeImageIndex}
-                    />
-                  ))}
+                    className="absolute inset-x-0 bottom-[5%] z-10 flex items-center justify-center"
+                    aria-label="Product gallery images"
+                  >
+                    {images.map((image, index) => (
+                      <button
+                        key={`${image}-${index}`}
+                        type="button"
+                        onClick={() => showGalleryImage(index, index < activeImageIndex ? "previous" : "next")}
+                        className={`storefront-gallery-dot ${
+                          index === activeImageIndex ? "storefront-gallery-dot--active" : ""
+                        }`}
+                        aria-label={`View product image ${index + 1}`}
+                        aria-pressed={index === activeImageIndex}
+                      />
+                    ))}
                   </div>
                 </>
               )}
@@ -351,7 +364,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                     {requiresSizeSelection && !selectedVariant && (
                       <p className="sf-type-1 font-medium text-[#d93d7c]">Select a size</p>
                     )}
-                    {sizeGuide && (
+                    {selectedSizeGuideImageUrl && (
                       <button
                         type="button"
                         onClick={() => setSizingInfoOpen(true)}
@@ -461,14 +474,14 @@ export const StorefrontProductDetailPage: FC<Props> = ({
           </StorefrontContainer>
         </div>
 
-        <Dialog open={Boolean(sizeGuide) && sizingInfoOpen} onOpenChange={setSizingInfoOpen}>
+        <Dialog open={Boolean(selectedSizeGuideImageUrl) && sizingInfoOpen} onOpenChange={setSizingInfoOpen}>
           <DialogContent className="w-[min(92vw,30rem)] max-w-none gap-4 rounded-[1.5rem] bg-[var(--sf-cream)] p-5 sm:p-6">
-            <DialogTitle className="pr-12 text-xl font-medium">{sizeGuide?.name ?? "Size guide"}</DialogTitle>
-            {sizeGuide && (
+            <DialogTitle className="pr-12 text-xl font-medium">{selectedSizeGuideLabel}</DialogTitle>
+            {selectedSizeGuideImageUrl && (
               <div className="aspect-square w-full overflow-hidden rounded-[1.125rem] border border-black/10 bg-white">
                 <img
-                  src={sizeGuide.imageUrl}
-                  alt={`${product.name} size guide`}
+                  src={selectedSizeGuideImageUrl}
+                  alt={`${product.name}${selectedVariant ? ` ${selectedVariant.size}` : ""} size guide`}
                   className="h-full w-full object-contain"
                 />
               </div>
