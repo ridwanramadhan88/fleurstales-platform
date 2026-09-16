@@ -68,12 +68,15 @@ export const getAttendanceForEmployeeOnDate = (
 
 /**
  * @description Computes the HR summary (headcount + today's attendance
- * breakdown) for a branch-scoped employee list.
+ * breakdown) for a branch-scoped employee list. When expectedAttendanceEmployeeIds
+ * is supplied, "not marked" counts only employees scheduled to work today rather
+ * than every active employee.
  */
 export const getHrSummary = (
   employees: Employee[],
   attendance: AttendanceRecord[],
   today: string,
+  expectedAttendanceEmployeeIds?: ReadonlySet<string>,
 ): HrSummary => {
   const activeEmployees = employees.filter((employee) => employee.status === 'active')
 
@@ -81,6 +84,7 @@ export const getHrSummary = (
   let lateToday = 0
   let absentToday = 0
   let onLeaveToday = 0
+  let expectedMarkedToday = 0
 
   activeEmployees.forEach((employee) => {
     const record = getAttendanceForEmployeeOnDate(attendance, employee.id, today)
@@ -89,9 +93,12 @@ export const getHrSummary = (
     if (record.status === 'late') lateToday += 1
     if (record.status === 'absent') absentToday += 1
     if (record.status === 'leave') onLeaveToday += 1
+    if (!expectedAttendanceEmployeeIds || expectedAttendanceEmployeeIds.has(employee.id)) expectedMarkedToday += 1
   })
 
-  const markedToday = presentToday + lateToday + absentToday + onLeaveToday
+  const expectedCount = expectedAttendanceEmployeeIds
+    ? activeEmployees.filter((employee) => expectedAttendanceEmployeeIds.has(employee.id)).length
+    : activeEmployees.length
 
   return {
     activeCount: activeEmployees.length,
@@ -100,6 +107,6 @@ export const getHrSummary = (
     lateToday,
     absentToday,
     onLeaveToday,
-    notMarkedToday: Math.max(0, activeEmployees.length - markedToday),
+    notMarkedToday: Math.max(0, expectedCount - expectedMarkedToday),
   }
 }
