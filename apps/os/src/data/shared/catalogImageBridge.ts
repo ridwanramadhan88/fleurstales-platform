@@ -84,7 +84,7 @@ export const buildCatalogImageStoragePlan = (product: CatalogProduct): CatalogIm
         const upload = prepareCatalogImageUpload(`${product.id}-${variant.id}`, image)
         return upload ? { ...upload, variantId: variant.id } : null
       })
-      .filter((upload): upload is PendingCatalogImageUpload => upload !== null)),
+      .filter((upload): upload is NonNullable<typeof upload> => upload !== null)),
   ]
 
   const metadata: SharedProductImageMetadataInput[] = [
