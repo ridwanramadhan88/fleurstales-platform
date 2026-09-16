@@ -4,13 +4,28 @@ import type { CatalogAdminRepository, CatalogReadRepository } from './repository
 import { createCatalogAdminRepository, createCatalogReadRepository } from './repositories'
 import { SupabaseHttpClient } from './supabaseHttpClient'
 
+export interface SharedSizeGuideSizeWithGuide {
+  id: string
+  name: string
+  guideStoragePath?: string
+  guidePublicUrl?: string
+  guideByteSize?: number
+  guideWidth?: number
+  guideHeight?: number
+  sortOrder?: number
+  isActive?: boolean
+}
+
 export interface SharedSizeGuideTemplateWithSizes extends SharedSizeGuideTemplate {
-  sizes: Array<{ id: string; name: string }>
+  sizes: SharedSizeGuideSizeWithGuide[]
 }
 
 type SizeGuideTemplateRowWithSizes = SizeGuideTemplateRow & { sizes?: Json }
 
-const mapSizes = (value: Json | undefined): SharedSizeGuideTemplateWithSizes['sizes'] => {
+const mapSizes = (
+  client: SupabaseHttpClient,
+  value: Json | undefined,
+): SharedSizeGuideTemplateWithSizes['sizes'] => {
   if (!Array.isArray(value)) return []
   const seen = new Set<string>()
   return value.flatMap((raw, index) => {
@@ -22,7 +37,22 @@ const mapSizes = (value: Json | undefined): SharedSizeGuideTemplateWithSizes['si
     seen.add(key)
     const rawId = typeof record.id === 'string' ? record.id.trim() : ''
     const id = rawId || `guide-size-${index + 1}-${key.replace(/[^a-z0-9]+/g, '-')}`
-    return [{ id, name }]
+    const guideStoragePath = typeof record.guideStoragePath === 'string' && record.guideStoragePath.trim()
+      ? record.guideStoragePath.trim()
+      : undefined
+    return [{
+      id,
+      name,
+      ...(guideStoragePath ? {
+        guideStoragePath,
+        guidePublicUrl: client.storagePublicUrl('size-guides', guideStoragePath),
+      } : {}),
+      ...(typeof record.guideByteSize === 'number' ? { guideByteSize: record.guideByteSize } : {}),
+      ...(typeof record.guideWidth === 'number' ? { guideWidth: record.guideWidth } : {}),
+      ...(typeof record.guideHeight === 'number' ? { guideHeight: record.guideHeight } : {}),
+      sortOrder: typeof record.sortOrder === 'number' ? record.sortOrder : index,
+      isActive: typeof record.isActive === 'boolean' ? record.isActive : true,
+    }]
   })
 }
 
@@ -32,9 +62,9 @@ const mapTemplate = (
 ): SharedSizeGuideTemplateWithSizes => ({
   id: row.id,
   name: row.name,
-  sizes: mapSizes(row.sizes),
+  sizes: mapSizes(client, row.sizes),
   storagePath: row.storage_path,
-  publicUrl: client.storagePublicUrl('size-guides', row.storage_path),
+  publicUrl: row.byte_size > 0 ? client.storagePublicUrl('size-guides', row.storage_path) : '',
   mimeType: row.mime_type,
   byteSize: row.byte_size,
   width: row.width,
@@ -46,9 +76,7 @@ const mapTemplate = (
 const listSizeGuideTemplatesWithSizes = async (
   client: SupabaseHttpClient,
 ): Promise<SharedSizeGuideTemplateWithSizes[]> => {
-  const rows: SizeGuideTemplateRowWithSizes[] = await client.select('size_guide_templates', {
-    order: [{ column: 'name' }],
-  })
+  const rows: SizeGuideTemplateRowWithSizes[] = await client.select('size_guide_templates', { order: [{ column: 'name' }] })
   return rows.map((row) => mapTemplate(client, row))
 }
 
