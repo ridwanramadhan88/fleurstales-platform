@@ -89,10 +89,12 @@ const mapProductImage = (client: SupabaseHttpClient, row: ProductImageRow): Shar
 
 const enrichProducts = async (client: SupabaseHttpClient, products: SharedProduct[], productId?: string): Promise<SharedProduct[]> => {
   const filters = productId ? { product_id: productId } : undefined
-  const [variantRows, imageRows] = await Promise.all([
-    client.select<ProductVariantRow>('product_variants', { filters, order: [{ column: 'sort_order' }] }),
-    client.select<ProductImageRow>('product_images', { filters, order: [{ column: 'sort_order' }] }),
+  const [variantRowsRaw, imageRowsRaw] = await Promise.all([
+    client.select('product_variants', { filters, order: [{ column: 'sort_order' }] }),
+    client.select('product_images', { filters, order: [{ column: 'sort_order' }] }),
   ])
+  const variantRows = variantRowsRaw as ProductVariantRow[]
+  const imageRows = imageRowsRaw as ProductImageRow[]
   const variantById = new Map(variantRows.map((row) => [row.id, row]))
   return products.map((product) => ({
     ...product,
