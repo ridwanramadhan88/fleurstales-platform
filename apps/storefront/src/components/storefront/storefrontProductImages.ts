@@ -32,3 +32,19 @@ export const getStorefrontVariantPrimaryImage = (
   product: CatalogProduct,
   variant?: CatalogVariant,
 ): string | undefined => getStorefrontVariantGallery(product, variant)[0]
+
+/**
+ * Backward-compatible product thumbnail helpers used by cards/cart surfaces.
+ * These intentionally resolve the canonical/base product image; variant-aware
+ * surfaces should use getStorefrontVariantPrimaryImage instead.
+ */
+export const getStorefrontProductThumbnail = (product: CatalogProduct): string =>
+  getStorefrontPrimaryImage(product) ?? ''
+
+export const getStorefrontProductThumbnailById = (
+  products: CatalogProduct[],
+  productId: string,
+): string => {
+  const product = products.find((item) => item.id === productId)
+  return product ? getStorefrontProductThumbnail(product) : ''
+}
