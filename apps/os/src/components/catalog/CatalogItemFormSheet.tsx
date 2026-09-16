@@ -1,24 +1,14 @@
 /**
  * @file CatalogItemFormSheet.tsx
- * @description Focused create/edit sheet for essential Catalog product data.
- * Keeps product setup focused while allowing a flowers-only recipe per sellable size.
+ * @description Create/edit Catalog products with size-template-aware variants.
  */
 
 import type { FC, FormEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import type {
-  CatalogCategory,
-  CatalogMaterial,
-  CatalogProduct,
-  CatalogProductImage,
-  CatalogVariantStatus,
-} from '../../store/catalogStoreTypes'
-import type {
-  NewCatalogProductInput,
-  NewCatalogVariantInput,
-} from '../../store/catalogStore'
+import type { CatalogCategory, CatalogMaterial, CatalogProduct, CatalogProductImage, CatalogVariantStatus } from '../../store/catalogStoreTypes'
+import type { NewCatalogProductInput, NewCatalogVariantInput } from '../../store/catalogStore'
 import { useCatalogStore } from '../../store/catalogStore'
-import { resolveCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
+import { getDefaultCatalogSizeGuide, resolveCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
 import { CatalogProductDetailsSection } from './CatalogProductDetailsSection'
 import { CatalogVariantsSection } from './CatalogVariantsSection'
 import { AppSheet } from '../ui/app-sheet'
@@ -57,16 +47,13 @@ export interface CatalogItemFormSheetProps {
 export interface VariantRow {
   id?: string
   sku?: string
+  sizeOptionId?: string
   size: string
+  images: CatalogProductImage[]
   price: string
   cost: string
   status: CatalogVariantStatus
-  flowerRecipe: Array<{
-    id: string
-    flowerName: string
-    quantity: string
-    unit: 'stem' | 'bunch'
-  }>
+  flowerRecipe: Array<{ id: string; flowerName: string; quantity: string; unit: 'stem' | 'bunch' }>
 }
 
 export interface CatalogFormState {
@@ -81,32 +68,18 @@ export interface CatalogFormState {
   orderType: 'Catalog' | 'Custom'
   isCustomizable: 'yes' | 'no'
   availability: 'active' | 'inactive'
+  /** Legacy/base gallery retained until Batch 2 migration is complete. */
   images: CatalogProductImage[]
   variants: VariantRow[]
 }
 
-export const emptyVariantRow = (): VariantRow => ({
-  size: '',
-  price: '',
-  cost: '',
-  status: 'active',
-  flowerRecipe: [],
-})
+export const emptyVariantRow = (): VariantRow => ({ size: '', images: [], price: '', cost: '', status: 'active', flowerRecipe: [] })
 
 const emptyForm = (defaultCategory: CatalogCategory): CatalogFormState => ({
-  name: '',
-  description: '',
-  category: defaultCategory,
-  material: 'fresh',
-  occasionTags: defaultCategory ? [defaultCategory] : [],
-  productType: '',
-  collectionSeries: '',
-  pricingType: 'Fixed',
-  orderType: 'Catalog',
-  isCustomizable: 'no',
-  availability: 'active',
-  images: [],
-  variants: [emptyVariantRow()],
+  name: '', description: '', category: defaultCategory, material: 'fresh',
+  occasionTags: defaultCategory ? [defaultCategory] : [], productType: '', collectionSeries: '',
+  pricingType: 'Fixed', orderType: 'Catalog', isCustomizable: 'no', availability: 'active',
+  images: [], variants: [emptyVariantRow()],
 })
 
 const formFromProduct = (product: CatalogProduct): CatalogFormState => ({
@@ -125,49 +98,38 @@ const formFromProduct = (product: CatalogProduct): CatalogFormState => ({
   variants: product.variants.map((variant) => ({
     id: variant.id,
     sku: variant.sku,
+    sizeOptionId: variant.sizeOptionId,
     size: variant.size,
+    images: (variant.images ?? []).map((image, index) => ({ ...image, sortOrder: index, isPrimary: index === 0 })),
     price: variant.price.toString(),
     cost: variant.cost?.toString() ?? '',
     status: variant.status,
-    flowerRecipe: (variant.flowerRecipe ?? []).map((item) => ({
-      id: item.id,
-      flowerName: item.flowerName,
-      quantity: String(item.quantity),
-      unit: item.unit,
-    })),
+    flowerRecipe: (variant.flowerRecipe ?? []).map((item) => ({ id: item.id, flowerName: item.flowerName, quantity: String(item.quantity), unit: item.unit })),
   })),
 })
 
-const readOnlyInputClass =
-  'h-11 w-full rounded-xl border border-border bg-muted px-3.5 text-sm text-muted-foreground'
+const readOnlyInputClass = 'h-11 w-full rounded-xl border border-border bg-muted px-3.5 text-sm text-muted-foreground'
 const labelClass = 'text-sm font-medium text-foreground'
 
-export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
-  open,
-  onClose,
-  product,
-  categoryOptions,
-  arrangementTypeOptions,
-  onCreate,
-  onUpdate,
-}) => {
+export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({ open, onClose, product, categoryOptions, arrangementTypeOptions, onCreate, onUpdate }) => {
   const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
   const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets)
   const isEditMode = Boolean(product)
   const defaultCategory = categoryOptions[0] ?? ''
-  const initialForm = useMemo(
-    () => (product ? formFromProduct(product) : emptyForm(defaultCategory)),
-    [product, defaultCategory],
-  )
-  const sizeTemplate = useMemo(
-    () => product
-      ? resolveCatalogSizeGuide(product, sizeGuideTemplates, sizeGuideTargets, { includeLogical: true })
-      : undefined,
-    [product, sizeGuideTargets, sizeGuideTemplates],
-  )
+  const initialForm = useMemo(() => product ? formFromProduct(product) : emptyForm(defaultCategory), [product, defaultCategory])
   const [form, setForm] = useState<CatalogFormState>(initialForm)
   const [errors, setErrors] = useState<string[]>([])
   const [confirmClose, setConfirmClose] = useState(false)
+
+  const sizeTemplate = useMemo(() => {
+    const resolved = resolveCatalogSizeGuide(
+      { id: product?.id ?? '__new__', productType: form.productType || undefined },
+      sizeGuideTemplates,
+      sizeGuideTargets,
+      { includeLogical: true },
+    )
+    return resolved ?? getDefaultCatalogSizeGuide(sizeGuideTemplates)
+  }, [form.productType, product?.id, sizeGuideTargets, sizeGuideTemplates])
 
   useEffect(() => {
     if (!open) return
@@ -178,95 +140,68 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
 
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialForm)
   const handleClose = () => (isDirty ? setConfirmClose(true) : onClose())
-
   if (!open) return null
 
-  const updateVariant = (index: number, patch: Partial<VariantRow>) => {
-    setForm((previous) => ({
-      ...previous,
-      variants: previous.variants.map((row, rowIndex) =>
-        rowIndex === index ? { ...row, ...patch } : row,
-      ),
-    }))
-  }
-
-  const addVariantRow = () => {
-    setForm((previous) => ({
-      ...previous,
-      variants: [...previous.variants, emptyVariantRow()],
-    }))
-  }
-
-  const removeVariantRow = (index: number) => {
-    setForm((previous) => ({
-      ...previous,
-      variants: previous.variants.filter((_, rowIndex) => rowIndex !== index),
-    }))
-  }
+  const updateVariant = (index: number, patch: Partial<VariantRow>) => setForm((previous) => ({ ...previous, variants: previous.variants.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row) }))
+  const addVariantRow = () => setForm((previous) => ({ ...previous, variants: [...previous.variants, emptyVariantRow()] }))
+  const removeVariantRow = (index: number) => setForm((previous) => ({ ...previous, variants: previous.variants.filter((_, rowIndex) => rowIndex !== index) }))
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     const nextErrors: string[] = []
-    if (!form.name.trim()) nextErrors.push('Product name is required.')
-    if (!form.category) nextErrors.push('Main occasion is required.')
-    if (!form.productType.trim()) nextErrors.push('Arrangement type is required.')
-    if (form.variants.length === 0) nextErrors.push('Add at least one product variant.')
+    if (!form.name.trim()) nextErrors.push('Nama produk wajib diisi.')
+    if (!form.category) nextErrors.push('Occasion utama wajib dipilih.')
+    if (!form.productType.trim()) nextErrors.push('Jenis rangkaian wajib dipilih.')
+    if (form.variants.length === 0) nextErrors.push('Tambahkan minimal satu product variant.')
 
+    const seenSizeOptions = new Set<string>()
     const parsedVariants: NewCatalogVariantInput[] = []
     form.variants.forEach((row, index) => {
-      if (!row.size.trim()) nextErrors.push(`Variant ${index + 1} needs a size name.`)
+      const label = `Variant ${index + 1}`
+      if (!row.size.trim()) nextErrors.push(`${label}: ukuran wajib dipilih.`)
+      if (row.sizeOptionId) {
+        if (seenSizeOptions.has(row.sizeOptionId)) nextErrors.push(`${label}: ukuran template yang sama tidak boleh dipakai dua kali.`)
+        seenSizeOptions.add(row.sizeOptionId)
+      }
       const price = Number.parseInt(row.price, 10)
-      if (!Number.isFinite(price) || price <= 0) {
-        nextErrors.push(`Variant ${index + 1} needs a selling price above Rp0.`)
-      }
+      if (!Number.isFinite(price) || price <= 0) nextErrors.push(`${label}: harga jual harus lebih dari Rp0.`)
       const costParsed = row.cost.trim() ? Number.parseInt(row.cost, 10) : undefined
-      if (costParsed !== undefined && (!Number.isFinite(costParsed) || costParsed < 0)) {
-        nextErrors.push(`Variant ${index + 1} has an invalid cost.`)
-      }
+      if (costParsed !== undefined && (!Number.isFinite(costParsed) || costParsed < 0)) nextErrors.push(`${label}: cost tidak valid.`)
       const flowerRecipe = row.flowerRecipe.map((item, recipeIndex) => {
         const quantity = Number.parseFloat(item.quantity)
-        if (!item.flowerName.trim()) nextErrors.push(`Variant ${index + 1}, flower ${recipeIndex + 1} needs a flower name.`)
-        if (!Number.isFinite(quantity) || quantity <= 0) nextErrors.push(`Variant ${index + 1}, flower ${recipeIndex + 1} needs a quantity above 0.`)
-        return {
-          id: item.id,
-          flowerName: item.flowerName.trim(),
-          quantity,
-          unit: item.unit,
-        }
+        if (!item.flowerName.trim()) nextErrors.push(`${label}, bunga ${recipeIndex + 1}: nama bunga wajib diisi.`)
+        if (!Number.isFinite(quantity) || quantity <= 0) nextErrors.push(`${label}, bunga ${recipeIndex + 1}: jumlah harus lebih dari 0.`)
+        return { id: item.id, flowerName: item.flowerName.trim(), quantity, unit: item.unit }
       }).filter((item) => item.flowerName && Number.isFinite(item.quantity) && item.quantity > 0)
 
-      if (row.size.trim() && Number.isFinite(price) && price > 0) {
-        parsedVariants.push({
-          size: row.size.trim(),
-          price,
-          cost: costParsed,
-          status: row.status,
-          flowerRecipe,
-          ...(row.id ? { id: row.id } : {}),
-          ...(row.sku ? { sku: row.sku } : {}),
-        })
-      }
+      const variantImages = row.images.slice(0, CATALOG_IMAGE_MAX_COUNT).map((image, imageIndex) => ({
+        ...image,
+        altText: `${form.name.trim() || 'Product'} ${row.size.trim()}`,
+        sortOrder: imageIndex,
+        isPrimary: imageIndex === 0,
+      }))
+      if (row.size.trim() && Number.isFinite(price) && price > 0) parsedVariants.push({
+        sizeOptionId: row.sizeOptionId,
+        size: row.size.trim(),
+        images: variantImages,
+        price,
+        cost: costParsed,
+        status: row.status,
+        flowerRecipe,
+        ...(row.id ? { id: row.id } : {}),
+        ...(row.sku ? { sku: row.sku } : {}),
+      })
     })
-
-    if (!parsedVariants.some((variant) => variant.status === 'active')) {
-      nextErrors.push('At least one variant must be active.')
-    }
-
+    if (!parsedVariants.some((variant) => variant.status === 'active')) nextErrors.push('Minimal satu variant harus berstatus Dijual.')
     setErrors([...new Set(nextErrors)])
     if (nextErrors.length) return
 
     const collection = form.collectionSeries.trim()
     const typedName = form.name.trim()
-    const unprefixedName = collection && typedName.toLowerCase().startsWith(`${collection.toLowerCase()} - `)
-      ? typedName.slice(collection.length + 3).trim()
-      : typedName
+    const unprefixedName = collection && typedName.toLowerCase().startsWith(`${collection.toLowerCase()} - `) ? typedName.slice(collection.length + 3).trim() : typedName
     const customerFacingName = collection ? `${collection} - ${unprefixedName}` : typedName
-
-    const normalizedImages = form.images
-      .slice(0, CATALOG_IMAGE_MAX_COUNT)
-      .map((image, index) => ({ ...image, altText: customerFacingName, sortOrder: index, isPrimary: index === 0 }))
+    const normalizedImages = form.images.slice(0, CATALOG_IMAGE_MAX_COUNT).map((image, index) => ({ ...image, altText: customerFacingName, sortOrder: index, isPrimary: index === 0 }))
     const imageAliases = getCatalogProductImageAliases(normalizedImages)
-
     const common = {
       name: customerFacingName,
       description: form.description.trim() || undefined,
@@ -283,90 +218,31 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       isActive: form.availability === 'active',
       variants: parsedVariants,
     }
-
     if (isEditMode && product) onUpdate({ productId: product.id, ...common })
     else onCreate(common)
     onClose()
   }
 
-  return (
-    <>
-      <AppSheet
-        open={open}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) handleClose()
-        }}
-        size="workspace"
-        title={isEditMode ? 'Edit product' : 'New product'}
-        description={
-          isEditMode
-            ? 'Update the essential product information customers and staff use.'
-            : 'Add product information and at least one sellable size.'
-        }
-        contentClassName="h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[92vh]"
-        headerClassName="shrink-0 border-b border-border/70 pb-4"
-      >
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-0.5 py-4 sm:px-1">
-            <ValidationSummary errors={errors} />
-            <FormSection
-              title="Product information"
-              description="Core product details used throughout the Catalog and Orders."
-            >
-              <CatalogProductDetailsSection
-                form={form}
-                product={product}
-                categoryOptions={categoryOptions}
-                arrangementTypeOptions={arrangementTypeOptions}
-                setForm={setForm}
-                readOnlyInputClass={readOnlyInputClass}
-                labelClass={labelClass}
-              />
-            </FormSection>
-
-            <FormSection
-              title="Variants"
-              description="Add at least one active sellable size and selling price."
-            >
-              <CatalogVariantsSection
-                variants={form.variants}
-                sizeTemplateName={sizeTemplate?.name}
-                updateVariant={updateVariant}
-                addVariant={addVariantRow}
-                removeVariant={removeVariantRow}
-              />
-            </FormSection>
-          </div>
-
-          <ActionFooter className="shrink-0 border-t border-border bg-card pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="inline-flex h-11 items-center rounded-full px-[18px] text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="inline-flex h-11 items-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90"
-            >
-              {isEditMode ? 'Save changes' : 'Add product'}
-            </button>
-          </ActionFooter>
-        </form>
-      </AppSheet>
-      <ConfirmActionDialog
-        open={confirmClose}
-        onOpenChange={setConfirmClose}
-        title="Discard unsaved changes?"
-        description="Unsaved product changes will be lost."
-        confirmLabel="Discard changes"
-        cancelLabel="Continue editing"
-        destructive
-        onConfirm={onClose}
-      />
-    </>
-  )
+  return <>
+    <AppSheet open={open} onOpenChange={(nextOpen) => { if (!nextOpen) handleClose() }} size="workspace" title={isEditMode ? 'Edit product' : 'New product'} description="Data umum produk dan variant per ukuran." contentClassName="h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[92vh]" headerClassName="shrink-0 border-b border-border/70 pb-4">
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-0.5 py-4 sm:px-1">
+          <ValidationSummary errors={errors} />
+          <FormSection title="Informasi produk" description="Data umum produk. Foto produk lama tetap disimpan sebagai fallback selama transisi Batch 1.">
+            <CatalogProductDetailsSection form={form} product={product} categoryOptions={categoryOptions} arrangementTypeOptions={arrangementTypeOptions} setForm={setForm} readOnlyInputClass={readOnlyInputClass} labelClass={labelClass} />
+          </FormSection>
+          <FormSection title="Ukuran & varian" description={`Template: ${sizeTemplate?.name ?? 'belum tersedia'}. Harga, foto dan resep disimpan per ukuran.`}>
+            <CatalogVariantsSection variants={form.variants} sizeTemplateName={sizeTemplate?.name} updateVariant={updateVariant} addVariant={addVariantRow} removeVariant={removeVariantRow} productName={form.name} />
+          </FormSection>
+        </div>
+        <ActionFooter className="shrink-0 border-t border-border bg-card pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+          <button type="button" onClick={handleClose} className="inline-flex h-11 items-center rounded-full px-[18px] text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Batal</button>
+          <button type="submit" className="inline-flex h-11 items-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90">{isEditMode ? 'Simpan perubahan' : 'Tambah produk'}</button>
+        </ActionFooter>
+      </form>
+    </AppSheet>
+    <ConfirmActionDialog open={confirmClose} onOpenChange={setConfirmClose} title="Buang perubahan?" description="Perubahan produk yang belum disimpan akan hilang." confirmLabel="Buang perubahan" cancelLabel="Lanjut edit" destructive onConfirm={onClose} />
+  </>
 }
 
 export default CatalogItemFormSheet
