@@ -1,3 +1,4 @@
+import './catalogVariantBatch1Types'
 import { useCatalogStore } from '../../store/catalogStore'
 import { useUserStore } from '../../store/userStore'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -8,7 +9,7 @@ import type {
   CatalogProductImage,
   CatalogStoreState,
 } from '../../store/catalogStoreTypes'
-import type { SharedOccasion, SharedProduct } from './contracts'
+import type { SharedOccasion, SharedProduct, SharedProductImage } from './contracts'
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from './supabaseSession'
 import { buildCatalogImageStoragePlan, syncCatalogProductImagesToRemote } from './catalogImageBridge'
@@ -56,6 +57,19 @@ export const subscribeCatalogBridgeStatus = (listener: (status: CatalogBridgeSta
 const normalizeTags = (category: string, occasionTags?: string[]): string[] =>
   [...new Set([category, ...(occasionTags ?? [])].filter(Boolean))]
 
+const mapRemoteImage = (image: SharedProductImage, index: number): CatalogProductImage => ({
+  id: image.id,
+  url: image.publicUrl,
+  storagePath: image.storagePath,
+  altText: image.altText,
+  sortOrder: index,
+  isPrimary: index === 0,
+  mimeType: image.mimeType,
+  byteSize: image.byteSize,
+  width: image.width,
+  height: image.height,
+})
+
 const mapRemoteCatalog = (
   occasions: SharedOccasion[],
   products: SharedProduct[],
@@ -77,18 +91,7 @@ const mapRemoteCatalog = (
       const category = primaryOccasion?.name ?? linkedOccasions[0] ?? 'Uncategorized'
       const images: CatalogProductImage[] = [...product.images]
         .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((image, index) => ({
-          id: image.id,
-          url: image.publicUrl,
-          storagePath: image.storagePath,
-          altText: image.altText,
-          sortOrder: index,
-          isPrimary: index === 0,
-          mimeType: image.mimeType,
-          byteSize: image.byteSize,
-          width: image.width,
-          height: image.height,
-        }))
+        .map(mapRemoteImage)
       const imageUrls = images.map((image) => image.url)
       const primaryImage = images[0]?.url
 
@@ -110,10 +113,16 @@ const mapRemoteCatalog = (
         variants: product.variants.map((variant) => ({
           id: variant.id,
           sku: variant.sku,
+          ...(variant.sizeOptionId ? { sizeOptionId: variant.sizeOptionId } : {}),
           size: variant.size,
           price: variant.priceIdr,
           ...(variant.costIdr !== undefined ? { cost: variant.costIdr ?? undefined } : {}),
           status: variant.status,
+          ...(variant.images?.length ? {
+            images: [...variant.images]
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map(mapRemoteImage),
+          } : {}),
           ...(variant.flowerRecipe?.length ? {
             flowerRecipe: variant.flowerRecipe.map((item) => ({
               id: item.id,
@@ -180,6 +189,7 @@ const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccas
         id: variant.id,
         productId: product.id,
         sku: variant.sku,
+        ...(variant.sizeOptionId ? { sizeOptionId: variant.sizeOptionId } : {}),
         size: variant.size,
         priceIdr: variant.price,
         status: variant.status,
@@ -195,8 +205,8 @@ const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccas
           })),
         } : { flowerRecipe: [] }),
       })),
-      // Phase 5 owns Storage/image writes. The Phase 4 RPC intentionally
-      // ignores this field, so existing remote image rows are preserved.
+      // Storage/image writes are handled separately. The snapshot RPC keeps
+      // existing product image rows intact.
       images: [],
     }
   })
@@ -205,8 +215,9 @@ const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccas
 }
 
 const productImageHash = (product: CatalogProduct): string => JSON.stringify(
-  buildCatalogImageStoragePlan(product).images.map((image) => ({
+  buildCatalogImageStoragePlan(product).metadata.map((image) => ({
     id: image.id,
+    variantId: image.variantId,
     storagePath: image.storagePath,
     altText: image.altText,
     sortOrder: image.sortOrder,
@@ -489,20 +500,16 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
       occasions: snapshot.occasions,
       products: snapshot.products,
     })
-    // Commit the revision immediately after this revision-advancing stage.
-    // lastSyncedHash remains unchanged until the complete pipeline succeeds,
-    // so a later failure stays visibly dirty and can be retried safely.
     workingRevision = result.revision
     remoteRevision = workingRevision
 
     // New products exist remotely only after replaceSnapshot. Sync their
-    // images now, chaining the returned revision so the rest of the save
-    // pipeline continues from the authoritative Catalog revision.
+    // base and variant images now, chaining the revision from the metadata RPC.
     for (const product of useCatalogStore.getState().products) {
       if (!newProductIds.has(product.id)) continue
       const imageHash = productImageHash(product)
       const plan = buildCatalogImageStoragePlan(product)
-      if (plan.images.length === 0) {
+      if (plan.metadata.length === 0) {
         remoteImageHashes.set(product.id, imageHash)
         continue
       }

@@ -28,6 +28,7 @@ describe('storefront product detail page', () => {
   it('only offers the assigned size guide and opens its image', async () => {
     const user = userEvent.setup()
     const product = useCatalogStore.getState().products[0]
+    const selectedVariant = product.variants.find((variant) => variant.status === 'active')
     useCatalogStore.setState({
       sizeGuideTemplates: [{
         id: 'guide_test',
@@ -53,7 +54,8 @@ describe('storefront product detail page', () => {
     await user.click(screen.getByRole('button', { name: 'Size guide' }))
 
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: `${product.name} size guide` })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: `Bouquet size guide · ${selectedVariant?.size}` })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: `${product.name} ${selectedVariant?.size} size guide` })).toBeInTheDocument()
   })
 })
 
