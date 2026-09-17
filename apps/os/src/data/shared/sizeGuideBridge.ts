@@ -153,8 +153,6 @@ const prepareTemplate = async (
     isActive: size.isActive,
   }))
 
-  // Parent-level image metadata remains for old clients only. New templates are
-  // logical parents and can have byteSize=0.
   const storagePath = template.storagePath ?? `logical/${safeSegment(template.id)}.jpg`
   return {
     id: template.id,

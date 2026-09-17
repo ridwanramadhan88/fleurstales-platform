@@ -19,6 +19,7 @@ export const resolvedPricingToOrderLineItems = (
   productNameSnapshot: item.productNameSnapshot,
   variantSkuSnapshot: item.variantSkuSnapshot,
   variantSizeSnapshot: item.variantSizeSnapshot,
+  flowerRecipeSnapshot: item.flowerRecipeSnapshot.map((recipe) => ({ ...recipe })),
   quantity: item.quantity,
   unitPriceIdr: item.unitPriceIdr,
 }))
