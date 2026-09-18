@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState, type FC } from 'react'
 import { Flower2, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
 import type { CatalogVariantStatus } from '../../store/catalogStoreTypes'
 import { useCatalogStore } from '../../store/catalogStore'
-import { getDefaultCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
 import { formatCatalogVariantLabel, parseCatalogVariantLabel } from '../../domain/catalogVariantLabelDomain'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import type { VariantRow } from './CatalogItemFormSheet'
 import { CatalogProductImagesField } from './CatalogProductImagesField'
 import { generateId } from '../../lib/id'
+import { useUserStore } from '../../store/userStore'
 
 interface Props {
   variants: VariantRow[]
@@ -24,12 +24,13 @@ const VariantField = ({ label, children }: { label: string; children: React.Reac
 
 export const CatalogVariantsSection: FC<Props> = ({ variants, sizeTemplateName, updateVariant, addVariant, removeVariant, productName }) => {
   const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
+  const userRole = useUserStore((state) => state.role)
+  const canViewCost = userRole === 'owner' || userRole === 'finance'
   const [activeIndex, setActiveIndex] = useState(0)
   useEffect(() => setActiveIndex((index) => Math.min(index, Math.max(variants.length - 1, 0))), [variants.length])
 
   const sizeTemplate = useMemo(() => {
-    const requested = sizeTemplateName ? sizeGuideTemplates.find((template) => template.name === sizeTemplateName) : undefined
-    return requested ?? getDefaultCatalogSizeGuide(sizeGuideTemplates)
+    return sizeTemplateName ? sizeGuideTemplates.find((template) => template.name === sizeTemplateName) : undefined
   }, [sizeGuideTemplates, sizeTemplateName])
   const templateSizes = (sizeTemplate?.sizes ?? []).filter((size) => size.isActive !== false)
   const row = variants[activeIndex]
@@ -112,7 +113,7 @@ export const CatalogVariantsSection: FC<Props> = ({ variants, sizeTemplateName, 
           </div>)}</div>}
         </div>
 
-        <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2"><VariantField label="Cost · Owner/Finance"><input type="number" min={0} value={row.cost} onChange={(event) => updateVariant(activeIndex, { cost: event.target.value })} placeholder="Opsional" className={inputClass} /></VariantField></div>
+        {canViewCost && <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2"><VariantField label="Cost · Owner/Finance"><input type="number" min={0} value={row.cost} onChange={(event) => updateVariant(activeIndex, { cost: event.target.value })} placeholder="Opsional" className={inputClass} /></VariantField></div>}
       </article>
     </section>
   )
