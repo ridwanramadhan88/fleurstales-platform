@@ -139,6 +139,7 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
       const template = state.sizeGuideTemplates.find((item) => item.id === templateId)
       if (!template) return state
       const cleanName = patch.name?.trim()
+      if (patch.name !== undefined && !cleanName) return state
       if (cleanName && template.sizes.some((size) => size.id !== sizeId && size.name.toLowerCase() === cleanName.toLowerCase())) return state
       if (!template.sizes.some((size) => size.id === sizeId)) return state
       updated = true
@@ -158,7 +159,7 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
 
   archiveSizeGuideTemplateSize: (templateId, sizeId) => {
     if (!isSectionEditAuthorized('catalog')) return false
-    const inUse = get().products.some((product) => product.variants.some((variant) => variant.sizeOptionId === sizeId && variant.status === 'active'))
+    const inUse = get().products.some((product) => product.variants.some((variant) => variant.sizeOptionId === sizeId))
     if (inUse) return false
     return get().updateSizeGuideTemplateSize(templateId, sizeId, { isActive: false })
   },
@@ -181,6 +182,7 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
 
   assignSizeGuide: (input) => {
     if (!isSectionEditAuthorized('catalog')) return
+    if (!get().sizeGuideTemplates.some((template) => template.id === input.templateId)) return
     set((state) => {
       const withoutSameTarget = state.sizeGuideTargets.filter((target) => input.scope === 'product'
         ? !(target.scope === 'product' && target.productId === input.productId)
