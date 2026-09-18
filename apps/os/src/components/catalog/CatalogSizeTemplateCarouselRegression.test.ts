@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { formatCatalogVariantLabel, parseCatalogVariantLabel } from '../../domain/catalogVariantLabelDomain'
+import { parseCatalogVariantLabel } from '../../domain/catalogVariantLabelDomain'
 import { BOUQUET_STANDARD_SIZES } from '../../store/catalogStoreSizeGuideActions'
 
 const catalogDir = join(process.cwd(), 'src/components/catalog')
@@ -16,9 +16,10 @@ describe('catalog size-template and image-carousel regressions', () => {
     expect(BOUQUET_STANDARD_SIZES.map((item) => item.name)).toEqual(['Small', 'Medium', 'Large'])
   })
 
-  it('uses a template-backed size dropdown while keeping the option manual', () => {
+  it('uses a template-backed size dropdown without free-text additional options', () => {
     expect(variantsSource).toContain('Ukuran · Wajib')
-    expect(variantsSource).toContain('Opsi tambahan · Opsional')
+    expect(variantsSource).not.toContain('Opsi tambahan · Opsional')
+    expect(variantsSource).not.toContain('formatCatalogVariantLabel')
     expect(variantsSource).not.toContain('getDefaultCatalogSizeGuide')
     expect(formSource).not.toContain('getDefaultCatalogSizeGuide')
     expect(variantsSource).not.toContain('placeholder="Example: 05R"')
@@ -38,10 +39,9 @@ describe('catalog size-template and image-carousel regressions', () => {
     expect(imagesSource).toContain('Next product photo')
   })
 
-  it('round-trips a manual option without making it a size template', () => {
-    const stored = formatCatalogVariantLabel('Medium', 'Blue')
-    expect(stored).toBe('Medium · Blue')
-    expect(parseCatalogVariantLabel(stored)).toEqual({ size: 'Medium', option: 'Blue' })
+  it('still parses historical labels without exposing a new option editor', () => {
+    expect(parseCatalogVariantLabel('Medium · Blue')).toEqual({ size: 'Medium', option: 'Blue' })
+    expect(variantsSource).not.toContain('Opsi tambahan')
   })
 
   it('gates catalog cost fields to owner or finance roles', () => {
