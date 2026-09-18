@@ -16,7 +16,6 @@ import { ActionFooter } from '../ui/action-footer'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { FormSection, ValidationSummary } from '../ui/form-patterns'
 import { CATALOG_IMAGE_MAX_COUNT, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../../domain/catalogImageDomain'
-import { parseCatalogVariantLabel } from '../../domain/catalogVariantLabelDomain'
 
 export interface CatalogItemFormSheetProps {
   open: boolean
@@ -155,16 +154,14 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({ open, onCl
     if (!form.productType.trim()) nextErrors.push('Jenis rangkaian wajib dipilih.')
     if (form.variants.length === 0) nextErrors.push('Tambahkan minimal satu product variant.')
 
-    const seenVariantIdentities = new Set<string>()
+    const seenSizeOptionIds = new Set<string>()
     const parsedVariants: NewCatalogVariantInput[] = []
     form.variants.forEach((row, index) => {
       const label = `Variant ${index + 1}`
       if (!row.size.trim()) nextErrors.push(`${label}: ukuran wajib dipilih.`)
       if (row.sizeOptionId) {
-        const option = parseCatalogVariantLabel(row.size).option.trim().toLowerCase()
-        const identity = `${row.sizeOptionId}::${option}`
-        if (seenVariantIdentities.has(identity)) nextErrors.push(`${label}: kombinasi ukuran dan opsi yang sama tidak boleh dipakai dua kali.`)
-        seenVariantIdentities.add(identity)
+        if (seenSizeOptionIds.has(row.sizeOptionId)) nextErrors.push(`${label}: ukuran template yang sama tidak boleh dipakai dua kali.`)
+        seenSizeOptionIds.add(row.sizeOptionId)
       }
       const price = Number.parseInt(row.price, 10)
       if (!Number.isFinite(price) || price <= 0) nextErrors.push(`${label}: harga jual harus lebih dari Rp0.`)
