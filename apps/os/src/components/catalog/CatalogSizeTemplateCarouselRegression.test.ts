@@ -42,9 +42,9 @@ describe('catalog size-template and image-carousel regressions', () => {
   it('keeps view and edit product photos square and carousel-based', () => {
     expect(detailSource).toContain('aspect-square')
     expect(detailSource).toContain('Product image carousel')
-    expect(imagesSource).toContain('Product photo carousel')
-    expect(imagesSource).toContain('Previous product photo')
-    expect(imagesSource).toContain('Next product photo')
+    expect(imagesSource).toContain('Galeri foto produk')
+    expect(imagesSource).toContain('Foto produk sebelumnya')
+    expect(imagesSource).toContain('Foto produk berikutnya')
   })
 
   it('still parses historical labels without exposing a new option editor', () => {
