@@ -8,6 +8,7 @@ import type {
 } from './catalogStoreTypes'
 import { generateId } from '../lib/id'
 import { isSectionEditAuthorized } from '../config/authorization'
+import { isSupabaseConfigured } from '../data/shared/supabaseConfig'
 
 const STORAGE_KEY = 'fleurstales.catalog.size-guides.v1'
 const BOUQUET_STANDARD_NAME = 'Bouquet Standard'
@@ -63,10 +64,18 @@ interface PersistedSizeGuides {
 
 const persist = (state: Pick<CatalogStoreState, 'sizeGuideTemplates' | 'sizeGuideTargets'>) => {
   if (typeof localStorage === 'undefined') return
+  if (isSupabaseConfigured()) {
+    localStorage.removeItem(STORAGE_KEY)
+    return
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ templates: state.sizeGuideTemplates, targets: state.sizeGuideTargets } satisfies PersistedSizeGuides))
 }
 
 export const loadPersistedSizeGuides = (): PersistedSizeGuides => {
+  if (isSupabaseConfigured()) {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(STORAGE_KEY)
+    return { templates: [defaultBouquetTemplate()], targets: [] }
+  }
   if (typeof localStorage === 'undefined') return { templates: [defaultBouquetTemplate()], targets: [] }
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '') as Partial<PersistedSizeGuides>

@@ -401,7 +401,7 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
         ])
       : await Promise.all([
           shared.repositories.catalog.listOccasions(),
-          shared.repositories.catalog.listProducts(),
+          shared.repositories.catalog.listProducts({ includeCosts: role === 'finance' }),
           Promise.resolve({ revision: 0, deletedProductCodes: [] }),
           shared.repositories.catalog.listSizeGuideTemplates(),
           shared.repositories.catalog.listSizeGuideTargets(),
