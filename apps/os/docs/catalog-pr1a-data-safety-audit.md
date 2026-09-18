@@ -72,3 +72,7 @@ The production schema advisor also reports Row Level Security disabled on:
 - `public.finance_period_actions`
 
 This is outside Catalog PR 1A and is not modified by this PR. It should be handled separately with the appropriate Finance policies rather than enabling RLS without policies.
+
+## Merge verification
+
+PR 1A must pass the repository's full CI mode before merge, including both app checks, shared parity/security contracts and the local Supabase database replay/smoke-test gate.
