@@ -93,6 +93,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
   subCategoryFilter,
   sortOption,
   sheetTarget,
+  sheetProduct,
   detailProductId,
   detailProduct,
   manageMode,
@@ -329,7 +330,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
       <CatalogItemFormSheet
         open={sheetTarget !== null}
         onClose={onCloseSheet}
-        product={sheetTarget !== 'new' ? sheetTarget : null}
+        product={sheetProduct}
         categoryOptions={categoryNames}
         arrangementTypeOptions={arrangementTypes}
         onCreate={onCreateProduct}
