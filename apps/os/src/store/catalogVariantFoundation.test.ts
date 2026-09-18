@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { CatalogProduct, CatalogSizeGuideTemplate } from './catalogStoreTypes'
 import { resolveCatalogSizeGuide } from './catalogStoreSizeGuideActions'
+import { buildProduct } from './catalogStoreProductActions'
+import { canSetCatalogVariantStatus } from '../domain/catalogVariantStatusDomain'
 
 describe('catalog variant foundation', () => {
   it('resolves reusable template children while preserving child guide ownership', () => {
@@ -27,6 +29,44 @@ describe('catalog variant foundation', () => {
       ['small', 'https://example.test/small.jpg'],
       ['medium', 'https://example.test/medium.jpg'],
     ])
+  })
+
+  it('deactivates an imported/new product that has no sellable variant', () => {
+    const product = buildProduct({
+      category: 'Birthday',
+      material: 'fresh',
+      name: 'Inactive Rose',
+      variants: [{ size: 'Medium', price: 150000, status: 'inactive' }],
+      isActive: true,
+    }, 'BDY', [], [])
+
+    expect(product.isActive).toBe(false)
+  })
+
+  it('prevents removing the last sellable variant from an active product', () => {
+    const product: CatalogProduct = {
+      id: 'product-active',
+      productId: 'BDY-000001',
+      category: 'Birthday',
+      material: 'fresh',
+      name: 'Active Rose',
+      isActive: true,
+      variants: [{
+        id: 'variant-active',
+        sku: 'BDY-ROSE-M',
+        size: 'Medium',
+        price: 150000,
+        status: 'active',
+      }],
+    }
+
+    expect(canSetCatalogVariantStatus({
+      products: [product],
+      productId: product.id,
+      variantId: 'variant-active',
+      status: 'inactive',
+      role: 'owner',
+    })).toEqual({ ok: false, reason: 'An active product must keep at least one sellable variant.' })
   })
 
   it('keeps stable size option identity separate from the customer-facing label', () => {
