@@ -159,8 +159,10 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
 
   archiveSizeGuideTemplateSize: (templateId, sizeId) => {
     if (!isSectionEditAuthorized('catalog')) return false
-    const inUse = get().products.some((product) => product.variants.some((variant) => variant.sizeOptionId === sizeId))
-    if (inUse) return false
+    const inUseBySellableVariant = get().products.some((product) =>
+      product.variants.some((variant) => variant.sizeOptionId === sizeId && variant.status === 'active'),
+    )
+    if (inUseBySellableVariant) return false
     return get().updateSizeGuideTemplateSize(templateId, sizeId, { isActive: false })
   },
 
