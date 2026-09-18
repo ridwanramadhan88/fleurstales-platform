@@ -252,7 +252,7 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
   },
 
   async listProducts(options) {
-    const [products, occasions, variants, images, costByVariantId, recipeByVariantId] = await Promise.all([
+    const [products, occasions, variants, images, costByVariantId] = await Promise.all([
       client.select('products', {
         filters: options?.includeInactive ? undefined : { is_active: true },
         order: [{ column: 'sort_order' }, { column: 'name' }],
@@ -261,20 +261,18 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
       client.select('product_variants', { order: [{ column: 'sort_order' }] }),
       client.select('product_images', { order: [{ column: 'sort_order' }] }),
       readCostMap(client, options?.includeCosts === true),
-      readRecipeMap(client),
     ])
-    return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client))
+    return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, new Map(), client))
   },
 
   async getProduct(productId) {
-    const [products, occasions, variants, images, recipeByVariantId] = await Promise.all([
+    const [products, occasions, variants, images] = await Promise.all([
       client.select('products', { filters: { id: productId }, limit: 1 }),
       client.select('product_occasions', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_variants', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_images', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
-      readRecipeMap(client),
     ])
-    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), recipeByVariantId, client) : null
+    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), new Map(), client) : null
   },
   async listSizeGuideTemplates() {
     const rows = await client.select('size_guide_templates', { order: [{ column: 'name' }] })
@@ -292,6 +290,31 @@ export const createCatalogAdminRepository = (client: SupabaseHttpClient): Catalo
   const read = createCatalogReadRepository(client)
   return {
     ...read,
+    async listProducts(options) {
+      const [products, occasions, variants, images, costByVariantId, recipeByVariantId] = await Promise.all([
+        client.select('products', {
+          filters: options?.includeInactive ? undefined : { is_active: true },
+          order: [{ column: 'sort_order' }, { column: 'name' }],
+        }),
+        client.select('product_occasions', { order: [{ column: 'sort_order' }] }),
+        client.select('product_variants', { order: [{ column: 'sort_order' }] }),
+        client.select('product_images', { order: [{ column: 'sort_order' }] }),
+        readCostMap(client, options?.includeCosts === true),
+        readRecipeMap(client),
+      ])
+      return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client))
+    },
+    async getProduct(productId) {
+      const [products, occasions, variants, images, costByVariantId, recipeByVariantId] = await Promise.all([
+        client.select('products', { filters: { id: productId }, limit: 1 }),
+        client.select('product_occasions', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
+        client.select('product_variants', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
+        client.select('product_images', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
+        readCostMap(client, true),
+        readRecipeMap(client),
+      ])
+      return products[0] ? mapProduct(products[0], occasions, variants, images, costByVariantId, recipeByVariantId, client) : null
+    },
     async getAdminState() {
       return client.rpc<SharedCatalogAdminState>('get_catalog_admin_state', {})
     },
