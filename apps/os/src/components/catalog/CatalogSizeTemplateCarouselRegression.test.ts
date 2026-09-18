@@ -31,6 +31,12 @@ describe('catalog size-template and image-carousel regressions', () => {
     expect(guideSource).toContain('Tambah ukuran')
   })
 
+  it('blocks size archive only for sellable linked variants', () => {
+    expect(guideSource).toContain('activeSizeUsageCount')
+    expect(guideSource).toContain('disabled={activeUsage > 0}')
+    expect(guideSource).toContain('varian aktif tidak dapat diarsipkan')
+  })
+
   it('keeps view and edit product photos square and carousel-based', () => {
     expect(detailSource).toContain('aspect-square')
     expect(detailSource).toContain('Product image carousel')
