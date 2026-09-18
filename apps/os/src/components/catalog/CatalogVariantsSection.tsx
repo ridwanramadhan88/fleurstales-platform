@@ -2,7 +2,6 @@ import { useMemo, useState, type FC } from 'react'
 import { AlertCircle, CheckCircle2, Link2, Pencil, Plus, Ruler } from 'lucide-react'
 import type { CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
 import type { VariantRow } from './CatalogItemFormSheet'
-import { emptyVariantRow } from './CatalogItemFormSheet'
 import { CatalogVariantEditorDialog } from './CatalogVariantEditorDialog'
 
 interface Props {
@@ -28,6 +27,15 @@ const formatPrice = (value: string): string => {
 
 const statusBadge = (variant: VariantRow): string =>
   variant.status === 'active' ? 'Dijual' : 'Tidak tersedia'
+
+const blankVariant = (): VariantRow => ({
+  size: '',
+  images: [],
+  price: '',
+  cost: '',
+  status: 'active',
+  flowerRecipe: [],
+})
 
 export const CatalogVariantsSection: FC<Props> = ({
   variants,
@@ -74,7 +82,7 @@ export const CatalogVariantsSection: FC<Props> = ({
     if (!size || size.isActive === false) return
     setEditorTarget({
       index: null,
-      variant: { ...emptyVariantRow(), sizeOptionId: size.id, size: size.name },
+      variant: { ...blankVariant(), sizeOptionId: size.id, size: size.name },
       label: 'Atur varian · ' + size.name,
     })
   }
@@ -82,7 +90,7 @@ export const CatalogVariantsSection: FC<Props> = ({
   const openNewUnlinked = () => {
     setEditorTarget({
       index: null,
-      variant: emptyVariantRow(),
+      variant: blankVariant(),
       label: 'Tambah varian belum ditautkan',
     })
   }
