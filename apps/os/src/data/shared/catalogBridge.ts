@@ -9,10 +9,10 @@ import type {
   CatalogProductImage,
   CatalogStoreState,
 } from '../../store/catalogStoreTypes'
-import type { SharedOccasion, SharedProduct, SharedProductImage } from './contracts'
+import type { SharedOccasion, SharedProduct, SharedProductImage, SharedProductImageMetadataInput } from './contracts'
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from './supabaseSession'
-import { buildCatalogImageStoragePlan, syncCatalogProductImagesToRemote } from './catalogImageBridge'
+import { buildCatalogImageStoragePlan, materializeCatalogImagesAfterCommit } from './catalogImageBridge'
 import { applyRemoteSizeGuideLibrary, syncLocalSizeGuideLibrary } from './sizeGuideBridge'
 
 export type CatalogBridgeMode = 'business_os' | 'storefront'
@@ -150,6 +150,24 @@ const mapRemoteCatalog = (
   }
 }
 
+const snapshotImage = (
+  productId: string,
+  image: SharedProductImageMetadataInput,
+): SharedProductImage => ({
+  id: image.id,
+  productId,
+  ...(image.variantId ? { variantId: image.variantId } : {}),
+  storagePath: image.storagePath,
+  publicUrl: image.storagePath,
+  altText: image.altText,
+  sortOrder: image.sortOrder,
+  isPrimary: image.isPrimary,
+  mimeType: image.mimeType,
+  byteSize: image.byteSize,
+  width: image.width,
+  height: image.height,
+})
+
 const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccasion[]; products: SharedProduct[] } => {
   const occasionByName = new Map(state.categories.map((category) => [category.name, category]))
   const occasions: SharedOccasion[] = state.categories.map((category, index) => ({
@@ -166,6 +184,9 @@ const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccas
       .map((name) => occasionByName.get(name)?.id)
       .filter((id): id is string => Boolean(id))
     if (primary && !occasionIds.includes(primary.id)) occasionIds.unshift(primary.id)
+
+    const imagePlan = buildCatalogImageStoragePlan(product)
+    const sharedImages = imagePlan.metadata.map((image) => snapshotImage(product.id, image))
 
     return {
       id: product.id,
@@ -195,6 +216,7 @@ const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccas
         status: variant.status,
         sortOrder: variantIndex,
         ...(variant.cost !== undefined ? { costIdr: variant.cost } : {}),
+        images: sharedImages.filter((image) => image.variantId === variant.id),
         ...(variant.flowerRecipe?.length ? {
           flowerRecipe: variant.flowerRecipe.map((item, recipeIndex) => ({
             id: item.id,
@@ -205,9 +227,7 @@ const buildRemoteSnapshot = (state: CatalogStoreState): { occasions: SharedOccas
           })),
         } : { flowerRecipe: [] }),
       })),
-      // Storage/image writes are handled separately. The snapshot RPC keeps
-      // existing product image rows intact.
-      images: [],
+      images: sharedImages.filter((image) => !image.variantId),
     }
   })
 
@@ -246,21 +266,16 @@ let businessFocusAttached = false
 let storefrontFocusAttached = false
 let saveInFlight = false
 let saveRequestedWhileSaving = false
-const remoteImageHashes = new Map<string, string>()
+const remoteImagePaths = new Set<string>()
 
-const applySyncedProductImages = (
-  synced: Awaited<ReturnType<typeof syncCatalogProductImagesToRemote>>,
-): void => {
-  suppressLocalSync = true
-  try {
-    useCatalogStore.setState((state) => ({
-      products: state.products.map((item) => item.id === synced.product.id ? synced.product : item),
-    }))
-  } finally {
-    suppressLocalSync = false
-  }
-  remoteImageHashes.set(synced.product.id, productImageHash(synced.product))
-}
+const collectRemoteImagePaths = (products: CatalogProduct[]): Set<string> => new Set(
+  products.flatMap((product) => [
+    ...(product.images ?? []),
+    ...product.variants.flatMap((variant) => variant.images ?? []),
+  ])
+    .map((image) => image.storagePath)
+    .filter((path): path is string => Boolean(path) && !path.startsWith('demo/')),
+)
 
 const applyRemoteCatalog = (
   occasions: SharedOccasion[],
@@ -427,8 +442,8 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
     try { applyRemoteSizeGuideLibrary(sizeGuideTemplates, sizeGuideTargets) } finally { suppressLocalSync = false }
     remoteRevision = canManageCatalog ? adminState.revision : undefined
     lastSyncedHash = snapshotHash(useCatalogStore.getState())
-    remoteImageHashes.clear()
-    for (const product of useCatalogStore.getState().products) remoteImageHashes.set(product.id, productImageHash(product))
+    remoteImagePaths.clear()
+    for (const path of collectRemoteImagePaths(useCatalogStore.getState().products)) remoteImagePaths.add(path)
     if (canManageCatalog) ensureBusinessSubscription()
     setBridgeStatus({
       phase: 'remote',
@@ -451,6 +466,10 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
 }
 
 export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = undefined
+  }
   if (remoteRevision === undefined) return false
   if (saveInFlight) {
     saveRequestedWhileSaving = true
@@ -459,92 +478,111 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
 
   const accessToken = getSupabaseAccessToken()
   if (!accessToken) {
-    setBridgeStatus({ phase: 'auth_required', writable: false, message: 'Supabase staff session is missing or expired.' })
+    setBridgeStatus({ phase: 'auth_required', writable: false, message: 'Sesi Supabase staf sudah tidak tersedia.' })
     return false
   }
 
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
   if (!shared.enabled) return false
+
   const currentState = useCatalogStore.getState()
   const currentHash = snapshotHash(currentState)
   if (currentHash === lastSyncedHash) return true
 
   saveInFlight = true
   let succeeded = false
+  let catalogCommitted = false
+  const uploadedPaths: string[] = []
   setBridgeStatus({ phase: 'saving', writable: true, message: undefined })
-  try {
-    let workingRevision = remoteRevision
-    const newProductIds = new Set(
-      currentState.products
-        .filter((product) => !remoteImageHashes.has(product.id))
-        .map((product) => product.id),
-    )
 
-    // Existing products already have a remote parent row, so their image
-    // metadata can safely be synchronized before replacing the Catalog
-    // snapshot. Brand-new products must wait until replaceSnapshot creates
-    // that parent row or the product_images FK rejects the save.
-    for (const product of currentState.products) {
-      if (newProductIds.has(product.id)) continue
-      const imageHash = productImageHash(product)
-      if (remoteImageHashes.get(product.id) === imageHash) continue
-      const synced = await syncCatalogProductImagesToRemote(product, workingRevision)
-      workingRevision = synced.revision
-      remoteRevision = workingRevision
-      applySyncedProductImages(synced)
+  try {
+    const plans = currentState.products.map((product) => ({
+      product,
+      plan: buildCatalogImageStoragePlan(product),
+    }))
+
+    for (const { plan } of plans) {
+      if (plan.unresolvedExternalImages.length > 0) {
+        throw new Error('Satu atau lebih foto produk belum memiliki path Storage. Ganti foto tersebut sebelum menyimpan.')
+      }
+      for (const upload of plan.pendingUploads) {
+        if (remoteImagePaths.has(upload.storagePath)) continue
+        const metadata = plan.metadata.find(
+          (image) => image.id === upload.imageId && image.variantId === upload.variantId,
+        )
+        if (!metadata) throw new Error('Metadata foto tidak lengkap untuk ' + upload.imageId + '.')
+        await shared.repositories.catalogAdmin.uploadProductImage({
+          productId: plan.productId,
+          image: metadata,
+          blob: upload.blob,
+        })
+        uploadedPaths.push(upload.storagePath)
+      }
     }
 
-    const snapshot = buildRemoteSnapshot(useCatalogStore.getState())
+    const snapshot = buildRemoteSnapshot(currentState)
     const result = await shared.repositories.catalogAdmin.replaceSnapshot({
-      baseRevision: workingRevision,
+      baseRevision: remoteRevision,
       occasions: snapshot.occasions,
       products: snapshot.products,
     })
-    workingRevision = result.revision
-    remoteRevision = workingRevision
+    remoteRevision = result.revision
+    catalogCommitted = true
 
-    // New products exist remotely only after replaceSnapshot. Sync their
-    // base and variant images now, chaining the revision from the metadata RPC.
-    for (const product of useCatalogStore.getState().products) {
-      if (!newProductIds.has(product.id)) continue
-      const imageHash = productImageHash(product)
-      const plan = buildCatalogImageStoragePlan(product)
-      if (plan.metadata.length === 0) {
-        remoteImageHashes.set(product.id, imageHash)
-        continue
-      }
-      const synced = await syncCatalogProductImagesToRemote(product, workingRevision)
-      workingRevision = synced.revision
-      remoteRevision = workingRevision
-      applySyncedProductImages(synced)
+    const currentPaths = new Set(
+      plans.flatMap(({ plan }) => plan.metadata.map((image) => image.storagePath))
+        .filter((path) => !path.startsWith('demo/')),
+    )
+    const removedPaths = [...remoteImagePaths].filter((path) => !currentPaths.has(path))
+
+    const publicUrl = (path: string) => shared.repositories.client.storagePublicUrl('product-images', path)
+    suppressLocalSync = true
+    try {
+      useCatalogStore.setState((state) => ({
+        products: state.products.map((product) => materializeCatalogImagesAfterCommit(product, publicUrl)),
+      }))
+    } finally {
+      suppressLocalSync = false
     }
 
-    await shared.repositories.catalogAdmin.replaceFlowerRecipes({
-      baseRevision: remoteRevision,
-      products: snapshot.products,
-    })
-    await shared.repositories.catalogAdmin.replaceArrangementTypes(
-      useCatalogStore.getState().arrangementTypes,
-    )
-    await syncLocalSizeGuideLibrary(shared.repositories.catalogAdmin)
-    lastSyncedHash = snapshotHash(useCatalogStore.getState())
+    remoteImagePaths.clear()
+    currentPaths.forEach((path) => remoteImagePaths.add(path))
+    if (removedPaths.length > 0) {
+      try { await shared.repositories.catalogAdmin.removeProductImageObjects(removedPaths) } catch { /* best-effort object cleanup */ }
+    }
+
+    let secondaryMessage: string | undefined
+    try {
+      await shared.repositories.catalogAdmin.replaceArrangementTypes(
+        useCatalogStore.getState().arrangementTypes,
+      )
+      await syncLocalSizeGuideLibrary(shared.repositories.catalogAdmin)
+      lastSyncedHash = snapshotHash(useCatalogStore.getState())
+    } catch (secondaryError) {
+      secondaryMessage = 'Produk tersimpan, tetapi pengaturan Catalog lain masih perlu disinkronkan: ' + explainError(secondaryError)
+    }
+
     succeeded = true
     setBridgeStatus({
       phase: 'remote',
       writable: true,
       remoteRevision,
       lastSavedAt: new Date().toISOString(),
-      message: undefined,
+      message: secondaryMessage,
     })
     return true
   } catch (error) {
+    if (!catalogCommitted && uploadedPaths.length > 0) {
+      try { await shared.repositories.catalogAdmin.removeProductImageObjects(uploadedPaths) } catch { /* best-effort orphan cleanup */ }
+    }
+
     const message = explainError(error)
     const conflict = /CATALOG_CONFLICT|revision/i.test(message)
     setBridgeStatus({
       phase: conflict ? 'conflict' : 'error',
       writable: true,
       message: conflict
-        ? 'Catalog changed in another OS session. Local edits were kept and were not overwritten; reload the remote catalog before saving again.'
+        ? 'Catalog berubah di sesi lain. Draft lokal tidak ditimpa; muat ulang data terbaru sebelum mencoba menyimpan lagi.'
         : message,
     })
     return false
@@ -591,5 +629,5 @@ export const stopBusinessOsCatalogBridge = (): void => {
   lastSyncedHash = undefined
   saveInFlight = false
   saveRequestedWhileSaving = false
-  remoteImageHashes.clear()
+  remoteImagePaths.clear()
 }
