@@ -11,7 +11,8 @@ import type { CatalogProduct } from '../../store/catalogStoreTypes'
 import { useCatalogStore } from '../../store/catalogStore'
 import { getDisplayPriceIdr } from '../../domain/catalogDomain'
 import { parseCatalogVariantLabel } from '../../domain/catalogVariantLabelDomain'
-import { getDefaultCatalogSizeGuide, resolveCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
+import { resolveCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
+import { useUserStore } from '../../store/userStore'
 
 export interface CatalogProductDetailSheetProps {
   open: boolean
@@ -35,6 +36,8 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
   const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets)
+  const userRole = useUserStore((state) => state.role)
+  const canViewCost = userRole === 'owner' || userRole === 'finance'
 
   const images = product
     ? product.images?.length
@@ -54,7 +57,6 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
 
   const displayPriceIdr = getDisplayPriceIdr(product)
   const sizeTemplate = resolveCatalogSizeGuide(product, sizeGuideTemplates, sizeGuideTargets, { includeLogical: true })
-    ?? getDefaultCatalogSizeGuide(sizeGuideTemplates)
   const activeImage = images[activeImageIndex]
   const goPrevious = () => setActiveImageIndex((current) => current <= 0 ? images.length - 1 : current - 1)
   const goNext = () => setActiveImageIndex((current) => current >= images.length - 1 ? 0 : current + 1)
@@ -124,7 +126,7 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
             </section>
 
             <section className="rounded-xl bg-muted px-3 py-2">
-              <p className="text-2xs font-semibold text-muted-foreground">From</p>
+              <p className="text-2xs font-semibold text-muted-foreground">{product.pricingType === 'Starts From' ? 'Mulai dari' : 'Harga'}</p>
               <p className="text-sm font-semibold leading-5 text-foreground">
                 {product.originalPriceIdr && <span className="mr-1.5 text-2xs text-muted-foreground line-through">{formatter.format(product.originalPriceIdr)}</span>}
                 {formatter.format(displayPriceIdr)}
@@ -149,7 +151,7 @@ export const CatalogProductDetailSheet: FC<CatalogProductDetailSheetProps> = ({
                       </div>
                       <div className="shrink-0 text-right">
                         <p className="font-medium text-foreground">{formatter.format(variant.price)}</p>
-                        {variant.cost !== undefined && <p className="text-2xs text-muted-foreground">Cost {formatter.format(variant.cost)}</p>}
+                        {canViewCost && variant.cost !== undefined && <p className="text-2xs text-muted-foreground">Cost {formatter.format(variant.cost)}</p>}
                       </div>
                     </div>
                   )

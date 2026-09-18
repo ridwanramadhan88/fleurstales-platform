@@ -189,7 +189,7 @@ export const useCatalogTabContentController = ({
     ? (products.find((product) => product.id === detailProductId) ?? null)
     : null
   const allSelected =
-    filteredProducts.length > 0 && selectedIds.size === filteredProducts.length
+    filteredProducts.length > 0 && filteredProducts.every((product) => selectedIds.has(product.id))
   const showingArchivedView = statusFilter === 'archived'
 
   return {
@@ -243,11 +243,12 @@ export const useCatalogTabContentController = ({
       })
     },
     onToggleSelectAll: () => {
-      setSelectedIds(
-        allSelected
-          ? new Set()
-          : new Set(filteredProducts.map((product) => product.id)),
-      )
+      setSelectedIds((previous) => {
+        const next = new Set(previous)
+        if (allSelected) filteredProducts.forEach((product) => next.delete(product.id))
+        else filteredProducts.forEach((product) => next.add(product.id))
+        return next
+      })
     },
     onEditProduct: (productId) => {
       const target = products.find((product) => product.id === productId)
@@ -258,19 +259,27 @@ export const useCatalogTabContentController = ({
       if (target) updateProduct(productId, { isFeatured: !target.isFeatured })
     },
     onToggleProductPromo: (productId) => {
-      const target = products.find((product) => product.id === productId)
-      if (target) updateProduct(productId, { promoLabel: target.promoLabel ? undefined : '-10%' })
+      if (products.some((product) => product.id === productId)) setPromoFeatureDialogOpen(true)
     },
     onToggleProductActive: (productId) => {
       const target = products.find((product) => product.id === productId)
-      if (target) setProductActive(productId, !target.isActive)
+      if (!target) return
+      if (!target.isActive && !target.variants.some((variant) => variant.status === 'active')) {
+        toast({ description: 'Aktifkan minimal satu varian sebelum mengaktifkan produk.' })
+        return
+      }
+      setProductActive(productId, !target.isActive)
     },
     onBulkArchive: () => {
       setProductsActive(Array.from(selectedIds), false)
       setSelectedIds(new Set())
     },
     onBulkUnarchive: () => {
-      setProductsActive(Array.from(selectedIds), true)
+      const selected = products.filter((product) => selectedIds.has(product.id))
+      const activatableIds = selected.filter((product) => product.variants.some((variant) => variant.status === 'active')).map((product) => product.id)
+      const skipped = selected.length - activatableIds.length
+      if (activatableIds.length > 0) setProductsActive(activatableIds, true)
+      if (skipped > 0) toast({ description: `${skipped} produk dilewati karena belum memiliki varian yang dijual.` })
       setSelectedIds(new Set())
     },
     onBulkDelete: () => {
@@ -347,7 +356,12 @@ export const useCatalogTabContentController = ({
       setDetailProductId(null)
     },
     onToggleDetailActive: (isActive) => {
-      if (detailProduct) setProductActive(detailProduct.id, isActive)
+      if (!detailProduct) return
+      if (isActive && !detailProduct.variants.some((variant) => variant.status === 'active')) {
+        toast({ description: 'Aktifkan minimal satu varian sebelum mengaktifkan produk.' })
+        return
+      }
+      setProductActive(detailProduct.id, isActive)
     },
     onCreateProduct: addProduct,
     onUpdateProduct: ({ productId, ...patch }) => {
@@ -372,6 +386,7 @@ export const useCatalogTabContentController = ({
       setCategoryFilter('all')
       setSubCategoryFilter('all')
       setStatusFilter('active')
+      setQuickFilter(null)
     },
   }
 }

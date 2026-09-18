@@ -48,10 +48,12 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) ?? templates[0]
   const activeTemplateId = selectedTemplate?.id ?? ''
 
-  const sizeUsageCount = (sizeId: string, sizeName: string): number => products.reduce(
-    (count, product) => count + product.variants.filter((variant) =>
-      variant.sizeOptionId === sizeId || (!variant.sizeOptionId && variant.size.trim().toLowerCase() === sizeName.trim().toLowerCase()),
-    ).length,
+  const sizeUsageCount = (sizeId: string): number => products.reduce(
+    (count, product) => count + product.variants.filter((variant) => variant.sizeOptionId === sizeId).length,
+    0,
+  )
+  const activeSizeUsageCount = (sizeId: string): number => products.reduce(
+    (count, product) => count + product.variants.filter((variant) => variant.sizeOptionId === sizeId && variant.status === 'active').length,
     0,
   )
 
@@ -153,20 +155,21 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
 
                     <div className="space-y-3">
                       {[...selectedTemplate.sizes].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)).map((size) => {
-                        const usage = sizeUsageCount(size.id, size.name)
+                        const usage = sizeUsageCount(size.id)
+                        const activeUsage = activeSizeUsageCount(size.id)
                         const active = size.isActive !== false
                         return (
                           <div key={size.id} className={`grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_360px] ${active ? '' : 'opacity-60'}`}>
                             <div className="space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 <input value={size.name} onChange={(event) => updateTemplateSize(selectedTemplate.id, size.id, { name: event.target.value })} className={`${inputClass} max-w-[220px]`} aria-label="Nama ukuran" />
-                                <span className="rounded-full bg-muted px-2 py-1 text-2xs text-muted-foreground">{usage} variant</span>
+                                <span className="rounded-full bg-muted px-2 py-1 text-2xs text-muted-foreground">{usage} varian · {activeUsage} dijual</span>
                                 {!active && <span className="rounded-full bg-muted px-2 py-1 text-2xs font-semibold">Diarsipkan</span>}
                               </div>
                               <p className="text-xs text-muted-foreground">Panduan ini diwarisi semua product variant yang memakai {size.name}.</p>
                               {active ? (
-                                <button type="button" disabled={usage > 0} onClick={() => {
-                                  if (!archiveTemplateSize(selectedTemplate.id, size.id)) toast({ description: 'Ukuran yang sedang dipakai variant aktif tidak dapat diarsipkan.' })
+                                <button type="button" disabled={activeUsage > 0} onClick={() => {
+                                  if (!archiveTemplateSize(selectedTemplate.id, size.id)) toast({ description: 'Ukuran yang sedang dipakai varian aktif tidak dapat diarsipkan.' })
                                 }} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"><Archive className="size-3.5" /> Arsipkan</button>
                               ) : (
                                 <button type="button" onClick={() => updateTemplateSize(selectedTemplate.id, size.id, { isActive: true })} className="inline-flex h-9 items-center rounded-full px-3 text-xs font-medium text-primary hover:bg-primary/10">Aktifkan lagi</button>

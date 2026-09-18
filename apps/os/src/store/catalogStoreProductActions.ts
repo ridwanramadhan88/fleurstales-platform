@@ -33,7 +33,13 @@ export const buildProduct = (
     skusInUse.push(sku)
     return materializeVariantImages(internalProductId, { ...variant, id: generateId('var'), sku })
   })
-  const draft = { ...input, id: internalProductId, productId, variants }
+  const draft = {
+    ...input,
+    isActive: input.isActive && variants.some((variant) => variant.status === 'active'),
+    id: internalProductId,
+    productId,
+    variants,
+  }
   const images = assignCatalogImageStoragePaths(draft.id, normalizeCatalogProductImages(draft))
   return { ...draft, images, ...getCatalogProductImageAliases(images) }
 }
@@ -76,6 +82,7 @@ export const createCatalogProductActions = (set: CatalogStoreSet): ProductAction
             return materializeVariantImages(merged.id, { ...variant, id: variant.id ?? generateId('var'), sku })
           })
         }
+        if (merged.isActive && !merged.variants.some((variant) => variant.status === 'active')) merged.isActive = false
         const images = assignCatalogImageStoragePaths(merged.id, normalizeCatalogProductImages(merged))
         return { ...merged, images, ...getCatalogProductImageAliases(images) }
       }),
@@ -95,13 +102,21 @@ export const createCatalogProductActions = (set: CatalogStoreSet): ProductAction
 
   setProductActive: (productId, isActive) => {
     if (!isSectionEditAuthorized('catalog')) return
-    set((state) => ({ products: state.products.map((product) => product.id === productId ? { ...product, isActive } : product) }))
+    set((state) => ({ products: state.products.map((product) => {
+      if (product.id !== productId) return product
+      if (isActive && !product.variants.some((variant) => variant.status === 'active')) return product
+      return { ...product, isActive }
+    }) }))
   },
 
   setProductsActive: (productIds, isActive) => {
     if (!isSectionEditAuthorized('catalog')) return
     const idSet = new Set(productIds)
-    set((state) => ({ products: state.products.map((product) => idSet.has(product.id) ? { ...product, isActive } : product) }))
+    set((state) => ({ products: state.products.map((product) => {
+      if (!idSet.has(product.id)) return product
+      if (isActive && !product.variants.some((variant) => variant.status === 'active')) return product
+      return { ...product, isActive }
+    }) }))
   },
 
   deleteProducts: (productIds) => {

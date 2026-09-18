@@ -23,6 +23,11 @@ describe('catalog size guide resolution', () => {
     expect(resolveCatalogSizeGuide({ id: 'product-1', productType: 'Bouquet' }, templates, targets)?.id).toBe('bouquet')
   })
 
+  it('does not silently fall back to an unrelated template', () => {
+    const templates = [template('bouquet')]
+    expect(resolveCatalogSizeGuide({ id: 'product-1', productType: 'Bouquet' }, templates, [])).toBeUndefined()
+  })
+
   it('lets a product-specific assignment override its arrangement type', () => {
     const templates = [template('bouquet'), template('large-product')]
     const targets: CatalogSizeGuideTarget[] = [

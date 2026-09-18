@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CatalogCategory, CatalogMaterial, CatalogProduct, CatalogProductImage, CatalogVariantStatus } from '../../store/catalogStoreTypes'
 import type { NewCatalogProductInput, NewCatalogVariantInput } from '../../store/catalogStore'
 import { useCatalogStore } from '../../store/catalogStore'
-import { getDefaultCatalogSizeGuide, resolveCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
+import { resolveCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
 import { CatalogProductDetailsSection } from './CatalogProductDetailsSection'
 import { CatalogVariantsSection } from './CatalogVariantsSection'
 import { AppSheet } from '../ui/app-sheet'
@@ -128,7 +128,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({ open, onCl
       sizeGuideTargets,
       { includeLogical: true },
     )
-    return resolved ?? getDefaultCatalogSizeGuide(sizeGuideTemplates)
+    return resolved
   }, [form.productType, product?.id, sizeGuideTargets, sizeGuideTemplates])
 
   useEffect(() => {
@@ -154,14 +154,14 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({ open, onCl
     if (!form.productType.trim()) nextErrors.push('Jenis rangkaian wajib dipilih.')
     if (form.variants.length === 0) nextErrors.push('Tambahkan minimal satu product variant.')
 
-    const seenSizeOptions = new Set<string>()
+    const seenSizeOptionIds = new Set<string>()
     const parsedVariants: NewCatalogVariantInput[] = []
     form.variants.forEach((row, index) => {
       const label = `Variant ${index + 1}`
       if (!row.size.trim()) nextErrors.push(`${label}: ukuran wajib dipilih.`)
       if (row.sizeOptionId) {
-        if (seenSizeOptions.has(row.sizeOptionId)) nextErrors.push(`${label}: ukuran template yang sama tidak boleh dipakai dua kali.`)
-        seenSizeOptions.add(row.sizeOptionId)
+        if (seenSizeOptionIds.has(row.sizeOptionId)) nextErrors.push(`${label}: ukuran template yang sama tidak boleh dipakai dua kali.`)
+        seenSizeOptionIds.add(row.sizeOptionId)
       }
       const price = Number.parseInt(row.price, 10)
       if (!Number.isFinite(price) || price <= 0) nextErrors.push(`${label}: harga jual harus lebih dari Rp0.`)

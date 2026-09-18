@@ -43,7 +43,7 @@ export const CatalogProductRow: FC<CatalogProductRowProps> = ({
   onToggleActive,
 }) => {
   const displayPriceIdr = getDisplayPriceIdr(product)
-  const hasVariants = product.variants.length > 1
+  const showStartsFrom = product.pricingType === 'Starts From'
 
   return (
     <div
@@ -117,7 +117,7 @@ export const CatalogProductRow: FC<CatalogProductRowProps> = ({
 
       <div className="shrink-0 text-right">
         <p className="text-base font-semibold leading-5 text-foreground">
-          {hasVariants ? 'From ' : ''}
+          {showStartsFrom ? 'Mulai ' : ''}
           {formatter.format(displayPriceIdr)}
         </p>
         {product.isFeatured && (
@@ -140,7 +140,7 @@ export const CatalogProductRow: FC<CatalogProductRowProps> = ({
           <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
             {onEdit && <DropdownMenuItem onClick={onEdit}><Pencil className="mr-2 size-4" />Edit product</DropdownMenuItem>}
             {onToggleFeatured && <DropdownMenuItem onClick={onToggleFeatured}><Sparkles className="mr-2 size-4" />{product.isFeatured ? 'Remove featured' : 'Mark as featured'}</DropdownMenuItem>}
-            {onTogglePromo && <DropdownMenuItem onClick={onTogglePromo}><Tag className="mr-2 size-4" />{product.promoLabel ? 'Remove promotion' : 'Add 10% promotion'}</DropdownMenuItem>}
+            {onTogglePromo && <DropdownMenuItem onClick={onTogglePromo}><Tag className="mr-2 size-4" />Manage promotion</DropdownMenuItem>}
             {onToggleActive && <DropdownMenuItem onClick={onToggleActive}>{product.isActive ? <Archive className="mr-2 size-4" /> : <ArchiveRestore className="mr-2 size-4" />}{product.isActive ? 'Archive product' : 'Restore product'}</DropdownMenuItem>}
           </DropdownMenuContent>
         </DropdownMenu>
