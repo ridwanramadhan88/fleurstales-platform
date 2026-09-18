@@ -3,7 +3,6 @@ import type {
   CatalogSizeGuideTarget,
   CatalogSizeGuideTemplate,
 } from '../store/catalogStoreTypes'
-import { parseCatalogVariantLabel } from './catalogVariantLabelDomain'
 
 export type CatalogVariantIntegritySeverity = 'error' | 'warning'
 
@@ -89,7 +88,7 @@ export const auditCatalogVariantIntegrity = (
     if (product.variants.length === 0) continue
 
     const assignedTemplate = findAssignedTemplate(product, templates, targets)
-    const seenVariantIdentities = new Set<string>()
+    const seenSizeOptionIds = new Set<string>()
     const hasStableSizeIdentity = product.variants.some((variant) => Boolean(variant.sizeOptionId))
 
     if (hasStableSizeIdentity && !assignedTemplate) {
@@ -114,19 +113,17 @@ export const auditCatalogVariantIntegrity = (
           message: `${product.name} · ${variant.size} still uses legacy size text without sizeOptionId.`,
         })
       } else {
-        const option = parseCatalogVariantLabel(variant.size).option.trim().toLowerCase()
-        const identity = `${sizeOptionId}::${option}`
-        if (seenVariantIdentities.has(identity)) {
+        if (seenSizeOptionIds.has(sizeOptionId)) {
           issues.push({
             code: 'duplicate_size_option',
             severity: 'error',
             productId: product.id,
             variantId: variant.id,
             sizeOptionId,
-            message: `${product.name} has a duplicate size/option combination for ${variant.size}.`,
+            message: `${product.name} has more than one variant linked to size option ${sizeOptionId}.`,
           })
         }
-        seenVariantIdentities.add(identity)
+        seenSizeOptionIds.add(sizeOptionId)
 
         if (assignedTemplate) {
           const sizeOption = assignedTemplate.sizes.find((size) => size.id === sizeOptionId)
