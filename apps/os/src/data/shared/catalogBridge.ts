@@ -274,7 +274,7 @@ const collectRemoteImagePaths = (products: CatalogProduct[]): Set<string> => new
     ...product.variants.flatMap((variant) => variant.images ?? []),
   ])
     .map((image) => image.storagePath)
-    .filter((path): path is string => Boolean(path) && !path.startsWith('demo/')),
+    .filter((path): path is string => typeof path === 'string' && path.length > 0 && !path.startsWith('demo/')),
 )
 
 const applyRemoteCatalog = (
