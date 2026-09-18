@@ -384,13 +384,26 @@ export const useCatalogTabContentController = ({
     onUpdateProduct: async ({ productId, ...patch }) => {
       const previousProducts = useCatalogStore.getState().products
       const current = previousProducts.find((product) => product.id === productId)
-      updateProduct(productId, patch)
-      for (const variant of patch.variants ?? []) {
-        if (!variant.id) continue
+      const statusChanges = (patch.variants ?? []).flatMap((variant) => {
+        if (!variant.id) return []
         const previous = current?.variants.find((item) => item.id === variant.id)
-        if (previous && previous.status !== variant.status) {
-          setCatalogVariantStatus({ productId, variantId: variant.id, status: variant.status, role: userRole })
+        return previous && previous.status !== variant.status ? [{ variantId: variant.id, status: variant.status }] : []
+      })
+
+      // Activate replacement variants before deactivating the current one so
+      // the "active Product must keep one sellable variant" guard never sees
+      // an invalid intermediate state. When the Product itself is being made
+      // inactive, update that flag first and then apply the status changes.
+      if (patch.isActive !== false) {
+        for (const change of statusChanges.filter((item) => item.status === 'active')) {
+          setCatalogVariantStatus({ productId, variantId: change.variantId, status: change.status, role: userRole })
         }
+      }
+
+      updateProduct(productId, patch)
+
+      for (const change of statusChanges.filter((item) => patch.isActive === false || item.status === 'inactive')) {
+        setCatalogVariantStatus({ productId, variantId: change.variantId, status: change.status, role: userRole })
       }
 
       if (!getCatalogBridgeStatus().remoteConfigured) return true
