@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FC } from 'react'
 import { Flower2, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
 import type { CatalogVariantStatus } from '../../store/catalogStoreTypes'
 import { useCatalogStore } from '../../store/catalogStore'
-import { formatCatalogVariantLabel, parseCatalogVariantLabel } from '../../domain/catalogVariantLabelDomain'
+import { parseCatalogVariantLabel } from '../../domain/catalogVariantLabelDomain'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import type { VariantRow } from './CatalogItemFormSheet'
 import { CatalogProductImagesField } from './CatalogProductImagesField'
@@ -46,7 +46,7 @@ export const CatalogVariantsSection: FC<Props> = ({ variants, sizeTemplateName, 
   const selectSize = (sizeId: string) => {
     const size = templateSizes.find((item) => item.id === sizeId)
     if (!size) return
-    updateVariant(activeIndex, { sizeOptionId: size.id, size: formatCatalogVariantLabel(size.name, parts.option) })
+    updateVariant(activeIndex, { sizeOptionId: size.id, size: size.name })
   }
 
   return (
@@ -76,14 +76,13 @@ export const CatalogVariantsSection: FC<Props> = ({ variants, sizeTemplateName, 
           {variants.length > 1 && <button type="button" onClick={() => removeVariant(activeIndex)} className="inline-flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label="Hapus variant"><Trash2 className="size-4" /></button>}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3">
           <VariantField label="Ukuran · Wajib">
             <Select value={selectedSize?.id} onValueChange={selectSize}>
               <SelectTrigger className={inputClass}><SelectValue placeholder={sizeTemplate ? `Pilih dari ${sizeTemplate.name}` : 'Buat template ukuran dulu'} /></SelectTrigger>
               <SelectContent>{templateSizes.map((size) => <SelectItem key={size.id} value={size.id}>{size.name}</SelectItem>)}</SelectContent>
             </Select>
           </VariantField>
-          <VariantField label="Opsi tambahan · Opsional"><input value={parts.option} onChange={(event) => updateVariant(activeIndex, { size: formatCatalogVariantLabel(parts.size, event.target.value) })} placeholder="Contoh: White" className={inputClass} /></VariantField>
           <VariantField label="Harga jual · Wajib"><input type="number" min={1} inputMode="numeric" value={row.price} onChange={(event) => updateVariant(activeIndex, { price: event.target.value })} placeholder="Rp0" className={inputClass} /></VariantField>
           <VariantField label="Status"><Select value={row.status} onValueChange={(value) => updateVariant(activeIndex, { status: value as CatalogVariantStatus })}><SelectTrigger className={inputClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Dijual</SelectItem><SelectItem value="inactive">Tidak tersedia</SelectItem></SelectContent></Select></VariantField>
         </div>
