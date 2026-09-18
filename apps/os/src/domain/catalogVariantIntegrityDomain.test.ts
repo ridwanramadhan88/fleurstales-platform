@@ -114,6 +114,32 @@ describe('catalog variant integrity audit', () => {
     expect(report.errors).toBe(3)
   })
 
+  it('allows the same size option when the manual option is different', () => {
+    const product = makeProduct({
+      variants: [
+        {
+          id: 'variant-medium-white',
+          sku: 'BOUQ-001-M-WHITE',
+          sizeOptionId: 'medium',
+          size: 'Medium · White',
+          price: 200000,
+          status: 'inactive',
+        },
+        {
+          id: 'variant-medium-pink',
+          sku: 'BOUQ-001-M-PINK',
+          sizeOptionId: 'medium',
+          size: 'Medium · Pink',
+          price: 210000,
+          status: 'inactive',
+        },
+      ],
+    })
+
+    const report = auditCatalogVariantIntegrity([product], [template], assignedTargets)
+    expect(report.issues.map((issue) => issue.code)).not.toContain('duplicate_size_option')
+  })
+
   it('keeps legacy fallbacks visible as warnings instead of destructive failures', () => {
     const product = makeProduct({
       variants: [{
