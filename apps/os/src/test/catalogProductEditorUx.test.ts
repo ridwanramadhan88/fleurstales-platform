@@ -20,8 +20,8 @@ describe('Catalog Product Editor UX regressions', () => {
 
   it('guards unsaved drafts on close and browser navigation', () => {
     expect(formSource).toContain("window.addEventListener('beforeunload'")
-    expect(formSource).toContain("title="Buang perubahan?"")
-    expect(formSource).toContain("cancelLabel="Lanjut edit"")
+    expect(formSource).toContain('title="Buang perubahan?"')
+    expect(formSource).toContain('cancelLabel="Lanjut edit"')
   })
 
   it('keeps a live source reference only for stale-editor detection and never overwrites the form draft', () => {
