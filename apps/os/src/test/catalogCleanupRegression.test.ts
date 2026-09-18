@@ -42,7 +42,7 @@ describe('Catalog cleanup regressions', () => {
 
     expect(row).toContain('Edit product')
     expect(row).toContain('Mark as featured')
-    expect(row).toContain('Add 10% promotion')
+    expect(row).toContain('Manage promotion')
     expect(row).toContain('Archive product')
   })
 
