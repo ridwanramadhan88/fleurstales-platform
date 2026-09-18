@@ -114,7 +114,7 @@ describe('catalog variant integrity audit', () => {
     expect(report.errors).toBe(3)
   })
 
-  it('allows the same size option when the manual option is different', () => {
+  it('rejects duplicate size identity even when historical labels contain different options', () => {
     const product = makeProduct({
       variants: [
         {
@@ -137,7 +137,7 @@ describe('catalog variant integrity audit', () => {
     })
 
     const report = auditCatalogVariantIntegrity([product], [template], assignedTargets)
-    expect(report.issues.map((issue) => issue.code)).not.toContain('duplicate_size_option')
+    expect(report.issues.map((issue) => issue.code)).toContain('duplicate_size_option')
   })
 
   it('keeps legacy fallbacks visible as warnings instead of destructive failures', () => {
