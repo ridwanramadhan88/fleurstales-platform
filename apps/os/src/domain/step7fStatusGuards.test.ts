@@ -30,8 +30,8 @@ it('blocks broad product patches from changing existing variant status', () => {
   useCatalogStore.getState().updateProduct('p1', { variants: [{ ...product.variants[0], status: 'inactive' }] })
   expect(useCatalogStore.getState().products[0].variants[0].status).toBe('active')
 })
-it('changes existing variant status only through the guarded command', () => {
+it('guards existing variant status and protects the last sellable variant', () => {
   expect(canSetCatalogVariantStatus({ products: [product], productId: 'p1', variantId: 'v1', status: 'inactive', role: 'florist' }).ok).toBe(false)
-  expect(useCatalogStore.getState().setCatalogVariantStatus({ productId: 'p1', variantId: 'v1', status: 'inactive', role: 'admin' })).toBe(true)
-  expect(useCatalogStore.getState().products[0].variants[0].status).toBe('inactive')
+  expect(useCatalogStore.getState().setCatalogVariantStatus({ productId: 'p1', variantId: 'v1', status: 'inactive', role: 'admin' })).toBe(false)
+  expect(useCatalogStore.getState().products[0].variants[0].status).toBe('active')
 })
