@@ -37,7 +37,8 @@ describe('Catalog product editor persistence regressions', () => {
     expect(formSource).toContain('Data baru tersimpan saat tombol Simpan dipilih.')
     expect(formSource).toContain('await onUpdate({ productId: product.id, ...common })')
     expect(variantEditorSource).toContain('hanya masuk ke draft produk setelah memilih Terapkan')
-    expect(variantEditorSource).toContain('>Terapkan<')
+    expect(variantEditorSource).toContain('onApply(draft)')
+    expect(variantEditorSource).toContain('Terapkan')
   })
 
   it('waits for remote persistence and restores the store after a failed editor save', () => {
