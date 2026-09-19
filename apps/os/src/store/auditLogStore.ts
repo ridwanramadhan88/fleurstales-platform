@@ -20,7 +20,7 @@ export interface AuditActor {
 
 export interface AuditEvent {
   id: string
-  entityType: 'order' | 'system'
+  entityType: 'order' | 'catalog' | 'system'
   entityId: string
   entityLabel?: string
   action: string
