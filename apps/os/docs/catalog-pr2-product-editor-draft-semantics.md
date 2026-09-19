@@ -62,3 +62,7 @@ When switching which variant is sellable, new active variants are applied before
 - final CI gate
 
 No migration is applied manually to production in this PR.
+
+## Verification rerun
+
+The two stale source-string regression assertions discovered by the first full run were updated to the current Product Editor contract. A fresh full CI run is required after those test-only corrections.
