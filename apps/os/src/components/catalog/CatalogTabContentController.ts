@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import {
   useCatalogStore,
@@ -160,6 +160,10 @@ export const useCatalogTabContentController = ({
   const [sizeGuideDialogOpen, setSizeGuideDialogOpen] = useState(false)
   const [quickFilter, setQuickFilter] = useState<'featured' | 'promo' | null>(null)
   const [visibleProductCount, setVisibleProductCount] = useState(CATALOG_INITIAL_VISIBLE_COUNT)
+
+  useEffect(() => {
+    setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
+  }, [searchQuery])
 
   const overview = useMemo(() => getCatalogOverviewStats(products), [products])
   const categoryNames = useMemo(() => categories.map((category) => category.name), [categories])
