@@ -17,6 +17,9 @@ A variant is Storefront-sellable when:
 An active linked variant whose child no longer belongs to the effective template is treated as
 **needs review** and is excluded from Storefront purchase surfaces. Business OS keeps the row intact.
 
+This is the final D4 behavior used by PR 5: review-required linked variants remain preserved internally
+but are not customer-purchasable until staff resolves the stable size assignment.
+
 Products with no Storefront-sellable variants are excluded from customer listings and direct Product routes.
 
 ## Variant-specific customer data
