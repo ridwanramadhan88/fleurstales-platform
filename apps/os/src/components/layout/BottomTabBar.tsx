@@ -51,7 +51,7 @@ export const BottomTabBar: FC<BottomTabBarViewModel> = ({
         aria-current={isActive ? 'page' : undefined}
       >
         <Icon className="size-[22px]" strokeWidth={isActive ? 2.35 : 2} />
-        <span className="w-full truncate text-[11px] font-semibold leading-none">
+        <span className="w-full truncate text-xs font-semibold leading-none">
           {tab.label}
         </span>
       </button>
