@@ -76,7 +76,7 @@ export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
     <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <h1 className="font-display text-[1.35rem] font-semibold leading-tight text-foreground sm:text-2xl">
+          <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
             {TITLE_BY_SUB_TAB[activeOrdersSubTab]}
           </h1>
           <InfoHint label="About this orders view">
