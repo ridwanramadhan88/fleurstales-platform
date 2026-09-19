@@ -1,7 +1,8 @@
-import type { FC } from 'react'
+import { useState, type FC } from 'react'
 import type { CatalogProduct } from '../../store/catalogStoreTypes'
 import { getDisplayPriceIdr, getPromoPercentLabel } from '../../domain/catalogDomain'
 import { getStorefrontProductThumbnail } from './storefrontProductImages'
+import { formatIdr } from '../../lib/currency'
 
 export interface StorefrontProductCardProps {
   product: CatalogProduct
@@ -21,6 +22,7 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
   const promoPercentLabel = getPromoPercentLabel(product, displayPriceIdr)
   const displayImage = getStorefrontProductThumbnail(product)
   const isCollection = presentation === 'collection'
+  const [imageFailed, setImageFailed] = useState(false)
 
   return (
     <article className="group min-w-0 text-left">
@@ -37,12 +39,21 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
         aria-label={`View ${product.name}`}
         className="sf-product-card-image relative aspect-[4/5] w-full cursor-pointer overflow-hidden bg-[#eee4cc] outline-none transition-transform duration-200 active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-black/25"
       >
-        <img
-          src={displayImage}
-          alt=""
-          aria-hidden="true"
-          className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.025]"
-        />
+        {displayImage && !imageFailed ? (
+          <img
+            src={displayImage}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            onError={() => setImageFailed(true)}
+            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.025]"
+          />
+        ) : (
+          <span className="absolute inset-0 grid place-items-center bg-[#eee4cc] px-4 text-center sf-type-2 font-medium text-black/42" aria-hidden="true">
+            Fleurstales
+          </span>
+        )}
 
         {promoPercentLabel && (
           <span className="sf-promo-badge absolute left-3 top-3 z-[1] max-w-[75%] bg-[#f569a3] text-black sm:left-4 sm:top-4">
@@ -67,12 +78,11 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
         <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
           {product.originalPriceIdr && (
             <span className={isCollection ? 'sf-card-old-price text-black/42 line-through' : 'sf-type-1 text-black/45 line-through'}>
-              Rp. {formatter.format(product.originalPriceIdr)}
+              {formatIdr(product.originalPriceIdr, formatter)}
             </span>
           )}
           <span className={isCollection ? 'sf-card-price text-black' : 'sf-type-2 font-medium leading-5 text-black'}>
-            {hasVariants ? 'From Rp. ' : 'Rp. '}
-            {formatter.format(displayPriceIdr)}
+            {hasVariants ? 'From ' : ''}{formatIdr(displayPriceIdr, formatter)}
           </span>
         </div>
         {!isCollection && product.isCustomizable && (
