@@ -24,8 +24,8 @@ begin
   select pg_get_functiondef('public.replace_catalog_snapshot(bigint,jsonb,jsonb)'::regprocedure)
   into v_catalog_source;
 
-  if position('exists(select 1 from public.order_items oi where oi.variant_id=pv.id)' in replace(v_catalog_source,' ','')) = 0
-     and position('public.order_items' in v_catalog_source) = 0 then
+  if position('public.order_items' in v_catalog_source) = 0
+     or position('oi.variant_id=pv.id' in replace(v_catalog_source,' ','')) = 0 then
     raise exception 'Catalog snapshot does not protect ordered variants from hard deletion';
   end if;
 
@@ -64,19 +64,6 @@ begin
      or position('catalog.size_template_assignments.update' in v_size_source) = 0 then
     raise exception 'Size Template historical identity or assignment audit contract is missing';
   end if;
-
-  for v_catalog_source in
-    select tgname
-    from pg_trigger
-    where not tgisinternal
-      and (
-        (tgrelid='public.products'::regclass and tgname='trg_catalog_product_audit')
-        or (tgrelid='public.product_variants'::regclass and tgname='trg_catalog_variant_audit')
-        or (tgrelid='public.product_variant_costs'::regclass and tgname='trg_catalog_variant_cost_audit')
-      )
-  loop
-    null;
-  end loop;
 
   if not exists (
     select 1 from pg_trigger
