@@ -1,7 +1,7 @@
 import type { FinanceWorkspaceModule } from '../../domain/financeWorkspaceDomain'
 
 export type FinanceWorkspaceFocus =
-  | { module: 'order_verification'; view: 'all' | 'needs_correction' }
+  | { module: 'order_verification'; view: 'all' | 'needs_correction'; orderNumber?: string }
   | { module: 'refunds'; view: 'pending' }
   | { module: 'payroll'; view: 'review' | 'ready' | 'history'; proposalId?: string }
   | { module: 'ledger'; view: 'legacy' }

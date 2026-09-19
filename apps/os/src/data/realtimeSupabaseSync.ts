@@ -53,6 +53,7 @@ const DISPLAY_KINDS = new Set<AlertKind>([
   'payroll_rejected',
   'payroll_approved',
   'payroll_paid',
+  'authorization_changed',
 ])
 
 const DISPLAY_TARGETS = new Set<NonNullable<NotificationItem['target']>>([
@@ -86,8 +87,9 @@ let auditRefreshTimer: ReturnType<typeof setTimeout> | undefined
 
 const notificationFromRow = (row: StaffNotificationRow): NotificationRecord | null => {
   if (!DISPLAY_KINDS.has(row.kind as AlertKind)) return null
-  const target = row.target && DISPLAY_TARGETS.has(row.target as NonNullable<NotificationItem['target']>)
-    ? row.target as NonNullable<NotificationItem['target']>
+  const normalizedTarget = row.target === 'finance_orders' ? 'finance_order_verification' : row.target
+  const target = normalizedTarget && DISPLAY_TARGETS.has(normalizedTarget as NonNullable<NotificationItem['target']>)
+    ? normalizedTarget as NonNullable<NotificationItem['target']>
     : undefined
   const severity = DISPLAY_SEVERITIES.has(row.severity as AlertSeverity)
     ? row.severity as AlertSeverity

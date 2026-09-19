@@ -60,6 +60,7 @@ import { canViewScheduling } from '../domain/hrSchedulingDomain'
 import { FinanceWorkspaceTabs } from '../components/finance/FinanceWorkspaceTabs'
 import { FinanceModuleHeader } from '../components/finance/FinanceModuleHeader'
 import { FinanceCashFlowOverview } from '../components/finance/FinanceCashFlowOverview'
+import { requestFinanceWorkspaceNavigation } from '../components/finance/financeWorkspaceNavigation'
 import { getDefaultFinanceWorkspaceModule, getFinanceWorkspaceModules, type FinanceWorkspaceModule } from '../domain/financeWorkspaceDomain'
 import { toast } from '../hooks/use-toast'
 import { requestAppConfirmation } from '../components/ui/app-confirm'
@@ -295,6 +296,12 @@ const HomePage: FC<HomePageProps> = ({
       if (activeTab !== target.tab) setSearchQuery('')
 
       if (nextFinanceModule) setFinanceModule(nextFinanceModule)
+      if (target.tab === 'finance' && target.financeModule === 'order_verification' && target.targetId) {
+        requestFinanceWorkspaceNavigation({ module: 'order_verification', view: 'all', orderNumber: target.targetId })
+      }
+      if (target.tab === 'finance' && target.financeModule === 'payroll' && target.targetId) {
+        requestFinanceWorkspaceNavigation({ module: 'payroll', view: 'review', proposalId: target.targetId })
+      }
 
       if (target.tab === 'orders') {
         if (target.ordersSubTab) setActiveOrdersSubTab(target.ordersSubTab)
@@ -346,9 +353,9 @@ const HomePage: FC<HomePageProps> = ({
     const didNavigate = item.target === 'order' && item.orderNumber
       ? navigate(toOrders({ orderNumber: item.orderNumber }))
       : item.target === 'finance_order_verification'
-        ? navigate(toFinanceModule('order_verification'))
+        ? navigate({ ...toFinanceModule('order_verification'), targetId: item.targetId ?? item.orderNumber })
         : item.target === 'finance_payroll'
-          ? navigate(toFinanceModule('payroll'))
+          ? navigate({ ...toFinanceModule('payroll'), targetId: item.targetId })
         : item.target === 'hr_attendance'
           ? navigate(toHrSection('attendance', item.targetId))
           : item.target === 'hr_reports'
