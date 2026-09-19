@@ -12,6 +12,7 @@ interface Props {
   setForm: Dispatch<SetStateAction<CatalogFormState>>
   readOnlyInputClass: string
   labelClass: string
+  fieldErrors?: Partial<Record<'name' | 'category' | 'productType', string>>
 }
 
 const inputClass = 'h-11 w-full rounded-xl border border-border bg-card px-3.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20'
@@ -25,6 +26,7 @@ export const CatalogProductDetailsSection: FC<Props> = ({
   setForm,
   readOnlyInputClass,
   labelClass,
+  fieldErrors = {},
 }) => {
   const update = <K extends keyof CatalogFormState>(field: K, value: CatalogFormState[K]) =>
     setForm((previous) => ({ ...previous, [field]: value }))
@@ -50,19 +52,28 @@ export const CatalogProductDetailsSection: FC<Props> = ({
       <div className="grid min-w-0 gap-4 sm:grid-cols-2">
         {product ? (
           <div className="space-y-1.5 sm:col-span-2">
-            <label className={labelClass}>ID produk</label>
+            <label className={labelClass}>Product ID</label>
             <input value={product.productId} disabled className={readOnlyInputClass} />
-            <p className="text-xs text-muted-foreground">Dibuat otomatis oleh sistem dan tidak berubah.</p>
+            <p className="text-xs text-muted-foreground">Generated automatically by the system and never changes.</p>
           </div>
         ) : null}
 
         <div className="space-y-1.5 sm:col-span-2">
-          <label className={labelClass}>Nama produk · Wajib</label>
-          <input value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Contoh: Omakase - Bridal Bouquet" className={inputClass} />
+          <label className={labelClass}>Product name · Required</label>
+          <input
+            id="catalog-product-name"
+            value={form.name}
+            onChange={(event) => update('name', event.target.value)}
+            placeholder="Example: Omakase - Bridal Bouquet"
+            className={inputClass + (fieldErrors.name ? ' border-destructive focus:border-destructive focus:ring-destructive/20' : '')}
+            aria-invalid={Boolean(fieldErrors.name)}
+            aria-describedby={fieldErrors.name ? 'catalog-product-name-error' : undefined}
+          />
+          {fieldErrors.name ? <p id="catalog-product-name-error" className="text-xs text-destructive" role="alert">{fieldErrors.name}</p> : null}
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelClass}>Occasion utama · Wajib</label>
+          <label className={labelClass}>Primary moment · Required</label>
           <Select
             value={form.category}
             onValueChange={(value) => setForm((previous) => ({
@@ -71,60 +82,72 @@ export const CatalogProductDetailsSection: FC<Props> = ({
               occasionTags: [...new Set([value, ...previous.occasionTags])],
             }))}
           >
-            <SelectTrigger className={selectClass}><SelectValue placeholder="Pilih occasion" /></SelectTrigger>
+            <SelectTrigger
+              id="catalog-product-category"
+              className={selectClass + (fieldErrors.category ? ' border-destructive focus:ring-destructive/20' : '')}
+              aria-invalid={Boolean(fieldErrors.category)}
+              aria-describedby={fieldErrors.category ? 'catalog-product-category-error' : undefined}
+            ><SelectValue placeholder="Select moment" /></SelectTrigger>
             <SelectContent>{categoryOptions.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent>
           </Select>
+          {fieldErrors.category ? <p id="catalog-product-category-error" className="text-xs text-destructive" role="alert">{fieldErrors.category}</p> : null}
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelClass}>Jenis material · Wajib</label>
+          <label className={labelClass}>Material · Required</label>
           <Select value={form.material} onValueChange={(value) => update('material', value as CatalogMaterial)}>
             <SelectTrigger className={selectClass}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="fresh">Segar</SelectItem>
-              <SelectItem value="artificial">Artifisial</SelectItem>
+              <SelectItem value="fresh">Fresh</SelectItem>
+              <SelectItem value="artificial">Artificial</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelClass}>Jenis rangkaian · Wajib</label>
+          <label className={labelClass}>Arrangement type · Required</label>
           <Select value={form.productType} onValueChange={(value) => update('productType', value)}>
-            <SelectTrigger className={selectClass}><SelectValue placeholder="Pilih jenis rangkaian" /></SelectTrigger>
+            <SelectTrigger
+              id="catalog-product-type"
+              className={selectClass + (fieldErrors.productType ? ' border-destructive focus:ring-destructive/20' : '')}
+              aria-invalid={Boolean(fieldErrors.productType)}
+              aria-describedby={fieldErrors.productType ? 'catalog-product-type-error' : undefined}
+            ><SelectValue placeholder="Select arrangement type" /></SelectTrigger>
             <SelectContent>{arrangementTypeOptions.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
           </Select>
+          {fieldErrors.productType ? <p id="catalog-product-type-error" className="text-xs text-destructive" role="alert">{fieldErrors.productType}</p> : null}
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelClass}>Koleksi / Seri</label>
+          <label className={labelClass}>Collection / Series</label>
           <input value={form.collectionSeries} onChange={(event) => update('collectionSeries', event.target.value)} placeholder="Contoh: Omakase" className={inputClass} />
-          <p className="text-xs text-muted-foreground">Disimpan terpisah; nama Storefront mengikuti Koleksi / Seri - Nama Produk.</p>
+          <p className="text-xs text-muted-foreground">Disimpan terpisah; nama Storefront mengikuti Collection / Series - Nama Produk.</p>
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelClass}>Jenis harga</label>
+          <label className={labelClass}>Pricing type</label>
           <Select value={form.pricingType} onValueChange={(value) => update('pricingType', value as CatalogFormState['pricingType'])}>
             <SelectTrigger className={selectClass}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Fixed">Harga tetap</SelectItem>
-              <SelectItem value="Starts From">Mulai dari</SelectItem>
+              <SelectItem value="Fixed">Fixed price</SelectItem>
+              <SelectItem value="Starts From">Starts from</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelClass}>Jenis pesanan</label>
+          <label className={labelClass}>Order type</label>
           <Select value={form.orderType} onValueChange={(value) => update('orderType', value as CatalogFormState['orderType'])}>
             <SelectTrigger className={selectClass}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="Catalog">Katalog</SelectItem>
-              <SelectItem value="Custom">Kustom</SelectItem>
+              <SelectItem value="Catalog">Catalog</SelectItem>
+              <SelectItem value="Custom">Custom</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <label className={labelClass}>Tag occasion</label>
+          <label className={labelClass}>Moment tags</label>
           <div className="flex flex-wrap gap-2">
             {categoryOptions.map((occasion) => {
               const checked = form.occasionTags.includes(occasion)
@@ -133,7 +156,7 @@ export const CatalogProductDetailsSection: FC<Props> = ({
                   key={occasion}
                   type="button"
                   onClick={() => toggleOccasion(occasion)}
-                  className={'min-h-10 rounded-full border px-4 text-sm font-medium transition ' + (checked
+                  className={'min-h-11 rounded-full border px-4 text-sm font-medium transition ' + (checked
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border bg-card text-foreground hover:bg-muted')}
                 >
@@ -142,37 +165,37 @@ export const CatalogProductDetailsSection: FC<Props> = ({
               )
             })}
           </div>
-          <p className="text-xs text-muted-foreground">Produk dapat tampil di beberapa occasion. Occasion utama selalu ikut disertakan.</p>
+          <p className="text-xs text-muted-foreground">Products can appear in multiple moments. The primary moment is always included.</p>
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelClass}>Ketersediaan · Wajib</label>
+          <label className={labelClass}>Availability · Required</label>
           <Select value={form.availability} onValueChange={(value) => update('availability', value as 'active' | 'inactive')}>
             <SelectTrigger className={selectClass}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="active">Aktif</SelectItem>
-              <SelectItem value="inactive">Nonaktif</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <label className={labelClass}>Kustomisasi</label>
+          <label className={labelClass}>Customization</label>
           <Select value={form.isCustomizable} onValueChange={(value) => update('isCustomizable', value as 'yes' | 'no')}>
             <SelectTrigger className={selectClass}><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="no">Tidak dapat dikustomisasi</SelectItem>
-              <SelectItem value="yes">Dapat dikustomisasi</SelectItem>
+              <SelectItem value="no">Not customizable</SelectItem>
+              <SelectItem value="yes">Customizable</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5 sm:col-span-2">
-          <label className={labelClass}>Deskripsi</label>
+          <label className={labelClass}>Description</label>
           <textarea
             value={form.description}
             onChange={(event) => update('description', event.target.value)}
-            placeholder="Tulis informasi yang perlu diketahui pelanggan dan staf tentang produk ini."
+            placeholder="Write information customers and staff should know about this product."
             rows={4}
             className={inputClass + ' h-auto resize-y py-3 leading-5'}
           />
