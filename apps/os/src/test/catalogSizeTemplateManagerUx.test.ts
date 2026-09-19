@@ -16,7 +16,7 @@ describe('Catalog Size Template manager regressions', () => {
 
   it('separates Arrangement Type defaults from Product overrides and shows the effective template', () => {
     expect(guideSource).toContain('Default Jenis rangkaian')
-    expect(guideSource).toContain('Override produk')
+    expect(guideSource).toContain('Template khusus produk')
     expect(guideSource).toContain('Template efektif')
     expect(guideSource).toContain('Gunakan default Jenis rangkaian')
     expect(guideSource).toContain("target.scope === 'product_type'")
