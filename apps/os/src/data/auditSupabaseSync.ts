@@ -24,7 +24,9 @@ const OUTCOMES = new Set<AuditOutcome>(['succeeded', 'denied', 'conflict'])
 
 const mapAuditEvent = (row: SecurityAuditRow): AuditEvent => ({
   id: row.id,
-  entityType: row.entity_type === 'order' ? 'order' : 'system',
+  entityType: row.entity_type === 'order'
+    ? 'order'
+    : row.entity_type.startsWith('catalog_') ? 'catalog' : 'system',
   entityId: row.entity_id,
   entityLabel: row.entity_type,
   action: row.action,
