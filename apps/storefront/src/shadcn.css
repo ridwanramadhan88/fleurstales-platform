@@ -5233,7 +5233,9 @@ html.dark .storefront-font .text-black {
   .storefront-home__flower {
     display: none;
   }
+}
 
+@media (min-width: 768px) {
   .storefront-product-detail-info {
     position: static;
     top: auto;
