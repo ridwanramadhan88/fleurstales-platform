@@ -277,7 +277,9 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         const element = document.getElementById(target.id)
-        element?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        if (typeof element?.scrollIntoView === 'function') {
+          element.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
         element?.focus()
       })
     })
@@ -385,6 +387,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
 
     if (!parsedVariants.some((variant) => variant.status === 'active')) {
       nextErrors.push('Minimal satu varian harus berstatus Dijual.')
+      form.variants.forEach((_, index) => nextVariantErrorIndexes.add(index))
       hasVariantError = true
     }
 
