@@ -260,7 +260,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
         <div className="flex min-w-0 items-center gap-2">
           <p className="text-xs font-medium text-muted-foreground">
             {filteredProducts.length} product{filteredProducts.length === 1 ? '' : 's'}
-            {filteredProducts.length > visibleProducts.length ? ` · showing ${visibleProducts.length}` : ''}
+            {filteredProducts.length > visibleProducts.length ? ` · ${visibleProducts.length}/${filteredProducts.length}` : ''}
           </p>
           {quickFilter && (
             <button
