@@ -167,7 +167,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   const [activeTab, setActiveTab] = useState<'info' | 'variants'>('info')
   const [isSaving, setIsSaving] = useState(false)
 
-  const sizeTemplate = useMemo(
+  const assignedSizeTemplate = useMemo(
     () => resolveCatalogSizeGuide(
       { id: product?.id ?? '__new__', productType: form.productType || undefined },
       sizeGuideTemplates,
@@ -176,6 +176,18 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     ),
     [form.productType, product?.id, sizeGuideTargets, sizeGuideTemplates],
   )
+  const usableSizeTemplates = useMemo(
+    () => sizeGuideTemplates.filter((template) => template.sizes.some((size) => size.isActive !== false)),
+    [sizeGuideTemplates],
+  )
+  // A newly-created Product has no Product-specific target yet. When there is
+  // exactly one usable template in the library, expose it as the draft
+  // template instead of incorrectly presenting the library as unavailable.
+  // Multiple usable templates remain explicit: the Arrangement Type must have
+  // a default assignment so we never guess which size model applies.
+  const sizeTemplate = assignedSizeTemplate
+    ?? (!product && usableSizeTemplates.length === 1 ? usableSizeTemplates[0] : undefined)
+  const usingUnassignedNewProductFallback = Boolean(!assignedSizeTemplate && !product && sizeTemplate)
 
   useEffect(() => {
     if (!open) return
@@ -422,8 +434,18 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
               <TabsContent value="variants" className="mt-0">
                 <FormSection
                   title="Varian & ukuran"
-                  description={sizeTemplate ? 'Template: ' + sizeTemplate.name + '. Slot ukuran tidak membuat varian sampai dikonfigurasi.' : 'Belum ada template ukuran yang ditetapkan untuk jenis rangkaian ini.'}
+                  description={sizeTemplate
+                    ? 'Template: ' + sizeTemplate.name + '. Slot ukuran tidak membuat varian sampai dikonfigurasi.'
+                    : usableSizeTemplates.length > 0
+                      ? 'Template ukuran tersedia, tetapi belum ditetapkan untuk jenis rangkaian ini. Atur di Template ukuran → Penetapan.'
+                      : 'Belum ada template ukuran yang memiliki ukuran aktif.'}
                 >
+                  {usingUnassignedNewProductFallback ? (
+                    <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                      <p className="text-sm font-semibold text-foreground">Menggunakan {sizeTemplate?.name}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Ini satu-satunya template dengan ukuran aktif. Tetapkan sebagai default Jenis rangkaian di Template ukuran → Penetapan agar produk berikutnya memakai template yang sama secara eksplisit.</p>
+                    </div>
+                  ) : null}
                   <CatalogVariantsSection
                     variants={form.variants}
                     sizeTemplate={sizeTemplate}
