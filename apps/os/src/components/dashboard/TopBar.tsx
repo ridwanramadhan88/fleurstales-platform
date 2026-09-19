@@ -115,7 +115,7 @@ export const TopBar: FC<TopBarViewModel> = ({
               type="button"
               onClick={onToggleBranchMenu}
               disabled={!canSwitchBranch}
-              className={`mt-0.5 flex max-w-[11rem] items-center gap-1 text-left text-xs text-muted-foreground transition ${
+              className={`mt-0.5 flex min-h-11 max-w-[11rem] items-center gap-1 rounded-lg pr-2 text-left text-xs text-muted-foreground transition ${
                 canSwitchBranch ? "hover:text-foreground" : "cursor-default"
               }`}
               aria-haspopup="listbox"
@@ -129,23 +129,9 @@ export const TopBar: FC<TopBarViewModel> = ({
           </div>
         </div>
 
-        <div className="hidden min-w-0 items-center gap-1 md:flex xl:gap-2">
+        <div className="hidden min-w-0 items-center md:flex">
           <span className="shrink-0 text-xs font-medium text-muted-foreground lg:text-sm">{today}</span>
-          <button
-            ref={desktopBranchTriggerRef}
-            type="button"
-            onClick={onToggleBranchMenu}
-            disabled={!canSwitchBranch}
-            className={`inline-flex h-10 min-w-0 items-center gap-1.5 rounded-full px-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 xl:gap-2 xl:px-3 ${
-              canSwitchBranch ? "hover:bg-muted/70" : "cursor-default opacity-70"
-            }`}
-            aria-haspopup="listbox"
-            aria-expanded={branchMenuOpen}
-          >
-            <Store className="size-4 shrink-0" />
-            <span className="max-w-20 truncate lg:max-w-28 xl:max-w-40">{branchDisplayLabel}</span>
-            {canSwitchBranch && <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />}
-          </button>
+          <span ref={desktopBranchTriggerRef} className="hidden" aria-hidden="true" />
         </div>
       </div>
 
@@ -177,7 +163,7 @@ export const TopBar: FC<TopBarViewModel> = ({
               : "Notifications"
           }
           onClick={() => onOpenNotifications?.()}
-          className="relative flex size-10 items-center justify-center rounded-full bg-transparent text-foreground transition hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 active:bg-muted"
+          className="relative flex size-11 items-center justify-center rounded-full bg-transparent text-foreground transition hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 active:bg-muted"
         >
           <Bell className="size-[18px]" strokeWidth={2.15} />
           {notificationCount > 0 && (
@@ -193,7 +179,7 @@ export const TopBar: FC<TopBarViewModel> = ({
             onClick={onToggleProfileMenu}
             aria-haspopup="menu"
             aria-expanded={profileMenuOpen}
-            className="flex h-10 items-center gap-1 rounded-full bg-transparent px-1 transition hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+            className="flex h-11 min-w-11 items-center gap-1 rounded-full bg-transparent px-1 transition hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
           >
             <span className="flex size-8 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background">
               {initials}
