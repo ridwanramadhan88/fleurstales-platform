@@ -13,7 +13,15 @@ const product: CatalogProduct = {
   name: 'Test Bouquet',
   description: 'A detailed bouquet description.',
   variants: [
-    { id: 'small', sku: 'SMALL', size: 'Small', price: 100_000, status: 'active' },
+    {
+      id: 'small',
+      sku: 'SMALL',
+      size: 'Small',
+      price: 100_000,
+      cost: 40_000,
+      status: 'active',
+      flowerRecipe: [{ id: 'rose', flowerName: 'Red Rose', quantity: 10, unit: 'stem' }],
+    },
     { id: 'large', sku: 'LARGE', size: 'Large', price: 175_000, status: 'active' },
     { id: 'retired', sku: 'OLD', size: 'Retired', price: 80_000, status: 'inactive' },
   ],
@@ -70,6 +78,8 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
     expect(screen.getAllByText('Fresh flower').length).toBeGreaterThan(0)
     expect(screen.getByText('BOQ-TEST-001')).toBeInTheDocument()
     expect(screen.queryByText('SMALL')).not.toBeInTheDocument()
+    expect(screen.queryByText('Red Rose')).not.toBeInTheDocument()
+    expect(screen.queryByText('Resep Bunga')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Retired' })).toBeDisabled()
   })
 })
