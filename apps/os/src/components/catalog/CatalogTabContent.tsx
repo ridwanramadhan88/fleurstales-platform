@@ -109,6 +109,8 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
   availableCategories,
   availableSubCategories,
   filteredProducts,
+  visibleProducts,
+  hasMoreProducts,
   allSelected,
   showingArchivedView,
   canEdit,
@@ -151,6 +153,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
   onOpenSizeGuideDialog,
   onCloseSizeGuideDialog,
   onClearFilters,
+  onLoadMoreProducts,
 }) => {
   const csvInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -257,6 +260,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
         <div className="flex min-w-0 items-center gap-2">
           <p className="text-xs font-medium text-muted-foreground">
             {filteredProducts.length} product{filteredProducts.length === 1 ? '' : 's'}
+            {filteredProducts.length > visibleProducts.length ? ` · showing ${visibleProducts.length}` : ''}
           </p>
           {quickFilter && (
             <button
@@ -299,7 +303,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
             <Button type="button" variant="secondary" onClick={onClearFilters}>Clear filters</Button>
           </div>
         ) : (
-          filteredProducts.map((product) => (
+          visibleProducts.map((product) => (
             <CatalogProductRow
               key={product.id}
               product={product}
@@ -316,6 +320,13 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
             />
           ))
         )}
+        {hasMoreProducts ? (
+          <div className="flex justify-center pt-3">
+            <Button type="button" variant="outline" onClick={onLoadMoreProducts} className="min-h-11 rounded-full px-6">
+              Load more products
+            </Button>
+          </div>
+        ) : null}
       </section>
 
       <CatalogProductDetailSheet
