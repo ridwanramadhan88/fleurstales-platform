@@ -131,7 +131,7 @@ export const TopBar: FC<TopBarViewModel> = ({
 
         <div className="hidden min-w-0 items-center md:flex">
           <span className="shrink-0 text-xs font-medium text-muted-foreground lg:text-sm">{today}</span>
-          <span ref={desktopBranchTriggerRef} className="hidden" aria-hidden="true" />
+          <span className="hidden" aria-hidden="true" />
         </div>
       </div>
 
