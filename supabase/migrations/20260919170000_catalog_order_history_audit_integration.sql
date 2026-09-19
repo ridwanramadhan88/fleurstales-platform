@@ -446,6 +446,7 @@ begin
         archived_at=coalesce(pv.archived_at,clock_timestamp()),
         updated_at=clock_timestamp()
     where pv.product_id=v_product_id
+      and pv.archived_at is null
       and not exists(
         select 1
         from jsonb_array_elements(coalesce(v_product->'variants','[]'::jsonb)) item
@@ -455,6 +456,7 @@ begin
 
     delete from public.product_variants pv
     where pv.product_id=v_product_id
+      and pv.archived_at is null
       and not exists(
         select 1
         from jsonb_array_elements(coalesce(v_product->'variants','[]'::jsonb)) item
@@ -666,7 +668,8 @@ begin
   set status='inactive',
       archived_at=coalesce(pv.archived_at,clock_timestamp()),
       updated_at=clock_timestamp()
-  where exists(
+  where pv.archived_at is null
+    and exists(
     select 1
     from public.products p
     where p.id=pv.product_id
@@ -685,7 +688,8 @@ begin
   set is_active=false,
       archived_at=coalesce(p.archived_at,clock_timestamp()),
       updated_at=clock_timestamp()
-  where not exists(
+  where p.archived_at is null
+    and not exists(
     select 1 from jsonb_array_elements(p_products) item where item->>'id'=p.id
   )
     and (
@@ -698,7 +702,8 @@ begin
     );
 
   delete from public.products p
-  where not exists(
+  where p.archived_at is null
+    and not exists(
     select 1 from jsonb_array_elements(p_products) item where item->>'id'=p.id
   )
     and not exists(select 1 from public.order_items oi where oi.product_id=p.id)
