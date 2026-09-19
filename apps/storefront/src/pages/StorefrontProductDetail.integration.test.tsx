@@ -2,12 +2,14 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useCatalogStore } from '../store/catalogStore'
+import { SEED_PRODUCTS } from '../store/catalogStoreSeedData'
 import { StorefrontPage } from './Storefront'
 
 describe('storefront product detail page', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/shop')
     useCatalogStore.setState({
+      products: structuredClone(SEED_PRODUCTS),
       sizeGuideTemplates: [],
       sizeGuideTargets: [],
     })
