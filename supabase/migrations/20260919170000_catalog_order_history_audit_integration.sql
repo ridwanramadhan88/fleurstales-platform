@@ -100,7 +100,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_variant_id text;
   v_before jsonb;
@@ -129,7 +129,7 @@ begin
   if tg_op='DELETE' then return old; end if;
   return new;
 end;
-$;
+$$;
 
 
 revoke execute on function private.audit_catalog_product_change() from public,anon,authenticated;
