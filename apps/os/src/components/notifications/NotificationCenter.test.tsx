@@ -30,8 +30,8 @@ describe('NotificationCenter', () => {
     )
 
     expect(screen.getByText('Important tasks only.')).toBeInTheDocument()
-    const notificationHeading = screen.getByRole('heading', { name: 'Notifications' })
-    expect(notificationHeading.closest('header')?.className).toContain('safe-area-inset-top')
+    const visibleHeader = screen.getByText('Important tasks only.').closest('header')
+    expect(visibleHeader?.className).toContain('safe-area-inset-top')
     expect(document.querySelector('.overflow-y-auto')?.className).toContain('safe-area-inset-bottom')
     expect(screen.getByText('Today')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Mark all read' }))
