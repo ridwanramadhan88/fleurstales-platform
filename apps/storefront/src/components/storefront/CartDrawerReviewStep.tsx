@@ -97,27 +97,32 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
 
         <ReviewSection eyebrow="Items" title={`${lines.length}`}>
           <div className="divide-y divide-black/[0.09]">
-            {lines.map((line) => (
-              <div key={line.lineId} className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3.5 py-4">
-                <div className="relative aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
-                  <span className="absolute inset-0 grid place-items-center px-2 text-center sf-type-1 font-medium text-black/40" aria-hidden="true">Fleurstales</span>
-                  <img
-                    src={getStorefrontCartLineImage(catalogProducts, line.productId, line.variantId) || undefined}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    onError={(event) => { event.currentTarget.style.display = 'none' }}
-                    aria-hidden="true"
-                    className="relative h-full w-full object-cover"
-                  />
+            {lines.map((line) => {
+              const imageUrl = getStorefrontCartLineImage(catalogProducts, line.productId, line.variantId)
+              return (
+                <div key={line.lineId} className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3.5 py-4">
+                  <div className="relative aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
+                    <span className="absolute inset-0 grid place-items-center px-2 text-center sf-type-1 font-medium text-black/40" aria-hidden="true">Fleurstales</span>
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => { event.currentTarget.style.display = 'none' }}
+                        aria-hidden="true"
+                        className="relative h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="line-clamp-2 text-[1.3rem] font-medium leading-[1.08]">{line.name}</p>
+                    <p className="mt-1.5 sf-type-2 text-black/48">{formatIdr(line.unitPriceIdr, formatter)} × {line.quantity}</p>
+                  </div>
+                  <p className="sf-type-3 font-medium tabular-nums">{formatIdr(line.unitPriceIdr * line.quantity, formatter)}</p>
                 </div>
-                <div className="min-w-0">
-                  <p className="line-clamp-2 text-[1.3rem] font-medium leading-[1.08]">{line.name}</p>
-                  <p className="mt-1.5 sf-type-2 text-black/48">{formatIdr(line.unitPriceIdr, formatter)} × {line.quantity}</p>
-                </div>
-                <p className="sf-type-3 font-medium tabular-nums">{formatIdr(line.unitPriceIdr * line.quantity, formatter)}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </ReviewSection>
 
