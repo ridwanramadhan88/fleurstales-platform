@@ -115,9 +115,10 @@ begin
       jsonb_build_object('field','cost')
     );
   end if;
-  return coalesce(new,old);
+  if tg_op='DELETE' then return old; end if;
+  return new;
 end;
-$$;
+$;
 
 create or replace function private.audit_catalog_size_target_change()
 returns trigger
@@ -138,9 +139,10 @@ begin
     case when tg_op='DELETE' then null else to_jsonb(new) end,
     jsonb_build_object('operation',tg_op)
   );
-  return coalesce(new,old);
+  if tg_op='DELETE' then return old; end if;
+  return new;
 end;
-$$;
+$;
 
 revoke execute on function private.audit_catalog_product_change() from public,anon,authenticated;
 revoke execute on function private.audit_catalog_variant_change() from public,anon,authenticated;
@@ -161,11 +163,6 @@ drop trigger if exists trg_catalog_variant_cost_audit on public.product_variant_
 create trigger trg_catalog_variant_cost_audit
 after insert or update or delete on public.product_variant_costs
 for each row execute function private.audit_catalog_variant_cost_change();
-
-drop trigger if exists trg_catalog_size_target_audit on public.size_guide_targets;
-create trigger trg_catalog_size_target_audit
-after insert or update or delete on public.size_guide_targets
-for each row execute function private.audit_catalog_size_target_change();
 
 create or replace function private.validate_catalog_snapshot_payload(p_products jsonb)
 returns void
@@ -751,6 +748,8 @@ declare
   v_variant record;
   v_template_id text;
   v_size jsonb;
+  v_before_targets jsonb;
+  v_after_targets jsonb;
 begin
   if not private.has_section_access('catalog','edit') then
     raise exception 'CATALOG_EDIT_NOT_AUTHORIZED' using errcode = '42501';
@@ -839,6 +838,22 @@ begin
     end if;
   end loop;
 
+  select coalesce(
+    jsonb_agg(
+      jsonb_strip_nulls(jsonb_build_object(
+        'id',target.id,
+        'templateId',target.template_id,
+        'scope',target.scope,
+        'productType',target.product_type,
+        'productId',target.product_id
+      ))
+      order by target.id
+    ),
+    '[]'::jsonb
+  )
+  into v_before_targets
+  from public.size_guide_targets target;
+
   delete from public.size_guide_targets where id is not null;
   delete from public.size_guide_templates where id is not null;
 
@@ -884,6 +899,35 @@ begin
       nullif(v_target->>'productId','')
     );
   end loop;
+
+  select coalesce(
+    jsonb_agg(
+      jsonb_strip_nulls(jsonb_build_object(
+        'id',target.id,
+        'templateId',target.template_id,
+        'scope',target.scope,
+        'productType',target.product_type,
+        'productId',target.product_id
+      ))
+      order by target.id
+    ),
+    '[]'::jsonb
+  )
+  into v_after_targets
+  from public.size_guide_targets target;
+
+  if v_before_targets is distinct from v_after_targets then
+    perform private.write_audit_event(
+      'catalog.size_template_assignments.update',
+      'catalog_size_template_assignments',
+      'library',
+      'succeeded',
+      null,null,
+      v_before_targets,
+      v_after_targets,
+      jsonb_build_object('targetCount',jsonb_array_length(v_after_targets))
+    );
+  end if;
 
   return jsonb_build_object(
     'templateCount',jsonb_array_length(p_templates),
