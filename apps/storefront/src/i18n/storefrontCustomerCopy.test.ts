@@ -34,6 +34,7 @@ describe('storefront customer copy (V2 batch 2)', () => {
     expect(translateUiText('Increase quantity for Classic Bouquet', 'id')).toBe('Tambah jumlah Classic Bouquet')
     expect(translateUiText('each', 'id')).toBe('masing-masing')
     expect(translateUiText('Select a size', 'id')).toBe('Pilih ukuran')
+    expect(translateUiText('Load more products', 'id')).toBe('Muat lebih banyak produk')
   })
 
   it('translates browse, filter, and empty states', () => {
