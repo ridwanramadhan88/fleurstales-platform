@@ -13,6 +13,7 @@ const base = (): CartDrawerViewModel => ({
   onIncrement: vi.fn(),
   onDecrement: vi.fn(),
   onOrderPlaced: vi.fn(),
+  onStartShopping: vi.fn(),
   formatter: new Intl.NumberFormat('id-ID'),
   step: 'details',
   customerName: 'Ibu Sari Wulandari',
