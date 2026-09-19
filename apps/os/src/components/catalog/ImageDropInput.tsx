@@ -156,6 +156,8 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
         <div
           role="button"
           tabIndex={0}
+          aria-label={`${label}: pilih atau tarik gambar`}
+          aria-describedby="catalog-image-requirements"
           onClick={() => inputRef.current?.click()}
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === ' ') {
@@ -175,12 +177,12 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
           {isDragActive ? <UploadCloud className="size-6 text-primary" /> : <ImageOff className="size-6 text-muted-foreground" />}
           <p className="text-2xs font-medium text-foreground">Tarik & lepas gambar</p>
           <p className="text-2xs text-muted-foreground">{dropHint}</p>
-          <p className="text-2xs text-muted-foreground">800×800 JPEG · maksimal 100 KB</p>
+          <p id="catalog-image-requirements" className="text-2xs text-muted-foreground">800×800 JPEG · maksimal 100 KB</p>
         </div>
       )}
 
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleInputChange} />
-      {error && <p className="text-2xs text-destructive" role="alert">{error}</p>}
+      {error && <p className="text-2xs text-destructive" role="alert" aria-live="assertive">{error}</p>}
 
       <Dialog open={editorOpen} onOpenChange={(open) => {
         setEditorOpen(open)
