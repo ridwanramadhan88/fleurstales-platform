@@ -36,10 +36,22 @@ import { StorefrontHome } from "./StorefrontHome";
 import { StorefrontProductDetailPage } from "./StorefrontProductDetailPage";
 import { StorefrontCategoriesPage } from "./StorefrontCategoriesPage";
 import { projectStorefrontCatalog } from "../domain/storefrontCatalogProjectionDomain";
+import {
+  STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE,
+  getNextStorefrontVisibleCount,
+} from "../domain/storefrontProductDiscoveryDomain";
 
 const currencyFormatter = new Intl.NumberFormat("id-ID");
 
 type StorefrontRoute = "home" | "categories" | "shop" | "product";
+
+interface StorefrontShopHistoryContext {
+  query?: string;
+  categoryFilter?: CatalogCategoryFilter;
+  subCategoryFilter?: CatalogSubCategoryFilter;
+  visibleProductCount?: number;
+  scrollY?: number;
+}
 
 const readProductIdFromPath = (): string | null => {
   const normalizedPath = window.location.pathname.replace(/\/+$/, "");
@@ -115,6 +127,9 @@ export const StorefrontPage: FC = () => {
     () => readProductIdFromPath(),
   );
   const [shopScrollY, setShopScrollY] = useState(0);
+  const [visibleProductCount, setVisibleProductCount] = useState(
+    STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE,
+  );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchDraft, setSearchDraft] = useState("");
@@ -172,6 +187,10 @@ export const StorefrontPage: FC = () => {
     return filteredProducts.filter((product) => !featuredIds.has(product.id));
   }, [filteredProducts, featuredProducts]);
 
+  const gridProducts = regularProducts.length > 0 ? regularProducts : filteredProducts;
+  const visibleGridProducts = gridProducts.slice(0, visibleProductCount);
+  const hasMoreGridProducts = visibleGridProducts.length < gridProducts.length;
+
   const searchResultCount = useMemo(
     () =>
       filterCatalogProducts(storefrontProducts, {
@@ -226,6 +245,7 @@ export const StorefrontPage: FC = () => {
     setCollectionFilter("all");
     setQuery("");
     setSelectedProductId(null);
+    setVisibleProductCount(STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE);
     window.history.pushState({}, "", buildShopUrl("all", arrangement, "all"));
     setRoute("shop");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -240,6 +260,7 @@ export const StorefrontPage: FC = () => {
     setCollectionFilter(collection);
     setQuery("");
     setSelectedProductId(null);
+    setVisibleProductCount(STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE);
     window.history.pushState({}, "", buildShopUrl("all", "all", collection));
     setRoute("shop");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -255,6 +276,7 @@ export const StorefrontPage: FC = () => {
       setCollectionFilter("all");
       setQuery("");
       setSelectedProductId(null);
+      setVisibleProductCount(STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE);
       window.history.pushState({}, "", buildShopUrl(category, "all", "all"));
       setRoute("shop");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -291,6 +313,7 @@ export const StorefrontPage: FC = () => {
     setCollectionFilter("all");
     setQuery(nextQuery);
     setSelectedProductId(null);
+    setVisibleProductCount(STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE);
     setIsSearchOpen(false);
     window.history.pushState(
       {
@@ -298,6 +321,7 @@ export const StorefrontPage: FC = () => {
           query: nextQuery,
           categoryFilter: "all",
           subCategoryFilter: "all",
+          visibleProductCount: STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE,
           scrollY: 0,
         },
       },
@@ -318,7 +342,13 @@ export const StorefrontPage: FC = () => {
       window.history.replaceState(
         {
           ...(window.history.state ?? {}),
-          storefrontShop: { query, categoryFilter, subCategoryFilter, scrollY },
+          storefrontShop: {
+            query,
+            categoryFilter,
+            subCategoryFilter,
+            visibleProductCount,
+            scrollY,
+          },
         },
         "",
         window.location.href,
@@ -328,7 +358,7 @@ export const StorefrontPage: FC = () => {
       setRoute("product");
       window.scrollTo({ top: 0 });
     },
-    [categoryFilter, storefrontProducts, query, subCategoryFilter],
+    [categoryFilter, storefrontProducts, query, subCategoryFilter, visibleProductCount],
   );
 
   const navigateBackToShop = useCallback(() => {
@@ -356,12 +386,7 @@ export const StorefrontPage: FC = () => {
       setSelectedProductId(null);
       if (nextRoute === "shop") {
         const savedContext = event.state?.storefrontShop as
-          | {
-              query?: string;
-              categoryFilter?: CatalogCategoryFilter;
-              subCategoryFilter?: CatalogSubCategoryFilter;
-              scrollY?: number;
-            }
+          | StorefrontShopHistoryContext
           | undefined;
         const requestedOccasion = readRequestedOccasion();
         const requestedArrangement = readRequestedArrangement();
@@ -380,9 +405,14 @@ export const StorefrontPage: FC = () => {
         setArrangementFilter(requestedArrangement ?? "all");
         setCollectionFilter(requestedCollection ?? "all");
         setQuery(savedContext?.query ?? "");
+        setVisibleProductCount(
+          savedContext?.visibleProductCount ?? STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE,
+        );
         const targetScroll = savedContext?.scrollY ?? shopScrollY;
         window.requestAnimationFrame(() =>
-          window.scrollTo({ top: targetScroll }),
+          window.requestAnimationFrame(() =>
+            window.scrollTo({ top: targetScroll }),
+          ),
         );
       }
     };
@@ -390,6 +420,42 @@ export const StorefrontPage: FC = () => {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [availableCategories, shopScrollY]);
+
+  const handleSubCategoryFilterChange = useCallback(
+    (nextSubCategory: CatalogSubCategoryFilter) => {
+      setSubCategoryFilter(nextSubCategory);
+      setVisibleProductCount(STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE);
+    },
+    [],
+  );
+
+  const handleLoadMoreProducts = useCallback(() => {
+    const nextVisibleCount = getNextStorefrontVisibleCount(
+      visibleProductCount,
+      gridProducts.length,
+    );
+    setVisibleProductCount(nextVisibleCount);
+    window.history.replaceState(
+      {
+        ...(window.history.state ?? {}),
+        storefrontShop: {
+          query,
+          categoryFilter,
+          subCategoryFilter,
+          visibleProductCount: nextVisibleCount,
+          scrollY: window.scrollY,
+        },
+      },
+      "",
+      window.location.href,
+    );
+  }, [
+    categoryFilter,
+    gridProducts.length,
+    query,
+    subCategoryFilter,
+    visibleProductCount,
+  ]);
 
   useEffect(() => {
     if (!isMenuOpen && !isSearchOpen) return;
@@ -596,7 +662,7 @@ export const StorefrontPage: FC = () => {
               }
               onOpenCategories={navigateCategories}
               subCategoryFilter={subCategoryFilter}
-              onSubCategoryFilterChange={setSubCategoryFilter}
+              onSubCategoryFilterChange={handleSubCategoryFilterChange}
               availableSubCategories={availableSubCategories}
             />
 
@@ -613,9 +679,11 @@ export const StorefrontPage: FC = () => {
             <StorefrontProductGrid
               key={`${categoryFilter}-${subCategoryFilter}-${arrangementFilter}-${collectionFilter}-${query}`}
               title={featuredProducts.length > 0 ? "All Products" : undefined}
-              products={regularProducts.length > 0 ? regularProducts : filteredProducts}
+              products={visibleGridProducts}
               formatter={currencyFormatter}
               onOpen={navigateProduct}
+              hasMore={hasMoreGridProducts}
+              onLoadMore={handleLoadMoreProducts}
             />
 
             <div ref={shopFooterRef}>
