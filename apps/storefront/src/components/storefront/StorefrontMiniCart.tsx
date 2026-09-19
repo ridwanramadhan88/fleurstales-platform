@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FC } from 'react'
 import { CartBagIcon } from './StorefrontCartIcon'
+import { formatIdr } from '../../lib/currency'
 
 interface Props {
   count: number
@@ -95,7 +96,7 @@ export const StorefrontMiniCart: FC<Props> = ({
               {count} {count === 1 ? 'item' : 'items'}
             </span>
             <span className="storefront-mini-cart__price tabular-nums">
-              Rp. {formatter.format(totalIdr)}
+              {formatIdr(totalIdr, formatter)}
             </span>
           </div>
 
