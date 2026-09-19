@@ -16,6 +16,7 @@ import { buildStorefrontTrackingPath } from '../data/shared/storefrontCheckoutRe
 import { requestStorefrontNavigation } from '../lib/storefrontNavigation'
 import type { OrderStatus } from '../data/shared/databaseTypes'
 import { formatIdr } from '../lib/currency'
+import { getStorefrontWhatsappHref } from '../domain/storefrontContactDomain'
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending_verification: 'Menunggu konfirmasi',
@@ -62,23 +63,16 @@ const displaySchedule = (order: PublicOrderStatusSummary | PublicOrderTrackingDe
   return [formatScheduleDate(date), time?.slice(0, 5)].filter(Boolean).join(' · ') || 'Jadwal belum ditentukan'
 }
 
-const normalizeWhatsappForLink = (value?: string | null): string => {
-  const digits = (value ?? '').replace(/\D/g, '')
-  if (!digits) return ''
-  if (digits.startsWith('0')) return `62${digits.slice(1)}`
-  return digits
-}
-
 const productSummary = (details: PublicOrderTrackingDetails): string => {
   const first = details.items[0]?.name ?? 'order'
   return details.items.length > 1 ? `${first} +${details.items.length - 1} item` : first
 }
 
 const buildContactAdminHref = (details: PublicOrderTrackingDetails): string | null => {
-  const number = normalizeWhatsappForLink(details.contactWhatsapp)
-  if (!number) return null
+  const baseHref = getStorefrontWhatsappHref(details.contactWhatsapp)
+  if (!baseHref) return null
   const message = `Halo ka, mau tanya untuk orderan ${details.orderNumber} - ${productSummary(details)} atas nama ${details.customerName}`
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`
+  return `${baseHref}?text=${encodeURIComponent(message)}`
 }
 
 interface StorefrontOrderTrackingPageProps {
