@@ -418,9 +418,17 @@ export const StorefrontPage: FC = () => {
     const product = storefrontProducts.find((item) => item.id === productId);
     if (!product) return;
 
-    const lineId = variant ? `${productId}__${variant.id}` : productId;
-    const unitPriceIdr = variant?.price ?? getDisplayPriceIdr(product);
-    const name = variant ? `${product.name} (${variant.size})` : product.name;
+    const resolvedVariant = variant
+      ? product.variants.find((item) => item.id === variant.id)
+      : undefined;
+    if (variant && !resolvedVariant) {
+      toast({ description: "This product option is no longer available." });
+      return;
+    }
+
+    const lineId = resolvedVariant ? `${productId}__${resolvedVariant.id}` : productId;
+    const unitPriceIdr = resolvedVariant?.price ?? getDisplayPriceIdr(product);
+    const name = resolvedVariant ? `${product.name} (${resolvedVariant.size})` : product.name;
 
     setCartLines((previous) => {
       const existing = previous.find((line) => line.lineId === lineId);
@@ -436,7 +444,7 @@ export const StorefrontPage: FC = () => {
         {
           lineId,
           productId,
-          variantId: variant?.id,
+          variantId: resolvedVariant?.id,
           name,
           unitPriceIdr,
           quantity,
