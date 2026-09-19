@@ -118,7 +118,7 @@ begin
   if tg_op='DELETE' then return old; end if;
   return new;
 end;
-$;
+$$;
 
 create or replace function private.audit_catalog_size_target_change()
 returns trigger
@@ -142,7 +142,7 @@ begin
   if tg_op='DELETE' then return old; end if;
   return new;
 end;
-$;
+$$;
 
 revoke execute on function private.audit_catalog_product_change() from public,anon,authenticated;
 revoke execute on function private.audit_catalog_variant_change() from public,anon,authenticated;
