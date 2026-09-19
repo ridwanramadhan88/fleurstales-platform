@@ -76,6 +76,10 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium text-foreground">Foto produk</p>
+        <span className="text-2xs text-muted-foreground">{ordered.length}/{CATALOG_IMAGE_MAX_COUNT}</span>
+      </div>
       {activeImage ? (
         <div className="space-y-3">
           <div className="relative w-fit max-w-full">
@@ -87,10 +91,10 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
             />
             {ordered.length > 1 && (
               <>
-                <button type="button" onClick={goPrevious} aria-label="Foto produk sebelumnya" className="absolute left-2 top-[110px] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
+                <button type="button" onClick={goPrevious} aria-label="Foto produk sebelumnya" className="absolute left-2 top-[110px] inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
                   <ChevronLeft className="size-4" />
                 </button>
-                <button type="button" onClick={goNext} aria-label="Foto produk berikutnya" className="absolute right-2 top-[110px] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
+                <button type="button" onClick={goNext} aria-label="Foto produk berikutnya" className="absolute right-2 top-[110px] inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
                   <ChevronRight className="size-4" />
                 </button>
               </>
@@ -106,7 +110,7 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
               ))}
             </div>
           )}
-          <p className="text-2xs text-muted-foreground">Foto {activeIndex + 1} dari {ordered.length} · foto pertama menjadi thumbnail Storefront.</p>
+          <p className="text-2xs leading-4 text-muted-foreground" aria-live="polite">Foto {activeIndex + 1} dari {ordered.length} · foto pertama menjadi thumbnail Storefront.</p>
         </div>
       ) : (
         <ImageDropInput
@@ -123,8 +127,8 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
             onChange={append}
             label="Tambah foto galeri"
           />
-          <p className="flex max-w-[360px] items-center gap-1.5 text-2xs text-muted-foreground">
-            <Plus className="size-3" /> Maksimal {CATALOG_IMAGE_MAX_COUNT} foto produk berurutan.
+          <p className="flex max-w-[360px] items-center gap-1.5 text-2xs leading-4 text-muted-foreground">
+            <Plus className="size-3" /> Tambahkan foto satu per satu. Maksimal {CATALOG_IMAGE_MAX_COUNT} foto; foto pertama dipakai sebagai thumbnail.
           </p>
         </div>
       )}
