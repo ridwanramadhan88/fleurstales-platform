@@ -104,6 +104,41 @@ describe('storefront product detail page', () => {
 
     expect(screen.queryByRole('button', { name: 'Size guide' })).not.toBeInTheDocument()
   })
+
+  it('removes a needs-review linked product from Storefront while keeping the legacy Catalog row intact', () => {
+    const products = structuredClone(useCatalogStore.getState().products)
+    const product = products[0]
+    const selectedVariant = product.variants.find((variant) => variant.status === 'active')
+    if (!selectedVariant) throw new Error('Expected an active test variant')
+    selectedVariant.sizeOptionId = 'old-child'
+
+    useCatalogStore.setState({
+      products,
+      sizeGuideTemplates: [{
+        id: 'guide_changed',
+        name: 'Changed guide',
+        sizes: [{ id: 'new-child', name: selectedVariant.size, isActive: true }],
+        imageUrl: '',
+        byteSize: 0,
+        width: 800,
+        height: 800,
+        createdAt: '2026-07-24T00:00:00.000Z',
+        updatedAt: '2026-07-24T00:00:00.000Z',
+      }],
+      sizeGuideTargets: [{
+        id: 'target_changed',
+        templateId: 'guide_changed',
+        scope: 'product',
+        productId: product.id,
+      }],
+    })
+    window.history.replaceState({}, '', `/shop/product/${product.productId}`)
+
+    render(<StorefrontPage />)
+
+    expect(screen.getByRole('heading', { name: 'Product not found' })).toBeInTheDocument()
+    expect(useCatalogStore.getState().products[0].variants[0].sizeOptionId).toBe('old-child')
+  })
 })
 
 it('shows a product-not-found state for an invalid direct product URL', () => {
