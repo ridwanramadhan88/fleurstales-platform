@@ -241,6 +241,7 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
                 formatter={formatter}
                 onOpenDetail={() => onOpen(product.id)}
                 tabIndex={shouldLoop && copyIndex !== 1 ? -1 : undefined}
+                ariaHidden={shouldLoop && copyIndex !== 1 ? true : undefined}
               />
             </div>
           ))}
