@@ -212,7 +212,9 @@ export const syncSizeGuideLibrary = async (
     ...previous.filter((template) => template.byteSize > 0).map((template) => template.storagePath),
     ...previousChildPaths,
   ].filter((path) => !activePaths.has(path))
-  if (removedPaths.length > 0) await repository.removeSizeGuideObjects([...new Set(removedPaths)])
+  if (removedPaths.length > 0) {
+    try { await repository.removeSizeGuideObjects([...new Set(removedPaths)]) } catch { /* best-effort cleanup after committed metadata */ }
+  }
   applyRemoteSizeGuideLibrary(templates, targets)
 }
 
