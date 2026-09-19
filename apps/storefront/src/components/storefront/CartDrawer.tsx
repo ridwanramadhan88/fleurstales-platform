@@ -23,6 +23,7 @@ export interface CartDrawerProps {
   onIncrement: (lineId: string) => void
   onDecrement: (lineId: string) => void
   onOrderPlaced: (orderNumber: string) => void
+  onStartShopping: () => void
   formatter: Intl.NumberFormat
 }
 
@@ -53,7 +54,7 @@ const CheckoutProgress: FC<Pick<CartDrawerViewModel, 'step'>> = ({ step }) => {
 }
 
 export const CartDrawer: FC<CartDrawerViewModel> = (viewModel) => {
-  const { open, step, handleClose } = viewModel
+  const { open, step, handleClose, lines } = viewModel
   if (!open) return null
   return (
     <div className="storefront-modal-layer fixed inset-0 z-[100] flex items-end justify-center bg-black/40 sm:items-stretch sm:justify-end" onClick={handleClose} role="presentation">
@@ -67,7 +68,7 @@ export const CartDrawer: FC<CartDrawerViewModel> = (viewModel) => {
             <X className="size-6" strokeWidth={2.1} />
           </button>
         </header>
-        <CheckoutProgress step={step} />
+        {!(step === 'cart' && lines.length === 0) && <CheckoutProgress step={step} />}
         <div className="flex min-h-0 flex-1 flex-col">
           {step === 'cart' && <CartStep {...viewModel} />}
           {step === 'details' && <DetailsStep {...viewModel} />}
