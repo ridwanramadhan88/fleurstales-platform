@@ -165,6 +165,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   const [sourceAtOpen, setSourceAtOpen] = useState(productFingerprint(product))
   const [errors, setErrors] = useState<string[]>([])
   const [fieldErrors, setFieldErrors] = useState<CatalogFieldErrors>({})
+  const [variantErrorIndexes, setVariantErrorIndexes] = useState<Set<number>>(new Set())
   const validationSummaryRef = useRef<HTMLDivElement | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
   const [activeTab, setActiveTab] = useState<'info' | 'variants'>('info')
@@ -192,6 +193,20 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     ?? (!product && usableSizeTemplates.length === 1 ? usableSizeTemplates[0] : undefined)
   const usingUnassignedNewProductFallback = Boolean(!assignedSizeTemplate && !product && sizeTemplate)
 
+  const productSizeTarget = product
+    ? sizeGuideTargets.find((target) => target.scope === 'product' && target.productId === product.id)
+    : undefined
+  const arrangementSizeTarget = form.productType
+    ? sizeGuideTargets.find((target) => target.scope === 'product_type' && target.productType === form.productType)
+    : undefined
+  const sizeTemplateSource = assignedSizeTemplate && productSizeTarget?.templateId === assignedSizeTemplate.id
+    ? 'product_override' as const
+    : assignedSizeTemplate && arrangementSizeTarget?.templateId === assignedSizeTemplate.id
+      ? 'arrangement_default' as const
+      : usingUnassignedNewProductFallback
+        ? 'new_product_preview' as const
+        : 'none' as const
+
   useEffect(() => {
     if (!open) return
     const next = product ? formFromProduct(product) : emptyForm(defaultCategory)
@@ -200,6 +215,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     setSourceAtOpen(productFingerprint(product))
     setErrors([])
     setFieldErrors({})
+    setVariantErrorIndexes(new Set())
     setConfirmClose(false)
     setActiveTab('info')
     setIsSaving(false)
@@ -242,16 +258,31 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   }
 
   const focusValidationIssue = (error: string) => {
+    const variantMatch = /^Varian (\d+)/.exec(error)
+    const variantIndex = variantMatch ? Number.parseInt(variantMatch[1], 10) - 1 : null
     const target = error === 'Product name is required.'
       ? { tab: 'info' as const, id: 'catalog-product-name' }
       : error === 'Primary moment is required.'
         ? { tab: 'info' as const, id: 'catalog-product-category' }
         : error === 'Arrangement type is required.'
           ? { tab: 'info' as const, id: 'catalog-product-type' }
-          : { tab: 'variants' as const, id: 'catalog-variants-section' }
+          : {
+              tab: 'variants' as const,
+              id: variantIndex !== null && variantIndex >= 0
+                ? 'catalog-variant-' + variantIndex
+                : 'catalog-variants-section',
+            }
 
     setActiveTab(target.tab)
-    window.requestAnimationFrame(() => document.getElementById(target.id)?.focus())
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const element = document.getElementById(target.id)
+        if (typeof element?.scrollIntoView === 'function') {
+          element.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+        element?.focus()
+      })
+    })
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -266,6 +297,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     const nextErrors: string[] = []
     const nextFieldErrors: CatalogFieldErrors = {}
     let hasVariantError = false
+    const nextVariantErrorIndexes = new Set<number>()
 
     if (!form.name.trim()) {
       nextFieldErrors.name = 'Product name is required.'
@@ -290,11 +322,13 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       const label = 'Varian ' + (index + 1)
       if (!row.size.trim()) {
         nextErrors.push(label + ': ukuran wajib tersedia.')
+        nextVariantErrorIndexes.add(index)
         hasVariantError = true
       }
       if (row.sizeOptionId) {
         if (seenSizeOptionIds.has(row.sizeOptionId)) {
           nextErrors.push(label + ': ukuran template yang sama tidak boleh dipakai dua kali.')
+          nextVariantErrorIndexes.add(index)
           hasVariantError = true
         }
         seenSizeOptionIds.add(row.sizeOptionId)
@@ -303,12 +337,14 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       const price = Number.parseInt(row.price, 10)
       if (!Number.isFinite(price) || price <= 0) {
         nextErrors.push(label + ': harga jual harus lebih dari Rp0.')
+        nextVariantErrorIndexes.add(index)
         hasVariantError = true
       }
 
       const costParsed = row.cost.trim() ? Number.parseInt(row.cost, 10) : undefined
       if (costParsed !== undefined && (!Number.isFinite(costParsed) || costParsed < 0)) {
         nextErrors.push(label + ': cost tidak valid.')
+        nextVariantErrorIndexes.add(index)
         hasVariantError = true
       }
 
@@ -316,10 +352,12 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         const quantity = Number.parseFloat(item.quantity)
         if (!item.flowerName.trim()) {
           nextErrors.push(label + ', bunga ' + (recipeIndex + 1) + ': nama bunga wajib diisi.')
+          nextVariantErrorIndexes.add(index)
           hasVariantError = true
         }
         if (!Number.isFinite(quantity) || quantity <= 0) {
           nextErrors.push(label + ', bunga ' + (recipeIndex + 1) + ': jumlah harus lebih dari 0.')
+          nextVariantErrorIndexes.add(index)
           hasVariantError = true
         }
         return { id: item.id, flowerName: item.flowerName.trim(), quantity, unit: item.unit }
@@ -349,11 +387,13 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
 
     if (!parsedVariants.some((variant) => variant.status === 'active')) {
       nextErrors.push('Minimal satu varian harus berstatus Dijual.')
+      form.variants.forEach((_, index) => nextVariantErrorIndexes.add(index))
       hasVariantError = true
     }
 
     setErrors([...new Set(nextErrors)])
     setFieldErrors(nextFieldErrors)
+    setVariantErrorIndexes(nextVariantErrorIndexes)
     if (nextErrors.length > 0) {
       setActiveTab(Object.keys(nextFieldErrors).length > 0 ? 'info' : hasVariantError ? 'variants' : 'info')
       window.requestAnimationFrame(() => validationSummaryRef.current?.focus())
@@ -470,10 +510,19 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                       ? 'Template ukuran tersedia, tetapi belum ditetapkan untuk jenis rangkaian ini. Atur di Template ukuran → Penetapan.'
                       : 'Belum ada template ukuran yang memiliki ukuran aktif.'}
                 >
-                  {usingUnassignedNewProductFallback ? (
-                    <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                      <p className="text-sm font-semibold text-foreground">Using {sizeTemplate?.name}</p>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">This is the only active size template. Set it as the arrangement default to reuse it automatically.</p>
+                  {sizeTemplate ? (
+                    <div className="mb-4 rounded-xl border border-border/70 bg-muted/35 px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sumber template ukuran</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">{sizeTemplate.name}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {sizeTemplateSource === 'product_override'
+                          ? 'Template khusus produk · disimpan sebagai override untuk produk ini.'
+                          : sizeTemplateSource === 'arrangement_default'
+                            ? 'Default Jenis rangkaian · produk mengikuti template default dari jenis rangkaiannya.'
+                            : sizeTemplateSource === 'new_product_preview'
+                              ? 'Pratinjau produk baru · satu-satunya template aktif ditampilkan hanya untuk membantu setup. Pilihan ini belum ditetapkan dan tidak akan tersimpan sebagai assignment.'
+                              : 'Template efektif saat ini.'}
+                      </p>
                     </div>
                   ) : null}
                   <div id="catalog-variants-section" tabIndex={-1} className="focus-visible:outline-none">
@@ -484,6 +533,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                     addVariant={addVariantRow}
                     removeVariant={removeVariantRow}
                     productName={form.name}
+                    validationErrorIndexes={variantErrorIndexes}
                   />
                   </div>
                 </FormSection>
@@ -492,8 +542,8 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
           </Tabs>
 
           <ActionFooter className="shrink-0 border-t border-border bg-card pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            <button type="button" onClick={handleClose} disabled={isSaving} className="inline-flex h-11 items-center rounded-full px-[18px] text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50">Batal</button>
-            <button type="submit" disabled={isSaving || sourceChanged} className="inline-flex h-11 items-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" onClick={handleClose} disabled={isSaving} className="inline-flex h-11 w-full items-center justify-center rounded-full px-[18px] text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 sm:w-auto">Batal</button>
+            <button type="submit" disabled={isSaving || sourceChanged} className="inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
               {isSaving ? 'Menyimpan…' : isEditMode ? 'Simpan perubahan' : 'Simpan produk'}
             </button>
           </ActionFooter>

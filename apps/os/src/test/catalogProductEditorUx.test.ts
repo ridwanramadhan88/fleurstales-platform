@@ -33,10 +33,12 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(formSource).toContain('disabled={isSaving || sourceChanged}')
   })
 
-  it('makes the only usable size template available to a new Product without pretending the library is empty', () => {
+  it('makes the only usable size template available as a clearly non-persisted new Product preview', () => {
     expect(formSource).toContain('usableSizeTemplates.length === 1')
     expect(formSource).toContain('Template ukuran tersedia, tetapi belum ditetapkan')
-    expect(formSource).toContain('This is the only active size template')
+    expect(formSource).toContain("'new_product_preview' as const")
+    expect(formSource).toContain('Pratinjau produk baru')
+    expect(formSource).toContain('belum ditetapkan dan tidak akan tersimpan sebagai assignment')
   })
 
   it('marks required Product fields inline and lets the error summary navigate to them', () => {
@@ -46,7 +48,11 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(detailsSource).toContain('catalog-product-type-error')
     expect(formSource).toContain('summaryRef={validationSummaryRef}')
     expect(formSource).toContain('focusValidationIssue')
+    expect(formSource).toContain("id: variantIndex !== null && variantIndex >= 0")
+    expect(formSource).toContain('scrollIntoView')
     expect(formSource).toContain('id="catalog-variants-section"')
+    expect(variantsSource).toContain('id={configured && variantIndex !== undefined ? `catalog-variant-${variantIndex}` : undefined}')
+    expect(variantsSource).toContain('validationErrorIndexes.has(index)')
   })
 
   it('renders template slots without materializing missing variants', () => {
