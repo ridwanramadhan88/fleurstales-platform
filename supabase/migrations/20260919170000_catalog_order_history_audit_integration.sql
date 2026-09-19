@@ -780,8 +780,6 @@ begin
     from public.product_variants variant
     join public.products product on product.id = variant.product_id
     where variant.size_option_id is not null
-      and variant.archived_at is null
-      and product.archived_at is null
   loop
     if v_variant.status <> 'active' then
       select size_entry
