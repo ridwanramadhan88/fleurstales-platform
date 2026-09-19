@@ -77,7 +77,10 @@ export const CatalogFiltersBar: FC<CatalogFiltersBarProps> = ({
   const activeCategoryRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
-    activeCategoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    const active = activeCategoryRef.current
+    if (typeof active?.scrollIntoView === 'function') {
+      active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
   }, [categoryFilter])
 
   return (
