@@ -594,6 +594,50 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
   }
 }
 
+export const flushBusinessOsSizeGuideSync = async (): Promise<boolean> => {
+  if (!bridgeStatus.remoteConfigured) return true
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = undefined
+  }
+  if (remoteRevision === undefined) return false
+
+  const accessToken = getSupabaseAccessToken()
+  if (!accessToken) {
+    setBridgeStatus({ phase: 'auth_required', writable: false, message: 'Sesi Supabase staf sudah tidak tersedia.' })
+    return false
+  }
+
+  const shared = bootstrapSharedData(browserSupabaseTokenProvider)
+  if (!shared.enabled) return false
+
+  setBridgeStatus({ phase: 'saving', writable: true, message: undefined })
+  try {
+    await syncLocalSizeGuideLibrary(shared.repositories.catalogAdmin)
+    lastSyncedHash = snapshotHash(useCatalogStore.getState())
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = undefined
+    }
+    setBridgeStatus({
+      phase: 'remote',
+      writable: true,
+      remoteRevision,
+      lastSavedAt: new Date().toISOString(),
+      message: undefined,
+    })
+    return true
+  } catch (error) {
+    setBridgeStatus({
+      phase: 'error',
+      writable: true,
+      remoteRevision,
+      message: explainError(error),
+    })
+    return false
+  }
+}
+
 export const initializeStorefrontCatalogBridge = async (): Promise<void> => {
   const loaded = await refreshStorefrontCatalogFromRemote()
   if (bootstrapSharedData().enabled && !loaded) {
