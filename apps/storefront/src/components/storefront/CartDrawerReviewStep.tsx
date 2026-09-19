@@ -6,6 +6,7 @@ import { getStorefrontCartLineImage } from './storefrontProductImages'
 import { formatDisplayDate } from '../ui/date-time-field'
 import { DeliveryFillIcon, PickupFillIcon } from './StorefrontFulfilmentIcons'
 import { StorefrontCopyButton } from './StorefrontCopyButton'
+import { formatIdr } from '../../lib/currency'
 
 const voucherInputClass = 'sf-field min-w-0 flex-1 uppercase placeholder:normal-case'
 
@@ -103,9 +104,9 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
                 </div>
                 <div className="min-w-0">
                   <p className="line-clamp-2 text-[1.3rem] font-medium leading-[1.08]">{line.name}</p>
-                  <p className="mt-1.5 sf-type-2 text-black/48">{formatter.format(line.unitPriceIdr)} × {line.quantity}</p>
+                  <p className="mt-1.5 sf-type-2 text-black/48">{formatIdr(line.unitPriceIdr, formatter)} × {line.quantity}</p>
                 </div>
-                <p className="sf-type-3 font-medium tabular-nums">{formatter.format(line.unitPriceIdr * line.quantity)}</p>
+                <p className="sf-type-3 font-medium tabular-nums">{formatIdr(line.unitPriceIdr * line.quantity, formatter)}</p>
               </div>
             ))}
           </div>
@@ -197,12 +198,12 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
 
         <ReviewSection eyebrow="Order total">
           <div className="space-y-3 rounded-[var(--sf-radius-card)] bg-[#f0e6dd] px-4 py-5">
-            <PriceRow label="Subtotal" value={formatter.format(itemsTotalIdr)} />
-            <PriceRow label={fulfillment === 'delivery' ? 'Delivery fee' : 'Pickup fee'} value={fulfillment === 'delivery' ? formatter.format(deliveryFeeIdr) : 'Free'} />
-            {discountIdr > 0 && <PriceRow label={appliedVoucherCode ? `Discount (${appliedVoucherCode})` : automaticPromoLabel ? `Discount (${automaticPromoLabel})` : 'Discount'} value={`-${formatter.format(discountIdr)}`} accent />}
+            <PriceRow label="Subtotal" value={formatIdr(itemsTotalIdr, formatter)} />
+            <PriceRow label={fulfillment === 'delivery' ? 'Delivery fee' : 'Pickup fee'} value={fulfillment === 'delivery' ? formatIdr(deliveryFeeIdr, formatter) : 'Free'} />
+            {discountIdr > 0 && <PriceRow label={appliedVoucherCode ? `Discount (${appliedVoucherCode})` : automaticPromoLabel ? `Discount (${automaticPromoLabel})` : 'Discount'} value={`-${formatIdr(discountIdr, formatter)}`} accent />}
             <div className="mt-4 flex items-end justify-between gap-4 border-t border-black/14 pt-4">
               <span className="sf-type-3 font-medium">Total to pay</span>
-              <span className="text-[2.55rem] font-medium leading-none tabular-nums">{formatter.format(grandTotalIdr)}</span>
+              <span className="text-[2.55rem] font-medium leading-none tabular-nums">{formatIdr(grandTotalIdr, formatter)}</span>
             </div>
           </div>
         </ReviewSection>
@@ -212,7 +213,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
         {detailsError && <p role="alert" className="col-span-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{detailsError}</p>}
         <button type="button" onClick={() => setStep('details')} className="sf-secondary-action px-5">Back</button>
         <button type="button" onClick={handleConfirmOrder} className="sf-primary-action tap-scale px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00813f]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f0e6dd] sm:px-6">
-          Place order · {formatter.format(grandTotalIdr)}
+          Place order · {formatIdr(grandTotalIdr, formatter)}
         </button>
       </footer>
     </>
