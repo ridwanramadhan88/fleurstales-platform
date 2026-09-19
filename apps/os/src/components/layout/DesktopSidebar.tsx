@@ -209,15 +209,15 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
         aria-label="Primary"
       >
         {userRole === 'hr' ? <>
-          {visibleDestinationIds.includes('dashboard') && <section><p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">Overview</p><SidebarNavButton label="Overview" icon={<LayoutDashboard className="size-4" />} active={activeTab === 'dashboard'} onClick={() => onTabChange('dashboard')} /></section>}
+          {visibleDestinationIds.includes('dashboard') && <section><p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">Overview</p><SidebarNavButton label="Overview" icon={<LayoutDashboard className="size-4" />} active={activeTab === 'dashboard'} onClick={() => onTabChange('dashboard')} /></section>}
           {([
             { label:'Attendance', items:[['attendance','Attendance',<CalendarCheck2 className="size-4" />],['scheduling','Scheduling',<CalendarDays className="size-4" />]] },
             { label:'People', items:[['employees','Employees',<UsersRound className="size-4" />],['reports','Reports',<FileBarChart className="size-4" />]] },
             { label:'Payroll', items:[['payroll','Payroll',<WalletCards className="size-4" />],['points','Points',<BadgeCent className="size-4" />]] },
-          ] as const).map((group) => <section key={group.label}><p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">{group.label}</p><div className="space-y-0.5">{group.items.map(([section,label,icon]) => <SidebarNavButton key={section} label={label} icon={icon} active={activeTab === 'hr' && activeHrSection === section} onClick={() => onHrSectionChange?.(section)} />)}</div></section>)}
+          ] as const).map((group) => <section key={group.label}><p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">{group.label}</p><div className="space-y-0.5">{group.items.map(([section,label,icon]) => <SidebarNavButton key={section} label={label} icon={icon} active={activeTab === 'hr' && activeHrSection === section} onClick={() => onHrSectionChange?.(section)} />)}</div></section>)}
         </> : getNavigationGroupsForDestinations(visibleDestinationIds).map((group) => (
           <section key={group.id}>
-            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">
+            <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">
               {group.label}
             </p>
             <div className="space-y-0.5">
