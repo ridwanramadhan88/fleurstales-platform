@@ -37,7 +37,7 @@ const normalizeSize = (size: CatalogSizeGuideSize, index: number, legacy?: Catal
   ...size,
   sortOrder: size.sortOrder ?? index,
   isActive: size.isActive ?? true,
-  // Batch 2 compatibility: an old category-level guide remains visible for a
+  // Batch 1 compatibility: an old category-level guide remains visible for a
   // child until that child receives its own image.
   ...(size.guideImageUrl ? {} : legacy?.imageUrl ? {
     guideImageUrl: legacy.imageUrl,
@@ -88,7 +88,8 @@ export const loadPersistedSizeGuides = (): PersistedSizeGuides => {
 
 type SizeGuideActions = Pick<CatalogStoreState,
   'saveSizeGuideTemplate' | 'addSizeGuideTemplateSize' | 'updateSizeGuideTemplateSize' |
-  'archiveSizeGuideTemplateSize' | 'deleteSizeGuideTemplate' | 'assignSizeGuide' | 'removeSizeGuideTarget'
+  'archiveSizeGuideTemplateSize' | 'deleteSizeGuideTemplate' | 'assignSizeGuide' | 'removeSizeGuideTarget' |
+  'applySizeGuideLibraryDraft'
 >
 
 export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: CatalogStoreGet): SizeGuideActions => ({
@@ -148,6 +149,7 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
       const template = state.sizeGuideTemplates.find((item) => item.id === templateId)
       if (!template) return state
       const cleanName = patch.name?.trim()
+      if (patch.name !== undefined && !cleanName) return state
       if (cleanName && template.sizes.some((size) => size.id !== sizeId && size.name.toLowerCase() === cleanName.toLowerCase())) return state
       if (!template.sizes.some((size) => size.id === sizeId)) return state
       updated = true
@@ -167,8 +169,10 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
 
   archiveSizeGuideTemplateSize: (templateId, sizeId) => {
     if (!isSectionEditAuthorized('catalog')) return false
-    const inUse = get().products.some((product) => product.variants.some((variant) => variant.sizeOptionId === sizeId && variant.status === 'active'))
-    if (inUse) return false
+    const inUseBySellableVariant = get().products.some((product) =>
+      product.variants.some((variant) => variant.sizeOptionId === sizeId && variant.status === 'active'),
+    )
+    if (inUseBySellableVariant) return false
     return get().updateSizeGuideTemplateSize(templateId, sizeId, { isActive: false })
   },
 
@@ -190,6 +194,7 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
 
   assignSizeGuide: (input) => {
     if (!isSectionEditAuthorized('catalog')) return
+    if (!get().sizeGuideTemplates.some((template) => template.id === input.templateId)) return
     set((state) => {
       const withoutSameTarget = state.sizeGuideTargets.filter((target) => input.scope === 'product'
         ? !(target.scope === 'product' && target.productId === input.productId)
@@ -210,6 +215,46 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
       persist(next)
       return next
     })
+  },
+
+  applySizeGuideLibraryDraft: ({ templates, targets }) => {
+    if (!isSectionEditAuthorized('catalog')) return false
+
+    const normalizedTemplates = templates.map((template) => normalizeTemplate({
+      ...template,
+      name: template.name.trim(),
+      sizes: template.sizes.map((size, index) => normalizeSize(size, index)),
+      updatedAt: template.updatedAt || new Date().toISOString(),
+    }))
+    if (normalizedTemplates.some((template) => !template.name)) return false
+
+    const templateNames = normalizedTemplates.map((template) => template.name.toLowerCase())
+    if (new Set(templateNames).size !== templateNames.length) return false
+
+    for (const template of normalizedTemplates) {
+      const names = template.sizes.map((size) => size.name.trim().toLowerCase())
+      const ids = template.sizes.map((size) => size.id)
+      if (names.some((name) => !name) || new Set(names).size !== names.length || new Set(ids).size !== ids.length) return false
+    }
+
+    const templateIds = new Set(normalizedTemplates.map((template) => template.id))
+    if (targets.some((target) => !templateIds.has(target.templateId))) return false
+
+    const archivedSizeIds = new Set(
+      normalizedTemplates.flatMap((template) => template.sizes.filter((size) => size.isActive === false).map((size) => size.id)),
+    )
+    const activeReferenceToArchived = get().products.some((product) =>
+      product.variants.some((variant) => variant.status === 'active' && variant.sizeOptionId && archivedSizeIds.has(variant.sizeOptionId)),
+    )
+    if (activeReferenceToArchived) return false
+
+    const next = {
+      sizeGuideTemplates: structuredClone(normalizedTemplates),
+      sizeGuideTargets: structuredClone(targets),
+    }
+    set(next)
+    persist(next)
+    return true
   },
 })
 

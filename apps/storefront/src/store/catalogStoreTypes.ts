@@ -163,6 +163,10 @@ export interface CatalogStoreState {
     | { templateId: string; scope: 'product'; productId: string }
   ) => void
   removeSizeGuideTarget: (targetId: string) => void
+  applySizeGuideLibraryDraft: (input: {
+    templates: CatalogSizeGuideTemplate[]
+    targets: CatalogSizeGuideTarget[]
+  }) => boolean
   addCategory: (name: string, prefix?: string) => CategoryMutationResult
   updateCategory: (id: string, patch: { name: string; prefix: string }) => CategoryMutationResult
   renameCategory: (id: string, name: string) => CategoryMutationResult

@@ -16,6 +16,8 @@ const iconButton = 'inline-flex size-11 shrink-0 items-center justify-center rou
 export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
   const arrangementTypes = useCatalogStore((state) => state.arrangementTypes)
   const products = useCatalogStore((state) => state.products)
+  const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
+  const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets)
   const addArrangementType = useCatalogStore((state) => state.addArrangementType)
   const renameArrangementType = useCatalogStore((state) => state.renameArrangementType)
   const deleteArrangementType = useCatalogStore((state) => state.deleteArrangementType)
@@ -23,10 +25,16 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
   const [editingName, setEditingName] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
   const [confirmRemoveName, setConfirmRemoveName] = useState<string | null>(null)
-  const rows = useMemo(() => arrangementTypes.map((name) => ({
-    name,
-    productCount: products.filter((product) => product.productType === name).length,
-  })), [arrangementTypes, products])
+
+  const rows = useMemo(() => arrangementTypes.map((name) => {
+    const defaultTarget = sizeGuideTargets.find((target) => target.scope === 'product_type' && target.productType === name)
+    const defaultTemplate = defaultTarget ? sizeGuideTemplates.find((template) => template.id === defaultTarget.templateId) : undefined
+    return {
+      name,
+      productCount: products.filter((product) => product.productType === name).length,
+      defaultTemplateName: defaultTemplate?.name,
+    }
+  }), [arrangementTypes, products, sizeGuideTargets, sizeGuideTemplates])
 
   const showResult = (result: ReturnType<typeof addArrangementType>): boolean => {
     if (result.ok) return true
@@ -36,74 +44,78 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
 
   return (
     <>
-    <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
-      <DialogContent className="grid h-[min(720px,calc(100dvh-2rem))] max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 lg:max-w-2xl">
-        <DialogHeader className="border-b border-border/70 px-6 py-5">
-          <DialogTitle>Manage arrangement types</DialogTitle>
-          <DialogDescription>
-            Keep product types consistent across Catalog, Storefront, and size guides.
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={(next) => { if (!next) onClose() }}>
+        <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-full max-w-none grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-none border-0 p-0 sm:h-[min(720px,calc(100dvh-2rem))] sm:w-[calc(100%-2rem)] sm:max-w-2xl sm:rounded-2xl sm:border">
+          <DialogHeader className="border-b border-border/70 px-5 py-5 sm:px-6">
+            <DialogTitle>Kelola Jenis rangkaian</DialogTitle>
+            <DialogDescription>
+              Jaga penamaan Jenis rangkaian tetap konsisten di Catalog, Storefront, dan Template ukuran.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="min-h-0 overflow-y-auto px-6 py-5">
-          <div className="space-y-3">
-            {rows.map((row) => (
-              <article key={row.name} className="rounded-2xl border border-border/75 bg-card p-4">
-                {editingName === row.name ? (
-                  <div className="flex items-end gap-2">
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                      <label className="text-sm font-medium">Arrangement type name</label>
-                      <input autoFocus value={draftName} onChange={(event) => setDraftName(event.target.value)} className={fieldClass} />
+          <div className="min-h-0 overflow-y-auto px-4 py-5 sm:px-6">
+            <div className="space-y-3">
+              {rows.map((row) => (
+                <article key={row.name} className="rounded-2xl border border-border/75 bg-card p-4">
+                  {editingName === row.name ? (
+                    <div className="flex items-end gap-2">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <label className="text-sm font-medium">Nama Jenis rangkaian</label>
+                        <input autoFocus value={draftName} onChange={(event) => setDraftName(event.target.value)} className={fieldClass} />
+                      </div>
+                      <button type="button" aria-label="Simpan nama Jenis rangkaian" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" onClick={() => {
+                        if (showResult(renameArrangementType(row.name, draftName))) setEditingName(null)
+                      }}><Check className="size-4" /></button>
+                      <button type="button" aria-label="Batal mengubah Jenis rangkaian" className={iconButton} onClick={() => setEditingName(null)}><X className="size-4" /></button>
                     </div>
-                    <button type="button" aria-label="Save arrangement type" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" onClick={() => {
-                      if (showResult(renameArrangementType(row.name, draftName))) setEditingName(null)
-                    }}><Check className="size-4" /></button>
-                    <button type="button" aria-label="Cancel arrangement type edit" className={iconButton} onClick={() => setEditingName(null)}><X className="size-4" /></button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-base font-semibold">{row.name}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">{row.productCount} product{row.productCount === 1 ? '' : 's'}</p>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-base font-semibold">{row.name}</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">{row.productCount} produk</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Template default: {row.defaultTemplateName ?? 'Belum ditetapkan'}
+                        </p>
+                      </div>
+                      <button type="button" aria-label={`Ubah ${row.name}`} className={iconButton} onClick={() => { setEditingName(row.name); setDraftName(row.name) }}><Pencil className="size-4" /></button>
+                      <button type="button" aria-label={`Hapus ${row.name}`} disabled={row.productCount > 0} className={`${iconButton} text-destructive disabled:cursor-not-allowed disabled:text-muted-foreground/35 disabled:hover:bg-transparent`} onClick={() => {
+                        if (row.productCount > 0) return
+                        setConfirmRemoveName(row.name)
+                      }}><Trash2 className="size-4" /></button>
                     </div>
-                    <button type="button" aria-label={`Edit ${row.name}`} className={iconButton} onClick={() => { setEditingName(row.name); setDraftName(row.name) }}><Pencil className="size-4" /></button>
-                    <button type="button" aria-label={`Remove ${row.name}`} disabled={row.productCount > 0} className={`${iconButton} text-destructive disabled:cursor-not-allowed disabled:text-muted-foreground/35 disabled:hover:bg-transparent`} onClick={() => {
-                      if (row.productCount > 0) return
-                      setConfirmRemoveName(row.name)
-                    }}><Trash2 className="size-4" /></button>
-                  </div>
-                )}
-              </article>
-            ))}
-            {rows.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">No arrangement types yet.</p>}
-          </div>
-        </div>
-
-        <div className="border-t border-border bg-card px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <label className="text-sm font-medium">New arrangement type</label>
-              <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Example: Hand bouquet" className={fieldClass} />
+                  )}
+                </article>
+              ))}
+              {rows.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">Belum ada Jenis rangkaian.</p> : null}
             </div>
-            <button type="button" className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground" onClick={() => {
-              if (showResult(addArrangementType(newName))) setNewName('')
-            }}><Plus className="size-4" />Add type</button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-    <ConfirmActionDialog
-      open={confirmRemoveName !== null}
-      onOpenChange={(nextOpen) => { if (!nextOpen) setConfirmRemoveName(null) }}
-      title={confirmRemoveName ? `Remove “${confirmRemoveName}”?` : 'Remove type?'}
-      description="This unused arrangement type will also be removed from size-guide assignments."
-      confirmLabel="Remove type"
-      destructive
-      onConfirm={() => {
-        if (confirmRemoveName) showResult(deleteArrangementType(confirmRemoveName))
-        setConfirmRemoveName(null)
-      }}
-    />
+
+          <div className="border-t border-border bg-card px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <label className="text-sm font-medium">Jenis rangkaian baru</label>
+                <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Contoh: Hand bouquet" className={fieldClass} />
+              </div>
+              <button type="button" className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground" onClick={() => {
+                if (showResult(addArrangementType(newName))) setNewName('')
+              }}><Plus className="size-4" /> Tambah jenis</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmActionDialog
+        open={confirmRemoveName !== null}
+        onOpenChange={(nextOpen) => { if (!nextOpen) setConfirmRemoveName(null) }}
+        title={confirmRemoveName ? `Hapus “${confirmRemoveName}”?` : 'Hapus Jenis rangkaian?'}
+        description="Jenis rangkaian yang tidak dipakai ini juga akan dihapus dari penetapan Template ukuran."
+        confirmLabel="Hapus jenis"
+        destructive
+        onConfirm={() => {
+          if (confirmRemoveName) showResult(deleteArrangementType(confirmRemoveName))
+          setConfirmRemoveName(null)
+        }}
+      />
     </>
   )
 }

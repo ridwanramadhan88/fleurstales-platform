@@ -1,5 +1,5 @@
 import { useCatalogStore } from '../../store/catalogStore'
-import type { CatalogSizeGuideSize, CatalogSizeGuideTarget, CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
+import type { CatalogSizeGuideSize, CatalogSizeGuideTarget, CatalogSizeGuideTemplate, CatalogStoreState } from '../../store/catalogStoreTypes'
 import type { CatalogAdminRepository } from './repositoryContracts'
 import type { SharedSizeGuideTarget, SharedSizeGuideTemplate } from './contracts'
 import { BOUQUET_STANDARD_SIZES } from '../../store/catalogStoreSizeGuideActions'
@@ -102,17 +102,22 @@ const toSharedTarget = (target: CatalogSizeGuideTarget): SharedSizeGuideTarget =
   ? { id: target.id, templateId: target.templateId, scope: 'product', productId: target.productId }
   : { id: target.id, templateId: target.templateId, scope: 'product_type', productType: target.productType }
 
+interface PreparedSizeGuideTemplate {
+  template: SharedSizeGuideTemplateWithSizes
+  uploadedPaths: string[]
+}
+
 const uploadChildGuide = async (
   repository: CatalogAdminRepository,
   template: CatalogSizeGuideTemplate,
   size: CatalogSizeGuideSize,
-): Promise<CatalogSizeGuideSize> => {
-  if (!size.guideImageUrl?.startsWith('data:image/')) return size
+): Promise<{ size: CatalogSizeGuideSize; uploadedPath?: string }> => {
+  if (!size.guideImageUrl?.startsWith('data:image/')) return { size }
   const response = await fetch(size.guideImageUrl)
   const blob = await response.blob()
   if (blob.type !== 'image/jpeg') throw new Error(`Panduan ukuran ${template.name} · ${size.name} harus berupa JPEG.`)
   if (blob.size > MAX_SIZE_GUIDE_BYTES) throw new Error(`Panduan ukuran ${template.name} · ${size.name} melebihi 100 KB.`)
-  const storagePath = size.guideStoragePath ?? `${safeSegment(template.id)}/${safeSegment(size.id)}.jpg`
+  const storagePath = `${safeSegment(template.id)}/${safeSegment(size.id)}-${Date.now()}.jpg`
   const uploaded = await repository.uploadSizeGuide({
     template: {
       id: size.id,
@@ -127,20 +132,24 @@ const uploadChildGuide = async (
     blob,
   })
   return {
-    ...size,
-    guideImageUrl: uploaded.publicUrl,
-    guideStoragePath: storagePath,
-    guideByteSize: blob.size,
-    guideWidth: 800,
-    guideHeight: 800,
+    size: {
+      ...size,
+      guideImageUrl: uploaded.publicUrl,
+      guideStoragePath: storagePath,
+      guideByteSize: blob.size,
+      guideWidth: 800,
+      guideHeight: 800,
+    },
+    uploadedPath: storagePath,
   }
 }
 
 const prepareTemplate = async (
   repository: CatalogAdminRepository,
   template: CatalogSizeGuideTemplate,
-): Promise<SharedSizeGuideTemplateWithSizes> => {
-  const preparedSizes = await Promise.all(normalizeSizes(template.sizes).map((size) => uploadChildGuide(repository, template, size)))
+): Promise<PreparedSizeGuideTemplate> => {
+  const prepared = await Promise.all(normalizeSizes(template.sizes).map((size) => uploadChildGuide(repository, template, size)))
+  const preparedSizes = prepared.map((item) => item.size)
   const sizes: SharedSizeGuideSizeWithGuide[] = preparedSizes.map((size) => ({
     id: size.id,
     name: size.name,
@@ -155,29 +164,45 @@ const prepareTemplate = async (
 
   const storagePath = template.storagePath ?? `logical/${safeSegment(template.id)}.jpg`
   return {
-    id: template.id,
-    name: template.name.trim(),
-    sizes,
-    storagePath,
-    publicUrl: template.imageUrl,
-    mimeType: 'image/jpeg',
-    byteSize: template.byteSize,
-    width: 800,
-    height: 800,
-    createdAt: template.createdAt,
-    updatedAt: template.updatedAt,
+    template: {
+      id: template.id,
+      name: template.name.trim(),
+      sizes,
+      storagePath,
+      publicUrl: template.imageUrl,
+      mimeType: 'image/jpeg',
+      byteSize: template.byteSize,
+      width: 800,
+      height: 800,
+      createdAt: template.createdAt,
+      updatedAt: template.updatedAt,
+    },
+    uploadedPaths: prepared.flatMap((item) => item.uploadedPath ? [item.uploadedPath] : []),
   }
 }
 
-export const syncLocalSizeGuideLibrary = async (repository: CatalogAdminRepository): Promise<void> => {
-  const state = useCatalogStore.getState()
+export const syncSizeGuideLibrary = async (
+  repository: CatalogAdminRepository,
+  input: Pick<CatalogStoreState, 'sizeGuideTemplates' | 'sizeGuideTargets'>,
+): Promise<void> => {
   const previous = await repository.listSizeGuideTemplates()
   const previousChildPaths = previous.flatMap((template) =>
     (asSizeGuideTemplateWithSizes(template).sizes ?? []).flatMap((size) => size.guideStoragePath ? [size.guideStoragePath] : []),
   )
-  const templates = await Promise.all(state.sizeGuideTemplates.map((template) => prepareTemplate(repository, template)))
-  const targets = state.sizeGuideTargets.map(toSharedTarget)
-  await repository.replaceSizeGuideLibrary({ templates, targets })
+
+  const prepared = await Promise.all(input.sizeGuideTemplates.map((template) => prepareTemplate(repository, template)))
+  const templates = prepared.map((item) => item.template)
+  const uploadedPaths = prepared.flatMap((item) => item.uploadedPaths)
+  const targets = input.sizeGuideTargets.map(toSharedTarget)
+
+  try {
+    await repository.replaceSizeGuideLibrary({ templates, targets })
+  } catch (error) {
+    if (uploadedPaths.length > 0) {
+      try { await repository.removeSizeGuideObjects([...new Set(uploadedPaths)]) } catch { /* best-effort orphan cleanup */ }
+    }
+    throw error
+  }
 
   const activePaths = new Set([
     ...templates.filter((template) => template.byteSize > 0).map((template) => template.storagePath),
@@ -187,6 +212,16 @@ export const syncLocalSizeGuideLibrary = async (repository: CatalogAdminReposito
     ...previous.filter((template) => template.byteSize > 0).map((template) => template.storagePath),
     ...previousChildPaths,
   ].filter((path) => !activePaths.has(path))
-  if (removedPaths.length > 0) await repository.removeSizeGuideObjects([...new Set(removedPaths)])
+  if (removedPaths.length > 0) {
+    try { await repository.removeSizeGuideObjects([...new Set(removedPaths)]) } catch { /* best-effort cleanup after committed metadata */ }
+  }
   applyRemoteSizeGuideLibrary(templates, targets)
+}
+
+export const syncLocalSizeGuideLibrary = async (repository: CatalogAdminRepository): Promise<void> => {
+  const state = useCatalogStore.getState()
+  await syncSizeGuideLibrary(repository, {
+    sizeGuideTemplates: state.sizeGuideTemplates,
+    sizeGuideTargets: state.sizeGuideTargets,
+  })
 }

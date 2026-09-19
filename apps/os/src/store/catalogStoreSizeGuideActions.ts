@@ -88,7 +88,8 @@ export const loadPersistedSizeGuides = (): PersistedSizeGuides => {
 
 type SizeGuideActions = Pick<CatalogStoreState,
   'saveSizeGuideTemplate' | 'addSizeGuideTemplateSize' | 'updateSizeGuideTemplateSize' |
-  'archiveSizeGuideTemplateSize' | 'deleteSizeGuideTemplate' | 'assignSizeGuide' | 'removeSizeGuideTarget'
+  'archiveSizeGuideTemplateSize' | 'deleteSizeGuideTemplate' | 'assignSizeGuide' | 'removeSizeGuideTarget' |
+  'applySizeGuideLibraryDraft'
 >
 
 export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: CatalogStoreGet): SizeGuideActions => ({
@@ -214,6 +215,46 @@ export const createCatalogSizeGuideActions = (set: CatalogStoreSet, get: Catalog
       persist(next)
       return next
     })
+  },
+
+  applySizeGuideLibraryDraft: ({ templates, targets }) => {
+    if (!isSectionEditAuthorized('catalog')) return false
+
+    const normalizedTemplates = templates.map((template) => normalizeTemplate({
+      ...template,
+      name: template.name.trim(),
+      sizes: template.sizes.map((size, index) => normalizeSize(size, index)),
+      updatedAt: template.updatedAt || new Date().toISOString(),
+    }))
+    if (normalizedTemplates.some((template) => !template.name)) return false
+
+    const templateNames = normalizedTemplates.map((template) => template.name.toLowerCase())
+    if (new Set(templateNames).size !== templateNames.length) return false
+
+    for (const template of normalizedTemplates) {
+      const names = template.sizes.map((size) => size.name.trim().toLowerCase())
+      const ids = template.sizes.map((size) => size.id)
+      if (names.some((name) => !name) || new Set(names).size !== names.length || new Set(ids).size !== ids.length) return false
+    }
+
+    const templateIds = new Set(normalizedTemplates.map((template) => template.id))
+    if (targets.some((target) => !templateIds.has(target.templateId))) return false
+
+    const archivedSizeIds = new Set(
+      normalizedTemplates.flatMap((template) => template.sizes.filter((size) => size.isActive === false).map((size) => size.id)),
+    )
+    const activeReferenceToArchived = get().products.some((product) =>
+      product.variants.some((variant) => variant.status === 'active' && variant.sizeOptionId && archivedSizeIds.has(variant.sizeOptionId)),
+    )
+    if (activeReferenceToArchived) return false
+
+    const next = {
+      sizeGuideTemplates: structuredClone(normalizedTemplates),
+      sizeGuideTargets: structuredClone(targets),
+    }
+    set(next)
+    persist(next)
+    return true
   },
 })
 

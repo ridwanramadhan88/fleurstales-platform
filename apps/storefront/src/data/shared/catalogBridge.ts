@@ -13,7 +13,7 @@ import type { SharedOccasion, SharedProduct, SharedProductImage, SharedProductIm
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from './supabaseSession'
 import { buildCatalogImageStoragePlan, materializeCatalogImagesAfterCommit } from './catalogImageBridge'
-import { applyRemoteSizeGuideLibrary, syncLocalSizeGuideLibrary } from './sizeGuideBridge'
+import { applyRemoteSizeGuideLibrary, syncLocalSizeGuideLibrary, syncSizeGuideLibrary } from './sizeGuideBridge'
 
 export type CatalogBridgeMode = 'business_os' | 'storefront'
 export type CatalogBridgePhase =
@@ -591,6 +591,56 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
     const runAgain = succeeded && saveRequestedWhileSaving
     saveRequestedWhileSaving = false
     if (runAgain) queueMicrotask(() => { void flushBusinessOsCatalogSync() })
+  }
+}
+
+export const flushBusinessOsSizeGuideSync = async (
+  input?: Pick<CatalogStoreState, 'sizeGuideTemplates' | 'sizeGuideTargets'>,
+): Promise<boolean> => {
+  if (!bridgeStatus.remoteConfigured) return true
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = undefined
+  }
+  if (remoteRevision === undefined) return false
+
+  const accessToken = getSupabaseAccessToken()
+  if (!accessToken) {
+    setBridgeStatus({ phase: 'auth_required', writable: false, message: 'Sesi Supabase staf sudah tidak tersedia.' })
+    return false
+  }
+
+  const shared = bootstrapSharedData(browserSupabaseTokenProvider)
+  if (!shared.enabled) return false
+
+  setBridgeStatus({ phase: 'saving', writable: true, message: undefined })
+  try {
+    const state = useCatalogStore.getState()
+    await syncSizeGuideLibrary(shared.repositories.catalogAdmin, input ?? {
+      sizeGuideTemplates: state.sizeGuideTemplates,
+      sizeGuideTargets: state.sizeGuideTargets,
+    })
+    lastSyncedHash = snapshotHash(useCatalogStore.getState())
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = undefined
+    }
+    setBridgeStatus({
+      phase: 'remote',
+      writable: true,
+      remoteRevision,
+      lastSavedAt: new Date().toISOString(),
+      message: undefined,
+    })
+    return true
+  } catch (error) {
+    setBridgeStatus({
+      phase: 'error',
+      writable: true,
+      remoteRevision,
+      message: explainError(error),
+    })
+    return false
   }
 }
 
