@@ -16,7 +16,6 @@ import { StorefrontMiniCart } from "../components/storefront/StorefrontMiniCart"
 import { StorefrontHeader } from "../components/storefront/StorefrontHeader";
 import { StorefrontContainer } from "../components/storefront/StorefrontContainer";
 import { StorefrontFooter } from "../components/storefront/StorefrontFooter";
-import { StorefrontFlowerRecipe } from "../components/storefront/StorefrontFlowerRecipe";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +25,7 @@ import { getStorefrontVariantGallery } from "../components/storefront/storefront
 import { getPromoPercentLabel } from "../domain/catalogDomain";
 import { useScrollThresholdCartBar } from "../hooks/useScrollThresholdCartBar";
 import { useCatalogStore } from "../store/catalogStore";
-import { resolveCatalogSizeGuide } from "../store/catalogStoreSizeGuideActions";
+import { getStorefrontVariantSizeGuide } from "../domain/storefrontCatalogProjectionDomain";
 
 interface Props {
   product: CatalogProduct;
@@ -141,19 +140,19 @@ export const StorefrontProductDetailPage: FC<Props> = ({
   const productDetailsAlwaysOpen =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(min-width: 640px)").matches;
-  const sizeGuide = useMemo(
-    () => resolveCatalogSizeGuide(product, sizeGuideTemplates, sizeGuideTargets),
-    [product, sizeGuideTargets, sizeGuideTemplates],
+  const selectedSizeGuide = useMemo(
+    () => getStorefrontVariantSizeGuide(
+      product,
+      selectedVariant,
+      sizeGuideTemplates,
+      sizeGuideTargets,
+    ),
+    [product, selectedVariant, sizeGuideTargets, sizeGuideTemplates],
   );
-  const selectedSizeGuideOption = useMemo(() => {
-    if (!sizeGuide || !selectedVariant) return undefined;
-    return sizeGuide.sizes.find((size) => size.id === selectedVariant.sizeOptionId)
-      ?? sizeGuide.sizes.find((size) => size.name.trim().toLowerCase() === selectedVariant.size.trim().toLowerCase());
-  }, [selectedVariant, sizeGuide]);
-  const selectedSizeGuideImageUrl = selectedSizeGuideOption?.guideImageUrl ?? sizeGuide?.imageUrl ?? undefined;
-  const selectedSizeGuideLabel = selectedVariant
-    ? `${sizeGuide?.name ?? "Size guide"} · ${selectedVariant.size}`
-    : sizeGuide?.name ?? "Size guide";
+  const selectedSizeGuideImageUrl = selectedSizeGuide?.size.guideImageUrl;
+  const selectedSizeGuideLabel = selectedSizeGuide && selectedVariant
+    ? `${selectedSizeGuide.template.name} · ${selectedVariant.size}`
+    : "Size guide";
 
   useEffect(() => {
     setSelectedVariantId(activeVariants.length === 1 ? activeVariants[0]?.id ?? "" : "");
@@ -407,11 +406,6 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                   })}
                 </div>
               </section>
-
-              <StorefrontFlowerRecipe
-                variant={selectedVariant}
-                showSelectionHint={requiresSizeSelection && !selectedVariant}
-              />
 
               <section className="space-y-4 lg:space-y-3" aria-labelledby="purchase-heading">
                 <h2 id="purchase-heading" className="sr-only">Purchase options</h2>
