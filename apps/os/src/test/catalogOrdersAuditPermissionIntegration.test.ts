@@ -29,6 +29,8 @@ describe('Catalog Orders Cart Audit permission integration', () => {
     expect(migrationSource).toContain("'catalog.variant_cost.update'")
     expect(migrationSource).toContain("'catalog.size_template_assignments.update'")
     expect(auditSyncSource).toContain("row.entity_type.startsWith('catalog_')")
+    expect(auditSyncSource).toContain('beforeState')
+    expect(auditSyncSource).toContain('afterState')
   })
 
   it('hydrates stable size identity and excludes archived rows from current Catalog reads', () => {
