@@ -26,6 +26,9 @@ import { toast } from '../../hooks/use-toast'
 import type { CatalogTabContentProps } from './CatalogTabContent'
 import { flushBusinessOsCatalogSync, getCatalogBridgeStatus } from '../../data/shared/catalogBridge'
 
+const CATALOG_INITIAL_VISIBLE_COUNT = 30
+const CATALOG_VISIBLE_BATCH_SIZE = 30
+
 export interface PendingBulkDelete {
   deleteCount: number
   archiveCount: number
@@ -55,6 +58,9 @@ export interface CatalogTabContentViewModel {
   availableCategories: string[]
   availableSubCategories: CatalogMaterial[]
   filteredProducts: CatalogProduct[]
+  visibleProducts: CatalogProduct[]
+  visibleProductCount: number
+  hasMoreProducts: boolean
   allSelected: boolean
   showingArchivedView: boolean
   canEdit: boolean
@@ -101,6 +107,7 @@ export interface CatalogTabContentViewModel {
   onOpenSizeGuideDialog: () => void
   onCloseSizeGuideDialog: () => void
   onClearFilters: () => void
+  onLoadMoreProducts: () => void
 }
 
 const downloadCsv = (filename: string, csv: string) => {
@@ -152,6 +159,7 @@ export const useCatalogTabContentController = ({
   const [promoFeatureDialogOpen, setPromoFeatureDialogOpen] = useState(false)
   const [sizeGuideDialogOpen, setSizeGuideDialogOpen] = useState(false)
   const [quickFilter, setQuickFilter] = useState<'featured' | 'promo' | null>(null)
+  const [visibleProductCount, setVisibleProductCount] = useState(CATALOG_INITIAL_VISIBLE_COUNT)
 
   const overview = useMemo(() => getCatalogOverviewStats(products), [products])
   const categoryNames = useMemo(() => categories.map((category) => category.name), [categories])
@@ -187,6 +195,9 @@ export const useCatalogTabContentController = ({
     quickFilter,
   ])
 
+  const visibleProducts = filteredProducts.slice(0, visibleProductCount)
+  const hasMoreProducts = visibleProducts.length < filteredProducts.length
+
   const detailProduct = detailProductId
     ? (products.find((product) => product.id === detailProductId) ?? null)
     : null
@@ -199,7 +210,10 @@ export const useCatalogTabContentController = ({
 
   return {
     searchQuery,
-    onSearchQueryChange,
+    onSearchQueryChange: (value) => {
+      setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
+      onSearchQueryChange(value)
+    },
     statusFilter,
     categoryFilter,
     subCategoryFilter,
@@ -221,21 +235,38 @@ export const useCatalogTabContentController = ({
     availableCategories,
     availableSubCategories,
     filteredProducts,
+    visibleProducts,
+    visibleProductCount,
+    hasMoreProducts,
     allSelected,
     showingArchivedView,
     canEdit,
-    onStatusFilterChange: setStatusFilter,
+    onStatusFilterChange: (value) => {
+      setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
+      setStatusFilter(value)
+    },
     onCategoryFilterChange: (value) => {
+      setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
       setCategoryFilter(value)
       setSubCategoryFilter('all')
     },
-    onSubCategoryFilterChange: setSubCategoryFilter,
-    onSortOptionChange: setSortOption,
+    onSubCategoryFilterChange: (value) => {
+      setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
+      setSubCategoryFilter(value)
+    },
+    onSortOptionChange: (value) => {
+      setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
+      setSortOption(value)
+    },
     onQuickFilterToggle: (filter) => {
+      setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
       setQuickFilter((previous) => (previous === filter ? null : filter))
       setStatusFilter('active')
     },
-    onClearQuickFilter: () => setQuickFilter(null),
+    onClearQuickFilter: () => {
+      setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
+      setQuickFilter(null)
+    },
     onToggleManageMode: () => {
       setManageMode((previous) => !previous)
       setSelectedIds(new Set())
@@ -423,11 +454,15 @@ export const useCatalogTabContentController = ({
     onOpenSizeGuideDialog: () => setSizeGuideDialogOpen(true),
     onCloseSizeGuideDialog: () => setSizeGuideDialogOpen(false),
     onClearFilters: () => {
+      setVisibleProductCount(CATALOG_INITIAL_VISIBLE_COUNT)
       onSearchQueryChange('')
       setCategoryFilter('all')
       setSubCategoryFilter('all')
       setStatusFilter('active')
       setQuickFilter(null)
+    },
+    onLoadMoreProducts: () => {
+      setVisibleProductCount((current) => Math.min(current + CATALOG_VISIBLE_BATCH_SIZE, filteredProducts.length))
     },
   }
 }
