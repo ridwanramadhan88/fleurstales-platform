@@ -239,6 +239,10 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('172 products', 'id')).toBe('172 produk')
     expect(translateUiText('No products found', 'id')).toBe('Produk tidak ditemukan')
     expect(translateUiText('Primary navigation', 'id')).toBe('Navigasi utama')
+    expect(translateUiText('Select branch first', 'id')).toBe('Pilih cabang terlebih dahulu')
+    expect(translateUiText('New order unavailable', 'id')).toBe('Pesanan baru tidak tersedia')
+    expect(translateUiText('Search order #, customer, phone…', 'id')).toBe('Cari nomor pesanan, pelanggan, telepon…')
+    expect(translateUiText('Search orders…', 'id')).toBe('Cari pesanan…')
   })
 
   it('returns original English when selected', () => {
