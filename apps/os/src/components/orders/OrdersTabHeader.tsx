@@ -49,7 +49,7 @@ const SummaryCard: FC<{
   return (
     <div className={`min-w-0 rounded-xl p-3 shadow-ios-sm ring-1 sm:rounded-2xl sm:p-4 ${surfaceClass}`}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold leading-4 text-muted-foreground sm:text-xs">{label}</p>
+        <p className="text-xs font-semibold leading-4 text-muted-foreground">{label}</p>
         <Icon className={`size-3.5 shrink-0 sm:size-4 ${accentClass}`} />
       </div>
       <p className={`mt-0.5 text-lg font-semibold leading-6 tabular-nums sm:mt-1 sm:text-xl ${accentClass}`}>{value}</p>
