@@ -120,34 +120,10 @@ begin
 end;
 $$;
 
-create or replace function private.audit_catalog_size_target_change()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_target_id text := coalesce(new.id,old.id);
-begin
-  perform private.write_audit_event(
-    case when tg_op='INSERT' then 'catalog.size_template_assignment.create'
-         when tg_op='DELETE' then 'catalog.size_template_assignment.delete'
-         else 'catalog.size_template_assignment.update' end,
-    'catalog_size_template_assignment',v_target_id,'succeeded',
-    null,null,
-    case when tg_op='INSERT' then null else to_jsonb(old) end,
-    case when tg_op='DELETE' then null else to_jsonb(new) end,
-    jsonb_build_object('operation',tg_op)
-  );
-  if tg_op='DELETE' then return old; end if;
-  return new;
-end;
-$$;
 
 revoke execute on function private.audit_catalog_product_change() from public,anon,authenticated;
 revoke execute on function private.audit_catalog_variant_change() from public,anon,authenticated;
 revoke execute on function private.audit_catalog_variant_cost_change() from public,anon,authenticated;
-revoke execute on function private.audit_catalog_size_target_change() from public,anon,authenticated;
 
 drop trigger if exists trg_catalog_product_audit on public.products;
 create trigger trg_catalog_product_audit
