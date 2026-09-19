@@ -13,7 +13,7 @@ import type { SharedOccasion, SharedProduct, SharedProductImage, SharedProductIm
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from './supabaseSession'
 import { buildCatalogImageStoragePlan, materializeCatalogImagesAfterCommit } from './catalogImageBridge'
-import { applyRemoteSizeGuideLibrary, syncLocalSizeGuideLibrary } from './sizeGuideBridge'
+import { applyRemoteSizeGuideLibrary, syncLocalSizeGuideLibrary, syncSizeGuideLibrary } from './sizeGuideBridge'
 
 export type CatalogBridgeMode = 'business_os' | 'storefront'
 export type CatalogBridgePhase =
@@ -594,7 +594,9 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
   }
 }
 
-export const flushBusinessOsSizeGuideSync = async (): Promise<boolean> => {
+export const flushBusinessOsSizeGuideSync = async (
+  input?: Pick<CatalogStoreState, 'sizeGuideTemplates' | 'sizeGuideTargets'>,
+): Promise<boolean> => {
   if (!bridgeStatus.remoteConfigured) return true
   if (saveTimer) {
     clearTimeout(saveTimer)
@@ -613,7 +615,11 @@ export const flushBusinessOsSizeGuideSync = async (): Promise<boolean> => {
 
   setBridgeStatus({ phase: 'saving', writable: true, message: undefined })
   try {
-    await syncLocalSizeGuideLibrary(shared.repositories.catalogAdmin)
+    const state = useCatalogStore.getState()
+    await syncSizeGuideLibrary(shared.repositories.catalogAdmin, input ?? {
+      sizeGuideTemplates: state.sizeGuideTemplates,
+      sizeGuideTargets: state.sizeGuideTargets,
+    })
     lastSyncedHash = snapshotHash(useCatalogStore.getState())
     if (saveTimer) {
       clearTimeout(saveTimer)
