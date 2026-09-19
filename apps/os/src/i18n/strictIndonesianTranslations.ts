@@ -309,6 +309,7 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Promo review ini sudah dipakai di order berikutnya.': 'Promo ulasan ini sudah dipakai pada pesanan berikutnya.',
 
   // Pre-release UI/UX cleanup: customer storefront and catalog editor.
+  'Load more products': 'Muat lebih banyak produk',
   'each': 'masing-masing',
   'item': 'item',
   'items': 'item',
