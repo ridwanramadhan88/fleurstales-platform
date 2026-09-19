@@ -18,8 +18,9 @@ describe('OrdersTabHeader recovery states', () => {
       />,
     )
 
-    const blockedButton = screen.getByRole('button', { name: 'New order' })
+    const blockedButton = screen.getByRole('button', { name: 'Select branch first' })
     expect(blockedButton).toHaveAttribute('aria-disabled', 'true')
+    expect(blockedButton).toHaveTextContent('Select branch first')
     fireEvent.click(blockedButton)
     expect(screen.getByText('Select a specific branch before creating an order.')).toBeInTheDocument()
   })
@@ -37,7 +38,7 @@ describe('OrdersTabHeader recovery states', () => {
     )
 
     const blockedAreaClass = screen.getByTestId('new-order-action-area').className
-    const blockedButton = screen.getByRole('button', { name: 'New order' })
+    const blockedButton = screen.getByRole('button', { name: 'Select branch first' })
     expect(blockedButton).toHaveClass('h-11', 'w-full', 'sm:w-auto')
     expect(blockedButton).toHaveAttribute('aria-disabled', 'true')
 
@@ -58,6 +59,21 @@ describe('OrdersTabHeader recovery states', () => {
       'sm:w-auto',
     )
     expect(screen.getByRole('button', { name: 'New order' })).not.toHaveAttribute('aria-disabled')
+  })
+
+  it('uses compact mobile summary geometry without changing tablet cards', () => {
+    render(
+      <OrdersTabHeader
+        activeOrdersSubTab="today"
+        orderCounts={{ active: 4, completed: 2, needsAttention: 1 }}
+        draftCount={3}
+        canCreateOrder
+        onNewOrder={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Active orders').closest('div')?.parentElement?.className).toContain('p-3')
+    expect(screen.getByText('Active orders').closest('div')?.parentElement?.className).toContain('sm:p-4')
   })
 
   it('does not expose order creation to a role that cannot create orders', () => {
