@@ -15,6 +15,8 @@ interface SecurityAuditRow {
   outcome: string
   previous_revision?: number | null
   next_revision?: number | null
+  before_state?: Record<string, unknown> | null
+  after_state?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
   occurred_at: string
 }
@@ -39,7 +41,11 @@ const mapAuditEvent = (row: SecurityAuditRow): AuditEvent => ({
   occurredAt: row.occurred_at,
   previousRevision: row.previous_revision ?? undefined,
   nextRevision: row.next_revision ?? undefined,
-  metadata: row.metadata ?? undefined,
+  metadata: {
+    ...(row.metadata ?? {}),
+    ...(row.before_state ? { beforeState: row.before_state } : {}),
+    ...(row.after_state ? { afterState: row.after_state } : {}),
+  },
 })
 
 /** Owner-only authoritative audit hydration. Local command audit remains demo-only. */
