@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -34,16 +34,39 @@ export const FieldLabel = ({ children, required = false }: { children: ReactNode
   </span>
 )
 
-export const ValidationSummary = ({ errors, title = 'Check the highlighted fields' }: { errors: string[]; title?: string }) => {
+export const ValidationSummary = ({
+  errors,
+  title = 'Check the highlighted fields',
+  onErrorClick,
+  summaryRef,
+}: {
+  errors: string[]
+  title?: string
+  onErrorClick?: (error: string) => void
+  summaryRef?: Ref<HTMLDivElement>
+}) => {
   if (!errors.length) return null
   return (
-    <div role="alert" className="rounded-2xl bg-surface-error p-4 text-sm text-destructive ring-1 ring-destructive/25">
+    <div
+      ref={summaryRef}
+      role="alert"
+      tabIndex={onErrorClick ? -1 : undefined}
+      className="rounded-2xl bg-surface-error p-4 text-sm text-destructive ring-1 ring-destructive/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+    >
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
         <div>
           <p className="font-semibold">{title}</p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs">
-            {errors.map((error) => <li key={error}>{error}</li>)}
+          <ul className="mt-1 space-y-1 text-xs">
+            {errors.map((error) => (
+              <li key={error}>
+                {onErrorClick ? (
+                  <button type="button" onClick={() => onErrorClick(error)} className="min-h-7 text-left underline decoration-destructive/35 underline-offset-2 hover:decoration-current">
+                    {error}
+                  </button>
+                ) : error}
+              </li>
+            ))}
           </ul>
         </div>
       </div>
