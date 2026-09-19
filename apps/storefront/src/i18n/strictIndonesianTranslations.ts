@@ -309,6 +309,16 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Promo review ini sudah dipakai di order berikutnya.': 'Promo ulasan ini sudah dipakai pada pesanan berikutnya.',
 
   // Pre-release UI/UX cleanup: customer storefront and catalog editor.
+  'each': 'masing-masing',
+  'item': 'item',
+  'items': 'item',
+  'Open cart': 'Buka keranjang',
+  'Fresh flower': 'Bunga segar',
+  'Artificial flower': 'Bunga artifisial',
+  'Select a size': 'Pilih ukuran',
+  'Size guide': 'Panduan ukuran',
+  'Add to cart': 'Tambah ke keranjang',
+  'Unavailable': 'Tidak tersedia',
   'Choose a product from catalog': 'Pilih produk dari katalog',
   'Select product': 'Pilih produk',
   'Select method': 'Pilih metode',
