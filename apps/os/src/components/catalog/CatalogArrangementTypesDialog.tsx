@@ -77,7 +77,7 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
                           Template default: {row.defaultTemplateName ?? 'Belum ditetapkan'}
                         </p>
                       </div>
-                      <button type="button" aria-label={`Edit ${row.name}`} className={iconButton} onClick={() => { setEditingName(row.name); setDraftName(row.name) }}><Pencil className="size-4" /></button>
+                      <button type="button" aria-label={`Ubah ${row.name}`} className={iconButton} onClick={() => { setEditingName(row.name); setDraftName(row.name) }}><Pencil className="size-4" /></button>
                       <button type="button" aria-label={`Hapus ${row.name}`} disabled={row.productCount > 0} className={`${iconButton} text-destructive disabled:cursor-not-allowed disabled:text-muted-foreground/35 disabled:hover:bg-transparent`} onClick={() => {
                         if (row.productCount > 0) return
                         setConfirmRemoveName(row.name)
