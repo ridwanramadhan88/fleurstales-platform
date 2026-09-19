@@ -2,7 +2,7 @@ import type { FC, ReactNode } from 'react'
 import { Building2, Check, MapPin } from 'lucide-react'
 import type { CartDrawerViewModel } from './CartDrawerController'
 import { useCatalogStore } from '../../store/catalogStore'
-import { getStorefrontProductThumbnailById } from './storefrontProductImages'
+import { getStorefrontCartLineImage } from './storefrontProductImages'
 import { formatDisplayDate } from '../ui/date-time-field'
 import { DeliveryFillIcon, PickupFillIcon } from './StorefrontFulfilmentIcons'
 import { StorefrontCopyButton } from './StorefrontCopyButton'
@@ -99,7 +99,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
             {lines.map((line) => (
               <div key={line.lineId} className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3.5 py-4">
                 <div className="aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
-                  <img src={getStorefrontProductThumbnailById(catalogProducts, line.productId)} alt="" aria-hidden="true" className="h-full w-full object-cover" />
+                  <img src={getStorefrontCartLineImage(catalogProducts, line.productId, line.variantId)} alt="" aria-hidden="true" className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0">
                   <p className="line-clamp-2 text-[1.3rem] font-medium leading-[1.08]">{line.name}</p>

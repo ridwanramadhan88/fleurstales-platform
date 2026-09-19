@@ -1,5 +1,8 @@
 import type { CatalogProduct, CatalogSizeGuideTarget, CatalogSizeGuideTemplate } from '../store/catalogStoreTypes'
-import { resolveCatalogSizeGuide } from '../store/catalogStoreSizeGuideActions'
+import {
+  getStorefrontSellableVariants,
+  getStorefrontVariantAvailability,
+} from './storefrontCatalogProjectionDomain'
 
 export type StorefrontCartIssueCode =
   | 'product_unavailable'
@@ -32,10 +35,10 @@ export const getStorefrontCartIssues = (
     return [{ lineId: line.lineId, code: 'product_unavailable', message: 'This product is no longer available.' }]
   }
 
-  const activeVariants = product.variants.filter((variant) => variant.status === 'active')
+  const sellableVariants = getStorefrontSellableVariants(product, templates, targets)
   const variant = line.variantId
     ? product.variants.find((item) => item.id === line.variantId)
-    : activeVariants.length === 1 ? activeVariants[0] : undefined
+    : sellableVariants.length === 1 ? sellableVariants[0] : undefined
 
   if (!variant) {
     return [{
@@ -46,45 +49,32 @@ export const getStorefrontCartIssues = (
         : 'Please choose a product option again before checkout.',
     }]
   }
-  if (variant.status !== 'active') {
-    return [{ lineId: line.lineId, code: 'variant_unavailable', message: 'This product option is no longer available.' }]
-  }
 
-  // Legacy variants without a stable Size Template child ID remain purchasable
-  // until they are explicitly linked. Never infer a link from the display label.
-  if (!variant.sizeOptionId) return []
-
-  const template = resolveCatalogSizeGuide(
-    { id: product.id, productType: product.productType },
-    templates,
-    targets,
-    { includeLogical: true },
-  )
-  if (!template) {
-    return [{
-      lineId: line.lineId,
-      code: 'size_assignment_missing',
-      message: 'This product option needs an update before checkout. Please remove it and choose it again.',
-    }]
+  const availability = getStorefrontVariantAvailability(product, variant, templates, targets)
+  switch (availability.code) {
+    case 'sellable':
+      return []
+    case 'inactive':
+      return [{ lineId: line.lineId, code: 'variant_unavailable', message: 'This product option is no longer available.' }]
+    case 'size_template_missing':
+      return [{
+        lineId: line.lineId,
+        code: 'size_assignment_missing',
+        message: 'This product option needs an update before checkout. Please remove it and choose it again.',
+      }]
+    case 'size_needs_review':
+      return [{
+        lineId: line.lineId,
+        code: 'size_needs_review',
+        message: 'This product option has changed and needs review before it can be ordered.',
+      }]
+    case 'size_archived':
+      return [{
+        lineId: line.lineId,
+        code: 'size_archived',
+        message: 'This size is no longer available.',
+      }]
   }
-
-  const size = template.sizes.find((item) => item.id === variant.sizeOptionId)
-  if (!size) {
-    return [{
-      lineId: line.lineId,
-      code: 'size_needs_review',
-      message: 'This product option has changed and needs review before it can be ordered.',
-    }]
-  }
-  if (size.isActive === false) {
-    return [{
-      lineId: line.lineId,
-      code: 'size_archived',
-      message: 'This size is no longer available.',
-    }]
-  }
-
-  return []
 })
 
 export const firstStorefrontCartIssueMessage = (issues: StorefrontCartIssue[]): string | null =>

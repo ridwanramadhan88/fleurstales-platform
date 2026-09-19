@@ -3,7 +3,7 @@ import { AlertCircle, Minus, Plus } from 'lucide-react'
 import type { CartDrawerViewModel } from './CartDrawerController'
 import { CartBagIcon } from './StorefrontCartIcon'
 import { useCatalogStore } from '../../store/catalogStore'
-import { getStorefrontProductThumbnailById } from './storefrontProductImages'
+import { getStorefrontCartLineImage } from './storefrontProductImages'
 
 export const CartStep: FC<CartDrawerViewModel> = ({
   lines,
@@ -36,7 +36,7 @@ export const CartStep: FC<CartDrawerViewModel> = ({
               return (
                 <article key={line.lineId} className="grid grid-cols-[88px_minmax(0,1fr)] gap-4 py-[1.125rem] sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-[1.125rem] sm:py-5 lg:grid-cols-[112px_minmax(0,1fr)] lg:gap-5 lg:py-6">
                   <div className="aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
-                    <img src={getStorefrontProductThumbnailById(catalogProducts, line.productId)} alt="" className="h-full w-full object-cover" aria-hidden="true" />
+                    <img src={getStorefrontCartLineImage(catalogProducts, line.productId, line.variantId)} alt="" className="h-full w-full object-cover" aria-hidden="true" />
                   </div>
                   <div className="flex min-w-0 flex-col justify-between gap-3.5">
                     <div className="flex items-start justify-between gap-3.5">

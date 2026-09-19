@@ -35,6 +35,7 @@ import { useElementInViewport } from "../hooks/useElementInViewport";
 import { StorefrontHome } from "./StorefrontHome";
 import { StorefrontProductDetailPage } from "./StorefrontProductDetailPage";
 import { StorefrontCategoriesPage } from "./StorefrontCategoriesPage";
+import { projectStorefrontCatalog } from "../domain/storefrontCatalogProjectionDomain";
 
 const currencyFormatter = new Intl.NumberFormat("id-ID");
 
@@ -78,8 +79,15 @@ const buildShopUrl = (
 
 export const StorefrontPage: FC = () => {
   const products = useCatalogStore((state) => state.products);
+  const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates);
+  const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets);
   const categories = useCatalogStore((state) => state.categories);
   const storeProfile = useSettingsStore((state) => state.storeProfile);
+
+  const storefrontProducts = useMemo(
+    () => projectStorefrontCatalog(products, sizeGuideTemplates, sizeGuideTargets),
+    [products, sizeGuideTargets, sizeGuideTemplates],
+  );
 
   const categoryNames = useMemo(
     () => categories.map((category) => category.name),
@@ -114,36 +122,35 @@ export const StorefrontPage: FC = () => {
 
   const selectedProduct = useMemo(
     () =>
-      products.find((product) => product.productId === selectedProductId) ??
+      storefrontProducts.find((product) => product.productId === selectedProductId) ??
       null,
-    [products, selectedProductId],
+    [storefrontProducts, selectedProductId],
   );
 
   const relatedProducts = useMemo(() => {
     if (!selectedProduct) return [];
     const selectedOccasions = selectedProduct.occasionTags ?? [];
-    return products
+    return storefrontProducts
       .filter(
         (product) =>
           product.id !== selectedProduct.id &&
-          product.isActive &&
           (product.occasionTags ?? []).some((occasion) =>
             selectedOccasions.includes(occasion),
           ),
       )
       .slice(0, 4);
-  }, [products, selectedProduct]);
+  }, [storefrontProducts, selectedProduct]);
 
   const availableCategories = useMemo(
-    () => getAvailableCategories(products, categoryNames),
-    [products, categoryNames],
+    () => getAvailableCategories(storefrontProducts, categoryNames),
+    [storefrontProducts, categoryNames],
   );
   const availableSubCategories = useMemo(
-    () => getAvailableSubCategories(products, categoryFilter),
-    [products, categoryFilter],
+    () => getAvailableSubCategories(storefrontProducts, categoryFilter),
+    [storefrontProducts, categoryFilter],
   );
   const filteredProducts = useMemo(() => {
-    const base = filterCatalogProducts(products, {
+    const base = filterCatalogProducts(storefrontProducts, {
       category: categoryFilter,
       subCategory: subCategoryFilter,
       query,
@@ -153,7 +160,7 @@ export const StorefrontPage: FC = () => {
       if (collectionFilter !== "all" && product.collectionSeries !== collectionFilter) return false;
       return true;
     });
-  }, [products, categoryFilter, subCategoryFilter, arrangementFilter, collectionFilter, query]);
+  }, [storefrontProducts, categoryFilter, subCategoryFilter, arrangementFilter, collectionFilter, query]);
 
   const featuredProducts = useMemo(() => {
     const markedFeatured = filteredProducts.filter((product) => product.isFeatured);
@@ -167,12 +174,12 @@ export const StorefrontPage: FC = () => {
 
   const searchResultCount = useMemo(
     () =>
-      filterCatalogProducts(products, {
+      filterCatalogProducts(storefrontProducts, {
         category: "all",
         subCategory: "all",
         query: searchDraft,
       }).length,
-    [products, searchDraft],
+    [storefrontProducts, searchDraft],
   );
 
   const cartCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
@@ -303,7 +310,7 @@ export const StorefrontPage: FC = () => {
 
   const navigateProduct = useCallback(
     (catalogProductId: string) => {
-      const product = products.find((item) => item.id === catalogProductId);
+      const product = storefrontProducts.find((item) => item.id === catalogProductId);
       if (!product) return;
 
       const scrollY = window.scrollY;
@@ -321,7 +328,7 @@ export const StorefrontPage: FC = () => {
       setRoute("product");
       window.scrollTo({ top: 0 });
     },
-    [categoryFilter, products, query, subCategoryFilter],
+    [categoryFilter, storefrontProducts, query, subCategoryFilter],
   );
 
   const navigateBackToShop = useCallback(() => {
@@ -408,12 +415,20 @@ export const StorefrontPage: FC = () => {
     quantity = 1,
     variant?: CatalogVariant,
   ) => {
-    const product = products.find((item) => item.id === productId);
+    const product = storefrontProducts.find((item) => item.id === productId);
     if (!product) return;
 
-    const lineId = variant ? `${productId}__${variant.id}` : productId;
-    const unitPriceIdr = variant?.price ?? getDisplayPriceIdr(product);
-    const name = variant ? `${product.name} (${variant.size})` : product.name;
+    const resolvedVariant = variant
+      ? product.variants.find((item) => item.id === variant.id)
+      : undefined;
+    if (variant && !resolvedVariant) {
+      toast({ description: "This product option is no longer available." });
+      return;
+    }
+
+    const lineId = resolvedVariant ? `${productId}__${resolvedVariant.id}` : productId;
+    const unitPriceIdr = resolvedVariant?.price ?? getDisplayPriceIdr(product);
+    const name = resolvedVariant ? `${product.name} (${resolvedVariant.size})` : product.name;
 
     setCartLines((previous) => {
       const existing = previous.find((line) => line.lineId === lineId);
@@ -429,7 +444,7 @@ export const StorefrontPage: FC = () => {
         {
           lineId,
           productId,
-          variantId: variant?.id,
+          variantId: resolvedVariant?.id,
           name,
           unitPriceIdr,
           quantity,
@@ -478,7 +493,7 @@ export const StorefrontPage: FC = () => {
         />
       ) : route === "categories" ? (
         <StorefrontCategoriesPage
-          products={products}
+          products={storefrontProducts}
           occasionNames={categoryNames}
           cartCount={cartCount}
           storeProfile={storeProfile}
