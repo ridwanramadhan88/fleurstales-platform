@@ -32,6 +32,12 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(formSource).toContain('disabled={isSaving || sourceChanged}')
   })
 
+  it('makes the only usable size template available to a new Product without pretending the library is empty', () => {
+    expect(formSource).toContain('usableSizeTemplates.length === 1')
+    expect(formSource).toContain('Template ukuran tersedia, tetapi belum ditetapkan')
+    expect(formSource).toContain('Ini satu-satunya template dengan ukuran aktif')
+  })
+
   it('renders template slots without materializing missing variants', () => {
     expect(variantsSource).toContain('Belum dikonfigurasi untuk produk ini.')
     expect(variantsSource).toContain('openNewForSize')
