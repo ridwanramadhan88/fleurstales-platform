@@ -13,6 +13,7 @@ const allKinds: AlertKind[] = [
   'admin_resubmitted',
   'hr_attendance_problem',
   'schedule_published',
+  'authorization_changed',
 ]
 
 const makeNotification = (
@@ -30,11 +31,11 @@ const makeNotification = (
 
 describe('role notification visibility', () => {
   it.each([
-    ['owner', ['order_pending_verification', 'hr_attendance_problem']],
-    ['admin', ['finance_rejected', 'schedule_published']],
-    ['finance', ['order_pending_verification', 'admin_resubmitted']],
-    ['hr', ['hr_attendance_problem']],
-    ['florist', ['schedule_published']],
+    ['owner', ['hr_attendance_problem', 'authorization_changed']],
+    ['admin', ['finance_rejected', 'schedule_published', 'authorization_changed']],
+    ['finance', ['order_pending_verification', 'admin_resubmitted', 'authorization_changed']],
+    ['hr', ['hr_attendance_problem', 'authorization_changed']],
+    ['florist', ['schedule_published', 'authorization_changed']],
   ] as [UserRole, AlertKind[]][])('%s sees only important role tasks', (role, expected) => {
     const visible = getVisibleNotifications({
       notifications: allKinds.map((kind) => makeNotification(kind)),
@@ -72,5 +73,13 @@ describe('seven-day notification window', () => {
       role: 'admin', branch: 'All', now: NOW,
     })
     expect(visible.map((item) => item.id)).toEqual(['edge'])
+  })
+})
+
+
+describe('notification declutter', () => {
+  it('does not surface routine new orders to Owner', () => {
+    const visible = getVisibleNotifications({ notifications: [makeNotification('order_received')], role: 'owner', branch: 'All', now: NOW })
+    expect(visible).toEqual([])
   })
 })
