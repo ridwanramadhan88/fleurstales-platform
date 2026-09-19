@@ -230,6 +230,17 @@ describe('natural Indonesian UI copy', () => {
     )
   })
 
+  it('covers the pre-release catalog and order copy audit', () => {
+    expect(translateUiText('Choose a product from catalog', 'id')).toBe('Pilih produk dari katalog')
+    expect(translateUiText('Select product', 'id')).toBe('Pilih produk')
+    expect(translateUiText('Order items', 'id')).toBe('Item pesanan')
+    expect(translateUiText('Add product', 'id')).toBe('Tambah produk')
+    expect(translateUiText('Manage occasions', 'id')).toBe('Kelola momen')
+    expect(translateUiText('172 products', 'id')).toBe('172 produk')
+    expect(translateUiText('No products found', 'id')).toBe('Produk tidak ditemukan')
+    expect(translateUiText('Primary navigation', 'id')).toBe('Navigasi utama')
+  })
+
   it('returns original English when selected', () => {
     expect(translateUiText('Inventory is disabled.', 'en')).toBe('Inventory is disabled.')
     expect(translateUiText('Track your Fleurstales order', 'en')).toBe('Track your Fleurstales order')
