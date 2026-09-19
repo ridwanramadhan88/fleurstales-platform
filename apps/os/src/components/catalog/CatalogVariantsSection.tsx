@@ -11,6 +11,7 @@ interface Props {
   addVariant: (variant?: VariantRow) => void
   removeVariant: (index: number) => void
   productName?: string
+  validationErrorIndexes?: Set<number>
 }
 
 interface EditorTarget {
@@ -44,6 +45,7 @@ export const CatalogVariantsSection: FC<Props> = ({
   addVariant,
   removeVariant,
   productName,
+  validationErrorIndexes = new Set<number>(),
 }) => {
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null)
 
@@ -137,7 +139,16 @@ export const CatalogVariantsSection: FC<Props> = ({
                 const configured = Boolean(variant)
                 const archived = size.isActive === false
                 return (
-                  <article key={size.id} className="rounded-2xl border border-border/80 bg-card p-4 shadow-ios-sm">
+                  <article
+                    key={size.id}
+                    id={configured && variantIndex !== undefined ? `catalog-variant-${variantIndex}` : undefined}
+                    tabIndex={configured && variantIndex !== undefined ? -1 : undefined}
+                    className={`rounded-2xl border bg-card p-4 shadow-ios-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/35 ${
+                      configured && variantIndex !== undefined && validationErrorIndexes.has(variantIndex)
+                        ? 'border-destructive/45 ring-1 ring-destructive/25'
+                        : 'border-border/80'
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -199,7 +210,10 @@ export const CatalogVariantsSection: FC<Props> = ({
                 key={variant.id ?? 'unlinked-' + index}
                 type="button"
                 onClick={() => openExisting(index)}
-                className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left hover:bg-muted"
+                id={`catalog-variant-${index}`}
+                className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/35 ${
+                  validationErrorIndexes.has(index) ? 'border-destructive/45 ring-1 ring-destructive/25' : 'border-border'
+                }`}
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold">{variant.size || 'Nama ukuran belum tersedia'}</span>
@@ -225,7 +239,10 @@ export const CatalogVariantsSection: FC<Props> = ({
               key={variant.id ?? 'review-' + index}
               type="button"
               onClick={() => openExisting(index, 'Tinjau varian · ' + (variant.size || 'Tanpa ukuran'))}
-              className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left hover:bg-muted"
+              id={`catalog-variant-${index}`}
+              className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/35 ${
+                validationErrorIndexes.has(index) ? 'border-destructive/45 ring-1 ring-destructive/25' : 'border-border'
+              }`}
             >
               <span>
                 <span className="block text-sm font-semibold">{variant.size || 'Tanpa ukuran'}</span>
