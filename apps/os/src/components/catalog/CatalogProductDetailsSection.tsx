@@ -120,8 +120,8 @@ export const CatalogProductDetailsSection: FC<Props> = ({
 
         <div className="space-y-1.5">
           <label className={labelClass}>Collection / Series</label>
-          <input value={form.collectionSeries} onChange={(event) => update('collectionSeries', event.target.value)} placeholder="Contoh: Omakase" className={inputClass} />
-          <p className="text-xs text-muted-foreground">Disimpan terpisah; nama Storefront mengikuti Collection / Series - Nama Produk.</p>
+          <input value={form.collectionSeries} onChange={(event) => update('collectionSeries', event.target.value)} placeholder="Example: Omakase" className={inputClass} />
+          <p className="text-xs text-muted-foreground">Stored separately; Storefront name follows Collection / Series - Product Name.</p>
         </div>
 
         <div className="space-y-1.5">
