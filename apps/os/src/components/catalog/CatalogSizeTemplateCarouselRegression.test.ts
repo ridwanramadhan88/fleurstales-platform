@@ -27,16 +27,18 @@ describe('catalog size-template and image-carousel regressions', () => {
     expect(formSource).not.toContain('getDefaultCatalogSizeGuide')
   })
 
-  it('supports adding sub-sizes to a template category', () => {
+  it('supports adding child sizes inside a local Size Template draft', () => {
     expect(guideSource).toContain('Template ukuran')
-    expect(guideSource).toContain('addSizeGuideTemplateSize')
+    expect(guideSource).toContain('handleAddSize')
+    expect(guideSource).toContain("generateId('guide_size')")
     expect(guideSource).toContain('Tambah ukuran')
   })
 
-  it('blocks size archive only for sellable linked variants', () => {
+  it('blocks size archive only for sellable linked variants and labels usage precisely', () => {
     expect(guideSource).toContain('activeSizeUsageCount')
     expect(guideSource).toContain('disabled={activeUsage > 0}')
-    expect(guideSource).toContain('varian aktif tidak dapat diarsipkan')
+    expect(guideSource).toContain('varian tertaut')
+    expect(guideSource).toContain('dipakai varian aktif')
   })
 
   it('keeps view and edit product photos square and carousel-based', () => {
