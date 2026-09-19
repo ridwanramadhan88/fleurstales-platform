@@ -82,7 +82,7 @@ export const OrdersMobileCards: FC<OrdersMobileCardsProps> = ({
                     onOpenDetails(order)
                   }
                 }}
-                className={`w-full cursor-pointer rounded-xl border-l-4 bg-surface-card px-4 py-3.5 text-left shadow-ios-sm ring-1 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+                className={`w-full cursor-pointer rounded-xl border-l-4 bg-surface-card px-3.5 py-3 text-left shadow-ios-sm ring-1 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:px-4 sm:py-3.5 ${
                   isNewOrder
                     ? `border-l-primary/60 ${ORDER_CARD_BG[order.status]} ring-border/70`
                     : `border-l-transparent ${ORDER_CARD_BG[order.status]} ring-border/70`
@@ -98,10 +98,10 @@ export const OrdersMobileCards: FC<OrdersMobileCardsProps> = ({
                   <span className="shrink-0 text-base font-semibold leading-tight text-foreground">Rp {formatter.format(order.totalIdr)}</span>
                 </div>
 
-                <div className="mt-1 flex items-start justify-between gap-3">
+                <div className="mt-1.5 flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-foreground/90">{getProductName(order)}</div>
-                    <div className="truncate text-2xs leading-tight text-muted-foreground">{order.orderNumber}</div>
+                    <div className="text-xs font-semibold leading-4 text-muted-foreground">{order.orderNumber}</div>
+                    <div className="mt-0.5 line-clamp-2 text-sm font-medium leading-5 text-foreground/90">{getProductName(order)}</div>
                   </div>
                   {paymentNeedsAttention ? (
                     <StatusChip
@@ -111,21 +111,25 @@ export const OrdersMobileCards: FC<OrdersMobileCardsProps> = ({
                       {PAYMENT_STATUS_LABELS[order.paymentStatus]}
                     </StatusChip>
                   ) : (
-                    <span className="shrink-0 text-xs text-muted-foreground">{PAYMENT_STATUS_LABELS[order.paymentStatus]}</span>
+                    <span className="shrink-0 text-xs leading-5 text-muted-foreground">{PAYMENT_STATUS_LABELS[order.paymentStatus]}</span>
                   )}
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-4">
-                  <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                    <StatusIcon className="size-3.5 shrink-0" />
-                    <span className="truncate">{STATUS_LABELS[order.status]} · {order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}</span>
+                <div className="mt-3 flex items-start justify-between gap-3 border-t border-border/70 pt-3 sm:mt-4 sm:pt-4">
+                  <div className="flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground">
+                    <StatusIcon className="mt-0.5 size-3.5 shrink-0" />
+                    <span className="min-w-0 leading-4">
+                      <span className="font-medium text-foreground/80">{STATUS_LABELS[order.status]}</span>
+                      <span aria-hidden="true"> · </span>
+                      <span>{order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}</span>
+                    </span>
                   </div>
 
                   {getDisplayScheduleLabel(order) && (
                     <StatusChip
                       tone={isFutureCustomOrder ? 'info' : URGENCY_CHIP[urgency].tone}
                       showDot={false}
-                      className="shrink-0 px-2 py-0.5 text-xs"
+                      className="max-w-[48%] shrink-0 whitespace-normal px-2 py-0.5 text-right text-xs leading-4"
                     >
                       {getDisplayScheduleLabel(order)}
                     </StatusChip>
