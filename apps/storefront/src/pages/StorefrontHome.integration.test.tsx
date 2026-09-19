@@ -31,7 +31,7 @@ describe('storefront homepage integration', () => {
 
     await user.click(screen.getByRole('button', { name: 'Open flower categories' }))
     await user.click(screen.getByRole('button', { name: /^Shop Birthday/ }))
-    await user.click(screen.getAllByRole('button', { name: /^View / })[0])
+    await user.click(screen.getAllByRole('link', { name: /^View / })[0])
     const addButtons = screen.getAllByRole('button', { name: 'Add to cart' })
     await user.click(addButtons[addButtons.length - 1])
     await user.click(screen.getAllByRole('button', { name: 'Open cart, 1 items' })[0])
