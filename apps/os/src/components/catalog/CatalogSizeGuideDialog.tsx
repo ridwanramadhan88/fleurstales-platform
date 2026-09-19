@@ -297,7 +297,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
               {isDirty ? <span className="rounded-full bg-warning/10 px-2 py-1 text-2xs font-semibold text-warning">Belum disimpan</span> : null}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              Kelola ukuran yang dapat dipakai ulang, gambar panduan, default Jenis rangkaian, dan override produk.
+              Kelola ukuran yang dapat dipakai ulang, gambar panduan, default Jenis rangkaian, dan template khusus produk.
             </p>
           </DialogHeader>
 
@@ -434,7 +434,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
 
                 <section className="space-y-4 border-t border-border/70 pt-5">
                   <div>
-                    <h3 className="text-base font-semibold">Override produk</h3>
+                    <h3 className="text-base font-semibold">Template khusus produk</h3>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">Gunakan hanya untuk produk yang membutuhkan struktur ukuran berbeda dari default Jenis rangkaiannya.</p>
                   </div>
 
@@ -448,7 +448,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                     </label>
 
                     <label className="space-y-1.5">
-                      <span className="text-xs font-medium">Override template</span>
+                      <span className="text-xs font-medium">Template khusus</span>
                       <select
                         value={selectedProductOverride?.templateId ?? ''}
                         disabled={!selectedProduct}
@@ -466,19 +466,19 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                         <p className="mt-1 text-sm font-semibold">{selectedEffectiveTemplate?.name ?? 'Belum ada template ukuran'}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {selectedProductOverride
-                            ? 'Menggunakan override khusus produk.'
+                            ? 'Menggunakan template khusus untuk produk ini.'
                             : selectedProductDefault
                               ? 'Mengikuti default Jenis rangkaian: ' + (selectedProduct.productType ?? '-')
-                              : 'Tidak ada override dan Jenis rangkaian belum memiliki default.'}
+                              : 'Tidak ada template khusus dan Jenis rangkaian belum memiliki default.'}
                         </p>
                       </div>
                     ) : null}
                   </div>
 
                   <details className="rounded-2xl border border-border/75 bg-card">
-                    <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Override saat ini · {productOverrides.length}</summary>
+                    <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Template khusus saat ini · {productOverrides.length}</summary>
                     <div className="max-h-72 space-y-2 overflow-y-auto border-t border-border/70 p-3">
-                      {productOverrides.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">Belum ada override produk.</p> : null}
+                      {productOverrides.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">Belum ada template khusus produk.</p> : null}
                       {productOverrides.map((target) => {
                         const product = products.find((item) => item.id === target.productId)
                         const template = draftTemplates.find((item) => item.id === target.templateId)
@@ -486,9 +486,9 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                           <div key={target.id} className="flex items-center gap-3 rounded-xl bg-muted/45 px-3 py-2.5">
                             <span className="min-w-0 flex-1 text-xs">
                               <span className="block truncate font-semibold">{product?.name ?? 'Produk tidak ditemukan'}</span>
-                              <span className="text-muted-foreground">Override → {template?.name ?? 'Template tidak ditemukan'}</span>
+                              <span className="text-muted-foreground">Template khusus → {template?.name ?? 'Template tidak ditemukan'}</span>
                             </span>
-                            <button type="button" aria-label="Hapus override produk" onClick={() => setProductOverride(target.productId, '')} className="inline-flex size-9 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"><Trash2 className="size-4" /></button>
+                            <button type="button" aria-label="Hapus template khusus produk" onClick={() => setProductOverride(target.productId, '')} className="inline-flex size-9 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"><Trash2 className="size-4" /></button>
                           </div>
                         )
                       })}
