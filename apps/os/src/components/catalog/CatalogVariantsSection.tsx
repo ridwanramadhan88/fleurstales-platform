@@ -29,6 +29,8 @@ const formatPrice = (value: string): string => {
 const statusBadge = (variant: VariantRow): string =>
   variant.status === 'active' ? 'Dijual' : 'Tidak tersedia'
 
+const EMPTY_VALIDATION_ERROR_INDEXES = new Set<number>()
+
 const blankVariant = (): VariantRow => ({
   size: '',
   images: [],
@@ -45,7 +47,7 @@ export const CatalogVariantsSection: FC<Props> = ({
   addVariant,
   removeVariant,
   productName,
-  validationErrorIndexes = new Set<number>(),
+  validationErrorIndexes = EMPTY_VALIDATION_ERROR_INDEXES,
 }) => {
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null)
 
@@ -171,7 +173,7 @@ export const CatalogVariantsSection: FC<Props> = ({
                       type="button"
                       disabled={archived && !configured}
                       onClick={() => configured && variantIndex !== undefined ? openExisting(variantIndex, 'Edit varian · ' + size.name) : openNewForSize(size.id)}
-                      className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {configured ? <Pencil className="size-4" /> : <Plus className="size-4" />}
                       {configured ? 'Edit varian' : archived ? 'Ukuran diarsipkan' : 'Atur varian'}
@@ -259,7 +261,7 @@ export const CatalogVariantsSection: FC<Props> = ({
           <p className="text-sm font-semibold">Varian tanpa tautan ukuran</p>
           <p className="mt-1 text-xs text-muted-foreground">Gunakan hanya jika produk memang belum dapat memakai template ukuran.</p>
         </div>
-        <button type="button" onClick={openNewUnlinked} className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold hover:bg-muted">
+        <button type="button" onClick={openNewUnlinked} className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold hover:bg-muted">
           <Plus className="size-4" /> Tambah varian
         </button>
       </div>
