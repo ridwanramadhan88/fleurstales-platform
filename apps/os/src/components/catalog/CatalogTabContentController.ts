@@ -24,6 +24,7 @@ import {
 import { buildCatalogCsvTemplate } from '../../domain/catalogCsvDomain'
 import { toast } from '../../hooks/use-toast'
 import type { CatalogTabContentProps } from './CatalogTabContent'
+import { flushBusinessOsCatalogSync, getCatalogBridgeStatus } from '../../data/shared/catalogBridge'
 
 export interface PendingBulkDelete {
   deleteCount: number
@@ -38,6 +39,7 @@ export interface CatalogTabContentViewModel {
   subCategoryFilter: CatalogSubCategoryFilter
   sortOption: CatalogSortOption
   sheetTarget: CatalogProduct | 'new' | null
+  sheetProduct: CatalogProduct | null
   detailProductId: string | null
   detailProduct: CatalogProduct | null
   manageMode: boolean
@@ -84,12 +86,12 @@ export interface CatalogTabContentViewModel {
   onCloseDetail: () => void
   onEditDetailProduct: () => void
   onToggleDetailActive: (isActive: boolean) => void
-  onCreateProduct: (params: NewCatalogProductInput) => void
+  onCreateProduct: (params: NewCatalogProductInput) => Promise<boolean>
   onUpdateProduct: (params: {
     productId: string
   } & Partial<Omit<CatalogProduct, 'id' | 'productId' | 'variants'>> & {
       variants?: NewCatalogVariantInput[]
-    }) => void
+    }) => Promise<boolean>
   onOpenCategoriesDialog: () => void
   onCloseCategoriesDialog: () => void
   onOpenArrangementTypesDialog: () => void
@@ -188,6 +190,9 @@ export const useCatalogTabContentController = ({
   const detailProduct = detailProductId
     ? (products.find((product) => product.id === detailProductId) ?? null)
     : null
+  const sheetProduct = sheetTarget && sheetTarget !== 'new'
+    ? (products.find((product) => product.id === sheetTarget.id) ?? sheetTarget)
+    : null
   const allSelected =
     filteredProducts.length > 0 && filteredProducts.every((product) => selectedIds.has(product.id))
   const showingArchivedView = statusFilter === 'archived'
@@ -200,6 +205,7 @@ export const useCatalogTabContentController = ({
     subCategoryFilter,
     sortOption,
     sheetTarget,
+    sheetProduct,
     detailProductId,
     detailProduct,
     manageMode,
@@ -363,15 +369,50 @@ export const useCatalogTabContentController = ({
       }
       setProductActive(detailProduct.id, isActive)
     },
-    onCreateProduct: addProduct,
-    onUpdateProduct: ({ productId, ...patch }) => {
-      const current = products.find((product) => product.id === productId)
-      updateProduct(productId, patch)
-      for (const variant of patch.variants ?? []) {
-        if (!variant.id) continue
+    onCreateProduct: async (params) => {
+      const previousProducts = useCatalogStore.getState().products
+      addProduct(params)
+      if (!getCatalogBridgeStatus().remoteConfigured) return true
+
+      const saved = await flushBusinessOsCatalogSync()
+      if (saved) return true
+
+      useCatalogStore.setState({ products: previousProducts })
+      toast({ description: getCatalogBridgeStatus().message ?? 'Produk belum tersimpan ke server.' })
+      return false
+    },
+    onUpdateProduct: async ({ productId, ...patch }) => {
+      const previousProducts = useCatalogStore.getState().products
+      const current = previousProducts.find((product) => product.id === productId)
+      const statusChanges = (patch.variants ?? []).flatMap((variant) => {
+        if (!variant.id) return []
         const previous = current?.variants.find((item) => item.id === variant.id)
-        if (previous && previous.status !== variant.status) setCatalogVariantStatus({ productId, variantId: variant.id, status: variant.status, role: userRole })
+        return previous && previous.status !== variant.status ? [{ variantId: variant.id, status: variant.status }] : []
+      })
+
+      // Activate replacement variants before deactivating the current one so
+      // the "active Product must keep one sellable variant" guard never sees
+      // an invalid intermediate state. When the Product itself is being made
+      // inactive, update that flag first and then apply the status changes.
+      if (patch.isActive !== false) {
+        for (const change of statusChanges.filter((item) => item.status === 'active')) {
+          setCatalogVariantStatus({ productId, variantId: change.variantId, status: change.status, role: userRole })
+        }
       }
+
+      updateProduct(productId, patch)
+
+      for (const change of statusChanges.filter((item) => patch.isActive === false || item.status === 'inactive')) {
+        setCatalogVariantStatus({ productId, variantId: change.variantId, status: change.status, role: userRole })
+      }
+
+      if (!getCatalogBridgeStatus().remoteConfigured) return true
+      const saved = await flushBusinessOsCatalogSync()
+      if (saved) return true
+
+      useCatalogStore.setState({ products: previousProducts })
+      toast({ description: getCatalogBridgeStatus().message ?? 'Perubahan produk belum tersimpan ke server.' })
+      return false
     },
     onOpenCategoriesDialog: () => setCategoriesDialogOpen(true),
     onCloseCategoriesDialog: () => setCategoriesDialogOpen(false),

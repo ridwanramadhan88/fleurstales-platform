@@ -31,17 +31,17 @@ const MAX_SOURCE_FILE_BYTES = 10 * 1024 * 1024
 const readFileAsDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read that file.'))
-    reader.onerror = () => reject(new Error('Could not read that file, try again.'))
+    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('File tidak dapat dibaca.'))
+    reader.onerror = () => reject(new Error('File tidak dapat dibaca. Coba lagi.'))
     reader.readAsDataURL(file)
   })
 
 export const ImageDropInput: FC<ImageDropInputProps> = ({
   value,
   onChange,
-  label = 'Product photo',
-  editorTitle = 'Crop product image',
-  dropHint = 'Crop to 1:1 before upload',
+  label = 'Foto produk',
+  editorTitle = 'Potong foto produk',
+  dropHint = 'Potong ke rasio 1:1 sebelum digunakan',
   previewAlt,
 }) => {
   const [isDragActive, setIsDragActive] = useState(false)
@@ -64,7 +64,7 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
     }
     const image = new Image()
     image.onload = () => setSourceImage(image)
-    image.onerror = () => setError('Could not open that image.')
+    image.onerror = () => setError('Gambar tidak dapat dibuka.')
     image.src = sourceUrl
   }, [sourceUrl])
 
@@ -87,11 +87,11 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
     setError(null)
 
     if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file.')
+      setError('Pilih file gambar.')
       return
     }
     if (file.size > MAX_SOURCE_FILE_BYTES) {
-      setError('Source image is too large (max 10 MB).')
+      setError('Ukuran gambar sumber terlalu besar (maksimal 10 MB).')
       return
     }
 
@@ -103,7 +103,7 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
       setSourceUrl(nextSource)
       setEditorOpen(true)
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not read that file.')
+      setError(nextError instanceof Error ? nextError.message : 'File tidak dapat dibaca.')
     }
   }
 
@@ -123,7 +123,7 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
       setEditorOpen(false)
       resetEditor()
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Could not process that image.')
+      setError(nextError instanceof Error ? nextError.message : 'Gambar tidak dapat diproses.')
     } finally {
       setProcessing(false)
     }
@@ -143,10 +143,10 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
             <img src={value} alt={previewAlt ?? label} className="h-full w-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-black/60 p-2.5">
               <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex h-11 items-center gap-2 rounded-full bg-card/95 px-[18px] text-sm font-medium text-foreground ring-1 ring-border/60 hover:bg-accent">
-                <Pencil className="size-3" /> Replace
+                <Pencil className="size-3" /> Ganti
               </button>
               <button type="button" onClick={() => onChange(undefined)} className="inline-flex h-11 items-center gap-2 rounded-full bg-white/95 px-[18px] text-sm font-medium text-destructive shadow-ios-sm hover:bg-white">
-                <Trash2 className="size-3" /> Remove
+                <Trash2 className="size-3" /> Hapus
               </button>
             </div>
           </div>
@@ -173,9 +173,9 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
           className={`flex aspect-square w-full max-w-[220px] cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-3 text-center transition ${isDragActive ? 'border-primary bg-primary/5' : 'border-border bg-muted hover:border-primary/40 hover:bg-accent/40'}`}
         >
           {isDragActive ? <UploadCloud className="size-6 text-primary" /> : <ImageOff className="size-6 text-muted-foreground" />}
-          <p className="text-2xs font-medium text-foreground">Drag & drop an image</p>
+          <p className="text-2xs font-medium text-foreground">Tarik & lepas gambar</p>
           <p className="text-2xs text-muted-foreground">{dropHint}</p>
-          <p className="text-2xs text-muted-foreground">800×800 JPEG · max 100 KB</p>
+          <p className="text-2xs text-muted-foreground">800×800 JPEG · maksimal 100 KB</p>
         </div>
       )}
 
@@ -193,31 +193,31 @@ export const ImageDropInput: FC<ImageDropInputProps> = ({
 
           <div className="space-y-4">
             <div className="mx-auto aspect-square w-full max-w-[340px] overflow-hidden rounded-xl bg-muted ring-1 ring-border">
-              <canvas ref={previewCanvasRef} width={CATALOG_IMAGE_SIZE_PX} height={CATALOG_IMAGE_SIZE_PX} className="h-full w-full" aria-label="Square crop preview" />
+              <canvas ref={previewCanvasRef} width={CATALOG_IMAGE_SIZE_PX} height={CATALOG_IMAGE_SIZE_PX} className="h-full w-full" aria-label="Pratinjau potongan persegi" />
             </div>
 
             <div className="space-y-3 rounded-xl bg-muted/50 p-3">
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs"><span>Zoom</span><span>{zoom.toFixed(2)}×</span></div>
-                <Slider value={[zoom]} min={1} max={3} step={0.01} onValueChange={([next]) => setZoom(next)} aria-label="Image zoom" />
+                <div className="flex justify-between text-xs"><span>Perbesaran</span><span>{zoom.toFixed(2)}×</span></div>
+                <Slider value={[zoom]} min={1} max={3} step={0.01} onValueChange={([next]) => setZoom(next)} aria-label="Perbesaran gambar" />
               </div>
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs"><span>Horizontal position</span><span>{Math.round(offsetX * 100)}%</span></div>
-                <Slider value={[offsetX]} min={-1} max={1} step={0.01} onValueChange={([next]) => setOffsetX(next)} aria-label="Horizontal crop position" />
+                <div className="flex justify-between text-xs"><span>Posisi horizontal</span><span>{Math.round(offsetX * 100)}%</span></div>
+                <Slider value={[offsetX]} min={-1} max={1} step={0.01} onValueChange={([next]) => setOffsetX(next)} aria-label="Posisi potongan horizontal" />
               </div>
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs"><span>Vertical position</span><span>{Math.round(offsetY * 100)}%</span></div>
-                <Slider value={[offsetY]} min={-1} max={1} step={0.01} onValueChange={([next]) => setOffsetY(next)} aria-label="Vertical crop position" />
+                <div className="flex justify-between text-xs"><span>Posisi vertikal</span><span>{Math.round(offsetY * 100)}%</span></div>
+                <Slider value={[offsetY]} min={-1} max={1} step={0.01} onValueChange={([next]) => setOffsetY(next)} aria-label="Posisi potongan vertikal" />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">The saved image will be a square JPEG, 800×800 pixels, and no larger than {CATALOG_IMAGE_MAX_BYTES / 1024} KB.</p>
+            <p className="text-xs text-muted-foreground">Gambar tersimpan akan berbentuk JPEG persegi 800×800 piksel dengan ukuran maksimal {CATALOG_IMAGE_MAX_BYTES / 1024} KB.</p>
           </div>
 
           <canvas ref={exportCanvasRef} className="hidden" />
           <DialogFooter>
-            <button type="button" onClick={() => setEditorOpen(false)} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium">Cancel</button>
+            <button type="button" onClick={() => setEditorOpen(false)} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium">Batal</button>
             <button type="button" onClick={applyCrop} disabled={!sourceImage || processing} className="rounded-full bg-primary text-sm font-medium text-primary-foreground disabled:opacity-50 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">
-              {processing ? 'Processing…' : 'Apply crop'}
+              {processing ? 'Memproses…' : 'Terapkan potongan'}
             </button>
           </DialogFooter>
         </DialogContent>

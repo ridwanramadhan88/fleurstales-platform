@@ -83,14 +83,14 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
               key={activeImage.id}
               value={activeImage.url}
               onChange={(value) => replaceAt(activeIndex, value)}
-              label={activeIndex === 0 ? 'Primary product photo' : `Gallery photo ${activeIndex + 1}`}
+              label={activeIndex === 0 ? 'Foto utama produk' : `Foto galeri ${activeIndex + 1}`}
             />
             {ordered.length > 1 && (
               <>
-                <button type="button" onClick={goPrevious} aria-label="Previous product photo" className="absolute left-2 top-[110px] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
+                <button type="button" onClick={goPrevious} aria-label="Foto produk sebelumnya" className="absolute left-2 top-[110px] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
                   <ChevronLeft className="size-4" />
                 </button>
-                <button type="button" onClick={goNext} aria-label="Next product photo" className="absolute right-2 top-[110px] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
+                <button type="button" onClick={goNext} aria-label="Foto produk berikutnya" className="absolute right-2 top-[110px] inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-background/95 text-foreground shadow-ios-sm ring-1 ring-border/70">
                   <ChevronRight className="size-4" />
                 </button>
               </>
@@ -98,21 +98,21 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
           </div>
 
           {ordered.length > 1 && (
-            <div className="flex max-w-[360px] gap-2 overflow-x-auto pb-1" aria-label="Product photo carousel">
+            <div className="flex max-w-[360px] gap-2 overflow-x-auto pb-1" aria-label="Galeri foto produk">
               {ordered.map((image, index) => (
-                <button key={image.id} type="button" onClick={() => setActiveIndex(index)} aria-label={`View product photo ${index + 1}`} className={`size-14 shrink-0 overflow-hidden rounded-lg bg-muted ring-2 ${index === activeIndex ? 'ring-primary' : 'ring-transparent'}`}>
-                  <img src={image.url} alt={image.altText ?? `${productName ?? 'Product'} ${index + 1}`} className="h-full w-full object-cover" />
+                <button key={image.id} type="button" onClick={() => setActiveIndex(index)} aria-label={`Lihat foto produk ${index + 1}`} className={`size-14 shrink-0 overflow-hidden rounded-lg bg-muted ring-2 ${index === activeIndex ? 'ring-primary' : 'ring-transparent'}`}>
+                  <img src={image.url} alt={image.altText ?? `${productName ?? 'Produk'} ${index + 1}`} className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
           )}
-          <p className="text-2xs text-muted-foreground">Photo {activeIndex + 1} of {ordered.length} · first photo is the storefront thumbnail.</p>
+          <p className="text-2xs text-muted-foreground">Foto {activeIndex + 1} dari {ordered.length} · foto pertama menjadi thumbnail Storefront.</p>
         </div>
       ) : (
         <ImageDropInput
           value={undefined}
           onChange={append}
-          label="Primary product photo"
+          label="Foto utama produk"
         />
       )}
 
@@ -121,10 +121,10 @@ export const CatalogProductImagesField: FC<Props> = ({ images, onChange, product
           <ImageDropInput
             value={undefined}
             onChange={append}
-            label="Add gallery photo"
+            label="Tambah foto galeri"
           />
           <p className="flex max-w-[360px] items-center gap-1.5 text-2xs text-muted-foreground">
-            <Plus className="size-3" /> Up to {CATALOG_IMAGE_MAX_COUNT} ordered product photos.
+            <Plus className="size-3" /> Maksimal {CATALOG_IMAGE_MAX_COUNT} foto produk berurutan.
           </p>
         </div>
       )}

@@ -9,6 +9,7 @@ const detailSource = readFileSync(join(catalogDir, 'CatalogProductDetailSheet.ts
 const formSource = readFileSync(join(catalogDir, 'CatalogItemFormSheet.tsx'), 'utf8')
 const imagesSource = readFileSync(join(catalogDir, 'CatalogProductImagesField.tsx'), 'utf8')
 const variantsSource = readFileSync(join(catalogDir, 'CatalogVariantsSection.tsx'), 'utf8')
+const variantEditorSource = readFileSync(join(catalogDir, 'CatalogVariantEditorDialog.tsx'), 'utf8')
 const guideSource = readFileSync(join(catalogDir, 'CatalogSizeGuideDialog.tsx'), 'utf8')
 
 describe('catalog size-template and image-carousel regressions', () => {
@@ -16,13 +17,14 @@ describe('catalog size-template and image-carousel regressions', () => {
     expect(BOUQUET_STANDARD_SIZES.map((item) => item.name)).toEqual(['Small', 'Medium', 'Large'])
   })
 
-  it('uses a template-backed size dropdown without free-text additional options', () => {
-    expect(variantsSource).toContain('Ukuran · Wajib')
-    expect(variantsSource).not.toContain('Opsi tambahan · Opsional')
-    expect(variantsSource).not.toContain('formatCatalogVariantLabel')
-    expect(variantsSource).not.toContain('getDefaultCatalogSizeGuide')
+  it('uses template-backed size slots without free-text additional options', () => {
+    expect(variantsSource).toContain('Belum dikonfigurasi untuk produk ini.')
+    expect(variantsSource).toContain('Belum ditautkan ke ukuran')
+    expect(variantEditorSource).toContain('Tautkan ke ukuran template · Opsional')
+    expect(variantsSource + variantEditorSource).not.toContain('Opsi tambahan · Opsional')
+    expect(variantsSource + variantEditorSource).not.toContain('formatCatalogVariantLabel')
+    expect(variantsSource + variantEditorSource).not.toContain('getDefaultCatalogSizeGuide')
     expect(formSource).not.toContain('getDefaultCatalogSizeGuide')
-    expect(variantsSource).not.toContain('placeholder="Example: 05R"')
   })
 
   it('supports adding sub-sizes to a template category', () => {
@@ -40,18 +42,18 @@ describe('catalog size-template and image-carousel regressions', () => {
   it('keeps view and edit product photos square and carousel-based', () => {
     expect(detailSource).toContain('aspect-square')
     expect(detailSource).toContain('Product image carousel')
-    expect(imagesSource).toContain('Product photo carousel')
-    expect(imagesSource).toContain('Previous product photo')
-    expect(imagesSource).toContain('Next product photo')
+    expect(imagesSource).toContain('Galeri foto produk')
+    expect(imagesSource).toContain('Foto produk sebelumnya')
+    expect(imagesSource).toContain('Foto produk berikutnya')
   })
 
   it('still parses historical labels without exposing a new option editor', () => {
     expect(parseCatalogVariantLabel('Medium · Blue')).toEqual({ size: 'Medium', option: 'Blue' })
-    expect(variantsSource).not.toContain('Opsi tambahan')
+    expect(variantsSource + variantEditorSource).not.toContain('Opsi tambahan')
   })
 
-  it('gates catalog cost fields to owner or finance roles', () => {
-    expect(variantsSource).toContain("userRole === 'owner' || userRole === 'finance'")
+  it('gates Catalog cost fields to owner or finance roles', () => {
+    expect(variantEditorSource).toContain("role === 'owner' || role === 'finance'")
     expect(detailSource).toContain("userRole === 'owner' || userRole === 'finance'")
     expect(detailSource).toContain('canViewCost && variant.cost !== undefined')
   })

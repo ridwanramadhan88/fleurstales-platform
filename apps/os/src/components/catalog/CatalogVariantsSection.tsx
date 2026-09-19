@@ -1,119 +1,272 @@
-import { useEffect, useMemo, useState, type FC } from 'react'
-import { Flower2, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
-import type { CatalogVariantStatus } from '../../store/catalogStoreTypes'
-import { useCatalogStore } from '../../store/catalogStore'
-import { parseCatalogVariantLabel } from '../../domain/catalogVariantLabelDomain'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { useMemo, useState, type FC } from 'react'
+import { AlertCircle, CheckCircle2, Link2, Pencil, Plus, Ruler } from 'lucide-react'
+import type { CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
 import type { VariantRow } from './CatalogItemFormSheet'
-import { CatalogProductImagesField } from './CatalogProductImagesField'
-import { generateId } from '../../lib/id'
-import { useUserStore } from '../../store/userStore'
+import { CatalogVariantEditorDialog } from './CatalogVariantEditorDialog'
 
 interface Props {
   variants: VariantRow[]
-  sizeTemplateName?: string
+  sizeTemplate?: CatalogSizeGuideTemplate
   updateVariant: (index: number, patch: Partial<VariantRow>) => void
-  addVariant: () => void
+  addVariant: (variant?: VariantRow) => void
   removeVariant: (index: number) => void
   productName?: string
 }
 
-const inputClass = 'h-11 w-full rounded-xl border border-border bg-card px-3.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20'
-const labelClass = 'text-sm font-medium text-foreground'
-const VariantField = ({ label, children }: { label: string; children: React.ReactNode }) => <div className="space-y-1.5"><label className={labelClass}>{label}</label>{children}</div>
+interface EditorTarget {
+  index: number | null
+  variant: VariantRow
+  label: string
+}
 
-export const CatalogVariantsSection: FC<Props> = ({ variants, sizeTemplateName, updateVariant, addVariant, removeVariant, productName }) => {
-  const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
-  const userRole = useUserStore((state) => state.role)
-  const canViewCost = userRole === 'owner' || userRole === 'finance'
-  const [activeIndex, setActiveIndex] = useState(0)
-  useEffect(() => setActiveIndex((index) => Math.min(index, Math.max(variants.length - 1, 0))), [variants.length])
+const formatPrice = (value: string): string => {
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isFinite(parsed)) return 'Harga belum diatur'
+  return 'Rp' + new Intl.NumberFormat('id-ID').format(parsed)
+}
 
-  const sizeTemplate = useMemo(() => {
-    return sizeTemplateName ? sizeGuideTemplates.find((template) => template.name === sizeTemplateName) : undefined
-  }, [sizeGuideTemplates, sizeTemplateName])
-  const templateSizes = (sizeTemplate?.sizes ?? []).filter((size) => size.isActive !== false)
-  const row = variants[activeIndex]
-  if (!row) return null
-  const parts = parseCatalogVariantLabel(row.size)
-  const selectedSize = templateSizes.find((size) => size.id === row.sizeOptionId)
-    ?? templateSizes.find((size) => size.name.toLowerCase() === parts.size.toLowerCase())
+const statusBadge = (variant: VariantRow): string =>
+  variant.status === 'active' ? 'Dijual' : 'Tidak tersedia'
 
-  const updateFlower = (recipeIndex: number, patch: Partial<VariantRow['flowerRecipe'][number]>) => updateVariant(activeIndex, {
-    flowerRecipe: row.flowerRecipe.map((item, index) => index === recipeIndex ? { ...item, ...patch } : item),
-  })
+const blankVariant = (): VariantRow => ({
+  size: '',
+  images: [],
+  price: '',
+  cost: '',
+  status: 'active',
+  flowerRecipe: [],
+})
 
-  const selectSize = (sizeId: string) => {
-    const size = templateSizes.find((item) => item.id === sizeId)
-    if (!size) return
-    updateVariant(activeIndex, { sizeOptionId: size.id, size: size.name })
+export const CatalogVariantsSection: FC<Props> = ({
+  variants,
+  sizeTemplate,
+  updateVariant,
+  addVariant,
+  removeVariant,
+  productName,
+}) => {
+  const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null)
+
+  const templateSizes = useMemo(
+    () => [...(sizeTemplate?.sizes ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [sizeTemplate],
+  )
+  const sizeById = useMemo(() => new Map(templateSizes.map((size) => [size.id, size])), [templateSizes])
+  const variantIndexBySize = useMemo(() => {
+    const map = new Map<string, number>()
+    variants.forEach((variant, index) => {
+      if (variant.sizeOptionId) map.set(variant.sizeOptionId, index)
+    })
+    return map
+  }, [variants])
+
+  const unlinked = variants
+    .map((variant, index) => ({ variant, index }))
+    .filter(({ variant }) => !variant.sizeOptionId)
+  const incompatible = variants
+    .map((variant, index) => ({ variant, index }))
+    .filter(({ variant }) => Boolean(variant.sizeOptionId) && !sizeById.has(variant.sizeOptionId as string))
+
+  const openExisting = (index: number, label?: string) => {
+    const variant = variants[index]
+    if (!variant) return
+    setEditorTarget({
+      index,
+      variant: structuredClone(variant),
+      label: label ?? ('Varian · ' + (variant.size || 'Belum ditautkan')),
+    })
   }
 
+  const openNewForSize = (sizeId: string) => {
+    const size = sizeById.get(sizeId)
+    if (!size || size.isActive === false) return
+    setEditorTarget({
+      index: null,
+      variant: { ...blankVariant(), sizeOptionId: size.id, size: size.name },
+      label: 'Atur varian · ' + size.name,
+    })
+  }
+
+  const openNewUnlinked = () => {
+    setEditorTarget({
+      index: null,
+      variant: blankVariant(),
+      label: 'Tambah varian belum ditautkan',
+    })
+  }
+
+  const reservedSizeOptionIds = useMemo(() => {
+    const currentId = editorTarget?.variant.sizeOptionId
+    return new Set(
+      variants
+        .map((variant) => variant.sizeOptionId)
+        .filter((id): id is string => Boolean(id) && id !== currentId),
+    )
+  }, [editorTarget?.variant.sizeOptionId, variants])
+
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold text-foreground">Ukuran & varian</h3>
-          <p className="text-xs text-muted-foreground">Harga, foto produk, resep, dan status disimpan per ukuran. Panduan ukuran diwarisi dari template.</p>
+          <h3 className="text-base font-semibold text-foreground">Varian berdasarkan ukuran</h3>
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
+            Template hanya menampilkan slot ukuran. Varian baru dibuat dan disimpan setelah Anda mengaturnya.
+          </p>
         </div>
-        <button type="button" onClick={() => { addVariant(); setActiveIndex(variants.length) }} className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"><Plus className="size-4" /> Tambah variant</button>
+        <div className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
+          {variants.length} varian tersimpan di draft
+        </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {variants.map((variant, index) => {
-          const label = parseCatalogVariantLabel(variant.size).size || `Variant ${index + 1}`
-          const complete = Boolean(variant.size.trim() && Number(variant.price) > 0)
-          return <button key={variant.id ?? `new-${index}`} type="button" onClick={() => setActiveIndex(index)} className={`shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold ring-1 ${activeIndex === index ? 'bg-primary text-primary-foreground ring-primary' : 'bg-card text-foreground ring-border'}`}>{complete ? '✓ ' : '! '}{label}</button>
-        })}
-      </div>
+      {sizeTemplate ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Ruler className="size-4 text-primary" />
+            <span>{sizeTemplate.name}</span>
+          </div>
 
-      <article className="rounded-2xl border border-border/80 bg-card p-4 shadow-ios-sm">
-        <div className="mb-4 flex items-start justify-between gap-3">
+          {templateSizes.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+              Template ini belum memiliki ukuran.
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {templateSizes.map((size) => {
+                const variantIndex = variantIndexBySize.get(size.id)
+                const variant = variantIndex === undefined ? undefined : variants[variantIndex]
+                const configured = Boolean(variant)
+                const archived = size.isActive === false
+                return (
+                  <article key={size.id} className="rounded-2xl border border-border/80 bg-card p-4 shadow-ios-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-foreground">{size.name}</p>
+                          {archived ? <span className="rounded-full bg-muted px-2 py-1 text-2xs text-muted-foreground">Diarsipkan</span> : null}
+                        </div>
+                        {configured && variant ? (
+                          <>
+                            <p className="mt-1 text-sm font-medium text-foreground">{formatPrice(variant.price)}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{statusBadge(variant)}{variant.sku ? ' · ' + variant.sku : ''}</p>
+                          </>
+                        ) : (
+                          <p className="mt-2 text-xs leading-5 text-muted-foreground">Belum dikonfigurasi untuk produk ini.</p>
+                        )}
+                      </div>
+                      {configured ? <CheckCircle2 className="size-5 shrink-0 text-success" /> : <span className="size-5 shrink-0 rounded-full border border-dashed border-border" />}
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={archived && !configured}
+                      onClick={() => configured && variantIndex !== undefined ? openExisting(variantIndex, 'Edit varian · ' + size.name) : openNewForSize(size.id)}
+                      className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {configured ? <Pencil className="size-4" /> : <Plus className="size-4" />}
+                      {configured ? 'Edit varian' : archived ? 'Ukuran diarsipkan' : 'Atur varian'}
+                    </button>
+                  </article>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-warning/25 bg-warning/5 px-4 py-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 size-5 shrink-0 text-warning" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Belum ada template ukuran</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Jenis rangkaian ini belum memiliki template ukuran yang ditetapkan. Varian lama tetap aman dan tidak akan ditautkan otomatis.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {unlinked.length > 0 ? (
+        <div className="space-y-3 rounded-2xl border border-warning/25 bg-warning/5 p-4">
           <div>
-            <p className="text-sm font-semibold">{sizeTemplate?.name ?? 'Template ukuran'} · {parts.size || 'Pilih ukuran'}</p>
-            <p className="text-xs text-muted-foreground">{row.sku || 'SKU dibuat saat disimpan'}</p>
+            <p className="flex items-center gap-2 text-sm font-semibold"><Link2 className="size-4 text-warning" /> Belum ditautkan ke ukuran</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Data lama ini tetap disimpan apa adanya. Tautkan secara eksplisit jika sudah mengetahui ukuran template yang benar.
+            </p>
           </div>
-          {variants.length > 1 && <button type="button" onClick={() => removeVariant(activeIndex)} className="inline-flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label="Hapus variant"><Trash2 className="size-4" /></button>}
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <VariantField label="Ukuran · Wajib">
-            <Select value={selectedSize?.id} onValueChange={selectSize}>
-              <SelectTrigger className={inputClass}><SelectValue placeholder={sizeTemplate ? `Pilih dari ${sizeTemplate.name}` : 'Buat template ukuran dulu'} /></SelectTrigger>
-              <SelectContent>{templateSizes.map((size) => <SelectItem key={size.id} value={size.id}>{size.name}</SelectItem>)}</SelectContent>
-            </Select>
-          </VariantField>
-          <VariantField label="Harga jual · Wajib"><input type="number" min={1} inputMode="numeric" value={row.price} onChange={(event) => updateVariant(activeIndex, { price: event.target.value })} placeholder="Rp0" className={inputClass} /></VariantField>
-          <VariantField label="Status"><Select value={row.status} onValueChange={(value) => updateVariant(activeIndex, { status: value as CatalogVariantStatus })}><SelectTrigger className={inputClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Dijual</SelectItem><SelectItem value="inactive">Tidak tersedia</SelectItem></SelectContent></Select></VariantField>
-        </div>
-
-        <div className="mt-5 grid gap-5 border-t border-border/70 pt-4 lg:grid-cols-2">
-          <div className="space-y-3">
-            <div><p className="flex items-center gap-2 text-sm font-semibold"><ImageIcon className="size-4 text-primary" /> Foto produk variant</p><p className="mt-0.5 text-xs text-muted-foreground">Foto ini khusus {parts.size || 'ukuran ini'}. Jika kosong, storefront Batch 2 dapat memakai foto produk lama sebagai fallback.</p></div>
-            <CatalogProductImagesField images={row.images} onChange={(images) => updateVariant(activeIndex, { images })} productName={`${productName ?? 'Product'} ${parts.size}`} />
-          </div>
-          <div className="space-y-3 rounded-xl bg-muted/40 p-3">
-            <p className="text-sm font-semibold">Panduan ukuran</p>
-            {selectedSize?.guideImageUrl ? <img src={selectedSize.guideImageUrl} alt={`Panduan ${selectedSize.name}`} className="aspect-square w-full max-w-[220px] rounded-xl object-cover ring-1 ring-border" /> : <div className="flex aspect-square w-full max-w-[220px] items-center justify-center rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground">Belum ada panduan untuk {selectedSize?.name ?? 'ukuran ini'}.</div>}
-            <p className="text-2xs text-muted-foreground">Dikelola dari Panduan ukuran · {sizeTemplate?.name ?? 'belum ditetapkan'}. Tidak dapat diubah dari produk.</p>
+          <div className="space-y-2">
+            {unlinked.map(({ variant, index }) => (
+              <button
+                key={variant.id ?? 'unlinked-' + index}
+                type="button"
+                onClick={() => openExisting(index)}
+                className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left hover:bg-muted"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold">{variant.size || 'Nama ukuran belum tersedia'}</span>
+                  <span className="block text-xs text-muted-foreground">{formatPrice(variant.price)} · {statusBadge(variant)}</span>
+                </span>
+                <span className="shrink-0 text-xs font-semibold text-primary">Tinjau & tautkan</span>
+              </button>
+            ))}
           </div>
         </div>
+      ) : null}
 
-        <div className="mt-5 border-t border-border/70 pt-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <div><p className="flex items-center gap-2 text-sm font-semibold"><Flower2 className="size-4 text-primary" /> Resep bunga</p><p className="mt-0.5 text-xs text-muted-foreground">Komposisi produksi khusus variant ini.</p></div>
-            <button type="button" onClick={() => updateVariant(activeIndex, { flowerRecipe: [...row.flowerRecipe, { id: generateId('flower_recipe'), flowerName: '', quantity: '1', unit: 'stem' }] })} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold hover:bg-muted"><Plus className="size-3.5" /> Tambah bunga</button>
+      {incompatible.length > 0 ? (
+        <div className="space-y-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Ukuran tidak cocok dengan template saat ini</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Varian ini tidak dihapus. Pilih ukuran template yang benar sebelum menjualnya kembali.
+            </p>
           </div>
-          {row.flowerRecipe.length === 0 ? <div className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">Belum ada resep bunga.</div> : <div className="space-y-2">{row.flowerRecipe.map((item, recipeIndex) => <div key={item.id} className="grid gap-2 rounded-xl bg-muted/45 p-3 sm:grid-cols-[minmax(0,1fr)_7rem_8rem_2.75rem] sm:items-end">
-            <VariantField label="Bunga"><input value={item.flowerName} onChange={(event) => updateFlower(recipeIndex, { flowerName: event.target.value })} placeholder="Contoh: Mawar Merah" className={inputClass} /></VariantField>
-            <VariantField label="Jumlah"><input type="number" min={0.01} step={0.01} value={item.quantity} onChange={(event) => updateFlower(recipeIndex, { quantity: event.target.value })} className={inputClass} /></VariantField>
-            <VariantField label="Satuan"><Select value={item.unit} onValueChange={(value) => updateFlower(recipeIndex, { unit: value as 'stem' | 'bunch' })}><SelectTrigger className={inputClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="stem">Tangkai</SelectItem><SelectItem value="bunch">Ikat</SelectItem></SelectContent></Select></VariantField>
-            <button type="button" onClick={() => updateVariant(activeIndex, { flowerRecipe: row.flowerRecipe.filter((_, index) => index !== recipeIndex) })} className="inline-flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="size-4" /></button>
-          </div>)}</div>}
+          {incompatible.map(({ variant, index }) => (
+            <button
+              key={variant.id ?? 'review-' + index}
+              type="button"
+              onClick={() => openExisting(index, 'Tinjau varian · ' + (variant.size || 'Tanpa ukuran'))}
+              className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left hover:bg-muted"
+            >
+              <span>
+                <span className="block text-sm font-semibold">{variant.size || 'Tanpa ukuran'}</span>
+                <span className="block text-xs text-muted-foreground">ID ukuran: {variant.sizeOptionId}</span>
+              </span>
+              <span className="text-xs font-semibold text-destructive">Perlu ditinjau</span>
+            </button>
+          ))}
         </div>
+      ) : null}
 
-        {canViewCost && <div className="mt-4 grid gap-3 border-t border-border/70 pt-4 sm:grid-cols-2"><VariantField label="Cost · Owner/Finance"><input type="number" min={0} value={row.cost} onChange={(event) => updateVariant(activeIndex, { cost: event.target.value })} placeholder="Opsional" className={inputClass} /></VariantField></div>}
-      </article>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border px-4 py-4">
+        <div>
+          <p className="text-sm font-semibold">Varian tanpa tautan ukuran</p>
+          <p className="mt-1 text-xs text-muted-foreground">Gunakan hanya jika produk memang belum dapat memakai template ukuran.</p>
+        </div>
+        <button type="button" onClick={openNewUnlinked} className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold hover:bg-muted">
+          <Plus className="size-4" /> Tambah varian
+        </button>
+      </div>
+
+      {editorTarget ? (
+        <CatalogVariantEditorDialog
+          open
+          onOpenChange={(open) => { if (!open) setEditorTarget(null) }}
+          variant={editorTarget.variant}
+          variantLabel={editorTarget.label}
+          productName={productName}
+          sizeTemplate={sizeTemplate}
+          reservedSizeOptionIds={reservedSizeOptionIds}
+          onApply={(next) => {
+            if (editorTarget.index === null) addVariant(next)
+            else updateVariant(editorTarget.index, next)
+            setEditorTarget(null)
+          }}
+          onDelete={editorTarget.index === null ? undefined : () => {
+            removeVariant(editorTarget.index as number)
+            setEditorTarget(null)
+          }}
+        />
+      ) : null}
     </section>
   )
 }

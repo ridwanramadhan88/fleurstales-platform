@@ -15,6 +15,9 @@ const financeSimplification = await read(
 const catalogServerHardening = await read(
   'supabase/migrations/20260919100000_catalog_server_persistence_hardening.sql',
 )
+const catalogAtomicEditorSave = await read(
+  'supabase/migrations/20260919130000_catalog_product_editor_atomic_save.sql',
+)
 const catalogRepositories = await read('apps/os/src/data/shared/repositories.ts')
 const catalogBridgeHardening = await read('apps/os/src/data/shared/catalogBridge.ts')
 const catalogSizeGuideActions = await read('apps/os/src/store/catalogStoreSizeGuideActions.ts')
@@ -91,6 +94,11 @@ assert(catalogRepositories.includes('new Map(), client'), 'Public Catalog reposi
 assert(catalogRepositories.indexOf('export const createCatalogAdminRepository') > catalogRepositories.indexOf('export const createCatalogReadRepository'), 'Catalog repository privacy split is missing.')
 assert(catalogBridgeHardening.includes("includeCosts: role === 'finance'"), 'Finance Catalog hydration does not request server-authorized Cost data.')
 assert(catalogSizeGuideActions.includes('if (isSupabaseConfigured())'), 'Configured production Size Templates can still treat browser localStorage as authoritative.')
+assert(catalogAtomicEditorSave.includes('delete from public.product_variant_flower_recipes'), 'Product Editor save does not replace recipes inside the Catalog revision transaction.')
+assert(catalogAtomicEditorSave.includes('delete from public.product_images where product_id=v_product_id'), 'Product Editor save does not replace image metadata inside the Catalog revision transaction.')
+assert(catalogAtomicEditorSave.includes('v_next_revision := v_current_revision+1'), 'Atomic Product Editor save lost its single Catalog revision increment.')
+assert(catalogBridgeHardening.includes('for (const upload of plan.pendingUploads)'), 'Catalog bridge does not pre-upload uniquely-addressed image binaries.')
+assert(catalogBridgeHardening.includes('if (!catalogCommitted && uploadedPaths.length > 0)'), 'Catalog bridge does not clean image objects after a failed atomic commit.')
 
 // V3.1 foundation remains present.
 assert(baseHardening.includes('private.operational_domain_state'), 'Private operational-domain storage is missing.')
@@ -291,7 +299,8 @@ assert(storefrontMain.includes('if (!isSupabaseConfigured()) await initializeOpe
 assert(storefrontPersistence.includes("PRODUCTION_LOCAL_ONLY_KEYS"), 'Storefront production persistence allow-list is missing.')
 assert(internalOrderSubmit.includes("createInternalOrder"), 'OS manual Orders do not call the authenticated server transaction.')
 assert(storefrontCheckout.includes('quoteOrder'), 'Storefront voucher totals do not use the server quote.')
-assert(catalogBridgeV35.includes('syncCatalogProductImagesToRemote'), 'Catalog save does not invoke Storage synchronization.')
+assert(catalogBridgeV35.includes('for (const upload of plan.pendingUploads)'), 'Catalog save does not upload Storage objects before the atomic Catalog commit.')
+assert(catalogBridgeV35.includes('materializeCatalogImagesAfterCommit'), 'Catalog save does not materialize committed Storage URLs after the server accepts the revision.')
 assert(/(?:const|let) confirmed = new Map/.test(customerBridgeV35), 'CRM bridge still marks unconfirmed revisions as saved.')
 assert(realtimeSync.includes("table: 'customers'"), 'CRM Realtime subscription is missing.')
 assert(staffOperationsV35.includes("get_operational_roster"), 'Admin operational roster hydration is missing.')

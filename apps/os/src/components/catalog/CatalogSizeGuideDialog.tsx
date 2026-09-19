@@ -176,7 +176,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                               )}
                             </div>
                             <div>
-                              <ImageDropInput value={size.guideImageUrl} onChange={(value) => handleGuideImage(size.id, value)} label={`Panduan ${size.name}`} editorTitle={`Crop panduan ${size.name}`} dropHint="JPEG 1:1 · maks 100 KB" previewAlt={`Panduan ukuran ${size.name}`} />
+                              <ImageDropInput value={size.guideImageUrl} onChange={(value) => handleGuideImage(size.id, value)} label={`Panduan ${size.name}`} editorTitle={`Potong panduan ${size.name}`} dropHint="JPEG 1:1 · maks 100 KB" previewAlt={`Panduan ukuran ${size.name}`} />
                             </div>
                           </div>
                         )

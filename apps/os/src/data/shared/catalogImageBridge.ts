@@ -115,6 +115,29 @@ export const applyCatalogImageStoragePlanLocally = (product: CatalogProduct): Ca
   }
 }
 
+export const materializeCatalogImagesAfterCommit = (
+  product: CatalogProduct,
+  publicUrl: (path: string) => string,
+): CatalogProduct => {
+  const plan = buildCatalogImageStoragePlan(product)
+  const materialize = (image: CatalogProductImage): CatalogProductImage => ({
+    ...image,
+    url: image.storagePath && !isBundledCatalogImagePath(image.storagePath)
+      ? publicUrl(image.storagePath)
+      : image.url,
+  })
+  const images = plan.images.map(materialize)
+  return {
+    ...product,
+    images,
+    variants: product.variants.map((variant) => ({
+      ...variant,
+      images: (plan.variantImages[variant.id] ?? []).map(materialize),
+    })),
+    ...getCatalogProductImageAliases(images),
+  }
+}
+
 const storedUrl = (
   image: CatalogProductImage,
   publicUrl: (path: string) => string,
