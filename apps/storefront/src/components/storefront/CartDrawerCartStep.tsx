@@ -41,11 +41,18 @@ export const CartStep: FC<CartDrawerViewModel> = ({
               return (
                 <article key={line.lineId} className="grid grid-cols-[88px_minmax(0,1fr)] gap-4 py-[1.125rem] sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-[1.125rem] sm:py-5 lg:grid-cols-[112px_minmax(0,1fr)] lg:gap-5 lg:py-6">
                   <div className="relative aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
+                    <span className="absolute inset-0 grid place-items-center px-2 text-center sf-type-1 font-medium text-black/40" aria-hidden="true">Fleurstales</span>
                     {imageUrl ? (
-                      <img src={imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" aria-hidden="true" />
-                    ) : (
-                      <span className="absolute inset-0 grid place-items-center px-2 text-center sf-type-1 font-medium text-black/40" aria-hidden="true">Fleurstales</span>
-                    )}
+                      <img
+                        src={imageUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => { event.currentTarget.style.display = 'none' }}
+                        className="relative h-full w-full object-cover"
+                        aria-hidden="true"
+                      />
+                    ) : null}
                   </div>
                   <div className="flex min-w-0 flex-col justify-between gap-3.5">
                     <div className="flex items-start justify-between gap-3.5">
