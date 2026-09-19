@@ -48,3 +48,17 @@ export const getStorefrontProductThumbnailById = (
   const product = products.find((item) => item.id === productId)
   return product ? getStorefrontProductThumbnail(product) : ''
 }
+
+export const getStorefrontCartLineImage = (
+  products: CatalogProduct[],
+  productId: string,
+  variantId?: string,
+): string => {
+  const product = products.find((item) => item.id === productId)
+  if (!product) return ''
+  const variant = variantId
+    ? product.variants.find((item) => item.id === variantId)
+    : undefined
+  return getStorefrontVariantPrimaryImage(product, variant)
+    ?? getStorefrontProductThumbnail(product)
+}
