@@ -13,25 +13,25 @@ export const createCatalogArrangementTypeActions = (
   get: CatalogStoreGet,
 ): ArrangementTypeActions => ({
   addArrangementType: (name) => {
-    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'This account cannot edit the catalog.' }
+    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengedit Catalog.' }
     const nextName = normalizedName(name)
-    if (!nextName) return { ok: false, reason: 'Arrangement type name is required.' }
-    if (nextName.length > 80) return { ok: false, reason: 'Arrangement type names must be 80 characters or fewer.' }
+    if (!nextName) return { ok: false, reason: 'Nama Jenis rangkaian wajib diisi.' }
+    if (nextName.length > 80) return { ok: false, reason: 'Nama Jenis rangkaian maksimal 80 karakter.' }
     if (get().arrangementTypes.some((item) => item.toLowerCase() === nextName.toLowerCase())) {
-      return { ok: false, reason: `"${nextName}" already exists.` }
+      return { ok: false, reason: `"${nextName}" sudah ada.` }
     }
     set((state) => ({ arrangementTypes: [...state.arrangementTypes, nextName] }))
     return { ok: true }
   },
 
   renameArrangementType: (currentName, nextValue) => {
-    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'This account cannot edit the catalog.' }
+    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengedit Catalog.' }
     const nextName = normalizedName(nextValue)
-    if (!nextName) return { ok: false, reason: 'Arrangement type name is required.' }
-    if (nextName.length > 80) return { ok: false, reason: 'Arrangement type names must be 80 characters or fewer.' }
-    if (!get().arrangementTypes.includes(currentName)) return { ok: false, reason: 'Arrangement type not found.' }
+    if (!nextName) return { ok: false, reason: 'Nama Jenis rangkaian wajib diisi.' }
+    if (nextName.length > 80) return { ok: false, reason: 'Nama Jenis rangkaian maksimal 80 karakter.' }
+    if (!get().arrangementTypes.includes(currentName)) return { ok: false, reason: 'Jenis rangkaian tidak ditemukan.' }
     if (get().arrangementTypes.some((item) => item !== currentName && item.toLowerCase() === nextName.toLowerCase())) {
-      return { ok: false, reason: `"${nextName}" already exists.` }
+      return { ok: false, reason: `"${nextName}" sudah ada.` }
     }
     set((state) => ({
       arrangementTypes: state.arrangementTypes.map((item) => item === currentName ? nextName : item),
@@ -47,10 +47,10 @@ export const createCatalogArrangementTypeActions = (
   },
 
   deleteArrangementType: (name) => {
-    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'This account cannot edit the catalog.' }
+    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengedit Catalog.' }
     const usageCount = get().products.filter((product) => product.productType === name).length
     if (usageCount > 0) {
-      return { ok: false, reason: `This arrangement type is used by ${usageCount} product${usageCount === 1 ? '' : 's'}.` }
+      return { ok: false, reason: `Jenis rangkaian ini masih dipakai oleh ${usageCount} produk.` }
     }
     set((state) => ({
       arrangementTypes: state.arrangementTypes.filter((item) => item !== name),
