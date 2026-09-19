@@ -181,17 +181,19 @@ const prepareTemplate = async (
   }
 }
 
-export const syncLocalSizeGuideLibrary = async (repository: CatalogAdminRepository): Promise<void> => {
-  const state = useCatalogStore.getState()
+export const syncSizeGuideLibrary = async (
+  repository: CatalogAdminRepository,
+  input: Pick<CatalogStoreState, 'sizeGuideTemplates' | 'sizeGuideTargets'>,
+): Promise<void> => {
   const previous = await repository.listSizeGuideTemplates()
   const previousChildPaths = previous.flatMap((template) =>
     (asSizeGuideTemplateWithSizes(template).sizes ?? []).flatMap((size) => size.guideStoragePath ? [size.guideStoragePath] : []),
   )
 
-  const prepared = await Promise.all(state.sizeGuideTemplates.map((template) => prepareTemplate(repository, template)))
+  const prepared = await Promise.all(input.sizeGuideTemplates.map((template) => prepareTemplate(repository, template)))
   const templates = prepared.map((item) => item.template)
   const uploadedPaths = prepared.flatMap((item) => item.uploadedPaths)
-  const targets = state.sizeGuideTargets.map(toSharedTarget)
+  const targets = input.sizeGuideTargets.map(toSharedTarget)
 
   try {
     await repository.replaceSizeGuideLibrary({ templates, targets })
@@ -212,4 +214,12 @@ export const syncLocalSizeGuideLibrary = async (repository: CatalogAdminReposito
   ].filter((path) => !activePaths.has(path))
   if (removedPaths.length > 0) await repository.removeSizeGuideObjects([...new Set(removedPaths)])
   applyRemoteSizeGuideLibrary(templates, targets)
+}
+
+export const syncLocalSizeGuideLibrary = async (repository: CatalogAdminRepository): Promise<void> => {
+  const state = useCatalogStore.getState()
+  await syncSizeGuideLibrary(repository, {
+    sizeGuideTemplates: state.sizeGuideTemplates,
+    sizeGuideTargets: state.sizeGuideTargets,
+  })
 }
