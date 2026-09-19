@@ -10,6 +10,7 @@ export interface StorefrontProductCardProps {
   onOpenDetail: () => void
   presentation?: 'default' | 'collection'
   tabIndex?: number
+  ariaHidden?: boolean
 }
 
 export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
@@ -18,6 +19,7 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
   onOpenDetail,
   presentation = 'default',
   tabIndex,
+  ariaHidden,
 }) => {
   const displayPriceIdr = getDisplayPriceIdr(product)
   const hasVariants = product.variants.length > 1
@@ -49,6 +51,7 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
         href={href}
         onClick={handleNavigate}
         tabIndex={tabIndex}
+        aria-hidden={ariaHidden}
         aria-label={`View ${product.name}`}
         className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-black/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--sf-cream)]"
       >
