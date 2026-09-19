@@ -46,7 +46,7 @@ export const StorefrontFooter: FC<Props> = ({ storeProfile }) => {
               </div>
 
               <div className="mt-6 space-y-1.5 sf-type-2 leading-[1.45] text-black/72">
-                <p><a className="font-medium underline decoration-black/35 underline-offset-2" href="/track">Track Order</a></p>
+                <p><a className="inline-flex min-h-11 items-center font-medium underline decoration-black/35 underline-offset-2" href="/track">Track Order</a></p>
                 {whatsapp.trim() && (
                   <p>{whatsappHref ? <a className="inline-flex min-h-11 items-center underline decoration-black/35 underline-offset-2" href={whatsappHref} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${whatsapp}`}>{whatsapp}</a> : whatsapp}</p>
                 )}
