@@ -663,6 +663,10 @@ export const StorefrontPage: FC = () => {
         onIncrement={(lineId) => handleLineQuantityChange(lineId, 1)}
         onDecrement={(lineId) => handleLineQuantityChange(lineId, -1)}
         onOrderPlaced={handleOrderPlaced}
+        onStartShopping={() => {
+          setIsCartOpen(false)
+          navigateShop('all')
+        }}
         formatter={currencyFormatter}
       />
     </div>

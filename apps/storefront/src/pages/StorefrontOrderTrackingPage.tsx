@@ -15,12 +15,8 @@ import {
 import { buildStorefrontTrackingPath } from '../data/shared/storefrontCheckoutResult'
 import { requestStorefrontNavigation } from '../lib/storefrontNavigation'
 import type { OrderStatus } from '../data/shared/databaseTypes'
-
-const currencyFormatter = new Intl.NumberFormat('id-ID', {
-  style: 'currency',
-  currency: 'IDR',
-  maximumFractionDigits: 0,
-})
+import { formatIdr } from '../lib/currency'
+import { getStorefrontWhatsappHref } from '../domain/storefrontContactDomain'
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending_verification: 'Menunggu konfirmasi',
@@ -67,23 +63,16 @@ const displaySchedule = (order: PublicOrderStatusSummary | PublicOrderTrackingDe
   return [formatScheduleDate(date), time?.slice(0, 5)].filter(Boolean).join(' · ') || 'Jadwal belum ditentukan'
 }
 
-const normalizeWhatsappForLink = (value?: string | null): string => {
-  const digits = (value ?? '').replace(/\D/g, '')
-  if (!digits) return ''
-  if (digits.startsWith('0')) return `62${digits.slice(1)}`
-  return digits
-}
-
 const productSummary = (details: PublicOrderTrackingDetails): string => {
   const first = details.items[0]?.name ?? 'order'
   return details.items.length > 1 ? `${first} +${details.items.length - 1} item` : first
 }
 
 const buildContactAdminHref = (details: PublicOrderTrackingDetails): string | null => {
-  const number = normalizeWhatsappForLink(details.contactWhatsapp)
-  if (!number) return null
+  const baseHref = getStorefrontWhatsappHref(details.contactWhatsapp)
+  if (!baseHref) return null
   const message = `Halo ka, mau tanya untuk orderan ${details.orderNumber} - ${productSummary(details)} atas nama ${details.customerName}`
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`
+  return `${baseHref}?text=${encodeURIComponent(message)}`
 }
 
 interface StorefrontOrderTrackingPageProps {
@@ -263,7 +252,7 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                       <p className="sf-label text-[#006f36]">Selesaikan pembayaran</p>
                       <div className="mt-3 flex items-end justify-between gap-4 border-b border-[#00813f]/15 pb-4">
                         <span className="sf-type-2 text-black/55">Total</span>
-                        <strong className="text-[1.75rem] font-medium leading-none sm:text-[2rem]">{currencyFormatter.format(details.totalIdr)}</strong>
+                        <strong className="text-[1.75rem] font-medium leading-none sm:text-[2rem]">{formatIdr(details.totalIdr)}</strong>
                       </div>
                       {details.paymentAccountSnapshot ? (
                         <div className="mt-4 rounded-2xl bg-white/65 p-4">
@@ -285,7 +274,7 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                         <p className="sf-type-2 font-semibold text-[#006f36]">✓ Pembayaran diterima</p>
                         <p className="mt-0.5 sf-type-1 text-black/42">Tidak ada tindakan pembayaran yang diperlukan.</p>
                       </div>
-                      <p className="sf-type-3 font-semibold">{currencyFormatter.format(details.totalIdr)}</p>
+                      <p className="sf-type-3 font-semibold">{formatIdr(details.totalIdr)}</p>
                     </section>
                   ) : null}
 
@@ -317,10 +306,10 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                         <section>
                           <p className="sf-label text-black/45">Ringkasan pembayaran</p>
                           <dl className="mt-4 space-y-3 sf-type-2">
-                            <div className="flex justify-between gap-4"><dt className="text-black/42">Produk</dt><dd>{currencyFormatter.format(details.itemsSubtotalIdr)}</dd></div>
-                            <div className="flex justify-between gap-4"><dt className="text-black/42">Pengiriman</dt><dd>{currencyFormatter.format(details.deliveryFeeIdr)}</dd></div>
-                            {details.discountIdr > 0 ? <div className="flex justify-between gap-4"><dt className="text-black/42">Diskon</dt><dd>-{currencyFormatter.format(details.discountIdr)}</dd></div> : null}
-                            <div className="flex justify-between gap-4 border-t border-black/10 pt-3 font-semibold"><dt>Total</dt><dd>{currencyFormatter.format(details.totalIdr)}</dd></div>
+                            <div className="flex justify-between gap-4"><dt className="text-black/42">Produk</dt><dd>{formatIdr(details.itemsSubtotalIdr)}</dd></div>
+                            <div className="flex justify-between gap-4"><dt className="text-black/42">Pengiriman</dt><dd>{formatIdr(details.deliveryFeeIdr)}</dd></div>
+                            {details.discountIdr > 0 ? <div className="flex justify-between gap-4"><dt className="text-black/42">Diskon</dt><dd>-{formatIdr(details.discountIdr)}</dd></div> : null}
+                            <div className="flex justify-between gap-4 border-t border-black/10 pt-3 font-semibold"><dt>Total</dt><dd>{formatIdr(details.totalIdr)}</dd></div>
                           </dl>
                         </section>
                       </div>
@@ -336,7 +325,7 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                               </div>
                               <div className="text-right">
                                 <p className="sf-type-2">×{item.quantity}</p>
-                                <p className="mt-0.5 sf-type-1 text-black/50">{currencyFormatter.format(item.unitPriceIdr)}</p>
+                                <p className="mt-0.5 sf-type-1 text-black/50">{formatIdr(item.unitPriceIdr)}</p>
                               </div>
                             </div>
                           ))}

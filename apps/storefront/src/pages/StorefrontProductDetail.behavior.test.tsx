@@ -74,7 +74,7 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
     await user.click(screen.getByRole('button', { name: 'Large' }))
     await user.click(screen.getByRole('button', { name: 'Increase quantity' }))
 
-    expect(screen.getAllByText('350.000').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Rp. 350.000').length).toBeGreaterThan(0)
     expect(screen.getByRole('img', { name: 'Test Bouquet — image 1' })).toHaveAttribute(
       'src',
       'https://example.com/large.jpg',

@@ -23,6 +23,19 @@ describe('storefront customer copy (V2 batch 2)', () => {
     expect(translateUiText('To confirm', 'id')).toBe('Akan dikonfirmasi')
   })
 
+  it('covers the pre-release storefront cleanup copy', () => {
+    expect(translateUiText('All Material', 'id')).toBe('Semua Material')
+    expect(translateUiText('All Products', 'id')).toBe('Semua Produk')
+    expect(translateUiText('You may also like', 'id')).toBe('Mungkin kamu juga suka')
+    expect(translateUiText('Starts from', 'id')).toBe('Mulai dari')
+    expect(translateUiText('Choose something beautiful.', 'id')).toBe('Pilih sesuatu yang indah.')
+    expect(translateUiText('Start shopping', 'id')).toBe('Mulai belanja')
+    expect(translateUiText('Remove Classic Bouquet from cart', 'id')).toBe('Hapus Classic Bouquet dari keranjang')
+    expect(translateUiText('Increase quantity for Classic Bouquet', 'id')).toBe('Tambah jumlah Classic Bouquet')
+    expect(translateUiText('each', 'id')).toBe('masing-masing')
+    expect(translateUiText('Select a size', 'id')).toBe('Pilih ukuran')
+  })
+
   it('translates browse, filter, and empty states', () => {
     expect(translateUiText('Browse flowers', 'id')).toBe('Lihat bunga')
     expect(translateUiText('Nothing here yet', 'id')).toBe('Belum ada di sini')

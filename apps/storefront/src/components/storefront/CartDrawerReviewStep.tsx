@@ -6,6 +6,7 @@ import { getStorefrontCartLineImage } from './storefrontProductImages'
 import { formatDisplayDate } from '../ui/date-time-field'
 import { DeliveryFillIcon, PickupFillIcon } from './StorefrontFulfilmentIcons'
 import { StorefrontCopyButton } from './StorefrontCopyButton'
+import { formatIdr } from '../../lib/currency'
 
 const voucherInputClass = 'sf-field min-w-0 flex-1 uppercase placeholder:normal-case'
 
@@ -96,18 +97,32 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
 
         <ReviewSection eyebrow="Items" title={`${lines.length}`}>
           <div className="divide-y divide-black/[0.09]">
-            {lines.map((line) => (
-              <div key={line.lineId} className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3.5 py-4">
-                <div className="aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
-                  <img src={getStorefrontCartLineImage(catalogProducts, line.productId, line.variantId)} alt="" aria-hidden="true" className="h-full w-full object-cover" />
+            {lines.map((line) => {
+              const imageUrl = getStorefrontCartLineImage(catalogProducts, line.productId, line.variantId)
+              return (
+                <div key={line.lineId} className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3.5 py-4">
+                  <div className="relative aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
+                    <span className="absolute inset-0 grid place-items-center px-2 text-center sf-type-1 font-medium text-black/40" aria-hidden="true">Fleurstales</span>
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        onError={(event) => { event.currentTarget.style.display = 'none' }}
+                        aria-hidden="true"
+                        className="relative h-full w-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="line-clamp-2 text-[1.3rem] font-medium leading-[1.08]">{line.name}</p>
+                    <p className="mt-1.5 sf-type-2 text-black/48">{formatIdr(line.unitPriceIdr, formatter)} × {line.quantity}</p>
+                  </div>
+                  <p className="sf-type-3 font-medium tabular-nums">{formatIdr(line.unitPriceIdr * line.quantity, formatter)}</p>
                 </div>
-                <div className="min-w-0">
-                  <p className="line-clamp-2 text-[1.3rem] font-medium leading-[1.08]">{line.name}</p>
-                  <p className="mt-1.5 sf-type-2 text-black/48">{formatter.format(line.unitPriceIdr)} × {line.quantity}</p>
-                </div>
-                <p className="sf-type-3 font-medium tabular-nums">{formatter.format(line.unitPriceIdr * line.quantity)}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </ReviewSection>
 
@@ -197,12 +212,12 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
 
         <ReviewSection eyebrow="Order total">
           <div className="space-y-3 rounded-[var(--sf-radius-card)] bg-[#f0e6dd] px-4 py-5">
-            <PriceRow label="Subtotal" value={formatter.format(itemsTotalIdr)} />
-            <PriceRow label={fulfillment === 'delivery' ? 'Delivery fee' : 'Pickup fee'} value={fulfillment === 'delivery' ? formatter.format(deliveryFeeIdr) : 'Free'} />
-            {discountIdr > 0 && <PriceRow label={appliedVoucherCode ? `Discount (${appliedVoucherCode})` : automaticPromoLabel ? `Discount (${automaticPromoLabel})` : 'Discount'} value={`-${formatter.format(discountIdr)}`} accent />}
+            <PriceRow label="Subtotal" value={formatIdr(itemsTotalIdr, formatter)} />
+            <PriceRow label={fulfillment === 'delivery' ? 'Delivery fee' : 'Pickup fee'} value={fulfillment === 'delivery' ? formatIdr(deliveryFeeIdr, formatter) : 'Free'} />
+            {discountIdr > 0 && <PriceRow label={appliedVoucherCode ? `Discount (${appliedVoucherCode})` : automaticPromoLabel ? `Discount (${automaticPromoLabel})` : 'Discount'} value={`-${formatIdr(discountIdr, formatter)}`} accent />}
             <div className="mt-4 flex items-end justify-between gap-4 border-t border-black/14 pt-4">
               <span className="sf-type-3 font-medium">Total to pay</span>
-              <span className="text-[2.55rem] font-medium leading-none tabular-nums">{formatter.format(grandTotalIdr)}</span>
+              <span className="text-[2.55rem] font-medium leading-none tabular-nums">{formatIdr(grandTotalIdr, formatter)}</span>
             </div>
           </div>
         </ReviewSection>
@@ -212,7 +227,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
         {detailsError && <p role="alert" className="col-span-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{detailsError}</p>}
         <button type="button" onClick={() => setStep('details')} className="sf-secondary-action px-5">Back</button>
         <button type="button" onClick={handleConfirmOrder} className="sf-primary-action tap-scale px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00813f]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f0e6dd] sm:px-6">
-          Place order · {formatter.format(grandTotalIdr)}
+          Place order · {formatIdr(grandTotalIdr, formatter)}
         </button>
       </footer>
     </>

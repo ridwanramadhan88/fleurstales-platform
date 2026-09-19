@@ -4,7 +4,7 @@
  */
 
 import type { FC, FormEvent } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CatalogCategory, CatalogMaterial, CatalogProduct, CatalogProductImage, CatalogVariantStatus } from '../../store/catalogStoreTypes'
 import type { NewCatalogProductInput, NewCatalogVariantInput } from '../../store/catalogStore'
 import { useCatalogStore } from '../../store/catalogStore'
@@ -140,6 +140,7 @@ const productFingerprint = (product?: CatalogProduct | null): string => JSON.str
 
 const readOnlyInputClass = 'h-11 w-full rounded-xl border border-border bg-muted px-3.5 text-sm text-muted-foreground'
 const labelClass = 'text-sm font-medium text-foreground'
+type CatalogFieldErrors = Partial<Record<'name' | 'category' | 'productType', string>>
 
 export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   open,
@@ -163,6 +164,8 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   const [form, setForm] = useState<CatalogFormState>(initial)
   const [sourceAtOpen, setSourceAtOpen] = useState(productFingerprint(product))
   const [errors, setErrors] = useState<string[]>([])
+  const [fieldErrors, setFieldErrors] = useState<CatalogFieldErrors>({})
+  const validationSummaryRef = useRef<HTMLDivElement | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
   const [activeTab, setActiveTab] = useState<'info' | 'variants'>('info')
   const [isSaving, setIsSaving] = useState(false)
@@ -196,6 +199,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     setForm(structuredClone(next))
     setSourceAtOpen(productFingerprint(product))
     setErrors([])
+    setFieldErrors({})
     setConfirmClose(false)
     setActiveTab('info')
     setIsSaving(false)
@@ -237,6 +241,19 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     setForm((previous) => ({ ...previous, variants: previous.variants.filter((_, rowIndex) => rowIndex !== index) }))
   }
 
+  const focusValidationIssue = (error: string) => {
+    const target = error === 'Product name is required.'
+      ? { tab: 'info' as const, id: 'catalog-product-name' }
+      : error === 'Primary moment is required.'
+        ? { tab: 'info' as const, id: 'catalog-product-category' }
+        : error === 'Arrangement type is required.'
+          ? { tab: 'info' as const, id: 'catalog-product-type' }
+          : { tab: 'variants' as const, id: 'catalog-variants-section' }
+
+    setActiveTab(target.tab)
+    window.requestAnimationFrame(() => document.getElementById(target.id)?.focus())
+  }
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (isSaving) return
@@ -247,11 +264,21 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     }
 
     const nextErrors: string[] = []
+    const nextFieldErrors: CatalogFieldErrors = {}
     let hasVariantError = false
 
-    if (!form.name.trim()) nextErrors.push('Nama produk wajib diisi.')
-    if (!form.category) nextErrors.push('Occasion utama wajib dipilih.')
-    if (!form.productType.trim()) nextErrors.push('Jenis rangkaian wajib dipilih.')
+    if (!form.name.trim()) {
+      nextFieldErrors.name = 'Product name is required.'
+      nextErrors.push(nextFieldErrors.name)
+    }
+    if (!form.category) {
+      nextFieldErrors.category = 'Primary moment is required.'
+      nextErrors.push(nextFieldErrors.category)
+    }
+    if (!form.productType.trim()) {
+      nextFieldErrors.productType = 'Arrangement type is required.'
+      nextErrors.push(nextFieldErrors.productType)
+    }
     if (form.variants.length === 0) {
       nextErrors.push('Tambahkan minimal satu varian produk.')
       hasVariantError = true
@@ -326,8 +353,10 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     }
 
     setErrors([...new Set(nextErrors)])
+    setFieldErrors(nextFieldErrors)
     if (nextErrors.length > 0) {
-      if (hasVariantError) setActiveTab('variants')
+      setActiveTab(Object.keys(nextFieldErrors).length > 0 ? 'info' : hasVariantError ? 'variants' : 'info')
+      window.requestAnimationFrame(() => validationSummaryRef.current?.focus())
       return
     }
 
@@ -415,7 +444,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">Draft ini tidak ditimpa otomatis. Tutup dan buka ulang editor sebelum menyimpan agar perubahan terbaru tidak tertimpa.</p>
                 </div>
               ) : null}
-              <ValidationSummary errors={errors} />
+              <ValidationSummary errors={errors} summaryRef={validationSummaryRef} onErrorClick={focusValidationIssue} />
 
               <TabsContent value="info" className="mt-0">
                 <FormSection title="Informasi produk" description="Data umum produk dan foto utama. Foto varian diatur terpisah pada tab Varian & Ukuran.">
@@ -427,6 +456,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                     setForm={setForm}
                     readOnlyInputClass={readOnlyInputClass}
                     labelClass={labelClass}
+                    fieldErrors={fieldErrors}
                   />
                 </FormSection>
               </TabsContent>
@@ -442,10 +472,11 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                 >
                   {usingUnassignedNewProductFallback ? (
                     <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-                      <p className="text-sm font-semibold text-foreground">Menggunakan {sizeTemplate?.name}</p>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Ini satu-satunya template dengan ukuran aktif. Tetapkan sebagai default Jenis rangkaian di Template ukuran → Penetapan agar produk berikutnya memakai template yang sama secara eksplisit.</p>
+                      <p className="text-sm font-semibold text-foreground">Using {sizeTemplate?.name}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">This is the only active size template. Set it as the arrangement default to reuse it automatically.</p>
                     </div>
                   ) : null}
+                  <div id="catalog-variants-section" tabIndex={-1} className="focus-visible:outline-none">
                   <CatalogVariantsSection
                     variants={form.variants}
                     sizeTemplate={sizeTemplate}
@@ -454,6 +485,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                     removeVariant={removeVariantRow}
                     productName={form.name}
                   />
+                  </div>
                 </FormSection>
               </TabsContent>
             </div>

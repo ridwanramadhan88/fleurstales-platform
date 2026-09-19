@@ -5,6 +5,7 @@ import { StorefrontBrand } from './StorefrontBrand'
 import instagramIcon from '../../assets/storefront-shop/IG_Fleur.svg'
 import tiktokIcon from '../../assets/storefront-shop/Tiktok_Fleur.svg'
 import whatsappIcon from '../../assets/storefront-shop/WA_Fleur.svg'
+import { getPublicStoreContact, getStorefrontWhatsappHref } from '../../domain/storefrontContactDomain'
 
 interface Props {
   storeProfile: StoreProfileSettings
@@ -26,8 +27,9 @@ const SocialItem: FC<SocialItemProps> = ({ label, href, icon }) => {
 }
 
 export const StorefrontFooter: FC<Props> = ({ storeProfile }) => {
-  const whatsapp = storeProfile.whatsapp || storeProfile.phone
-  const whatsappHref = whatsapp.trim() ? `https://wa.me/${whatsapp.replace(/\D/g, '')}` : null
+  const whatsapp = getPublicStoreContact(storeProfile.whatsapp || storeProfile.phone)
+  const whatsappHref = getStorefrontWhatsappHref(whatsapp)
+  const email = getPublicStoreContact(storeProfile.email)
   const legalName = storeProfile.legalName?.trim()
 
   return (
@@ -44,11 +46,11 @@ export const StorefrontFooter: FC<Props> = ({ storeProfile }) => {
               </div>
 
               <div className="mt-6 space-y-1.5 sf-type-2 leading-[1.45] text-black/72">
-                <p><a className="font-medium underline decoration-black/35 underline-offset-2" href="/track">Track Order</a></p>
+                <p><a className="inline-flex min-h-11 items-center font-medium underline decoration-black/35 underline-offset-2" href="/track">Track Order</a></p>
                 {whatsapp.trim() && (
-                  <p>{whatsappHref ? <a className="underline decoration-black/35 underline-offset-2" href={whatsappHref} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${whatsapp}`}>{whatsapp}</a> : whatsapp}</p>
+                  <p>{whatsappHref ? <a className="inline-flex min-h-11 items-center underline decoration-black/35 underline-offset-2" href={whatsappHref} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${whatsapp}`}>{whatsapp}</a> : whatsapp}</p>
                 )}
-                {storeProfile.email.trim() && <p><a className="underline decoration-black/35 underline-offset-2" href={`mailto:${storeProfile.email.trim()}`}>{storeProfile.email}</a></p>}
+                {email && <p><a className="inline-flex min-h-11 items-center underline decoration-black/35 underline-offset-2" href={`mailto:${email}`}>{email}</a></p>}
                 {storeProfile.address.trim() && <p className="max-w-lg pt-1">{storeProfile.address}</p>}
               </div>
             </div>
@@ -57,7 +59,7 @@ export const StorefrontFooter: FC<Props> = ({ storeProfile }) => {
               <div className="flex items-start gap-3 md:justify-end">
                 <SocialItem label="Instagram" icon={<img src={instagramIcon} alt="" className="size-12 object-contain" />} />
                 <SocialItem label="TikTok" icon={<img src={tiktokIcon} alt="" className="size-12 object-contain" />} />
-                <SocialItem label={whatsapp.trim() ? `WhatsApp: ${whatsapp}` : 'WhatsApp'} href={whatsappHref} icon={<img src={whatsappIcon} alt="" className="size-12 object-contain" />} />
+                {whatsappHref ? <SocialItem label={`WhatsApp: ${whatsapp}`} href={whatsappHref} icon={<img src={whatsappIcon} alt="" className="size-12 object-contain" />} /> : null}
               </div>
             </div>
           </div>

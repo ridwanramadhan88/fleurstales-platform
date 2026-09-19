@@ -20,10 +20,10 @@ describe('Catalog cleanup regressions', () => {
     expect(form).not.toContain('CatalogRecipeSection')
     expect(form).not.toContain('CatalogPromoSection')
 
-    expect(details).toContain('Nama produk · Wajib')
-    expect(details).toContain('Occasion utama · Wajib')
-    expect(details).toContain('Jenis rangkaian · Wajib')
-    expect(details).toContain('Ketersediaan · Wajib')
+    expect(details).toContain('Product name · Required')
+    expect(details).toContain('Primary moment · Required')
+    expect(details).toContain('Arrangement type · Required')
+    expect(details).toContain('Availability · Required')
     expect(details).toContain('CatalogProductImagesField')
     expect(images).toContain('Foto utama produk')
 

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const formSource = readFileSync('src/components/catalog/CatalogItemFormSheet.tsx', 'utf8')
+const detailsSource = readFileSync('src/components/catalog/CatalogProductDetailsSection.tsx', 'utf8')
 const variantsSource = readFileSync('src/components/catalog/CatalogVariantsSection.tsx', 'utf8')
 const variantDialogSource = readFileSync('src/components/catalog/CatalogVariantEditorDialog.tsx', 'utf8')
 const controllerSource = readFileSync('src/components/catalog/CatalogTabContentController.ts', 'utf8')
@@ -35,7 +36,17 @@ describe('Catalog Product Editor UX regressions', () => {
   it('makes the only usable size template available to a new Product without pretending the library is empty', () => {
     expect(formSource).toContain('usableSizeTemplates.length === 1')
     expect(formSource).toContain('Template ukuran tersedia, tetapi belum ditetapkan')
-    expect(formSource).toContain('Ini satu-satunya template dengan ukuran aktif')
+    expect(formSource).toContain('This is the only active size template')
+  })
+
+  it('marks required Product fields inline and lets the error summary navigate to them', () => {
+    expect(detailsSource).toContain('aria-invalid={Boolean(fieldErrors.name)}')
+    expect(detailsSource).toContain('catalog-product-name-error')
+    expect(detailsSource).toContain('catalog-product-category-error')
+    expect(detailsSource).toContain('catalog-product-type-error')
+    expect(formSource).toContain('summaryRef={validationSummaryRef}')
+    expect(formSource).toContain('focusValidationIssue')
+    expect(formSource).toContain('id="catalog-variants-section"')
   })
 
   it('renders template slots without materializing missing variants', () => {
