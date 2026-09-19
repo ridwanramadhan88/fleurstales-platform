@@ -82,7 +82,7 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
             </span>
           )}
           <span className={isCollection ? 'sf-card-price text-black' : 'sf-type-2 font-medium leading-5 text-black'}>
-            {hasVariants ? 'From ' : ''}{formatIdr(displayPriceIdr, formatter)}
+            {hasVariants ? 'Starts from ' : ''}{formatIdr(displayPriceIdr, formatter)}
           </span>
         </div>
         {!isCollection && product.isCustomizable && (
