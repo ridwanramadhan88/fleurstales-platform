@@ -47,6 +47,7 @@ export type AlertKind =
   | 'payroll_rejected'
   | 'payroll_approved'
   | 'payroll_paid'
+  | 'authorization_changed'
 
 /**
  * @description Single alert item used by UI components.
@@ -173,20 +174,6 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
   } = context
 
   if (role === 'owner') {
-    const verification = orders
-      .filter((order) => !order.financeVerified)
-      .filter((order) => !branch || branch === 'All' || order.branch === branch)
-      .map((order) => ({
-        id: `owner-verification-${order.orderNumber}`,
-        kind: 'order_pending_verification' as const,
-        severity: 'warning' as const,
-        title: `${order.orderNumber} needs verification`,
-        message: `${order.customerName} · Finance review pending`,
-        branch: order.branch,
-        orderNumber: order.orderNumber,
-        target: 'finance_order_verification' as const,
-      }))
-
     const attendanceProblems = attendanceReviewCases
       .filter((item) => item.status === 'pending')
       .map((item) => {
@@ -203,7 +190,7 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
         }
       })
 
-    return [...verification, ...attendanceProblems]
+    return attendanceProblems
   }
 
   if (role === 'admin') {
@@ -270,20 +257,7 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
           targetId: item.id,
         }
       })
-    const financeProblems = orders
-      .filter((order) => order.financeVerificationStatus === 'rejected')
-      .map((order) => ({
-        id: `hr-finance-problem-${order.orderNumber}-${order.financeVerificationAt ?? 'current'}`,
-        kind: 'hr_attendance_problem' as const,
-        severity: 'warning' as const,
-        title: `Finance rejected ${order.orderNumber}`,
-        message: order.financeVerificationNote || 'Correction is required.',
-        branch: order.branch,
-        orderNumber: order.orderNumber,
-        target: 'hr_reports' as const,
-        targetId: order.id,
-      }))
-    return [...attendanceProblems, ...financeProblems]
+    return attendanceProblems
   }
 
   if (role === 'florist' && currentEmployeeId) {
