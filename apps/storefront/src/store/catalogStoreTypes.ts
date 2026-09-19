@@ -91,7 +91,7 @@ export interface CatalogVariant {
   /** Optional cost price in IDR — Finance-only field. */
   cost?: number
   status: CatalogVariantStatus
-  /** Customer-facing and production recipe scoped to this size. */
+  /** Internal production recipe scoped to this size. Storefront projection strips it. */
   flowerRecipe?: CatalogFlowerRecipeItem[]
 }
 
