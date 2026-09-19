@@ -45,16 +45,20 @@ describe('StorefrontProductCard', () => {
     expect(onOpenDetail).not.toHaveBeenCalled()
   })
 
-  it('keeps cloned rail cards out of the keyboard tab order', () => {
-    render(
+  it('keeps cloned rail cards out of the keyboard and accessibility trees', () => {
+    const { container } = render(
       <StorefrontProductCard
         product={makeCatalogProduct()}
         formatter={formatter}
         onOpenDetail={vi.fn()}
         tabIndex={-1}
+        ariaHidden
       />,
     )
 
-    expect(screen.getByRole('link', { name: 'View Rose Bouquet' })).toHaveAttribute('tabindex', '-1')
+    const link = container.querySelector('a')
+    expect(link).toHaveAttribute('tabindex', '-1')
+    expect(link).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByRole('link', { name: 'View Rose Bouquet' })).not.toBeInTheDocument()
   })
 })
