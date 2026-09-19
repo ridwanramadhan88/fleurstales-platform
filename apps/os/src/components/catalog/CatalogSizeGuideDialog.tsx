@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { AlertCircle, Archive, Image as ImageIcon, Plus, Ruler, Trash2 } from 'lucide-react'
 import { useCatalogStore } from '../../store/catalogStore'
-import type { CatalogSizeGuideTarget, CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
+import type { CatalogSizeGuideSize, CatalogSizeGuideTarget, CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
 import { generateId } from '../../lib/id'
 import { getDataUrlByteSize } from '../../domain/catalogImageDomain'
 import { flushBusinessOsSizeGuideSync, getCatalogBridgeStatus } from '../../data/shared/catalogBridge'
@@ -111,7 +111,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
       : template))
   }
 
-  const updateSize = (templateId: string, sizeId: string, patch: CatalogSizeGuideTemplate['sizes'][number] extends infer T ? Partial<T> : never) => {
+  const updateSize = (templateId: string, sizeId: string, patch: Partial<CatalogSizeGuideSize>) => {
     setDraftTemplates((current) => current.map((template) => template.id === templateId
       ? {
           ...template,
