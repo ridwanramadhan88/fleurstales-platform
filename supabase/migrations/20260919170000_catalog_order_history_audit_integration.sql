@@ -100,25 +100,36 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $$
+as $
 declare
-  v_variant_id text := coalesce(new.variant_id,old.variant_id);
+  v_variant_id text;
+  v_before jsonb;
+  v_after jsonb;
 begin
-  if tg_op='INSERT'
-     or tg_op='DELETE'
-     or old.cost_idr is distinct from new.cost_idr then
-    perform private.write_audit_event(
-      'catalog.variant_cost.update','catalog_variant',v_variant_id,'succeeded',
-      null,null,
-      case when tg_op='INSERT' then null else jsonb_build_object('costIdr',old.cost_idr) end,
-      case when tg_op='DELETE' then null else jsonb_build_object('costIdr',new.cost_idr) end,
-      jsonb_build_object('field','cost')
-    );
+  if tg_op='INSERT' then
+    v_variant_id := new.variant_id;
+    v_before := null;
+    v_after := jsonb_build_object('costIdr',new.cost_idr);
+  elsif tg_op='DELETE' then
+    v_variant_id := old.variant_id;
+    v_before := jsonb_build_object('costIdr',old.cost_idr);
+    v_after := null;
+  else
+    if old.cost_idr is not distinct from new.cost_idr then return new; end if;
+    v_variant_id := new.variant_id;
+    v_before := jsonb_build_object('costIdr',old.cost_idr);
+    v_after := jsonb_build_object('costIdr',new.cost_idr);
   end if;
+
+  perform private.write_audit_event(
+    'catalog.variant_cost.update','catalog_variant',v_variant_id,'succeeded',
+    null,null,v_before,v_after,jsonb_build_object('field','cost')
+  );
+
   if tg_op='DELETE' then return old; end if;
   return new;
 end;
-$$;
+$;
 
 
 revoke execute on function private.audit_catalog_product_change() from public,anon,authenticated;
