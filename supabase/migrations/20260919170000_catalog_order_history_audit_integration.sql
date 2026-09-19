@@ -673,6 +673,7 @@ begin
 
   update public.products p
   set is_active=false,
+      primary_occasion_id=null,
       archived_at=coalesce(p.archived_at,clock_timestamp()),
       updated_at=clock_timestamp()
   where p.archived_at is null
@@ -687,6 +688,11 @@ begin
         where linked.product_id=p.id
       )
     );
+
+  delete from public.product_occasions link
+  using public.products p
+  where p.id=link.product_id
+    and p.archived_at is not null;
 
   delete from public.products p
   where p.archived_at is null
