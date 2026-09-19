@@ -25,17 +25,26 @@ describe('storefront product detail page', () => {
     expect(screen.getAllByText(/Fresh flower|Artificial flower/).length).toBeGreaterThan(0)
   })
 
-  it('only offers the assigned size guide and opens its image', async () => {
+  it('only offers the stable child size guide and opens its image', async () => {
     const user = userEvent.setup()
-    const product = useCatalogStore.getState().products[0]
+    const product = structuredClone(useCatalogStore.getState().products[0])
     const selectedVariant = product.variants.find((variant) => variant.status === 'active')
+    if (!selectedVariant) throw new Error('Expected an active test variant')
+    selectedVariant.sizeOptionId = 'guide-test-medium'
+
     useCatalogStore.setState({
+      products: [product, ...useCatalogStore.getState().products.slice(1)],
       sizeGuideTemplates: [{
         id: 'guide_test',
         name: 'Bouquet size guide',
-        sizes: [{ id: 'guide-test-medium', name: 'Medium' }],
-        imageUrl: 'data:image/jpeg;base64,/9j/2Q==',
-        byteSize: 7,
+        sizes: [{
+          id: 'guide-test-medium',
+          name: selectedVariant.size,
+          guideImageUrl: 'data:image/jpeg;base64,/9j/2Q==',
+          isActive: true,
+        }],
+        imageUrl: '',
+        byteSize: 0,
         width: 800,
         height: 800,
         createdAt: '2026-07-24T00:00:00.000Z',
@@ -54,8 +63,46 @@ describe('storefront product detail page', () => {
     await user.click(screen.getByRole('button', { name: 'Size guide' }))
 
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: `Bouquet size guide · ${selectedVariant?.size}` })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: `${product.name} ${selectedVariant?.size} size guide` })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: `Bouquet size guide · ${selectedVariant.size}` })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: `${product.name} ${selectedVariant.size} size guide` })).toBeInTheDocument()
+  })
+
+  it('does not infer a Size Guide from a matching legacy size label', () => {
+    const product = structuredClone(useCatalogStore.getState().products[0])
+    const selectedVariant = product.variants.find((variant) => variant.status === 'active')
+    if (!selectedVariant) throw new Error('Expected an active test variant')
+    selectedVariant.sizeOptionId = undefined
+
+    useCatalogStore.setState({
+      products: [product, ...useCatalogStore.getState().products.slice(1)],
+      sizeGuideTemplates: [{
+        id: 'guide_test',
+        name: 'Bouquet size guide',
+        sizes: [{
+          id: 'different-stable-id',
+          name: selectedVariant.size,
+          guideImageUrl: 'data:image/jpeg;base64,/9j/2Q==',
+          isActive: true,
+        }],
+        imageUrl: 'data:image/jpeg;base64,/9j/2Q==',
+        byteSize: 7,
+        width: 800,
+        height: 800,
+        createdAt: '2026-07-24T00:00:00.000Z',
+        updatedAt: '2026-07-24T00:00:00.000Z',
+      }],
+      sizeGuideTargets: [{
+        id: 'target_test',
+        templateId: 'guide_test',
+        scope: 'product',
+        productId: product.id,
+      }],
+    })
+    window.history.replaceState({}, '', `/shop/product/${product.productId}`)
+
+    render(<StorefrontPage />)
+
+    expect(screen.queryByRole('button', { name: 'Size guide' })).not.toBeInTheDocument()
   })
 })
 
