@@ -5113,7 +5113,9 @@ html.dark .storefront-font .text-black {
   .storefront-categories-page .category-section-title {
     font-size: clamp(2.75rem, 6vw, 3.5rem);
   }
+}
 
+@media (min-width: 768px) and (max-width: 1023px) {
   .storefront-product-detail-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(19rem, 0.95fr);
