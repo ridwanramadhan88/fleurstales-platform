@@ -1,5 +1,5 @@
 import { useCatalogStore } from '../../store/catalogStore'
-import type { CatalogSizeGuideSize, CatalogSizeGuideTarget, CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
+import type { CatalogSizeGuideSize, CatalogSizeGuideTarget, CatalogSizeGuideTemplate, CatalogStoreState } from '../../store/catalogStoreTypes'
 import type { CatalogAdminRepository } from './repositoryContracts'
 import type { SharedSizeGuideTarget, SharedSizeGuideTemplate } from './contracts'
 import { BOUQUET_STANDARD_SIZES } from '../../store/catalogStoreSizeGuideActions'
