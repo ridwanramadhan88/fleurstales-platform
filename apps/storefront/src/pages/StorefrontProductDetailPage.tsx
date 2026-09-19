@@ -340,7 +340,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                       <span className="sf-type-2 text-black/42 line-through">{formatIdr(product.originalPriceIdr, formatter)}</span>
                     )}
                     <span className="sf-type-5 font-medium lg:text-[1.4rem]">
-                      {!selectedVariant && requiresSizeSelection ? "From " : ""}{formatIdr(displayUnitPriceIdr, formatter)}
+                      {!selectedVariant && requiresSizeSelection ? "Starts from " : ""}{formatIdr(displayUnitPriceIdr, formatter)}
                     </span>
                   </div>
                 </div>
