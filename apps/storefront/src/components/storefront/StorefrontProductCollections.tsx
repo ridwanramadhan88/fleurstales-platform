@@ -17,6 +17,11 @@ interface Props {
   onOpen: (productId: string) => void
 }
 
+interface GridProps extends Props {
+  hasMore?: boolean
+  onLoadMore?: () => void
+}
+
 const sectionTitleClass = 'sf-section-title text-black'
 const INTRO_FIRST_SLIDE_DELAY = 750
 const INTRO_SLIDE_CARD_COUNT = 1
@@ -235,6 +240,7 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
                 product={product}
                 formatter={formatter}
                 onOpenDetail={() => onOpen(product.id)}
+                tabIndex={shouldLoop && copyIndex !== 1 ? -1 : undefined}
               />
             </div>
           ))}
@@ -244,11 +250,13 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
   )
 }
 
-export const StorefrontProductGrid: FC<Props> = ({
+export const StorefrontProductGrid: FC<GridProps> = ({
   title,
   products,
   formatter,
   onOpen,
+  hasMore = false,
+  onLoadMore,
 }) => (
   <section
     aria-label={title ?? 'Products'}
@@ -262,17 +270,30 @@ export const StorefrontProductGrid: FC<Props> = ({
         </p>
       </div>
     ) : (
-      <div className="sf-product-grid">
-        {products.map((product) => (
-          <StorefrontProductCard
-            key={product.id}
-            product={product}
-            formatter={formatter}
-            onOpenDetail={() => onOpen(product.id)}
-            presentation="collection"
-          />
-        ))}
-      </div>
+      <>
+        <div className="sf-product-grid">
+          {products.map((product) => (
+            <StorefrontProductCard
+              key={product.id}
+              product={product}
+              formatter={formatter}
+              onOpenDetail={() => onOpen(product.id)}
+              presentation="collection"
+            />
+          ))}
+        </div>
+        {hasMore && onLoadMore ? (
+          <div className="flex justify-center pt-8 sm:pt-10">
+            <button
+              type="button"
+              onClick={onLoadMore}
+              className="tap-scale inline-flex min-h-11 items-center justify-center rounded-full border border-black/18 bg-transparent px-6 sf-type-2 font-medium text-black transition hover:bg-black hover:text-[#fdf6ee] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--sf-cream)]"
+            >
+              Load more products
+            </button>
+          </div>
+        ) : null}
+      </>
     )}
   </section>
 )
