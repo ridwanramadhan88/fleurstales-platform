@@ -361,7 +361,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                           const activeUsage = activeSizeUsageCount(size.id)
                           const active = size.isActive !== false
                           return (
-                            <div key={size.id} className={`grid gap-4 rounded-2xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_360px] ${active ? '' : 'opacity-65'}`}>
+                            <div key={size.id} className={`grid gap-4 rounded-2xl border border-border p-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,360px)] ${active ? '' : 'opacity-65'}`}>
                               <div className="space-y-3">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <input value={size.name} onChange={(event) => updateSize(selectedTemplate.id, size.id, { name: event.target.value })} className={`${inputClass} max-w-[240px]`} aria-label="Nama ukuran" />

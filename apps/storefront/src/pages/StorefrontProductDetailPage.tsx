@@ -139,7 +139,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
     window.matchMedia("(min-width: 1024px)").matches;
   const productDetailsAlwaysOpen =
     typeof window.matchMedia === "function" &&
-    window.matchMedia("(min-width: 640px)").matches;
+    window.matchMedia("(min-width: 768px)").matches;
   const selectedSizeGuide = useMemo(
     () => getStorefrontVariantSizeGuide(
       product,

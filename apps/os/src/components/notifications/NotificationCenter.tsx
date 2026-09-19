@@ -49,7 +49,7 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
       size="compact"
       contentClassName="gap-0 p-0 sm:p-0"
     >
-      <header className="shrink-0 border-b border-border/70 px-4 py-4 sm:px-5">
+      <header className="shrink-0 border-b border-border/70 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-5 sm:pt-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
           <div className="min-w-0 sm:col-start-1 sm:row-start-1">
             <h1 className="font-display text-lg font-semibold leading-6 text-foreground">Notifications</h1>
@@ -75,7 +75,7 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 pb-5 sm:px-5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-5">
         {items.length === 0 ? (
           <div className="rounded-2xl bg-surface-panel px-4 py-8 text-center ring-1 ring-border/60">
             <p className="text-sm font-medium text-foreground">Nothing needs attention</p>

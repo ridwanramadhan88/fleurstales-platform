@@ -30,6 +30,9 @@ describe('NotificationCenter', () => {
     )
 
     expect(screen.getByText('Important tasks only.')).toBeInTheDocument()
+    const visibleHeader = screen.getByText('Important tasks only.').closest('header')
+    expect(visibleHeader?.className).toContain('safe-area-inset-top')
+    expect(document.querySelector('.overflow-y-auto')?.className).toContain('safe-area-inset-bottom')
     expect(screen.getByText('Today')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Mark all read' }))
     expect(onMarkAllRead).toHaveBeenCalledOnce()

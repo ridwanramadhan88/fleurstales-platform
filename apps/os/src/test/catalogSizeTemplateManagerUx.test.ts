@@ -44,6 +44,11 @@ describe('Catalog Size Template manager regressions', () => {
     expect(arrangementSource).toContain('h-[100dvh] max-h-[100dvh]')
   })
 
+  it('keeps guide image editing stacked on small tablets before splitting at md', () => {
+    expect(guideSource).toContain('md:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]')
+    expect(guideSource).not.toContain('sm:grid-cols-[minmax(0,1fr)_360px]')
+  })
+
   it('uploads guide images only during explicit persistence and cleans failed uploads', () => {
     expect(bridgeSource).toContain('export const flushBusinessOsSizeGuideSync')
     expect(bridgeSource).toContain('syncSizeGuideLibrary(shared.repositories.catalogAdmin, input')
