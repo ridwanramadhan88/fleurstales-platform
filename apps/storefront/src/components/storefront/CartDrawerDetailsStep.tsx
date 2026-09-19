@@ -19,13 +19,14 @@ const CheckoutSection: FC<{ title: string; children: ReactNode }> = ({
   </section>
 )
 
-const Field: FC<{ label: string; required?: boolean; children: ReactNode }> = ({
+const Field: FC<{ id?: string; label: string; required?: boolean; children: ReactNode }> = ({
+  id,
   label,
   required,
   children,
 }) => (
   <div className="space-y-2.5">
-    <label className="block sf-type-2 font-medium leading-[1.2] text-black/68">
+    <label htmlFor={id} className="block sf-type-2 font-medium leading-[1.2] text-black/68">
       {label}
       {required && <span className="ml-0.5 text-[#00813f]">*</span>}
     </label>
@@ -104,16 +105,24 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
     <div className="storefront-checkout-form storefront-checkout-scroll flex-1 space-y-10 overflow-y-auto px-[18px] pb-10 pt-5 sm:px-7 sm:pt-6 lg:px-8">
       <CheckoutSection title="Contact">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Name" required>
+          <Field id="checkoutCustomerName" label="Name" required>
             <input
+              id="checkoutCustomerName"
+              name="name"
+              autoComplete="name"
+              enterKeyHint="next"
               value={customerName}
               onChange={(event) => setCustomerName(event.target.value)}
               placeholder="Full name"
               className={fieldClass}
             />
           </Field>
-          <Field label="WhatsApp" required>
+          <Field id="checkoutWhatsapp" label="WhatsApp" required>
             <input
+              id="checkoutWhatsapp"
+              name="tel"
+              autoComplete="tel"
+              enterKeyHint="next"
               value={whatsappNumber}
               onChange={(event) => setWhatsappNumber(event.target.value)}
               placeholder="08xx-xxxx-xxxx"
@@ -123,9 +132,13 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
           </Field>
         </div>
 
-        <Field label="Email">
+        <Field id="checkoutEmail" label="Email">
           <input
+            id="checkoutEmail"
+            name="email"
             type="email"
+            autoComplete="email"
+            enterKeyHint="next"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="name@example.com"
@@ -210,8 +223,12 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
         </Field>
 
         {fulfillment === 'delivery' && (
-          <Field label="Delivery address" required>
+          <Field id="checkoutDeliveryAddress" label="Delivery address" required>
             <textarea
+              id="checkoutDeliveryAddress"
+              name="street-address"
+              autoComplete="street-address"
+              enterKeyHint="next"
               value={deliveryAddress}
               onChange={(event) => setDeliveryAddress(event.target.value)}
               placeholder="Street, city, building, and useful landmark"
