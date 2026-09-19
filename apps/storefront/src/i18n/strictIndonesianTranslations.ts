@@ -309,6 +309,19 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Promo review ini sudah dipakai di order berikutnya.': 'Promo ulasan ini sudah dipakai pada pesanan berikutnya.',
 
   // Pre-release UI/UX cleanup: customer storefront and catalog editor.
+  'Choose a product from catalog': 'Pilih produk dari katalog',
+  'Select product': 'Pilih produk',
+  'Select method': 'Pilih metode',
+  'Add promo code': 'Tambah kode promo',
+  'Order items': 'Item pesanan',
+  'Add product': 'Tambah produk',
+  'Manage occasions': 'Kelola momen',
+  'Total products': 'Total produk',
+  'No products found': 'Produk tidak ditemukan',
+  'No products match these filters. Try a different search or occasion.': 'Tidak ada produk yang cocok dengan filter ini. Coba pencarian atau momen lain.',
+  'Manage products': 'Kelola produk',
+  'Finish managing': 'Selesai mengelola',
+  'Promo & featured products': 'Promo & produk unggulan',
   'All Material': 'Semua Material',
   'Fresh Flowers': 'Bunga Segar',
   'Artificial Flowers': 'Bunga Artifisial',
@@ -382,6 +395,8 @@ export const ID_STRICT_PATTERN_TRANSLATIONS: Array<
   [RegExp, (...matches: string[]) => string]
 > = [
   [/^Rate (\d+) out of 5$/i, (_full, score) => `Beri nilai ${score} dari 5`],
+  [/^(\d+) products?$/i, (_full, count) => `${count} produk`],
+  [/^Sort orders by (.+), (asc|desc)$/i, (_full, field, direction) => `Urutkan pesanan berdasarkan ${field}, ${direction}`],
 
   [/^View cart, (\d+) items?$/i, (_full, count) => `Lihat keranjang, ${count} item`],
   [/^View (.+)$/i, (_full, name) => `Lihat ${name}`],
