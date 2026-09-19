@@ -442,7 +442,11 @@ const HomePage: FC<HomePageProps> = ({
    */
   const searchConfig: { show: boolean; placeholder: string; tabletPlaceholder?: string } =
     activeTab === 'orders'
-      ? { show: true, placeholder: 'Search orders, customer, phone, or ID…' }
+      ? {
+          show: true,
+          placeholder: 'Search order #, customer, phone…',
+          tabletPlaceholder: 'Search orders…',
+        }
       : activeTab === 'customers'
         ? { show: true, placeholder: 'Search name, phone, or email' }
         : activeTab === 'finance' && financeModule === 'order_verification'
@@ -522,7 +526,7 @@ const HomePage: FC<HomePageProps> = ({
           )}
 
           {activeTab === 'orders' && canAccessSection(userRole, 'orders', permissions) && (
-            <section className="space-y-6">
+            <section className="space-y-4 sm:space-y-6">
               <OrdersTabHeader
                 activeOrdersSubTab={activeOrdersSubTab}
                 orderCounts={orderCounts}
