@@ -21,6 +21,7 @@ const normalizeImage = (
   product: CatalogProduct,
   image: CatalogProductImage,
   index: number,
+  variantId?: string,
 ): SharedProduct['images'][number] => {
   const mimeType = image.mimeType ?? 'image/jpeg'
   const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg'
@@ -29,6 +30,7 @@ const normalizeImage = (
   return {
     id: image.id,
     productId: product.id,
+    ...(variantId ? { variantId } : {}),
     storagePath,
     publicUrl: image.url,
     altText: image.altText,
@@ -94,11 +96,23 @@ export const catalogStateToSharedSnapshot = (
         id: variant.id,
         productId: product.id,
         sku: variant.sku,
+        ...(variant.sizeOptionId ? { sizeOptionId: variant.sizeOptionId } : {}),
         size: variant.size,
         priceIdr: variant.price,
         status: variant.status,
         sortOrder: variantIndex,
         ...(variant.cost !== undefined ? { costIdr: variant.cost } : {}),
+        ...(variant.images?.length ? {
+          images: [...variant.images]
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((image, imageIndex) => normalizeImage(product, image, imageIndex, variant.id)),
+        } : {}),
+        ...(variant.flowerRecipe?.length ? {
+          flowerRecipe: variant.flowerRecipe.map((item, recipeIndex) => ({
+            ...item,
+            sortOrder: recipeIndex,
+          })),
+        } : {}),
       })),
       images: canonicalImages.map((image, index) => normalizeImage(product, image, index)),
     }
@@ -114,8 +128,10 @@ export const catalogStateToSharedSnapshot = (
   }
 }
 
-const sharedImagesToLocal = (product: SharedProduct): CatalogProductImage[] =>
-  [...product.images]
+const sharedImagesToLocal = (
+  images: SharedProduct['images'],
+): CatalogProductImage[] =>
+  [...images]
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((image, index) => ({
       id: image.id,
@@ -149,7 +165,7 @@ export const sharedCatalogSnapshotToLocalState = (
         ? occasionById.get(product.primaryOccasionId)?.name
         : undefined
       const category = primaryName ?? linkedNames[0] ?? 'Uncategorized'
-      const images = sharedImagesToLocal(product)
+      const images = sharedImagesToLocal(product.images.filter((image) => !image.variantId))
       const imageUrls = images.map((image) => image.url)
 
       return {
@@ -172,10 +188,17 @@ export const sharedCatalogSnapshotToLocalState = (
           .map((variant) => ({
             id: variant.id,
             sku: variant.sku,
+            ...(variant.sizeOptionId ? { sizeOptionId: variant.sizeOptionId } : {}),
             size: variant.size,
+            ...(variant.images?.length ? { images: sharedImagesToLocal(variant.images) } : {}),
             price: variant.priceIdr,
             ...(variant.costIdr !== undefined && variant.costIdr !== null ? { cost: variant.costIdr } : {}),
             status: variant.status,
+            ...(variant.flowerRecipe?.length ? {
+              flowerRecipe: [...variant.flowerRecipe]
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map(({ sortOrder: _sortOrder, ...item }) => item),
+            } : {}),
           })),
         isFeatured: product.isFeatured,
         isActive: product.isActive,
