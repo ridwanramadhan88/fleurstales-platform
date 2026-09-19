@@ -233,7 +233,7 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
               data-featured-index={productIndex}
               className="featured-product-item relative shrink-0 snap-start"
             >
-              <span className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[#7050a8] text-sm text-white shadow-sm">
+              <span aria-hidden="true" className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[#7050a8] text-sm text-white shadow-sm">
                 ★
               </span>
               <StorefrontProductCard
