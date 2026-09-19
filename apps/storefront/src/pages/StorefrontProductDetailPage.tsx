@@ -26,6 +26,7 @@ import { getPromoPercentLabel } from "../domain/catalogDomain";
 import { useScrollThresholdCartBar } from "../hooks/useScrollThresholdCartBar";
 import { useCatalogStore } from "../store/catalogStore";
 import { getStorefrontVariantSizeGuide } from "../domain/storefrontCatalogProjectionDomain";
+import { formatIdr } from "../lib/currency";
 
 interface Props {
   product: CatalogProduct;
@@ -336,10 +337,10 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                   </h1>
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     {product.originalPriceIdr && (
-                      <span className="sf-type-2 text-black/42 line-through">{formatter.format(product.originalPriceIdr)}</span>
+                      <span className="sf-type-2 text-black/42 line-through">{formatIdr(product.originalPriceIdr, formatter)}</span>
                     )}
                     <span className="sf-type-5 font-medium lg:text-[1.4rem]">
-                      {!selectedVariant && requiresSizeSelection ? "From " : ""}{formatter.format(displayUnitPriceIdr)}
+                      {!selectedVariant && requiresSizeSelection ? "From " : ""}{formatIdr(displayUnitPriceIdr, formatter)}
                     </span>
                   </div>
                 </div>
@@ -398,7 +399,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                         <span>{variant.size}</span>
                         {requiresSizeSelection && (
                           <span className={`ml-2 sf-type-1 ${isSelected ? "text-[#fdf6ee]/80" : "text-black/42"}`}>
-                            {formatter.format(variant.price)}
+                            {formatIdr(variant.price, formatter)}
                           </span>
                         )}
                       </button>
@@ -432,7 +433,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                   </div>
                   <div className="text-right">
                     <p className="sf-type-1 text-black/48">Total</p>
-                    <p className="sf-type-5 font-medium lg:text-[1.45rem]">{formatter.format(totalPriceIdr)}</p>
+                    <p className="sf-type-5 font-medium lg:text-[1.45rem]">{formatIdr(totalPriceIdr, formatter)}</p>
                   </div>
                 </div>
 
