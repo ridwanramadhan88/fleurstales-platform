@@ -19,7 +19,7 @@ describe('NotificationCenter', () => {
       target: 'order' as const,
       orderNumber: 'KDM-1',
     }
-    render(
+    const { container } = render(
       <NotificationCenter
         open
         onClose={vi.fn()}
@@ -30,6 +30,8 @@ describe('NotificationCenter', () => {
     )
 
     expect(screen.getByText('Important tasks only.')).toBeInTheDocument()
+    expect(container.querySelector('header')?.className).toContain('safe-area-inset-top')
+    expect(container.querySelector('.overflow-y-auto')?.className).toContain('safe-area-inset-bottom')
     expect(screen.getByText('Today')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Mark all read' }))
     expect(onMarkAllRead).toHaveBeenCalledOnce()
