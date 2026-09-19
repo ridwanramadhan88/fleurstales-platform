@@ -45,6 +45,8 @@ export interface SharedProductVariant {
   id: string
   productId: string
   sku: string
+  /** Stable Size Template child identity. Null/omitted only for historical legacy rows. */
+  sizeOptionId?: string
   size: string
   priceIdr: number
   status: CatalogVariantStatus

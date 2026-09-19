@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { Minus, Plus } from 'lucide-react'
+import { AlertCircle, Minus, Plus } from 'lucide-react'
 import type { CartDrawerViewModel } from './CartDrawerController'
 import { CartBagIcon } from './StorefrontCartIcon'
 import { useCatalogStore } from '../../store/catalogStore'
@@ -11,6 +11,8 @@ export const CartStep: FC<CartDrawerViewModel> = ({
   onDecrement,
   formatter,
   itemsTotalIdr,
+  cartIssues,
+  cartHasUnavailableItems,
   setStep,
 }) => {
   const catalogProducts = useCatalogStore((state) => state.products)
@@ -29,27 +31,36 @@ export const CartStep: FC<CartDrawerViewModel> = ({
           </div>
         ) : (
           <div className="divide-y divide-black/[0.09]">
-            {lines.map((line) => (
-              <article key={line.lineId} className="grid grid-cols-[88px_minmax(0,1fr)] gap-4 py-[1.125rem] sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-[1.125rem] sm:py-5 lg:grid-cols-[112px_minmax(0,1fr)] lg:gap-5 lg:py-6">
-                <div className="aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
-                  <img src={getStorefrontProductThumbnailById(catalogProducts, line.productId)} alt="" className="h-full w-full object-cover" aria-hidden="true" />
-                </div>
-                <div className="flex min-w-0 flex-col justify-between gap-3.5">
-                  <div className="flex items-start justify-between gap-3.5">
-                    <div className="min-w-0">
-                      <h3 className="line-clamp-2 text-[1.125rem] font-medium leading-[1.08] sm:text-[1.2rem]">{line.name}</h3>
-                      <p className="mt-1.5 sf-type-2 leading-5 text-black/52">{formatter.format(line.unitPriceIdr)} each</p>
+            {lines.map((line) => {
+              const issue = cartIssues.find((item) => item.lineId === line.lineId)
+              return (
+                <article key={line.lineId} className="grid grid-cols-[88px_minmax(0,1fr)] gap-4 py-[1.125rem] sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-[1.125rem] sm:py-5 lg:grid-cols-[112px_minmax(0,1fr)] lg:gap-5 lg:py-6">
+                  <div className="aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
+                    <img src={getStorefrontProductThumbnailById(catalogProducts, line.productId)} alt="" className="h-full w-full object-cover" aria-hidden="true" />
+                  </div>
+                  <div className="flex min-w-0 flex-col justify-between gap-3.5">
+                    <div className="flex items-start justify-between gap-3.5">
+                      <div className="min-w-0">
+                        <h3 className="line-clamp-2 text-[1.125rem] font-medium leading-[1.08] sm:text-[1.2rem]">{line.name}</h3>
+                        <p className="mt-1.5 sf-type-2 leading-5 text-black/52">{formatter.format(line.unitPriceIdr)} each</p>
+                        {issue ? (
+                          <p className="mt-2 flex gap-1.5 text-[0.78rem] leading-5 text-[#9b4d24]" role="alert">
+                            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                            <span>{issue.message}</span>
+                          </p>
+                        ) : null}
+                      </div>
+                      <p className="shrink-0 pt-0.5 sf-type-2 font-medium tabular-nums">{formatter.format(line.unitPriceIdr * line.quantity)}</p>
                     </div>
-                    <p className="shrink-0 pt-0.5 sf-type-2 font-medium tabular-nums">{formatter.format(line.unitPriceIdr * line.quantity)}</p>
+                    <div className="inline-grid h-11 w-fit grid-cols-[44px_36px_44px] items-center overflow-hidden rounded-full border border-black/16 bg-white/55">
+                      <button type="button" onClick={() => onDecrement(line.lineId)} className="tap-scale grid h-full place-items-center text-black/58 transition hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#00813f]/30" aria-label={`Remove one ${line.name}`}><Minus className="size-3" strokeWidth={1.8} /></button>
+                      <span className="text-center sf-type-1 font-medium tabular-nums">{line.quantity}</span>
+                      <button type="button" disabled={Boolean(issue)} onClick={() => onIncrement(line.lineId)} className="tap-scale grid h-full place-items-center text-black/58 transition hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#00813f]/30 disabled:cursor-not-allowed disabled:opacity-35" aria-label={`Add one more ${line.name}`}><Plus className="size-3" strokeWidth={1.8} /></button>
+                    </div>
                   </div>
-                  <div className="inline-grid h-11 w-fit grid-cols-[44px_36px_44px] items-center overflow-hidden rounded-full border border-black/16 bg-white/55">
-                    <button type="button" onClick={() => onDecrement(line.lineId)} className="tap-scale grid h-full place-items-center text-black/58 transition hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#00813f]/30" aria-label={`Remove one ${line.name}`}><Minus className="size-3" strokeWidth={1.8} /></button>
-                    <span className="text-center sf-type-1 font-medium tabular-nums">{line.quantity}</span>
-                    <button type="button" onClick={() => onIncrement(line.lineId)} className="tap-scale grid h-full place-items-center text-black/58 transition hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#00813f]/30" aria-label={`Add one more ${line.name}`}><Plus className="size-3" strokeWidth={1.8} /></button>
-                  </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              )
+            })}
           </div>
         )}
       </div>
@@ -62,7 +73,13 @@ export const CartStep: FC<CartDrawerViewModel> = ({
           <p className="sf-type-2 font-medium text-black/58">Subtotal</p>
           <p className="sf-type-4 font-medium leading-none tabular-nums">{formatter.format(itemsTotalIdr)}</p>
         </div>
-        <button type="button" disabled={lines.length === 0} onClick={() => setStep('details')} className="sf-primary-action tap-scale flex w-full items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00813f]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f0e6dd]">Checkout</button>
+        {cartHasUnavailableItems ? (
+          <p className="mb-3 flex items-start gap-2 rounded-xl bg-[#9b4d24]/8 px-3 py-2.5 text-[0.78rem] leading-5 text-[#7e3e1d]">
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            Remove or replace unavailable items before checkout.
+          </p>
+        ) : null}
+        <button type="button" disabled={lines.length === 0 || cartHasUnavailableItems} onClick={() => setStep('details')} className="sf-primary-action tap-scale flex w-full items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00813f]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f0e6dd]">Checkout</button>
       </footer>
     </>
   )

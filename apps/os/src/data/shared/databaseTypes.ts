@@ -141,6 +141,7 @@ export interface ArrangementTypeRow {
 
 export interface ProductRow {
   id: string
+  archived_at: string | null
   product_code: string
   primary_occasion_id: string | null
   material: CatalogMaterial
@@ -170,7 +171,9 @@ export interface ProductVariantRow {
   id: string
   product_id: string
   sku: string
+  size_option_id: string | null
   size: string
+  archived_at: string | null
   price_idr: number
   status: CatalogVariantStatus
   sort_order: number

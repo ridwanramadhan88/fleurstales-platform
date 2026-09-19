@@ -21,6 +21,7 @@ import { resolvedPricingToOrderLineItems } from '../../data/shared/orderLocalAda
 import { normalizeWhatsappNumber } from '../../lib/formatters'
 import { buildOrderCustomerSnapshot, findCustomerByWhatsapp } from '../../domain/customerIntakeDomain'
 import { getCustomerVisiblePaymentAccounts } from '../../domain/settings/paymentMethodSettingsDomain'
+import { firstStorefrontCartIssueMessage, getStorefrontCartIssues, type StorefrontCartIssue } from '../../domain/storefrontCartAvailabilityDomain'
 import type { CustomerProfile } from '../../store/customerStoreTypes'
 import type { Voucher } from '../../store/voucherStore'
 
@@ -56,6 +57,8 @@ export interface CartDrawerViewModel extends CartDrawerProps {
   matchedCustomerSegment: 'vip' | 'regular' | 'new' | null
   eligibleVouchers: Voucher[]
   detailsError: string | null
+  cartIssues: StorefrontCartIssue[]
+  cartHasUnavailableItems: boolean
   voucherCode: string
   appliedVoucherCode: string | null
   automaticPromoLabel: string | null
@@ -133,6 +136,8 @@ export const useCartDrawerController = (
 
   const createOrder = useOrdersStore((state) => state.createOrder)
   const catalogProducts = useCatalogStore((state) => state.products)
+  const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
+  const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets)
   const customers = useCustomerStore((state) => state.customers)
   const segmentRules = useCustomerStore((state) => state.segmentRules)
   const allOrders = useOrdersStore((state) => state.orders)
@@ -155,6 +160,12 @@ export const useCartDrawerController = (
     () => lines.reduce((sum, line) => sum + line.quantity, 0),
     [lines],
   )
+  const cartIssues = useMemo(
+    () => getStorefrontCartIssues(lines, catalogProducts, sizeGuideTemplates, sizeGuideTargets),
+    [catalogProducts, lines, sizeGuideTargets, sizeGuideTemplates],
+  )
+  const cartHasUnavailableItems = cartIssues.length > 0
+  const cartIssueMessage = firstStorefrontCartIssueMessage(cartIssues)
   const selectedBranch = activeBranches.find((item) => item.id === branch) ?? null
   const bankAccounts = getCustomerVisiblePaymentAccounts(paymentMethodSettings, selectedBranch?.id)
   const availableTimeSlots = getStorefrontAvailableTimeSlots(selectedBranch, deliveryDate)
@@ -309,6 +320,10 @@ export const useCartDrawerController = (
   })
 
   const applyVoucherCode = async (code: string) => {
+    if (cartHasUnavailableItems) {
+      setVoucherMessage(cartIssueMessage ?? 'Please review unavailable cart items first.')
+      return
+    }
     if (remoteCheckoutEnabled && sharedData.enabled) {
       const error = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
       if (error) { setVoucherMessage(`Complete checkout details first. ${error}`); return }
@@ -358,6 +373,11 @@ export const useCartDrawerController = (
   }
 
   const handleContinueFromDetails = async () => {
+    if (cartHasUnavailableItems) {
+      setDetailsError(cartIssueMessage ?? 'Please review unavailable cart items before checkout.')
+      setStep('cart')
+      return
+    }
     const error = validateStorefrontCheckoutDetails({
       customerName,
       whatsappNumber,
@@ -389,6 +409,11 @@ export const useCartDrawerController = (
   }
 
   const handleConfirmOrder = async () => {
+    if (cartHasUnavailableItems) {
+      setDetailsError(cartIssueMessage ?? 'Please review unavailable cart items before checkout.')
+      setStep('cart')
+      return
+    }
     const validationError = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
     const paymentError = paymentMethod === 'transfer' && bankAccounts.length === 0
       ? 'Bank transfer is unavailable for this branch.'
@@ -575,6 +600,8 @@ export const useCartDrawerController = (
     matchedCustomerSegment,
     eligibleVouchers,
     detailsError,
+    cartIssues,
+    cartHasUnavailableItems,
     voucherCode,
     appliedVoucherCode,
     automaticPromoLabel,

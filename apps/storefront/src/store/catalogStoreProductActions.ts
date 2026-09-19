@@ -185,6 +185,9 @@ export const createCatalogProductActions = (set: CatalogStoreSet): ProductAction
       const removed = state.products.filter((product) => idSet.has(product.id))
       return {
         products: state.products.filter((product) => !idSet.has(product.id)),
+        sizeGuideTargets: state.sizeGuideTargets.filter(
+          (target) => target.scope !== 'product' || !idSet.has(target.productId),
+        ),
         // Product ID sequence numbers are never reused, even after deletion.
         deletedProductIds: [
           ...state.deletedProductIds,

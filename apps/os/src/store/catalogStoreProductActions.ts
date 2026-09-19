@@ -124,7 +124,13 @@ export const createCatalogProductActions = (set: CatalogStoreSet): ProductAction
     const idSet = new Set(productIds)
     set((state) => {
       const removed = state.products.filter((product) => idSet.has(product.id))
-      return { products: state.products.filter((product) => !idSet.has(product.id)), deletedProductIds: [...state.deletedProductIds, ...removed.map((product) => product.productId)] }
+      return {
+        products: state.products.filter((product) => !idSet.has(product.id)),
+        sizeGuideTargets: state.sizeGuideTargets.filter(
+          (target) => target.scope !== 'product' || !idSet.has(target.productId),
+        ),
+        deletedProductIds: [...state.deletedProductIds, ...removed.map((product) => product.productId)],
+      }
     })
   },
 })

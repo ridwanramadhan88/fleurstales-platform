@@ -18,6 +18,9 @@ const catalogServerHardening = await read(
 const catalogAtomicEditorSave = await read(
   'supabase/migrations/20260919130000_catalog_product_editor_atomic_save.sql',
 )
+const catalogOrderIntegration = await read(
+  'supabase/migrations/20260919170000_catalog_order_history_audit_integration.sql',
+)
 const catalogRepositories = await read('apps/os/src/data/shared/repositories.ts')
 const catalogBridgeHardening = await read('apps/os/src/data/shared/catalogBridge.ts')
 const catalogSizeGuideActions = await read('apps/os/src/store/catalogStoreSizeGuideActions.ts')
@@ -99,6 +102,18 @@ assert(catalogAtomicEditorSave.includes('delete from public.product_images where
 assert(catalogAtomicEditorSave.includes('v_next_revision := v_current_revision+1'), 'Atomic Product Editor save lost its single Catalog revision increment.')
 assert(catalogBridgeHardening.includes('for (const upload of plan.pendingUploads)'), 'Catalog bridge does not pre-upload uniquely-addressed image binaries.')
 assert(catalogBridgeHardening.includes('if (!catalogCommitted && uploadedPaths.length > 0)'), 'Catalog bridge does not clean image objects after a failed atomic commit.')
+assert(catalogOrderIntegration.includes('archived_at'), 'Ordered Catalog history does not have explicit archive markers.')
+assert(catalogOrderIntegration.includes('public.order_items oi where oi.variant_id=pv.id'), 'Ordered variants can still be hard-deleted by Catalog replacement.')
+assert(catalogOrderIntegration.includes('private.preserve_order_item_catalog_snapshot'), 'Order-time Catalog snapshots are not protected from later operational rewrites.')
+assert(catalogOrderIntegration.includes('unit_price_idr := old.unit_price_idr'), 'Order-time price snapshots are not immutable while variant identity is unchanged.')
+assert(catalogOrderIntegration.includes('flower_recipe_snapshot := old.flower_recipe_snapshot'), 'Order-time recipe snapshots are not immutable while variant identity is unchanged.')
+assert(catalogOrderIntegration.includes('catalog.variant.update'), 'Catalog price/status audit event is missing.')
+assert(catalogOrderIntegration.includes('catalog.variant_cost.update'), 'Catalog Cost audit event is missing.')
+assert(catalogOrderIntegration.includes('catalog.size_template_assignments.update'), 'Size Template assignment audit event is missing.')
+assert(catalogOrderIntegration.includes('CATALOG_HISTORICAL_SIZE_OPTION_MISSING'), 'Inactive historical Size Template identity handling is missing.')
+assert(catalogRepositories.includes('!variant.archived_at'), 'Archived historical variants are still exposed in current Catalog reads.')
+assert(catalogRepositories.includes('!product.archived_at'), 'Archived historical products are still exposed in current Catalog reads.')
+assert(catalogRepositories.includes('sizeOptionId: row.size_option_id'), 'Stable Size Template identity is not hydrated from Supabase.')
 
 // V3.1 foundation remains present.
 assert(baseHardening.includes('private.operational_domain_state'), 'Private operational-domain storage is missing.')

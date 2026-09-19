@@ -37,6 +37,8 @@ const base = (): CartDrawerViewModel => ({
   matchedCustomerSegment: 'vip',
   eligibleVouchers: [{ id: 'v1', code: 'VIP10', percentOff: 10, eligibility: 'vip', isActive: true, createdAt: '2026-01-01' }],
   detailsError: null,
+  cartIssues: [],
+  cartHasUnavailableItems: false,
   voucherCode: '',
   appliedVoucherCode: null,
   automaticPromoLabel: null,

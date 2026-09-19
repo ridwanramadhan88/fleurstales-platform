@@ -112,6 +112,7 @@ const mapVariant = (
   id: row.id,
   productId: row.product_id,
   sku: row.sku,
+  ...(row.size_option_id ? { sizeOptionId: row.size_option_id } : {}),
   size: row.size,
   priceIdr: row.price_idr,
   status: row.status,
@@ -202,7 +203,7 @@ const mapProduct = (
   isCustomizable: row.is_customizable,
   sortOrder: row.sort_order,
   variants: variantRows
-    .filter((variant) => variant.product_id === row.id)
+    .filter((variant) => variant.product_id === row.id && !variant.archived_at)
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((variant) => mapVariant(variant, costByVariantId, recipeByVariantId)),
   images: imageRows
@@ -262,7 +263,7 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
       client.select('product_images', { order: [{ column: 'sort_order' }] }),
       readCostMap(client, options?.includeCosts === true),
     ])
-    return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, new Map(), client))
+    return products.filter((product) => !product.archived_at).map((product) => mapProduct(product, occasions, variants, images, costByVariantId, new Map(), client))
   },
 
   async getProduct(productId) {
@@ -272,7 +273,8 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
       client.select('product_variants', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_images', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
     ])
-    return products[0] ? mapProduct(products[0], occasions, variants, images, new Map(), new Map(), client) : null
+    const product = products.find((row) => !row.archived_at)
+    return product ? mapProduct(product, occasions, variants, images, new Map(), new Map(), client) : null
   },
   async listSizeGuideTemplates() {
     const rows = await client.select('size_guide_templates', { order: [{ column: 'name' }] })
@@ -302,7 +304,7 @@ export const createCatalogAdminRepository = (client: SupabaseHttpClient): Catalo
         readCostMap(client, options?.includeCosts === true),
         readRecipeMap(client),
       ])
-      return products.map((product) => mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client))
+      return products.filter((product) => !product.archived_at).map((product) => mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client))
     },
     async getProduct(productId) {
       const [products, occasions, variants, images, costByVariantId, recipeByVariantId] = await Promise.all([
@@ -313,7 +315,8 @@ export const createCatalogAdminRepository = (client: SupabaseHttpClient): Catalo
         readCostMap(client, true),
         readRecipeMap(client),
       ])
-      return products[0] ? mapProduct(products[0], occasions, variants, images, costByVariantId, recipeByVariantId, client) : null
+      const product = products.find((row) => !row.archived_at)
+      return product ? mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client) : null
     },
     async getAdminState() {
       return client.rpc<SharedCatalogAdminState>('get_catalog_admin_state', {})
