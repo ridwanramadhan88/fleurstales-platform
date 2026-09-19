@@ -1,5 +1,5 @@
 /** Catalog category navigation and secondary filters. */
-import type { FC } from 'react'
+import { useEffect, useRef, type FC } from 'react'
 import { ArrowDownUp, Layers, MoreHorizontal } from 'lucide-react'
 import type { CatalogCategory, CatalogMaterial } from '../../store/catalogStoreTypes'
 import {
@@ -74,20 +74,27 @@ export const CatalogFiltersBar: FC<CatalogFiltersBarProps> = ({
   const isNonDefaultStatus = statusFilter !== undefined && statusFilter !== 'active'
   const categories: CatalogCategoryFilter[] = ['all', ...availableCategories]
 
+  const activeCategoryRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    activeCategoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [categoryFilter])
+
   return (
-    <section aria-label="Catalog filters" className="space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="mb-1 text-sm font-semibold text-muted-foreground">{label}</p>
-          <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto border-b border-border px-0.5 pt-1 md:flex-wrap md:overflow-visible md:pt-0">
+    <section aria-label="Catalog filters" className="min-w-0 space-y-3 overflow-hidden">
+      <div className="min-w-0">
+        <p className="mb-1 text-sm font-semibold text-muted-foreground">{label}</p>
+        <div className="relative min-w-0">
+          <div className="no-scrollbar flex w-full snap-x snap-mandatory gap-1 overflow-x-auto border-b border-border px-0.5 pr-10 pt-1">
             {categories.map((category) => {
               const active = categoryFilter === category
               return (
                 <button
                   key={category}
                   type="button"
+                  ref={active ? activeCategoryRef : undefined}
                   onClick={() => onCategoryFilterChange(category)}
-                  className={`h-11 shrink-0 border-b-2 px-3 text-sm font-medium transition ${
+                  className={`h-11 shrink-0 snap-start border-b-2 px-3 text-sm font-medium transition ${
                     active
                       ? 'border-foreground text-foreground'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -98,9 +105,11 @@ export const CatalogFiltersBar: FC<CatalogFiltersBarProps> = ({
               )
             })}
           </div>
+          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background via-background/85 to-transparent" />
         </div>
+      </div>
 
-        <div className="flex shrink-0 items-center gap-2 pb-1">
+      <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto pb-1">
           {availableSubCategories.length > 0 && (
             <Select
               value={subCategoryFilter}
@@ -176,7 +185,6 @@ export const CatalogFiltersBar: FC<CatalogFiltersBarProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-        </div>
       </div>
     </section>
   )
