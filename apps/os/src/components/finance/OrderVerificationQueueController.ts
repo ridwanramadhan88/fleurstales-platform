@@ -208,7 +208,7 @@ export const useOrderVerificationQueueController = ({
   const actor = { employeeId, name: actorName, role: userRole, branchId }
 
   const [initialFocus] = useState(() => consumeFinanceWorkspaceFocus('order_verification'))
-  const [reviewingOrder, setReviewingOrder] = useState<OrderTableRow | null>(null)
+  const [reviewingOrder, setReviewingOrder] = useState<OrderTableRow | null>(() => initialFocus?.orderNumber ? orders.find((item) => item.orderNumber === initialFocus.orderNumber) ?? null : null)
   const [selectedLedgerTransactionId, setSelectedLedgerTransactionId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<FinanceOrderStatusFilter>(() =>
     initialStatusFilter ?? (initialFocus?.view === 'needs_correction' ? 'needs_correction' : 'all'),
@@ -223,7 +223,11 @@ export const useOrderVerificationQueueController = ({
     setDateRange(undefined)
     setMonthFilter('all')
     onSearchQueryChange?.('')
-  }), [onSearchQueryChange])
+    setReviewingOrder(focus.orderNumber ? orders.find((item) => item.orderNumber === focus.orderNumber) ?? null : null)
+    if (focus.orderNumber && !orders.some((item) => item.orderNumber === focus.orderNumber)) {
+      toast({ title: 'Order no longer available', description: 'The notification item may already be resolved or outside your current access.', variant: 'destructive' })
+    }
+  }), [onSearchQueryChange, orders])
 
   const postedRows = useMemo(
     () => paymentRowsForOrders(orders, transactions),
