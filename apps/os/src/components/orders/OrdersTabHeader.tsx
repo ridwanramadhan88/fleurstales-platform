@@ -4,7 +4,7 @@
  */
 
 import type { FC } from 'react'
-import { AlertTriangle, CheckCircle2, FilePenLine, Plus, Workflow } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FilePenLine, Plus, Store, Workflow } from 'lucide-react'
 import type { OrdersSubTabId } from './OrdersSubTabs'
 import { GuardedAction } from '../ui/guarded-action'
 import { InfoHint } from '../ui/info-hint'
@@ -47,12 +47,12 @@ const SummaryCard: FC<{
   const surfaceClass = 'bg-surface-card ring-border/60'
 
   return (
-    <div className={`min-w-0 rounded-2xl p-4 shadow-ios-sm ring-1 sm:p-4 ${surfaceClass}`}>
+    <div className={`min-w-0 rounded-xl p-3 shadow-ios-sm ring-1 sm:rounded-2xl sm:p-4 ${surfaceClass}`}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-2xs font-semibold text-muted-foreground">{label}</p>
-        <Icon className={`size-4 shrink-0 ${accentClass}`} />
+        <p className="text-xs font-semibold leading-4 text-muted-foreground">{label}</p>
+        <Icon className={`size-3.5 shrink-0 sm:size-4 ${accentClass}`} />
       </div>
-      <p className={`mt-1 text-xl font-semibold tabular-nums ${accentClass}`}>{value}</p>
+      <p className={`mt-0.5 text-lg font-semibold leading-6 tabular-nums sm:mt-1 sm:text-xl ${accentClass}`}>{value}</p>
     </div>
   )
 }
@@ -64,9 +64,16 @@ export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
   canCreateOrder,
   createOrderBlockedReason,
   onNewOrder,
-}) => (
-  <section aria-label="Orders overview" className="space-y-4">
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+}) => {
+  const needsBranchSelection = Boolean(
+    !canCreateOrder && createOrderBlockedReason?.includes('Select a specific branch'),
+  )
+  const blockedActionLabel = needsBranchSelection ? 'Select branch first' : 'New order unavailable'
+  const BlockedIcon = needsBranchSelection ? Store : Plus
+
+  return (
+  <section aria-label="Orders overview" className="space-y-3 sm:space-y-4">
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
@@ -90,18 +97,19 @@ export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
                 : 'border border-border bg-card text-muted-foreground'
             }`}
           >
-            <Plus className="size-4" />
-            <span>New order</span>
+            {canCreateOrder ? <Plus className="size-4" /> : <BlockedIcon className="size-4" />}
+            <span>{canCreateOrder ? 'New order' : blockedActionLabel}</span>
           </GuardedAction>
         </div>
       )}
     </header>
 
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
       <SummaryCard label="Active orders" value={orderCounts.active} tone="info" icon={Workflow} />
       <SummaryCard label="Completed" value={orderCounts.completed} tone="success" icon={CheckCircle2} />
       <SummaryCard label="Drafts" value={draftCount} tone="neutral" icon={FilePenLine} />
       <SummaryCard label="Needs attention" value={orderCounts.needsAttention} tone="warning" icon={AlertTriangle} />
     </div>
   </section>
-)
+  )
+}
