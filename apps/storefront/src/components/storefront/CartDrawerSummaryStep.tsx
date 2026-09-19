@@ -3,6 +3,7 @@ import { Building2, Check } from 'lucide-react'
 import type { CartDrawerViewModel } from './CartDrawerController'
 import { formatDisplayDate } from '../ui/date-time-field'
 import { StorefrontCopyButton } from './StorefrontCopyButton'
+import { formatIdr } from '../../lib/currency'
 
 export const SummaryStep: FC<CartDrawerViewModel> = ({
   placedOrderNumber,
@@ -86,13 +87,13 @@ export const SummaryStep: FC<CartDrawerViewModel> = ({
         <section className="mt-9">
           <p className="sf-label text-[#00813f]">Order total</p>
           <div className="mt-4 space-y-3 sf-type-2">
-            <SummaryRow label="Subtotal" value={formatter.format(itemsTotalIdr)} />
-            <SummaryRow label={fulfillment === 'delivery' ? 'Delivery fee' : 'Pickup fee'} value={fulfillment === 'delivery' ? formatter.format(deliveryFeeIdr) : 'Free'} />
-            {discountIdr > 0 && <SummaryRow label={appliedVoucherCode ? `Discount (${appliedVoucherCode})` : 'Discount'} value={`-${formatter.format(discountIdr)}`} accent />}
+            <SummaryRow label="Subtotal" value={formatIdr(itemsTotalIdr, formatter)} />
+            <SummaryRow label={fulfillment === 'delivery' ? 'Delivery fee' : 'Pickup fee'} value={fulfillment === 'delivery' ? formatIdr(deliveryFeeIdr, formatter) : 'Free'} />
+            {discountIdr > 0 && <SummaryRow label={appliedVoucherCode ? `Discount (${appliedVoucherCode})` : 'Discount'} value={`-${formatIdr(discountIdr, formatter)}`} accent />}
           </div>
           <div className="mt-4 flex items-end justify-between gap-4 border-t border-black/12 pt-4">
             <span className="sf-type-3 font-medium">Total to pay</span>
-            <span className="text-[2.65rem] font-medium leading-none tabular-nums">{formatter.format(grandTotalIdr)}</span>
+            <span className="text-[2.65rem] font-medium leading-none tabular-nums">{formatIdr(grandTotalIdr, formatter)}</span>
           </div>
         </section>
       </div>
