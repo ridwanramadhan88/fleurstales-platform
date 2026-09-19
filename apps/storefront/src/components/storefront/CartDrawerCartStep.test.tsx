@@ -21,6 +21,8 @@ const makeViewModel = (
     formatter: new Intl.NumberFormat('id-ID'),
     itemsTotalIdr: 300_000,
     itemCount: 2,
+    cartIssues: [],
+    cartHasUnavailableItems: false,
     onIncrement: vi.fn(),
     onDecrement: vi.fn(),
     setStep: vi.fn(),
@@ -40,6 +42,21 @@ describe('CartStep', () => {
     expect(viewModel.onIncrement).toHaveBeenCalledWith('line-1')
     expect(viewModel.onDecrement).toHaveBeenCalledWith('line-1')
     expect(viewModel.setStep).toHaveBeenCalledWith('details')
+  })
+
+  it('blocks checkout and explains a stale Catalog item', () => {
+    render(
+      <CartStep
+        {...makeViewModel({
+          cartIssues: [{ lineId: 'line-1', code: 'variant_unavailable', message: 'This product option is no longer available.' }],
+          cartHasUnavailableItems: true,
+        })}
+      />,
+    )
+
+    expect(screen.getByText('This product option is no longer available.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Checkout$/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Add one more Classic Bouquet' })).toBeDisabled()
   })
 
   it('disables checkout when the cart is empty', () => {
