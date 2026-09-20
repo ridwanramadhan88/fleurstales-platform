@@ -113,10 +113,12 @@ describe('Storefront Catalog projection', () => {
     expect(getStorefrontVariantSizeGuide(current, current.variants[0], [template], [target])).toBeNull()
   })
 
-  it('strips internal Cost and flower recipe from customer-facing variants', () => {
+  it('strips internal Cost but keeps the selected-size flower recipe customer-facing', () => {
     const projected = projectStorefrontProduct(product(), [template], [target])
     expect(projected?.variants[0]).not.toHaveProperty('cost')
-    expect(projected?.variants[0]).not.toHaveProperty('flowerRecipe')
+    expect(projected?.variants[0].flowerRecipe).toEqual([
+      { id: 'rose', flowerName: 'Rose', quantity: 10, unit: 'stem' },
+    ])
   })
 
   it('resolves the customer Size Guide by stable child ID only', () => {
