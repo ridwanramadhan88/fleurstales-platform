@@ -194,8 +194,17 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
           {trackingId ? (
             <section className="mt-6 sm:mt-8">
               {loading ? (
-                <div className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/40 p-6 sf-body text-black/55 sm:p-8">
-                  Memuat pesanan…
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="rounded-[var(--sf-radius-card)] border border-black/10 bg-white/40 p-6 sm:p-8"
+                >
+                  <p className="sf-type-2 font-medium text-black/58">Memuat pesanan…</p>
+                  <div aria-hidden="true" className="mt-5 space-y-3">
+                    <div className="h-4 w-32 animate-pulse rounded-full bg-black/[0.08]" />
+                    <div className="h-8 w-52 max-w-[75%] animate-pulse rounded-full bg-black/[0.07]" />
+                    <div className="h-4 w-full max-w-xl animate-pulse rounded-full bg-black/[0.06]" />
+                  </div>
                 </div>
               ) : details ? (
                 <div className="space-y-4 sm:space-y-5">
@@ -352,11 +361,8 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
           ) : (
             <section className="mt-6 rounded-[var(--sf-radius-card)] border border-black/10 bg-white/42 p-4 sm:mt-8 sm:p-6">
               <div className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-full bg-black/[0.05]"><PackageSearch className="size-5" /></span>
-                <div>
-                  <h2 className="sf-type-4 font-display">Cari pesanan</h2>
-                  <p className="mt-1 sf-type-2 text-black/50">Gunakan WhatsApp yang terhubung ke pesanan.</p>
-                </div>
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-black/[0.05]" aria-hidden="true"><PackageSearch className="size-5" /></span>
+                <p className="sf-type-2 leading-6 text-black/55">Gunakan WhatsApp yang terhubung ke pesanan.</p>
               </div>
               <form className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end" onSubmit={handleSearch}>
                 <label>

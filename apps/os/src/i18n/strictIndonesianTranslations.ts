@@ -370,6 +370,7 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Manage occasions': 'Kelola momen',
   'Total products': 'Total produk',
   'No products found': 'Produk tidak ditemukan',
+  'No products match this collection. Try a different category or type.': 'Tidak ada produk yang cocok dengan koleksi ini. Coba kategori atau jenis lain.',
   'No products match these filters. Try a different search or occasion.': 'Tidak ada produk yang cocok dengan filter ini. Coba pencarian atau momen lain.',
   'Manage products': 'Kelola produk',
   'Finish managing': 'Selesai mengelola',

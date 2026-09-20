@@ -265,10 +265,17 @@ export const StorefrontProductGrid: FC<GridProps> = ({
   >
     {title && <h2 className={sectionTitleClass}>{title}</h2>}
     {products.length === 0 ? (
-      <div className="flex min-h-52 items-center justify-center rounded-[var(--sf-radius-panel)] bg-[#eee4dc] px-7 py-10 text-center">
-        <p className="max-w-xs sf-support text-black/55">
-          No products match this collection. Try a different category or type.
-        </p>
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex min-h-52 items-center justify-center rounded-[var(--sf-radius-panel)] border border-black/[0.06] bg-[#eee4dc] px-7 py-10 text-center"
+      >
+        <div className="max-w-sm">
+          <p className="sf-type-3 font-display font-medium text-black">No products found</p>
+          <p className="mt-2 sf-support text-black/55">
+            No products match this collection. Try a different category or type.
+          </p>
+        </div>
       </div>
     ) : (
       <>
