@@ -42,7 +42,7 @@ export const StorefrontHeader: FC<Props> = ({
       <button
         type="button"
         onClick={onOpenHome}
-        className="tap-scale mr-auto inline-flex min-w-0 items-center rounded-md leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+        className="tap-scale mr-auto inline-flex min-h-11 min-w-0 items-center rounded-md leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
         aria-label="Back to Fleurstales home"
       >
         <StorefrontBrand variant="header" showType />

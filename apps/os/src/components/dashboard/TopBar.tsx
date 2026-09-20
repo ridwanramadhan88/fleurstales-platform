@@ -59,7 +59,7 @@ const TopBarSearch: FC<{
         type="button"
         onClick={() => onChange?.("")}
         aria-label="Clear search"
-        className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
       >
         <X className="size-3.5" />
       </button>
@@ -194,12 +194,12 @@ export const TopBar: FC<TopBarViewModel> = ({
                 <p className="text-xs text-muted-foreground">{roleLabel}</p>
               </div>
               <div className="mx-2 my-0.5 border-t border-border/50" />
-              <div className="flex min-h-10 items-center justify-between gap-3 rounded-lg px-2.5 py-1.5">
+              <div className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2.5 py-1.5">
                 <span className="text-xs font-medium text-muted-foreground">Language</span>
                 <LanguageToggle />
               </div>
               {onToggleTheme && (
-                <div className="flex min-h-10 items-center justify-between gap-3 rounded-lg px-2.5 py-1.5">
+                <div className="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2.5 py-1.5">
                   <span className="text-xs font-medium text-muted-foreground">Appearance</span>
                   <ThemeToggle theme={theme} onToggle={onToggleTheme} />
                 </div>
@@ -210,7 +210,7 @@ export const TopBar: FC<TopBarViewModel> = ({
                   <button
                     type="button"
                     onClick={onSignOutFromProfile}
-                    className="flex min-h-10 w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-destructive transition hover:bg-destructive/8"
+                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-destructive transition hover:bg-destructive/8"
                   >
                     <LogOut className="size-4" />
                     Switch role / sign out
@@ -314,7 +314,7 @@ const BranchMenuPortal: FC<BranchMenuPortalProps> = ({
           role="option"
           aria-selected={branch === activeBranch}
           onClick={() => onSelectBranch(branch)}
-          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left transition hover:bg-accent ${
+          className={`flex min-h-11 w-full items-center justify-between rounded-lg px-2.5 py-2 text-left transition hover:bg-accent ${
             branch === activeBranch ? "font-semibold text-foreground" : ""
           }`}
         >
