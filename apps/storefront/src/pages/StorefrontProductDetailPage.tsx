@@ -17,12 +17,7 @@ import { StorefrontHeader } from "../components/storefront/StorefrontHeader";
 import { StorefrontContainer } from "../components/storefront/StorefrontContainer";
 import { StorefrontFooter } from "../components/storefront/StorefrontFooter";
 import { StorefrontFlowerRecipe } from "../components/storefront/StorefrontFlowerRecipe";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "../components/ui/dialog";
-import { getStorefrontVariantGallery } from "../components/storefront/storefrontProductImages";
+import { getStorefrontProductDetailGallery } from "../components/storefront/storefrontProductImages";
 import { getPromoPercentLabel } from "../domain/catalogDomain";
 import { useScrollThresholdCartBar } from "../hooks/useScrollThresholdCartBar";
 import { useCatalogStore } from "../store/catalogStore";
@@ -107,13 +102,15 @@ export const StorefrontProductDetailPage: FC<Props> = ({
     activeVariants.length === 1 ? activeVariants[0]?.id ?? "" : "",
   );
   const selectedVariant = activeVariants.find((variant) => variant.id === selectedVariantId);
-  const images = useMemo(
-    () => getStorefrontVariantGallery(product, selectedVariant),
-    [product, selectedVariant],
+  const galleryItems = useMemo(
+    () => getStorefrontProductDetailGallery(product),
+    [product],
   );
-  const [activeImage, setActiveImage] = useState<string | null>(images[0] ?? null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const activeGalleryItem = galleryItems[activeImageIndex];
+  const activeImage = activeGalleryItem?.url ?? null;
   const [quantity, setQuantity] = useState(1);
-  const [sizingInfoOpen, setSizingInfoOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState<"description" | "size-chart">("description");
   const [galleryDirection, setGalleryDirection] = useState<"previous" | "next">("next");
   const touchStartX = useRef<number | null>(null);
   const priceSectionRef = useRef<HTMLDivElement | null>(null);
@@ -129,7 +126,6 @@ export const StorefrontProductDetailPage: FC<Props> = ({
   const promoPercentLabel = getPromoPercentLabel(product, displayUnitPriceIdr);
   const requiresSizeSelection = activeVariants.length > 1;
   const canPurchase = product.isActive && Boolean(selectedVariant) && activeVariants.length > 0;
-  const activeImageIndex = activeImage ? Math.max(0, images.indexOf(activeImage)) : 0;
   const mobileCartBarVisible = useScrollThresholdCartBar({
     enabled: cartCount > 0,
     resetKey: product.id,
@@ -158,25 +154,32 @@ export const StorefrontProductDetailPage: FC<Props> = ({
 
   useEffect(() => {
     setSelectedVariantId(activeVariants.length === 1 ? activeVariants[0]?.id ?? "" : "");
+    setActiveImageIndex(0);
     setQuantity(1);
-    setSizingInfoOpen(false);
+    setDetailTab("description");
+    setGalleryDirection("next");
     window.scrollTo({ top: 0 });
   }, [product.productId]);
 
-  useEffect(() => {
-    setActiveImage(images[0] ?? null);
-    setGalleryDirection("next");
-  }, [images, selectedVariantId]);
-
   const showGalleryImage = (index: number, direction: "previous" | "next") => {
-    if (images.length === 0) return;
-    const normalizedIndex = (index + images.length) % images.length;
+    if (galleryItems.length === 0) return;
+    const normalizedIndex = (index + galleryItems.length) % galleryItems.length;
+    const nextItem = galleryItems[normalizedIndex];
     setGalleryDirection(direction);
-    setActiveImage(images[normalizedIndex]);
+    setActiveImageIndex(normalizedIndex);
+    if (nextItem?.variantId) setSelectedVariantId(nextItem.variantId);
   };
 
   const showPreviousImage = () => showGalleryImage(activeImageIndex - 1, "previous");
   const showNextImage = () => showGalleryImage(activeImageIndex + 1, "next");
+
+  const selectVariant = (variant: CatalogVariant) => {
+    setSelectedVariantId(variant.id);
+    const variantImageIndex = galleryItems.findIndex((item) => item.variantId === variant.id);
+    if (variantImageIndex < 0) return;
+    setGalleryDirection(variantImageIndex < activeImageIndex ? "previous" : "next");
+    setActiveImageIndex(variantImageIndex);
+  };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     touchStartX.current = event.touches[0]?.clientX ?? null;
@@ -262,7 +265,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                 </button>
               </div>
 
-              {images.length > 1 && (
+              {galleryItems.length > 1 && (
                 <>
                   <button
                     type="button"
@@ -284,15 +287,15 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                     className="absolute inset-x-0 bottom-[5%] z-10 flex items-center justify-center"
                     aria-label="Product gallery images"
                   >
-                    {images.map((image, index) => (
+                    {galleryItems.map((item, index) => (
                       <button
-                        key={`${image}-${index}`}
+                        key={[item.kind, item.variantId ?? "catalog", index].join("-")}
                         type="button"
                         onClick={() => showGalleryImage(index, index < activeImageIndex ? "previous" : "next")}
-                        className={`storefront-gallery-dot ${
+                        className={"storefront-gallery-dot " + (
                           index === activeImageIndex ? "storefront-gallery-dot--active" : ""
-                        }`}
-                        aria-label={`View product image ${index + 1}`}
+                        )}
+                        aria-label={item.variantId ? "View " + (item.size ?? "variant") + " product image" : "View catalog default image"}
                         aria-pressed={index === activeImageIndex}
                       />
                     ))}
@@ -354,32 +357,71 @@ export const StorefrontProductDetailPage: FC<Props> = ({
 
               <div className="storefront-long-dash" aria-hidden="true" />
 
-              {product.description && product.description.trim().length > 0 && (
-                <section aria-labelledby="product-description-heading">
-                  <h2 id="product-description-heading" className="sr-only">Description</h2>
-                  <p className="sf-body max-w-[34rem] whitespace-pre-line text-black/68 lg:max-w-[31rem] lg:text-[0.9375rem] lg:leading-[1.55]">
-                    {product.description}
-                  </p>
-                </section>
-              )}
+              <section className="space-y-4" aria-label="Product information">
+                <div className="flex items-center gap-6 border-b border-black/10" role="tablist" aria-label="Product information tabs">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={detailTab === "description"}
+                    onClick={() => setDetailTab("description")}
+                    className={detailTab === "description"
+                      ? "relative pb-2 sf-type-2 font-medium text-black"
+                      : "relative pb-2 sf-type-2 font-medium text-black/42 transition hover:text-black/70"}
+                  >
+                    Description
+                    {detailTab === "description" && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-black" aria-hidden="true" />}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={detailTab === "size-chart"}
+                    onClick={() => setDetailTab("size-chart")}
+                    className={detailTab === "size-chart"
+                      ? "relative pb-2 sf-type-2 font-medium text-black"
+                      : "relative pb-2 sf-type-2 font-medium text-black/42 transition hover:text-black/70"}
+                  >
+                    Size Chart
+                    {detailTab === "size-chart" && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-black" aria-hidden="true" />}
+                  </button>
+                </div>
+
+                {detailTab === "description" ? (
+                  <div role="tabpanel" aria-label="Description">
+                    <p className="sf-body max-w-[34rem] whitespace-pre-line text-black/68 lg:max-w-[31rem] lg:text-[0.9375rem] lg:leading-[1.55]">
+                      {product.description?.trim() || "No description available."}
+                    </p>
+                  </div>
+                ) : (
+                  <div role="tabpanel" aria-label="Size Chart" className="space-y-3">
+                    {!selectedVariant ? (
+                      <p className="sf-type-2 text-black/48">Select a size to view its Size Chart.</p>
+                    ) : selectedSizeGuideImageUrl ? (
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="sf-type-2 font-medium text-black">{selectedSizeGuideLabel}</p>
+                          <span className="sf-type-1 text-black/40">{selectedVariant.size}</span>
+                        </div>
+                        <div className="aspect-square w-full max-w-[22rem] overflow-hidden rounded-[1rem] border border-black/10 bg-white">
+                          <img
+                            src={selectedSizeGuideImageUrl}
+                            alt={product.name + " " + selectedVariant.size + " size chart"}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <p className="sf-type-2 text-black/48">Size Chart is not available for {selectedVariant.size}.</p>
+                    )}
+                  </div>
+                )}
+              </section>
 
               <section className="space-y-4 lg:space-y-3" aria-labelledby="product-size-heading">
                 <div className="flex items-end justify-between gap-4">
                   <h2 id="product-size-heading" className="sf-type-2 font-medium">Size</h2>
-                  <div className="flex items-center gap-3">
-                    {requiresSizeSelection && !selectedVariant && (
-                      <p className="sf-type-1 font-medium text-[#d93d7c]">Select a size</p>
-                    )}
-                    {selectedSizeGuideImageUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setSizingInfoOpen(true)}
-                        className="border-b border-black/45 pb-0.5 sf-type-1 font-medium text-black/62 transition hover:border-black hover:text-black"
-                      >
-                        Size guide
-                      </button>
-                    )}
-                  </div>
+                  {requiresSizeSelection && !selectedVariant && (
+                    <p className="sf-type-1 font-medium text-[#d93d7c]">Select a size</p>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-3 sm:gap-x-5">
@@ -391,7 +433,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                         key={variant.id}
                         type="button"
                         disabled={!isActive}
-                        onClick={() => setSelectedVariantId(variant.id)}
+                        onClick={() => selectVariant(variant)}
                         className={`inline-flex min-h-12 min-w-12 items-center justify-center px-4 py-2.5 sf-type-3 font-medium leading-none transition [clip-path:polygon(2%_4%,98%_1%,96%_98%,1%_96%)] sm:min-h-[3.25rem] sm:min-w-[3.25rem] sm:px-5 lg:min-h-11 lg:min-w-11 lg:px-4 lg:text-base ${
                           isSelected
                             ? "bg-[#f569a3] text-[#fdf6ee]"
@@ -479,21 +521,6 @@ export const StorefrontProductDetailPage: FC<Props> = ({
             </section>
           </StorefrontContainer>
         </div>
-
-        <Dialog open={Boolean(selectedSizeGuideImageUrl) && sizingInfoOpen} onOpenChange={setSizingInfoOpen}>
-          <DialogContent className="w-[min(92vw,30rem)] max-w-none gap-4 rounded-[1.5rem] bg-[var(--sf-cream)] p-5 sm:p-6">
-            <DialogTitle className="pr-12 text-xl font-medium">{selectedSizeGuideLabel}</DialogTitle>
-            {selectedSizeGuideImageUrl && (
-              <div className="aspect-square w-full overflow-hidden rounded-[1.125rem] border border-black/10 bg-white">
-                <img
-                  src={selectedSizeGuideImageUrl}
-                  alt={`${product.name}${selectedVariant ? ` ${selectedVariant.size}` : ""} size guide`}
-                  className="h-full w-full object-contain"
-                />
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
         {relatedProducts.length > 0 && (
           <StorefrontContainer>
