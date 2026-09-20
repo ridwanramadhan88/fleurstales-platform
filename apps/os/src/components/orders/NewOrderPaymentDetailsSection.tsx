@@ -58,7 +58,7 @@ export const NewOrderPaymentDetailsSection: FC<NewOrderPaymentDetailsSectionProp
           >
             <SelectTrigger
               id="paymentMethod"
-              className={fieldClass(activeGuideField === 'paymentMethod')}
+              className={fieldClass(activeGuideField === 'paymentMethod') + (errors.paymentMethod ? ' border-destructive ring-destructive/25' : '')}
               aria-invalid={Boolean(errors.paymentMethod)}
               aria-describedby={errors.paymentMethod ? 'paymentMethod-error' : undefined}
             >
