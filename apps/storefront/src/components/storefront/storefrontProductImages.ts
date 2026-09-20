@@ -9,13 +9,52 @@ const getVariantImageUrls = (variant?: CatalogVariant): string[] => {
     .filter((url): url is string => Boolean(url?.trim()))
 }
 
+export interface StorefrontProductDetailGalleryItem {
+  url: string
+  kind: 'catalog' | 'variant'
+  variantId?: string
+  size?: string
+}
+
 export const getStorefrontProductGallery = (product: CatalogProduct): string[] =>
   getCatalogProductImageUrls(product)
 
 /**
- * Customer-facing gallery for a concrete sellable variant. Variant photos are
- * authoritative when present; legacy/base product photos remain the fallback
- * for products that have not been migrated yet.
+ * Dedicated product-detail gallery.
+ *
+ * New Catalog ownership uses one default Catalog photo plus one photo per size
+ * variant. The default Catalog photo is always first. Variant items retain
+ * their variant identity so gallery navigation can update the size picker.
+ */
+export const getStorefrontProductDetailGallery = (
+  product: CatalogProduct,
+): StorefrontProductDetailGalleryItem[] => {
+  const items: StorefrontProductDetailGalleryItem[] = []
+  const catalogImage = getStorefrontProductGallery(product)[0]
+
+  if (catalogImage) {
+    items.push({ url: catalogImage, kind: 'catalog' })
+  }
+
+  for (const variant of product.variants) {
+    if (variant.status !== 'active') continue
+    const variantImage = getVariantImageUrls(variant)[0]
+    if (!variantImage) continue
+    items.push({
+      url: variantImage,
+      kind: 'variant',
+      variantId: variant.id,
+      size: variant.size,
+    })
+  }
+
+  return items
+}
+
+/**
+ * Customer-facing image for a concrete sellable variant. Variant photos are
+ * authoritative when present; the Catalog default photo remains the fallback
+ * for legacy products or variants that do not yet have a dedicated photo.
  */
 export const getStorefrontVariantGallery = (
   product: CatalogProduct,
