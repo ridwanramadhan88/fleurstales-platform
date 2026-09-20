@@ -312,7 +312,7 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'New order': 'Pesanan baru',
   'Close new order': 'Tutup pesanan baru',
   'Save draft': 'Simpan draft',
-  'Review order': 'Tinjau pesanan',
+  'Review order': 'Tinjau Pesanan',
   'Confirm & create': 'Konfirmasi & buat',
   'Order source': 'Sumber pesanan',
   'Order structure': 'Struktur pesanan',
@@ -448,7 +448,7 @@ export const ID_STRICT_PATTERN_TRANSLATIONS: Array<
 > = [
   [/^Rate (\d+) out of 5$/i, (_full, score) => `Beri nilai ${score} dari 5`],
   [/^Complete (\d+) highlighted fields? before review\.$/i, (_full, count) => `Lengkapi ${count} kolom yang ditandai sebelum meninjau pesanan.`],
-  [/^Review order · (.+)$/i, (_full, total) => `Tinjau pesanan · ${total}`],
+  [/^Review order · (.+)$/i, (_full, total) => `Tinjau Pesanan · ${total}`],
   [/^(\d+) products?$/i, (_full, count) => `${count} produk`],
   [/^Sort orders by (.+), (asc|desc)$/i, (_full, field, direction) => `Urutkan pesanan berdasarkan ${field}, ${direction}`],
 
