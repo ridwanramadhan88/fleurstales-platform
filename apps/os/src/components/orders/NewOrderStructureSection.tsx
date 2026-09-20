@@ -87,6 +87,10 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="w-24 shrink-0 text-xs font-medium text-foreground">Order source</span>
           <div
+            role="group"
+            aria-label="Order source"
+            aria-invalid={Boolean(errors.orderType)}
+            aria-describedby={errors.orderType ? 'orderType-error' : undefined}
             className={[
               'inline-flex rounded-full border bg-surface-panel p-0.5 text-xs transition',
               activeGuideField === 'orderType'
@@ -99,7 +103,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               data-guide-field="orderType"
               type="button"
               onClick={() => onOrderTypeChange('admin_created')}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 font-medium transition cursor-pointer ${
+              className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 font-medium transition cursor-pointer ${
                 values.orderType === 'admin_created'
                   ? 'bg-primary text-primary-foreground shadow-ios-sm'
                   : 'text-muted-foreground hover:text-foreground/90'
@@ -111,7 +115,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               data-guide-field="orderType"
               type="button"
               onClick={() => onOrderTypeChange('walk_in')}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 font-medium transition cursor-pointer ${
+              className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 font-medium transition cursor-pointer ${
                 values.orderType === 'walk_in'
                   ? 'bg-primary text-primary-foreground shadow-ios-sm'
                   : 'text-muted-foreground hover:text-foreground/90'
@@ -122,13 +126,17 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
           </div>
         </div>
         {errors.orderType && (
-          <p className="text-xs text-destructive">{errors.orderType}</p>
+          <p id="orderType-error" className="text-xs text-destructive" role="alert">{errors.orderType}</p>
         )}
       </div>
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="w-24 shrink-0 text-xs font-medium text-foreground">Fulfillment</span>
           <div
+            role="group"
+            aria-label="Fulfillment"
+            aria-invalid={Boolean(errors.fulfillmentType)}
+            aria-describedby={errors.fulfillmentType ? 'fulfillmentType-error' : undefined}
             className={[
               'inline-flex rounded-full border bg-surface-panel p-0.5 text-xs transition',
               activeGuideField === 'fulfillmentType'
@@ -141,7 +149,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               data-guide-field="fulfillmentType"
               type="button"
               onClick={() => onFulfillmentChange('pickup')}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 font-medium transition cursor-pointer ${
+              className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 font-medium transition cursor-pointer ${
                 values.fulfillmentType === 'pickup'
                   ? 'bg-primary text-primary-foreground shadow-ios-sm'
                   : 'text-muted-foreground hover:text-foreground/90'
@@ -153,7 +161,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               data-guide-field="fulfillmentType"
               type="button"
               onClick={() => onFulfillmentChange('delivery')}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 font-medium transition cursor-pointer ${
+              className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 font-medium transition cursor-pointer ${
                 values.fulfillmentType === 'delivery'
                   ? 'bg-primary text-primary-foreground shadow-ios-sm'
                   : 'text-muted-foreground hover:text-foreground/90'
@@ -164,7 +172,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
           </div>
         </div>
         {errors.fulfillmentType && (
-          <p className="text-xs text-destructive">{errors.fulfillmentType}</p>
+          <p id="fulfillmentType-error" className="text-xs text-destructive" role="alert">{errors.fulfillmentType}</p>
         )}
       </div>
       {values.fulfillmentType === 'delivery' && (
@@ -180,15 +188,18 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               id="deliveryAddress"
               value={values.deliveryAddress}
               onChange={onFieldChange('deliveryAddress')}
+              autoComplete="street-address"
               className={textAreaClass(activeGuideField === 'deliveryAddress')}
               placeholder="Street, area, and any key landmark."
+              aria-invalid={Boolean(errors.deliveryAddress)}
+              aria-describedby={errors.deliveryAddress ? 'deliveryAddress-error' : undefined}
             />
             {errors.deliveryAddress && (
-              <p className="text-xs text-destructive">{errors.deliveryAddress}</p>
+              <p id="deliveryAddress-error" className="text-xs text-destructive" role="alert">{errors.deliveryAddress}</p>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label
                 htmlFor="deliveryDate"
@@ -227,7 +238,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
             {deliveryHoursLabel}
           </p>
           {(errors.deliveryDate || errors.deliveryTime) && (
-            <p className="text-xs text-destructive">{errors.deliveryDate ?? errors.deliveryTime}</p>
+            <p id={errors.deliveryDate ? 'deliveryDate-error' : 'deliveryTime-error'} className="text-xs text-destructive" role="alert">{errors.deliveryDate ?? errors.deliveryTime}</p>
           )}
 
           <div className="grid gap-2 sm:grid-cols-2">
@@ -262,6 +273,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
                 type="text"
                 value={values.deliveryInstructions}
                 onChange={onFieldChange('deliveryInstructions')}
+                enterKeyHint="next"
                 className={fieldClass(activeGuideField === 'deliveryInstructions')}
                 placeholder="e.g. Call on arrival, gate on the left."
               />
@@ -312,7 +324,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
             {pickupHoursLabel}
           </p>
           {(errors.pickupDate || errors.pickupTime) && (
-            <p className="text-xs text-destructive">{errors.pickupDate ?? errors.pickupTime}</p>
+            <p id={errors.pickupDate ? 'pickupDate-error' : 'pickupTime-error'} className="text-xs text-destructive" role="alert">{errors.pickupDate ?? errors.pickupTime}</p>
           )}
         </>
       )}
