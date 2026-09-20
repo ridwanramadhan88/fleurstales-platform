@@ -2039,7 +2039,7 @@ input:-webkit-autofill:active {
 /* Requested larger editorial headings, without enlarging body text or controls. */
 .sf-page-title { font-size: clamp(3.25rem, 14vw, 3.6rem); }
 .sf-detail-title { font-size: clamp(3rem, 12vw, 3.6rem); }
-.storefront-checkout-sheet #storefront-checkout-title { font-size: 2rem; }
+.storefront-checkout-sheet #storefront-checkout-title { font-size: 1.9rem; }
 .storefront-checkout-form h3 { font-size: 1.75rem; }
 
 .sf-filter-control--compact {
@@ -4922,7 +4922,7 @@ html.dark .storefront-font .text-black {
   }
 
   .storefront-checkout-sheet > header h2 {
-    font-size: 2.35rem;
+    font-size: 2.05rem;
   }
 
   .storefront-mini-cart__panel {
@@ -5835,8 +5835,8 @@ html.dark .storefront-font .text-black {
 
 @media (min-width: 1024px) {
   .storefront-checkout-sheet {
-    width: min(47vw, 42rem);
-    max-width: 42rem !important;
+    width: min(44vw, 38rem);
+    max-width: 38rem !important;
   }
 }
 
