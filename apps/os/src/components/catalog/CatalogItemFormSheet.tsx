@@ -16,7 +16,7 @@ import { ActionFooter } from '../ui/action-footer'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { FormSection, ValidationSummary } from '../ui/form-patterns'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
-import { CATALOG_IMAGE_MAX_COUNT, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../../domain/catalogImageDomain'
+import { CATALOG_EDITOR_IMAGE_MAX_COUNT, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../../domain/catalogImageDomain'
 
 type SaveResult = boolean | void | Promise<boolean | void>
 
@@ -363,7 +363,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         return { id: item.id, flowerName: item.flowerName.trim(), quantity, unit: item.unit }
       }).filter((item) => item.flowerName && Number.isFinite(item.quantity) && item.quantity > 0)
 
-      const variantImages = row.images.slice(0, CATALOG_IMAGE_MAX_COUNT).map((image, imageIndex) => ({
+      const variantImages = row.images.slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT).map((image, imageIndex) => ({
         ...image,
         altText: (form.name.trim() || 'Produk') + ' ' + row.size.trim(),
         sortOrder: imageIndex,
@@ -406,7 +406,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       ? typedName.slice(collection.length + 3).trim()
       : typedName
     const customerFacingName = collection ? collection + ' - ' + unprefixedName : typedName
-    const normalizedImages = form.images.slice(0, CATALOG_IMAGE_MAX_COUNT).map((image, index) => ({
+    const normalizedImages = form.images.slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT).map((image, index) => ({
       ...image,
       altText: customerFacingName,
       sortOrder: index,
