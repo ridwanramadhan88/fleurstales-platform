@@ -4,31 +4,18 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string): string => readFileSync(path, 'utf8')
 
 describe('Storefront Home and visual polish', () => {
-  it('promotes the Home Shop action to a real 48px brand CTA without changing routing', () => {
+  it('restores the pre-#98 Home Shop presentation without changing routing', () => {
     const home = read('src/pages/StorefrontHome.tsx')
     const css = read('src/shadcn.css')
 
     expect(home).toContain('className="storefront-home__hero-shop tap-scale"')
     expect(home).toContain('onClick={onOpenCategories}')
-    expect(css).toContain('/* PR #98 — Storefront Home + visual polish.')
-    expect(css).toContain('min-height: 3rem;')
-    expect(css).toContain('background: #057640;')
-    expect(css).toContain('color: #fff8f0;')
-    expect(css).toContain('top: 57%;')
-    expect(css).toContain('left: 8.5%;')
-    expect(css).toContain('top: 61%;')
-    expect(css).toContain('top: 62%;')
-    expect(css).toContain('left: 6%;')
-  })
-
-  it('keeps Home CTA contrast and keyboard focus visible', () => {
-    const css = read('src/shadcn.css')
-
-    expect(css).toContain('box-shadow: 0 8px 22px rgba(5, 118, 64, 0.18);')
-    expect(css).toContain('.storefront-home__hero-shop:focus-visible')
-    expect(css).toContain('outline: 3px solid rgba(5, 118, 64, 0.34);')
-    expect(css).toContain('background: #f684b1;')
-    expect(css).toContain('color: #15372f;')
+    expect(css).not.toContain('/* PR #98 — Storefront Home + visual polish.')
+    expect(css).toContain('/* Keep the homepage Shop action identical at every breakpoint: text, arrow,')
+    expect(css).toContain('border-bottom: 2px solid #057640;')
+    expect(css).toContain('background: transparent;')
+    expect(css).toContain('color: #057640;')
+    expect(css).toContain('box-shadow: none;')
   })
 
   it('adds a mobile top scrim so gallery controls remain readable on light product photos', () => {
