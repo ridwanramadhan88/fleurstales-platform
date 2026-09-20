@@ -15,6 +15,9 @@ const financeSimplification = await read(
 const catalogServerHardening = await read(
   'supabase/migrations/20260919100000_catalog_server_persistence_hardening.sql',
 )
+const catalogRecipePublicRead = await read(
+  'supabase/migrations/20260920213000_public_variant_flower_recipes.sql',
+)
 const catalogAtomicEditorSave = await read(
   'supabase/migrations/20260919130000_catalog_product_editor_atomic_save.sql',
 )
@@ -83,9 +86,13 @@ const [
   read('.github/workflows/release-production.yml'),
 ])
 
-// Catalog PR 1B: internal recipes, sensitive Cost, server invariants, and
-// Supabase-authoritative Size Template persistence.
-assert(catalogServerHardening.includes('revoke select on table public.product_variant_flower_recipes from anon'), 'Live Catalog recipes remain Storefront-readable.')
+// Catalog authority: Cost remains sensitive while customer-facing flower
+// recipes are public only for active, non-archived Products and variants.
+assert(catalogRecipePublicRead.includes('grant select on table public.product_variant_flower_recipes to anon, authenticated'), 'Storefront flower recipes are not readable.')
+assert(catalogRecipePublicRead.includes("v.status = 'active'"), 'Public flower-recipe policy is not limited to active variants.')
+assert(catalogRecipePublicRead.includes('v.archived_at is null'), 'Public flower-recipe policy exposes archived variants.')
+assert(catalogRecipePublicRead.includes('p.is_active = true'), 'Public flower-recipe policy is not limited to active products.')
+assert(catalogRecipePublicRead.includes('p.archived_at is null'), 'Public flower-recipe policy exposes archived products.')
 assert(catalogServerHardening.includes("private.current_staff_role() = any(array['owner','finance'])"), 'Cost RLS is not limited to Owner/Finance.')
 assert(catalogServerHardening.includes('private.validate_catalog_snapshot_payload'), 'Catalog aggregate invariant validator is missing.')
 assert(catalogServerHardening.includes('CATALOG_ACTIVE_PRODUCT_REQUIRES_SELLABLE_VARIANT'), 'Active Product sellable-variant invariant is missing server-side.')
@@ -93,7 +100,7 @@ assert(catalogServerHardening.includes('CATALOG_SELLABLE_VARIANT_PRICE_REQUIRED'
 assert(catalogServerHardening.includes('CATALOG_DUPLICATE_SIZE_OPTION'), 'Stable size uniqueness is missing server-side.')
 assert(catalogServerHardening.includes('CATALOG_ARCHIVED_SIZE_OPTION'), 'Archived size assignment guard is missing server-side.')
 assert(catalogServerHardening.includes('SIZE_GUIDE_ACTIVE_CHILD_CANNOT_BE_ARCHIVED'), 'Size archive invariant is missing from Size Template persistence.')
-assert(catalogRepositories.includes('new Map(), client'), 'Public Catalog repository does not explicitly omit internal recipe data.')
+assert(catalogRepositories.includes('readRecipeMap(client)'), 'Public Catalog repository does not hydrate customer-facing recipe data.')
 assert(catalogRepositories.indexOf('export const createCatalogAdminRepository') > catalogRepositories.indexOf('export const createCatalogReadRepository'), 'Catalog repository privacy split is missing.')
 assert(catalogBridgeHardening.includes("includeCosts: role === 'finance'"), 'Finance Catalog hydration does not request server-authorized Cost data.')
 assert(catalogSizeGuideActions.includes('if (isSupabaseConfigured())'), 'Configured production Size Templates can still treat browser localStorage as authoritative.')
