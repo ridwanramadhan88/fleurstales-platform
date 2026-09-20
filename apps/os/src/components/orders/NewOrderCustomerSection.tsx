@@ -199,7 +199,7 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                         + Add birthday
                       </button>
                     ) : (
-                      <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="grid gap-2 lg:grid-cols-2">
                         <label className="space-y-1">
                           <span className="block text-xs font-medium text-muted-foreground">
                             Email
