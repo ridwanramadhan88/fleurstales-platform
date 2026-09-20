@@ -22,7 +22,7 @@ export const CartStep: FC<CartDrawerViewModel> = ({
 
   return (
     <>
-      <div className="storefront-checkout-scroll flex-1 overflow-y-auto px-5 pb-5 sm:px-6 lg:px-7">
+      <div className="storefront-checkout-scroll flex-1 overflow-y-auto px-5 pb-5 sm:px-6 lg:px-8">
         {isEmpty ? (
           <div className="grid min-h-[20rem] place-items-center text-center">
             <div className="max-w-xs">
@@ -39,7 +39,7 @@ export const CartStep: FC<CartDrawerViewModel> = ({
               const issue = cartIssues.find((item) => item.lineId === line.lineId)
               const imageUrl = getStorefrontCartLineImage(catalogProducts, line.productId, line.variantId)
               return (
-                <article key={line.lineId} className="grid grid-cols-[88px_minmax(0,1fr)] gap-4 py-[1.125rem] sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-[1.125rem] sm:py-5 lg:grid-cols-[112px_minmax(0,1fr)] lg:gap-5 lg:py-6">
+                <article key={line.lineId} className="grid grid-cols-[84px_minmax(0,1fr)] gap-4 py-4 sm:grid-cols-[92px_minmax(0,1fr)] sm:gap-4 sm:py-[1.125rem] lg:grid-cols-[100px_minmax(0,1fr)] lg:gap-5 lg:py-5">
                   <div className="relative aspect-[4/5] overflow-hidden bg-[#eee4cc] [clip-path:polygon(0_0,100%_2%,97%_100%,3%_97%)]">
                     <span className="absolute inset-0 grid place-items-center px-2 text-center sf-type-1 font-medium text-black/40" aria-hidden="true">Fleurstales</span>
                     {imageUrl ? (
@@ -54,11 +54,11 @@ export const CartStep: FC<CartDrawerViewModel> = ({
                       />
                     ) : null}
                   </div>
-                  <div className="flex min-w-0 flex-col justify-between gap-3.5">
-                    <div className="flex items-start justify-between gap-3.5">
+                  <div className="flex min-w-0 flex-col justify-between gap-3">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <h3 className="line-clamp-2 text-[1.125rem] font-medium leading-[1.08] sm:text-[1.2rem]">{line.name}</h3>
-                        <p className="mt-1.5 sf-type-2 leading-5 text-black/52">{formatIdr(line.unitPriceIdr, formatter)} each</p>
+                        <h3 className="line-clamp-2 text-[1.08rem] font-medium leading-[1.12] sm:text-[1.125rem]">{line.name}</h3>
+                        <p className="mt-1.5 sf-type-1 leading-5 text-black/48">{formatIdr(line.unitPriceIdr, formatter)} each</p>
                         {issue ? (
                           <p className="mt-2 flex gap-1.5 text-[0.78rem] leading-5 text-[#9b4d24]" role="alert">
                             <AlertCircle className="mt-0.5 size-4 shrink-0" />
@@ -66,9 +66,9 @@ export const CartStep: FC<CartDrawerViewModel> = ({
                           </p>
                         ) : null}
                       </div>
-                      <p className="shrink-0 pt-0.5 sf-type-2 font-medium tabular-nums">{formatIdr(line.unitPriceIdr * line.quantity, formatter)}</p>
+                      <p className="shrink-0 pt-0.5 text-[0.98rem] font-medium tabular-nums">{formatIdr(line.unitPriceIdr * line.quantity, formatter)}</p>
                     </div>
-                    <div className="inline-grid h-11 w-fit grid-cols-[44px_36px_44px] items-center overflow-hidden rounded-full border border-black/16 bg-white/55">
+                    <div className="inline-grid h-10 w-fit grid-cols-[40px_34px_40px] items-center overflow-hidden rounded-full border border-black/14 bg-white/45">
                       <button
                         type="button"
                         onClick={() => onDecrement(line.lineId)}
@@ -88,7 +88,7 @@ export const CartStep: FC<CartDrawerViewModel> = ({
         )}
       </div>
 
-      <footer className="shrink-0 border-t border-black/12 bg-[var(--sf-cream)] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3.5 sm:px-6 sm:pb-5 lg:px-7">
+      <footer className="shrink-0 border-t border-black/10 bg-[var(--sf-cream)] px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3.5 sm:px-6 sm:pb-5 lg:px-8">
         <a href="/track" className="mb-3 flex min-h-11 items-center justify-center rounded-full sf-type-2 font-medium text-black/58 underline decoration-black/25 underline-offset-4 transition hover:text-black">
           Already placed an order? Track Order →
         </a>
