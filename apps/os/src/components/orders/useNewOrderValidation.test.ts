@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { initialNewOrderValues, type NewOrderFormValues } from './useNewOrderForm'
-import { validateNewOrderForm } from './useNewOrderValidation'
+import { getFirstNewOrderErrorField, validateNewOrderForm } from './useNewOrderValidation'
 
 const validCatalogOrder: NewOrderFormValues = {
   ...initialNewOrderValues,
@@ -210,6 +210,21 @@ describe('validateNewOrderForm', () => {
     expect(errors.orderItemCatalogId).toBeDefined()
     expect(errors.fulfillmentType).toBeDefined()
     expect(errors.paymentMethod).toBeDefined()
+  })
+
+  it('returns the first invalid field in workflow order for focus recovery', () => {
+    expect(getFirstNewOrderErrorField({
+      paymentMethod: 'Choose a payment method.',
+      orderItemCatalogId: 'Select a product from the catalog.',
+      customerWhatsappNumber: 'WhatsApp number is required.',
+    })).toBe('customerWhatsappNumber')
+
+    expect(getFirstNewOrderErrorField({
+      paymentMethod: 'Choose a payment method.',
+      fulfillmentType: 'Choose Delivery or Pickup.',
+    })).toBe('fulfillmentType')
+
+    expect(getFirstNewOrderErrorField({})).toBeNull()
   })
 })
 
