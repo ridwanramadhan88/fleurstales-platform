@@ -27,7 +27,7 @@ describe('storefront product detail page', () => {
     expect(screen.getAllByText(/Fresh flower|Artificial flower/).length).toBeGreaterThan(0)
   })
 
-  it('only offers the stable child size guide and opens its image', async () => {
+  it('shows the stable child Size Chart in the product information tab', async () => {
     const user = userEvent.setup()
     const product = structuredClone(useCatalogStore.getState().products[0])
     const selectedVariant = product.variants.find((variant) => variant.status === 'active')
@@ -62,14 +62,12 @@ describe('storefront product detail page', () => {
     window.history.replaceState({}, '', `/shop/product/${product.productId}`)
 
     render(<StorefrontPage />)
-    await user.click(screen.getByRole('button', { name: 'Size guide' }))
+    await user.click(screen.getByRole('tab', { name: 'Size Chart' }))
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: `Bouquet size guide · ${selectedVariant.size}` })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: `${product.name} ${selectedVariant.size} size guide` })).toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: 'Size Chart' })).toBeInTheDocument()
+    expect(screen.getByText(`Bouquet size guide · ${selectedVariant.size}`)).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: `${product.name} ${selectedVariant.size} size chart` })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Close' }))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await act(async () => {
       await new Promise<void>((resolve) => window.setTimeout(resolve, 0))
     })
@@ -109,8 +107,10 @@ describe('storefront product detail page', () => {
     window.history.replaceState({}, '', `/shop/product/${product.productId}`)
 
     render(<StorefrontPage />)
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Size Chart' }))
 
-    expect(screen.queryByRole('button', { name: 'Size guide' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: `${product.name} ${selectedVariant.size} size chart` })).not.toBeInTheDocument()
+    expect(screen.getByText(`Size Chart is not available for ${selectedVariant.size}.`)).toBeInTheDocument()
   })
 
   it('removes a needs-review linked product from Storefront while keeping the legacy Catalog row intact', () => {
