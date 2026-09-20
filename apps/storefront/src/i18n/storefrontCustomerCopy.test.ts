@@ -32,9 +32,10 @@ describe('storefront customer copy (V2 batch 2)', () => {
     expect(translateUiText('Start shopping', 'id')).toBe('Mulai belanja')
     expect(translateUiText('Remove Classic Bouquet from cart', 'id')).toBe('Hapus Classic Bouquet dari keranjang')
     expect(translateUiText('Increase quantity for Classic Bouquet', 'id')).toBe('Tambah jumlah Classic Bouquet')
-    expect(translateUiText('each', 'id')).toBe('masing-masing')
+    expect(translateUiText('each', 'id')).toBe('per item')
     expect(translateUiText('Select a size', 'id')).toBe('Pilih ukuran')
     expect(translateUiText('Load more products', 'id')).toBe('Muat lebih banyak produk')
+    expect(translateUiText('Birthday', 'id')).toBe('Ulang Tahun')
   })
 
   it('translates browse, filter, and empty states', () => {
