@@ -7,8 +7,8 @@ begin
     raise exception 'Flower recipe table is missing';
   end if;
 
-  if has_table_privilege('anon','public.product_variant_flower_recipes','SELECT') then
-    raise exception 'Storefront/anon must not read live flower recipes';
+  if not has_table_privilege('anon','public.product_variant_flower_recipes','SELECT') then
+    raise exception 'Storefront/anon cannot read customer-facing active flower recipes';
   end if;
 
   if not has_table_privilege('authenticated','public.product_variant_flower_recipes','SELECT') then
@@ -27,14 +27,17 @@ begin
     raise exception 'Flower recipe staff RLS is missing Owner/Admin scope';
   end if;
 
-  if exists (
+  if not exists (
     select 1
     from pg_policies
     where schemaname='public'
       and tablename='product_variant_flower_recipes'
       and policyname='product_variant_flower_recipes_public_read'
+      and 'anon' = any(roles)
+      and qual ilike '%status%'
+      and qual ilike '%is_active%'
   ) then
-    raise exception 'Public flower recipe policy still exists';
+    raise exception 'Scoped public flower recipe policy is missing active Product/variant guards';
   end if;
 
   if not has_function_privilege(
