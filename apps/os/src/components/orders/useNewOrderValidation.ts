@@ -4,6 +4,29 @@ import type { BranchSettings } from '../../types/settings'
 import { getBranchHoursForDate, isTimeWithinBranchOpeningHours } from '../../domain/branchOpeningHoursDomain'
 import { getOrderSlotValidationMessage, isOrderSlotAligned, isOrderSlotTooSoon } from '../../domain/orderScheduleAvailabilityDomain'
 
+export const NEW_ORDER_ERROR_FOCUS_ORDER: Array<keyof NewOrderFormValues> = [
+  'customerName',
+  'customerWhatsappNumber',
+  'orderItemCatalogId',
+  'orderItemVariantId',
+  'orderItemCustomName',
+  'orderItemCustomPrice',
+  'orderType',
+  'fulfillmentType',
+  'deliveryAddress',
+  'deliveryDate',
+  'deliveryTime',
+  'pickupDate',
+  'pickupTime',
+  'paymentMethod',
+  'depositAmount',
+]
+
+export const getFirstNewOrderErrorField = (
+  errors: NewOrderFormErrors,
+): keyof NewOrderFormValues | null =>
+  NEW_ORDER_ERROR_FOCUS_ORDER.find((field) => Boolean(errors[field])) ?? null
+
 export const validateNewOrderForm = (
   values: NewOrderFormValues,
   branch?: Pick<BranchSettings, 'openingHours'> | null,
