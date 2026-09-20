@@ -253,7 +253,7 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
   },
 
   async listProducts(options) {
-    const [products, occasions, variants, images, costByVariantId] = await Promise.all([
+    const [products, occasions, variants, images, costByVariantId, recipeByVariantId] = await Promise.all([
       client.select('products', {
         filters: options?.includeInactive ? undefined : { is_active: true },
         order: [{ column: 'sort_order' }, { column: 'name' }],
@@ -262,19 +262,21 @@ export const createCatalogReadRepository = (client: SupabaseHttpClient): Catalog
       client.select('product_variants', { order: [{ column: 'sort_order' }] }),
       client.select('product_images', { order: [{ column: 'sort_order' }] }),
       readCostMap(client, options?.includeCosts === true),
+      readRecipeMap(client),
     ])
-    return products.filter((product) => !product.archived_at).map((product) => mapProduct(product, occasions, variants, images, costByVariantId, new Map(), client))
+    return products.filter((product) => !product.archived_at).map((product) => mapProduct(product, occasions, variants, images, costByVariantId, recipeByVariantId, client))
   },
 
   async getProduct(productId) {
-    const [products, occasions, variants, images] = await Promise.all([
+    const [products, occasions, variants, images, recipeByVariantId] = await Promise.all([
       client.select('products', { filters: { id: productId }, limit: 1 }),
       client.select('product_occasions', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_variants', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
       client.select('product_images', { filters: { product_id: productId }, order: [{ column: 'sort_order' }] }),
+      readRecipeMap(client),
     ])
     const product = products.find((row) => !row.archived_at)
-    return product ? mapProduct(product, occasions, variants, images, new Map(), new Map(), client) : null
+    return product ? mapProduct(product, occasions, variants, images, new Map(), recipeByVariantId, client) : null
   },
   async listSizeGuideTemplates() {
     const rows = await client.select('size_guide_templates', { order: [{ column: 'name' }] })
