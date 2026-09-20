@@ -228,6 +228,11 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                 <div className="absolute inset-0 bg-[#606060]" aria-label="Product image unavailable" />
               )}
 
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 z-[9] h-28 bg-gradient-to-b from-black/45 via-black/15 to-transparent md:hidden"
+              />
+
               <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-7 sm:pt-7 md:hidden">
                 <button
                   type="button"
@@ -261,7 +266,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                   <button
                     type="button"
                     onClick={showPreviousImage}
-                    className="absolute left-3 top-1/2 z-10 inline-flex size-9 -translate-y-1/2 items-center justify-center text-[#fdf6ef] transition hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fdf6ef]/70 sm:left-4"
+                    className="absolute left-3 top-1/2 z-10 inline-flex size-11 -translate-y-1/2 items-center justify-center text-[#fdf6ef] transition hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fdf6ef]/70 sm:left-4"
                     aria-label="Previous product image"
                   >
                     <GalleryArrow direction="previous" />
@@ -269,7 +274,7 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                   <button
                     type="button"
                     onClick={showNextImage}
-                    className="absolute right-3 top-1/2 z-10 inline-flex size-9 -translate-y-1/2 items-center justify-center text-[#fdf6ef] transition hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fdf6ef]/70 sm:right-4"
+                    className="absolute right-3 top-1/2 z-10 inline-flex size-11 -translate-y-1/2 items-center justify-center text-[#fdf6ef] transition hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fdf6ef]/70 sm:right-4"
                     aria-label="Next product image"
                   >
                     <GalleryArrow direction="next" />
