@@ -59,7 +59,7 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
             <button
               type="button"
               onClick={onMarkAllRead}
-              className="col-start-1 row-start-2 h-9 justify-self-start rounded-full px-4 text-xs font-medium text-primary transition hover:bg-accent sm:col-start-2 sm:row-start-1"
+              className="col-start-1 row-start-2 min-h-11 justify-self-start rounded-full px-4 text-xs font-medium text-primary transition hover:bg-accent sm:col-start-2 sm:row-start-1"
             >
               Mark all read
             </button>
@@ -91,7 +91,7 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
                     type="button"
                     disabled={!clickable}
                     onClick={() => clickable && onOpenNotification?.(item)}
-                    className={`w-full rounded-xl px-3 py-2 text-left transition ${
+                    className={`min-h-11 w-full rounded-xl px-3 py-2 text-left transition ${
                       item.isRead
                         ? 'bg-card opacity-70 ring-1 ring-border/60 hover:bg-muted/50 hover:opacity-100'
                         : `${unreadTone[item.priority]} shadow-ios-sm hover:shadow-ios`
