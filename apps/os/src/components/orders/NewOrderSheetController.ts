@@ -125,6 +125,10 @@ export const useNewOrderSheetController = ({
   const [closeConfirmationOpen, setCloseConfirmationOpen] = useState(false)
   const [validationFocusField, setValidationFocusField] = useState<keyof NewOrderFormValues | null>(null)
   const [validationFocusRequest, setValidationFocusRequest] = useState(0)
+
+  useEffect(() => {
+    if (!open) setValidationFocusField(null)
+  }, [open])
   const configuredBranches = useSettingsStore((state) => state.branches)
   const branchForForm: BranchFilter = activeBranch?.trim() ? activeBranch : 'All'
   const authoritativeDeliveryFeeIdr = branchForForm === 'All'
