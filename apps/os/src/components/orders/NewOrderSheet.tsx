@@ -205,7 +205,7 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
                   </section>
                 )}
 
-                <div className="grid gap-6 sm:grid-cols-2 sm:items-start sm:gap-8">
+                <div className="grid gap-6 md:grid-cols-2 md:items-start md:gap-8">
                   <div className="space-y-6">
                     <NewOrderCustomerSection
                       viewModel={viewModel}
