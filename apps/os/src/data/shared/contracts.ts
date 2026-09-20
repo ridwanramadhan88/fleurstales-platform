@@ -53,7 +53,7 @@ export interface SharedProductVariant {
   sortOrder: number
   /** Only present in authenticated Finance/Owner reads. Never part of the public catalog contract. */
   costIdr?: number | null
-  /** Internal production recipe. Never part of the public Storefront catalog payload. */
+  /** Variant-owned flower recipe. Public for active Storefront variants; snapshotted into orders at purchase time. */
   flowerRecipe?: SharedFlowerRecipeItem[]
 }
 
