@@ -55,8 +55,12 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(variantsSource).toContain('validationErrorIndexes.has(index)')
   })
 
-  it('renders template slots without materializing missing variants', () => {
-    expect(variantsSource).toContain('Belum dikonfigurasi untuk produk ini.')
+  it('lets each product explicitly choose only the template sizes it owns', () => {
+    expect(variantsSource).toContain('Ukuran yang tidak ditambahkan tidak akan muncul di Storefront.')
+    expect(variantsSource).toContain('Tambahkan ke produk')
+    expect(variantsSource).toContain('Dipakai produk')
+    expect(variantsSource).toContain('Tidak dipakai')
+    expect(variantsSource).toContain('removeVariant(variantIndex)')
     expect(variantsSource).toContain('openNewForSize')
     expect(variantsSource).toContain('if (editorTarget.index === null) addVariant(next)')
     expect(variantsSource).toContain('Belum ditautkan ke ukuran')
@@ -76,11 +80,21 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(variantDialogSource).not.toContain('updateSizeGuideTemplateSize')
   })
 
-  it('uses Indonesian Product Editor image controls', () => {
-    expect(imageFieldSource).toContain('Foto utama produk')
-    expect(imageFieldSource).toContain('Galeri foto produk')
+  it('separates one catalog-default photo from one photo per size variant', () => {
+    expect(imageFieldSource).toContain("kind?: 'catalog' | 'variant'")
+    expect(imageFieldSource).toContain("const inputLabel = isVariant ? 'Foto varian ukuran' : 'Foto katalog default'")
+    expect(imageFieldSource).toContain('Maksimal 1 foto untuk ukuran ini.')
+    expect(imageFieldSource).toContain('Ini menjadi foto default katalog')
+    expect(variantDialogSource).toContain('kind="variant"')
+    expect(detailsSource).toContain('kind="catalog"')
     expect(imageDropSource).toContain('Tarik & lepas gambar')
     expect(imageDropSource).toContain('Terapkan potongan')
     expect(imageDropSource).not.toContain('Apply crop')
+  })
+
+  it('keeps photo and flower recipe owned by the selected size variant', () => {
+    expect(variantDialogSource).toContain('Resep bunga ukuran ini')
+    expect(variantDialogSource).toContain('Resep tersimpan khusus untuk ukuran ini')
+    expect(variantDialogSource).toContain('Foto ini akan dipakai saat ukuran ini dipilih di Storefront')
   })
 })
