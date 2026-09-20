@@ -14,9 +14,11 @@ describe('Storefront Home and visual polish', () => {
     expect(css).toContain('min-height: 3rem;')
     expect(css).toContain('background: #057640;')
     expect(css).toContain('color: #fff8f0;')
-    expect(css).toContain('bottom: 16%;')
+    expect(css).toContain('top: 57%;')
     expect(css).toContain('left: 8.5%;')
-    expect(css).toContain('left: 10%;')
+    expect(css).toContain('top: 61%;')
+    expect(css).toContain('top: 62%;')
+    expect(css).toContain('left: 6%;')
   })
 
   it('keeps Home CTA contrast and keyboard focus visible', () => {
@@ -25,7 +27,8 @@ describe('Storefront Home and visual polish', () => {
     expect(css).toContain('box-shadow: 0 8px 22px rgba(5, 118, 64, 0.18);')
     expect(css).toContain('.storefront-home__hero-shop:focus-visible')
     expect(css).toContain('outline: 3px solid rgba(5, 118, 64, 0.34);')
-    expect(css).toContain('background: rgba(255, 248, 240, 0.16);')
+    expect(css).toContain('background: #f684b1;')
+    expect(css).toContain('color: #15372f;')
   })
 
   it('adds a mobile top scrim so gallery controls remain readable on light product photos', () => {
@@ -34,6 +37,14 @@ describe('Storefront Home and visual polish', () => {
     expect(detail).toContain('bg-gradient-to-b from-black/45 via-black/15 to-transparent')
     expect(detail).toContain('pointer-events-none absolute inset-x-0 top-0 z-[9] h-28')
     expect(detail).toContain('inline-flex size-11 -translate-y-1/2')
+  })
+
+  it('keeps the live collection swipe hint at 12px or larger', () => {
+    const css = read('src/shadcn.css')
+
+    expect(css).toContain('.storefront-navigation-collections__heading span {')
+    expect(css).toContain('font-size: 0.75rem;')
+    expect(css).not.toContain('font-size: 0.68rem;')
   })
 
   it('removes the duplicate tracking search heading and gives loading state structure', () => {
