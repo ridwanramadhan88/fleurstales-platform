@@ -348,6 +348,8 @@ export const useNewOrderSheetController = ({
         return
       }
 
+      setValidationFocusField(null)
+
       if (form.step === 'edit') {
         try {
           const quote = await submit.quoteOrderFromForm()
