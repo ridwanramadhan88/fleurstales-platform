@@ -1495,8 +1495,8 @@ input:-webkit-autofill:active {
 
 .storefront-gallery-dot {
   position: relative;
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -1656,8 +1656,10 @@ input:-webkit-autofill:active {
 }
 
 .storefront-navigation-drawer__heading {
-  display: grid;
-  gap: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
   padding-bottom: 1.4rem;
 }
 
@@ -1890,8 +1892,8 @@ input:-webkit-autofill:active {
 
 .storefront-search-form__clear {
   display: inline-flex;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   align-items: center;
   justify-content: center;
   border: 0;
@@ -1900,7 +1902,7 @@ input:-webkit-autofill:active {
 }
 
 .storefront-search-form__submit {
-  min-height: 2.6rem;
+  min-height: 2.75rem;
   margin-right: 0.42rem;
   padding: 0 1rem;
   border: 0;
@@ -1916,6 +1918,45 @@ input:-webkit-autofill:active {
   color: rgba(0, 0, 0, 0.52);
   font-size: 0.82rem;
   line-height: 1.4;
+}
+
+.storefront-search-panel__actions {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.55rem;
+}
+
+.storefront-search-panel__actions .storefront-search-panel__support {
+  max-width: none;
+  margin: 0;
+}
+
+.storefront-search-panel__close {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding-inline: 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.62);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.storefront-search-panel__close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #000;
+}
+
+.storefront-search-panel__close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
 }
 
 @media (min-width: 640px) {
@@ -2343,12 +2384,8 @@ input:-webkit-autofill:active {
   }
 
   .storefront-gallery-dot {
-    width: 0.42rem;
-    height: 0.42rem;
-  }
-
-  .storefront-gallery-dot--active {
-    width: 1.6rem;
+    width: 2.75rem;
+    height: 2.75rem;
   }
 }
 
