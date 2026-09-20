@@ -199,8 +199,7 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
                       Start with the first highlighted field below. Your entered details are still saved in this form.
                     </p>
                     <ul className="mt-2 space-y-1 text-xs text-destructive/90">
-                      {validationMessages.slice(0, 3).map((message) => <li key={message}>• {message}</li>)}
-                      {validationMessages.length > 3 ? <li>• +{validationMessages.length - 3} more</li> : null}
+                      {validationMessages.map((message) => <li key={message}>• {message}</li>)}
                     </ul>
                   </section>
                 )}
