@@ -111,7 +111,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
                   : 'text-muted-foreground hover:text-foreground/90'
               }`}
             >
-              Whatsapp
+              WhatsApp
             </button>
             <button
               data-guide-field="orderType"
