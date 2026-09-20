@@ -87,6 +87,17 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
     expect(onOpenCart).not.toHaveBeenCalled()
   })
 
+  it('shows the flower recipe for the selected size variant', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Small' }))
+
+    expect(screen.getByText('Resep Bunga')).toBeInTheDocument()
+    expect(screen.getByText('Red Rose')).toBeInTheDocument()
+    expect(screen.getByText('10 tangkai')).toBeInTheDocument()
+  })
+
   it('shows description, material and customer-facing details without exposing SKU', () => {
     renderPage()
 
@@ -95,7 +106,8 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
     expect(screen.getByText('BOQ-TEST-001')).toBeInTheDocument()
     expect(screen.queryByText('SMALL')).not.toBeInTheDocument()
     expect(screen.queryByText('Red Rose')).not.toBeInTheDocument()
-    expect(screen.queryByText('Resep Bunga')).not.toBeInTheDocument()
+    expect(screen.getByText('Resep Bunga')).toBeInTheDocument()
+    expect(screen.getByText('Pilih ukuran untuk melihat Resep Bunga.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Retired' })).toBeDisabled()
   })
 })
