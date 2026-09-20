@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useCatalogStore } from '../store/catalogStore'
@@ -67,6 +67,12 @@ describe('storefront product detail page', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: `Bouquet size guide · ${selectedVariant.size}` })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: `${product.name} ${selectedVariant.size} size guide` })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await act(async () => {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0))
+    })
   })
 
   it('does not infer a Size Guide from a matching legacy size label', () => {
