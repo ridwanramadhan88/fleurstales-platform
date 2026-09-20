@@ -56,7 +56,7 @@ describe('Catalog scale and Product Editor workflow', () => {
     const input = read('src/components/catalog/ImageDropInput.tsx')
 
     expect(imageDomain).toContain('CATALOG_EDITOR_IMAGE_MAX_COUNT = 1')
-    expect(images).toContain('{ordered.length}/{CATALOG_IMAGE_MAX_COUNT}')
+    expect(images).toContain('{ordered.length}/{CATALOG_EDITOR_IMAGE_MAX_COUNT}')
     expect(images).toContain('Foto katalog default')
     expect(images).toContain('Foto varian ukuran')
     expect(input).toContain('aria-label={`${label}: pilih atau tarik gambar`}')
