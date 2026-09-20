@@ -84,14 +84,14 @@ export interface CatalogVariant {
   sizeOptionId?: string
   /** Compatibility/customer-facing size label. */
   size: string
-  /** Variant-owned product photos. Product-level photos remain the legacy fallback. */
+  /** Variant-owned photo. Product variants are limited to one size-specific photo. */
   images?: CatalogProductImage[]
   /** Sell price in IDR for this variant. */
   price: number
   /** Optional cost price in IDR — Finance-only field. */
   cost?: number
   status: CatalogVariantStatus
-  /** Internal production recipe scoped to this size. Storefront projection strips it. */
+  /** Flower recipe scoped to this exact size/variant. */
   flowerRecipe?: CatalogFlowerRecipeItem[]
 }
 
@@ -107,7 +107,7 @@ export interface CatalogProduct {
   material: CatalogMaterial
   name: string
   description?: string
-  /** Legacy/base product image set retained during the Batch 1 compatibility window. */
+  /** Catalog/default product image. New edits are limited to one default image. */
   images?: CatalogProductImage[]
   /** @deprecated Derived compatibility alias for the primary base image URL. */
   thumbnail?: string
