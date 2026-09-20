@@ -203,12 +203,13 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
               <div className="space-y-3">
                 <div>
                   <p className="flex items-center gap-2 text-sm font-semibold"><ImageIcon className="size-4 text-primary" /> Foto varian</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Foto ini hanya untuk varian ini. File tetap lokal sampai produk disimpan.</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Setiap ukuran memiliki maksimal 1 foto sendiri. Foto ini akan dipakai saat ukuran ini dipilih di Storefront.</p>
                 </div>
                 <CatalogProductImagesField
                   images={draft.images}
                   onChange={(images) => update({ images })}
                   productName={(productName ?? 'Produk') + ' ' + draft.size}
+                  kind="variant"
                 />
               </div>
             </TabsContent>
@@ -217,8 +218,8 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="flex items-center gap-2 text-sm font-semibold"><Flower2 className="size-4 text-primary" /> Resep bunga internal</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Digunakan untuk produksi dan snapshot pesanan. Tidak dikirim ke Storefront.</p>
+                    <p className="flex items-center gap-2 text-sm font-semibold"><Flower2 className="size-4 text-primary" /> Resep bunga ukuran ini</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Resep tersimpan khusus untuk ukuran ini dan digunakan oleh Storefront serta produksi.</p>
                   </div>
                   <button
                     type="button"
