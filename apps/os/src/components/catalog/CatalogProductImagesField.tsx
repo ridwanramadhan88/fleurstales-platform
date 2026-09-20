@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 import type { CatalogProductImage } from '../../store/catalogStoreTypes'
 import {
-  CATALOG_IMAGE_MAX_COUNT,
+  CATALOG_EDITOR_IMAGE_MAX_COUNT,
   createLocalCatalogProductImage,
 } from '../../domain/catalogImageDomain'
 import { generateId } from '../../lib/id'
@@ -15,7 +15,7 @@ interface Props {
 }
 
 const normalizeOrder = (images: CatalogProductImage[]): CatalogProductImage[] =>
-  images.slice(0, CATALOG_IMAGE_MAX_COUNT).map((image, index) => ({
+  images.slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT).map((image, index) => ({
     ...image,
     sortOrder: index,
     isPrimary: index === 0,
@@ -54,7 +54,7 @@ export const CatalogProductImagesField: FC<Props> = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-medium text-foreground">{fieldTitle}</p>
-        <span className="text-2xs text-muted-foreground">{ordered.length}/{CATALOG_IMAGE_MAX_COUNT}</span>
+        <span className="text-2xs text-muted-foreground">{ordered.length}/{CATALOG_EDITOR_IMAGE_MAX_COUNT}</span>
       </div>
 
       <ImageDropInput
