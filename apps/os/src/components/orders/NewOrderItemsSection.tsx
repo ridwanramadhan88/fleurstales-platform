@@ -134,7 +134,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                         )}
                       </div>
                     ) : (
-                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+                      <div className="grid gap-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
                         <div className="space-y-1.5">
                           <label
                             htmlFor="orderItemCustomName"
