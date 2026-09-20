@@ -8,14 +8,14 @@ import { generateCategoryPrefix, generateProductId, generateSku } from '../domai
 import { generateId } from '../lib/id'
 import { canSetCatalogVariantStatus } from '../domain/catalogVariantStatusDomain'
 import { isSectionEditAuthorized } from '../config/authorization'
-import { CATALOG_IMAGE_MAX_COUNT, assignCatalogImageStoragePaths, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../domain/catalogImageDomain'
+import { CATALOG_EDITOR_IMAGE_MAX_COUNT, assignCatalogImageStoragePaths, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../domain/catalogImageDomain'
 
 export const allSkus = (products: CatalogProduct[]): string[] => products.flatMap((product) => product.variants.map((variant) => variant.sku))
 export const allProductIds = (products: CatalogProduct[], deletedProductIds: string[]): string[] => [...products.map((product) => product.productId), ...deletedProductIds]
 
 const materializeVariantImages = (productId: string, variant: CatalogVariant): CatalogVariant => ({
   ...variant,
-  images: assignCatalogImageStoragePaths(`${productId}/${variant.id}`, (variant.images ?? []).slice(0, CATALOG_IMAGE_MAX_COUNT))
+  images: assignCatalogImageStoragePaths(`${productId}/${variant.id}`, (variant.images ?? []).slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT))
     .map((image, index) => ({ ...image, sortOrder: index, isPrimary: index === 0 })),
 })
 
@@ -40,7 +40,7 @@ export const buildProduct = (
     productId,
     variants,
   }
-  const images = assignCatalogImageStoragePaths(draft.id, normalizeCatalogProductImages(draft))
+  const images = assignCatalogImageStoragePaths(draft.id, normalizeCatalogProductImages(draft).slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT))
   return { ...draft, images, ...getCatalogProductImageAliases(images) }
 }
 
@@ -83,7 +83,7 @@ export const createCatalogProductActions = (set: CatalogStoreSet): ProductAction
           })
         }
         if (merged.isActive && !merged.variants.some((variant) => variant.status === 'active')) merged.isActive = false
-        const images = assignCatalogImageStoragePaths(merged.id, normalizeCatalogProductImages(merged))
+        const images = assignCatalogImageStoragePaths(merged.id, normalizeCatalogProductImages(merged).slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT))
         return { ...merged, images, ...getCatalogProductImageAliases(images) }
       }),
     }))
