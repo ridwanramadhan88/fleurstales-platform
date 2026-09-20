@@ -73,7 +73,7 @@ describe('storefront product detail page', () => {
     })
   })
 
-  it('does not infer a Size Guide from a matching legacy size label', () => {
+  it('does not infer a Size Guide from a matching legacy size label', async () => {
     const product = structuredClone(useCatalogStore.getState().products[0])
     const selectedVariant = product.variants.find((variant) => variant.status === 'active')
     if (!selectedVariant) throw new Error('Expected an active test variant')
