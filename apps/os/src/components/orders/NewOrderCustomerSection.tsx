@@ -64,7 +64,7 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                       enterKeyHint="next"
                       value={values.customerName}
                       onChange={onFieldChange('customerName')}
-                      className={fieldClass(activeGuideField === 'customerName')}
+                      className={fieldClass(activeGuideField === 'customerName') + (errors.customerName ? ' border-destructive ring-destructive/25' : '')}
                       placeholder="e.g. Dita Anjani"
                       aria-invalid={Boolean(errors.customerName)}
                       aria-describedby={errors.customerName ? 'customerName-error' : undefined}
@@ -93,7 +93,7 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                       enterKeyHint="next"
                       value={values.customerWhatsappNumber}
                       onChange={onFieldChange('customerWhatsappNumber')}
-                      className={fieldClass(activeGuideField === 'customerWhatsappNumber')}
+                      className={fieldClass(activeGuideField === 'customerWhatsappNumber') + (errors.customerWhatsappNumber ? ' border-destructive ring-destructive/25' : '')}
                       placeholder="e.g. 0812 3456 7890"
                       aria-invalid={Boolean(errors.customerWhatsappNumber)}
                       aria-describedby={errors.customerWhatsappNumber ? 'customerWhatsappNumber-error' : undefined}
