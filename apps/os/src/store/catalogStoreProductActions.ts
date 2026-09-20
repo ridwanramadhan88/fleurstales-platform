@@ -8,14 +8,14 @@ import { generateCategoryPrefix, generateProductId, generateSku } from '../domai
 import { generateId } from '../lib/id'
 import { canSetCatalogVariantStatus } from '../domain/catalogVariantStatusDomain'
 import { isSectionEditAuthorized } from '../config/authorization'
-import { assignCatalogImageStoragePaths, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../domain/catalogImageDomain'
+import { CATALOG_IMAGE_MAX_COUNT, assignCatalogImageStoragePaths, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../domain/catalogImageDomain'
 
 export const allSkus = (products: CatalogProduct[]): string[] => products.flatMap((product) => product.variants.map((variant) => variant.sku))
 export const allProductIds = (products: CatalogProduct[], deletedProductIds: string[]): string[] => [...products.map((product) => product.productId), ...deletedProductIds]
 
 const materializeVariantImages = (productId: string, variant: CatalogVariant): CatalogVariant => ({
   ...variant,
-  images: assignCatalogImageStoragePaths(`${productId}/${variant.id}`, variant.images ?? [])
+  images: assignCatalogImageStoragePaths(`${productId}/${variant.id}`, (variant.images ?? []).slice(0, CATALOG_IMAGE_MAX_COUNT))
     .map((image, index) => ({ ...image, sortOrder: index, isPrimary: index === 0 })),
 })
 
