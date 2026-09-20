@@ -93,9 +93,11 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
             aria-describedby={errors.orderType ? 'orderType-error' : undefined}
             className={[
               'inline-flex rounded-full border bg-surface-panel p-0.5 text-xs transition',
-              activeGuideField === 'orderType'
-                ? 'border-primary/40 ring-2 ring-primary/40'
-                : 'border-border/60',
+              errors.orderType
+                ? 'border-destructive/50 ring-2 ring-destructive/25'
+                : activeGuideField === 'orderType'
+                  ? 'border-primary/40 ring-2 ring-primary/40'
+                  : 'border-border/60',
             ].join(' ')}
           >
             <button
@@ -139,9 +141,11 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
             aria-describedby={errors.fulfillmentType ? 'fulfillmentType-error' : undefined}
             className={[
               'inline-flex rounded-full border bg-surface-panel p-0.5 text-xs transition',
-              activeGuideField === 'fulfillmentType'
-                ? 'border-primary/40 ring-2 ring-primary/40'
-                : 'border-border',
+              errors.fulfillmentType
+                ? 'border-destructive/50 ring-2 ring-destructive/25'
+                : activeGuideField === 'fulfillmentType'
+                  ? 'border-primary/40 ring-2 ring-primary/40'
+                  : 'border-border',
             ].join(' ')}
           >
             <button
@@ -189,7 +193,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               value={values.deliveryAddress}
               onChange={onFieldChange('deliveryAddress')}
               autoComplete="street-address"
-              className={textAreaClass(activeGuideField === 'deliveryAddress')}
+              className={textAreaClass(activeGuideField === 'deliveryAddress') + (errors.deliveryAddress ? ' border-destructive ring-destructive/25' : '')}
               placeholder="Street, area, and any key landmark."
               aria-invalid={Boolean(errors.deliveryAddress)}
               aria-describedby={errors.deliveryAddress ? 'deliveryAddress-error' : undefined}
