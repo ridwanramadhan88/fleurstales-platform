@@ -1693,9 +1693,9 @@ input:-webkit-autofill:active {
 
 .storefront-navigation-collections__heading span {
   color: rgba(0, 0, 0, 0.42);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.25;
 }
 
 .storefront-navigation-collections__rail {
@@ -5842,8 +5842,8 @@ html.dark .storefront-font .text-black {
   height: 1.65rem;
   padding: 0.18rem;
   border-radius: 999px;
-  background: rgba(255, 248, 240, 0.16);
-  color: currentColor;
+  background: #f684b1;
+  color: #15372f;
 }
 
 .storefront-home__hero-shop:focus-visible {
@@ -5860,9 +5860,9 @@ html.dark .storefront-font .text-black {
 
 @media (max-width: 639px) {
   .storefront-home__hero-shop {
-    top: auto;
+    top: 57%;
     right: auto;
-    bottom: 16%;
+    bottom: auto;
     left: 8.5%;
     min-height: 3rem;
     padding-inline: 1.15rem 0.8rem;
@@ -5871,10 +5871,10 @@ html.dark .storefront-font .text-black {
 
 @media (min-width: 640px) and (max-width: 1023px) {
   .storefront-home__hero-shop {
-    top: 62%;
+    top: 61%;
     right: auto;
     bottom: auto;
-    left: 8.5%;
+    left: 7%;
     min-height: 3rem;
     font-size: 1.05rem;
   }
@@ -5882,10 +5882,10 @@ html.dark .storefront-font .text-black {
 
 @media (min-width: 1024px) {
   .storefront-home__hero-shop {
-    top: 64%;
+    top: 62%;
     right: auto;
     bottom: auto;
-    left: 10%;
+    left: 6%;
     min-height: 3.25rem;
     padding: 0.8rem 1rem 0.8rem 1.35rem;
     font-size: clamp(1.05rem, 1.15vw, 1.25rem);
