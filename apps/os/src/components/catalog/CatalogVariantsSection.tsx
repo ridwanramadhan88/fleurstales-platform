@@ -1,5 +1,5 @@
 import { useMemo, useState, type FC } from 'react'
-import { AlertCircle, CheckCircle2, Link2, Pencil, Plus, Ruler } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Link2, Pencil, Plus, Ruler, Trash2 } from 'lucide-react'
 import type { CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
 import type { VariantRow } from './CatalogItemFormSheet'
 import { CatalogVariantEditorDialog } from './CatalogVariantEditorDialog'
@@ -114,11 +114,11 @@ export const CatalogVariantsSection: FC<Props> = ({
         <div>
           <h3 className="text-base font-semibold text-foreground">Varian berdasarkan ukuran</h3>
           <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-            Template hanya menampilkan slot ukuran. Varian baru dibuat dan disimpan setelah Anda mengaturnya.
+            Pilih hanya ukuran yang memang dijual oleh produk ini. Ukuran yang tidak ditambahkan tidak akan muncul di Storefront.
           </p>
         </div>
         <div className="rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
-          {variants.length} varian tersimpan di draft
+          {variants.length} ukuran dipakai produk
         </div>
       </div>
 
@@ -155,29 +155,59 @@ export const CatalogVariantsSection: FC<Props> = ({
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-semibold text-foreground">{size.name}</p>
+                          <span className={configured
+                            ? 'rounded-full bg-success/10 px-2 py-1 text-2xs font-medium text-success'
+                            : 'rounded-full bg-muted px-2 py-1 text-2xs font-medium text-muted-foreground'}
+                          >
+                            {configured ? 'Dipakai produk' : 'Tidak dipakai'}
+                          </span>
                           {archived ? <span className="rounded-full bg-muted px-2 py-1 text-2xs text-muted-foreground">Diarsipkan</span> : null}
                         </div>
                         {configured && variant ? (
                           <>
                             <p className="mt-1 text-sm font-medium text-foreground">{formatPrice(variant.price)}</p>
                             <p className="mt-1 text-xs text-muted-foreground">{statusBadge(variant)}{variant.sku ? ' · ' + variant.sku : ''}</p>
+                            <p className="mt-2 text-2xs leading-4 text-muted-foreground">
+                              {variant.images.length > 0 ? 'Foto siap' : 'Foto belum ada'} · {variant.flowerRecipe.length > 0 ? variant.flowerRecipe.length + ' item resep' : 'Resep belum ada'}
+                            </p>
                           </>
                         ) : (
-                          <p className="mt-2 text-xs leading-5 text-muted-foreground">Belum dikonfigurasi untuk produk ini.</p>
+                          <p className="mt-2 text-xs leading-5 text-muted-foreground">Ukuran ini belum ditambahkan ke produk.</p>
                         )}
                       </div>
                       {configured ? <CheckCircle2 className="size-5 shrink-0 text-success" /> : <span className="size-5 shrink-0 rounded-full border border-dashed border-border" />}
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={archived && !configured}
-                      onClick={() => configured && variantIndex !== undefined ? openExisting(variantIndex, 'Edit varian · ' + size.name) : openNewForSize(size.id)}
-                      className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {configured ? <Pencil className="size-4" /> : <Plus className="size-4" />}
-                      {configured ? 'Edit varian' : archived ? 'Ukuran diarsipkan' : 'Atur varian'}
-                    </button>
+                    {configured && variantIndex !== undefined ? (
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openExisting(variantIndex, 'Edit varian · ' + size.name)}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-card px-3 text-sm font-semibold text-foreground transition hover:bg-muted"
+                        >
+                          <Pencil className="size-4" />
+                          Edit varian
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeVariant(variantIndex)}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-destructive/20 bg-card px-3 text-sm font-semibold text-destructive transition hover:bg-destructive/5"
+                        >
+                          <Trash2 className="size-4" />
+                          Hapus
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={archived}
+                        onClick={() => openNewForSize(size.id)}
+                        className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Plus className="size-4" />
+                        {archived ? 'Ukuran diarsipkan' : 'Tambahkan ke produk'}
+                      </button>
+                    )}
                   </article>
                 )
               })}
