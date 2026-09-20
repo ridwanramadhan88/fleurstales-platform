@@ -91,7 +91,7 @@ const SidebarNavButton: FC<{
   return (
     <button
       type="button"
-      className={`group flex h-10 w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
+      className={`group flex h-10 w-full items-center md:h-11 lg:h-10 gap-2.5 whitespace-nowrap rounded-xl px-3 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
         active
           ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-none'
           : disabled
@@ -189,7 +189,7 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
                 key={branch}
                 type="button"
                 onClick={() => onSelectBranch(branch)}
-                className={`flex min-h-9 w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition hover:bg-accent ${
+                className={`flex min-h-9 w-full items-center justify-between md:min-h-11 lg:min-h-9 rounded-lg px-2.5 py-1.5 text-left text-xs transition hover:bg-accent ${
                   branch === activeBranch ? 'font-semibold text-primary' : ''
                 }`}
               >
