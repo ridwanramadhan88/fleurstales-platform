@@ -90,7 +90,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                         >
                           <SelectTrigger
                             id="orderItemCatalogId"
-                            className={fieldClass(activeGuideField === 'orderItemCatalogId')}
+                            className={fieldClass(activeGuideField === 'orderItemCatalogId') + (errors.orderItemCatalogId ? ' border-destructive ring-destructive/25' : '')}
                             aria-invalid={Boolean(errors.orderItemCatalogId)}
                             aria-describedby={errors.orderItemCatalogId ? 'orderItemCatalogId-error' : undefined}
                           >
@@ -117,7 +117,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                             <Select value={values.orderItemVariantId} onValueChange={onCatalogVariantChange}>
                               <SelectTrigger
                                 id="orderItemVariantId"
-                                className={fieldClass(activeGuideField === 'orderItemVariantId')}
+                                className={fieldClass(activeGuideField === 'orderItemVariantId') + (errors.orderItemVariantId ? ' border-destructive ring-destructive/25' : '')}
                                 aria-invalid={Boolean(errors.orderItemVariantId)}
                                 aria-describedby={errors.orderItemVariantId ? 'orderItemVariantId-error' : undefined}
                               >
@@ -148,7 +148,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                             enterKeyHint="next"
                             value={values.orderItemCustomName}
                             onChange={onFieldChange('orderItemCustomName')}
-                            className={fieldClass(activeGuideField === 'orderItemCustomName')}
+                            className={fieldClass(activeGuideField === 'orderItemCustomName') + (errors.orderItemCustomName ? ' border-destructive ring-destructive/25' : '')}
                             placeholder="e.g. Custom bouquet for anniversary"
                             aria-invalid={Boolean(errors.orderItemCustomName)}
                             aria-describedby={errors.orderItemCustomName ? 'orderItemCustomName-error' : undefined}
@@ -178,7 +178,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                                 event.target.value,
                               )
                             }
-                            className={fieldClass(activeGuideField === 'orderItemCustomPrice')}
+                            className={fieldClass(activeGuideField === 'orderItemCustomPrice') + (errors.orderItemCustomPrice ? ' border-destructive ring-destructive/25' : '')}
                             placeholder="e.g. 350000"
                             aria-invalid={Boolean(errors.orderItemCustomPrice)}
                             aria-describedby={errors.orderItemCustomPrice ? 'orderItemCustomPrice-error' : undefined}
