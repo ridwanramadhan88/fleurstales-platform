@@ -47,6 +47,7 @@ export const CatalogProductDetailsSection: FC<Props> = ({
         images={form.images}
         onChange={(images) => update('images', images)}
         productName={form.name}
+        kind="catalog"
       />
 
       <div className="grid min-w-0 gap-4 sm:grid-cols-2">

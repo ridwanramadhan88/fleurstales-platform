@@ -25,7 +25,7 @@ describe('Catalog cleanup regressions', () => {
     expect(details).toContain('Arrangement type · Required')
     expect(details).toContain('Availability · Required')
     expect(details).toContain('CatalogProductImagesField')
-    expect(images).toContain('Foto utama produk')
+    expect(images).toContain('Foto katalog default')
 
     expect(variants).toContain('Varian berdasarkan ukuran')
     expect(variants).toContain('Belum ditautkan ke ukuran')

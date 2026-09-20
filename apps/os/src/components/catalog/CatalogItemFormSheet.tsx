@@ -16,7 +16,7 @@ import { ActionFooter } from '../ui/action-footer'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { FormSection, ValidationSummary } from '../ui/form-patterns'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
-import { CATALOG_IMAGE_MAX_COUNT, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../../domain/catalogImageDomain'
+import { CATALOG_EDITOR_IMAGE_MAX_COUNT, getCatalogProductImageAliases, normalizeCatalogProductImages } from '../../domain/catalogImageDomain'
 
 type SaveResult = boolean | void | Promise<boolean | void>
 
@@ -363,7 +363,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         return { id: item.id, flowerName: item.flowerName.trim(), quantity, unit: item.unit }
       }).filter((item) => item.flowerName && Number.isFinite(item.quantity) && item.quantity > 0)
 
-      const variantImages = row.images.slice(0, CATALOG_IMAGE_MAX_COUNT).map((image, imageIndex) => ({
+      const variantImages = row.images.slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT).map((image, imageIndex) => ({
         ...image,
         altText: (form.name.trim() || 'Produk') + ' ' + row.size.trim(),
         sortOrder: imageIndex,
@@ -406,7 +406,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       ? typedName.slice(collection.length + 3).trim()
       : typedName
     const customerFacingName = collection ? collection + ' - ' + unprefixedName : typedName
-    const normalizedImages = form.images.slice(0, CATALOG_IMAGE_MAX_COUNT).map((image, index) => ({
+    const normalizedImages = form.images.slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT).map((image, index) => ({
       ...image,
       altText: customerFacingName,
       sortOrder: index,
@@ -460,7 +460,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
             {isDirty ? <span className="rounded-full bg-warning/10 px-2 py-1 text-2xs font-semibold text-warning">Belum disimpan</span> : null}
           </span>
         }
-        description="Informasi umum dan varian ukuran diedit sebagai draft. Data baru tersimpan saat tombol Simpan dipilih."
+        description="Informasi umum, ukuran yang dipakai produk, foto, dan resep diedit sebagai draft. Data baru tersimpan saat tombol Simpan dipilih."
         contentClassName="h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[92vh]"
         headerClassName="shrink-0 border-b border-border/70 pb-4"
       >
@@ -487,7 +487,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
               <ValidationSummary errors={errors} summaryRef={validationSummaryRef} onErrorClick={focusValidationIssue} />
 
               <TabsContent value="info" className="mt-0">
-                <FormSection title="Informasi produk" description="Data umum produk dan foto utama. Foto varian diatur terpisah pada tab Varian & Ukuran.">
+                <FormSection title="Informasi produk" description="Data umum produk dan 1 foto katalog default. Foto setiap ukuran diatur terpisah pada tab Varian & Ukuran.">
                   <CatalogProductDetailsSection
                     form={form}
                     product={product}
@@ -505,7 +505,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                 <FormSection
                   title="Varian & ukuran"
                   description={sizeTemplate
-                    ? 'Template: ' + sizeTemplate.name + '. Slot ukuran tidak membuat varian sampai dikonfigurasi.'
+                    ? 'Template: ' + sizeTemplate.name + '. Tambahkan hanya ukuran yang memang dimiliki produk ini.'
                     : usableSizeTemplates.length > 0
                       ? 'Template ukuran tersedia, tetapi belum ditetapkan untuk jenis rangkaian ini. Atur di Template ukuran → Penetapan.'
                       : 'Belum ada template ukuran yang memiliki ukuran aktif.'}

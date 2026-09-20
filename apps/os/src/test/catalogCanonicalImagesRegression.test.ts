@@ -9,7 +9,7 @@ describe('canonical catalog images', () => {
   it('limits create and edit workflows to five images', () => {
     expect(CATALOG_IMAGE_MAX_COUNT).toBe(5)
     expect(read('src/components/catalog/CatalogItemFormSheet.tsx')).toContain(
-      '.slice(0, CATALOG_IMAGE_MAX_COUNT)',
+      '.slice(0, CATALOG_EDITOR_IMAGE_MAX_COUNT)',
     )
   })
 

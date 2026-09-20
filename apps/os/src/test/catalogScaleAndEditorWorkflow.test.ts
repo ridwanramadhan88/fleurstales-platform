@@ -50,12 +50,15 @@ describe('Catalog scale and Product Editor workflow', () => {
     expect(form).not.toContain('assignSizeGuide(')
   })
 
-  it('keeps Catalog image controls explicit and touch-safe', () => {
+  it('keeps single-image Catalog controls explicit and touch-safe', () => {
     const images = read('src/components/catalog/CatalogProductImagesField.tsx')
+    const imageDomain = read('src/domain/catalogImageDomain.ts')
     const input = read('src/components/catalog/ImageDropInput.tsx')
 
-    expect(images).toContain('{ordered.length}/{CATALOG_IMAGE_MAX_COUNT}')
-    expect(images).toContain('inline-flex size-11')
+    expect(imageDomain).toContain('CATALOG_EDITOR_IMAGE_MAX_COUNT = 1')
+    expect(images).toContain('{ordered.length}/{CATALOG_EDITOR_IMAGE_MAX_COUNT}')
+    expect(images).toContain('Foto katalog default')
+    expect(images).toContain('Foto varian ukuran')
     expect(input).toContain('aria-label={`${label}: pilih atau tarik gambar`}')
     expect(input).toContain('aria-live="assertive"')
   })
