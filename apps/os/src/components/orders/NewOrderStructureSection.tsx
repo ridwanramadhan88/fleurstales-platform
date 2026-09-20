@@ -203,7 +203,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
             )}
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 lg:grid-cols-2">
             <div className="space-y-1.5">
               <label
                 htmlFor="deliveryDate"
@@ -217,7 +217,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
                 onChange={(value) => onFieldValueChange('deliveryDate', value)}
                 placeholder="Pick date"
                 disabledDates={isBranchClosedOnDate}
-                className={`h-11 text-sm ${fieldClass(activeGuideField === 'deliveryDate')}`}
+                className={`h-11 text-sm ${fieldClass(activeGuideField === 'deliveryDate')}${errors.deliveryDate ? ' border-destructive ring-destructive/25' : ''}`}
               />
             </div>
             <div className="space-y-1.5">
@@ -234,7 +234,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
                 openingSlots={deliveryTimeSlots}
                 value={values.deliveryTime}
                 onChange={(value) => onFieldValueChange('deliveryTime', value)}
-                className={`h-11 text-sm ${fieldClass(activeGuideField === 'deliveryTime')}`}
+                className={`h-11 text-sm ${fieldClass(activeGuideField === 'deliveryTime')}${errors.deliveryTime ? ' border-destructive ring-destructive/25' : ''}`}
               />
             </div>
           </div>
@@ -245,7 +245,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
             <p id={errors.deliveryDate ? 'deliveryDate-error' : 'deliveryTime-error'} className="text-xs text-destructive" role="alert">{errors.deliveryDate ?? errors.deliveryTime}</p>
           )}
 
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 lg:grid-cols-2">
             <div className="space-y-1.5">
               <label
                 htmlFor="deliveryFee"
@@ -300,7 +300,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               onChange={(value) => onFieldValueChange('pickupDate', value)}
               placeholder="Pick date"
               disabledDates={isBranchClosedOnDate}
-              className={`h-11 text-sm ${fieldClass(activeGuideField === 'pickupDate')}`}
+              className={`h-11 text-sm ${fieldClass(activeGuideField === 'pickupDate')}${errors.pickupDate ? ' border-destructive ring-destructive/25' : ''}`}
             />
           </div>
           <div className="space-y-1.5">
@@ -317,7 +317,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               openingSlots={pickupTimeSlots}
               value={values.pickupTime}
               onChange={(value) => onFieldValueChange('pickupTime', value)}
-              className={`h-11 text-sm ${fieldClass(activeGuideField === 'pickupTime')}`}
+              className={`h-11 text-sm ${fieldClass(activeGuideField === 'pickupTime')}${errors.pickupTime ? ' border-destructive ring-destructive/25' : ''}`}
             />
           </div>
         </div>
