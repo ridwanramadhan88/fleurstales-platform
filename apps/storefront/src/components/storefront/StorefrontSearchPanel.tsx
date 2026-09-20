@@ -1,5 +1,5 @@
 import type { FC, FormEvent } from 'react'
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { Search, X } from 'lucide-react'
 import { StorefrontContainer } from './StorefrontContainer'
 import { useStorefrontModalFocus } from '../../hooks/useStorefrontModalFocus'
@@ -23,12 +23,6 @@ export const StorefrontSearchPanel: FC<Props> = ({
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const { containerRef, onKeyDown } = useStorefrontModalFocus<HTMLDivElement>(open, inputRef)
-
-  useEffect(() => {
-    if (!open) return
-    const frame = window.requestAnimationFrame(() => inputRef.current?.focus())
-    return () => window.cancelAnimationFrame(frame)
-  }, [open])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
