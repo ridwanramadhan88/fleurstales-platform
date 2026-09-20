@@ -43,6 +43,55 @@ describe('catalog variant foundation', () => {
     expect(product.isActive).toBe(false)
   })
 
+  it('keeps only the explicitly configured size variants and one photo per ownership level', () => {
+    const image = (id: string, url: string, sortOrder: number) => ({
+      id,
+      url,
+      sortOrder,
+      isPrimary: sortOrder === 0,
+      mimeType: 'image/jpeg' as const,
+    })
+
+    const product = buildProduct({
+      category: 'Birthday',
+      material: 'fresh',
+      name: 'Selected Sizes Rose',
+      images: [
+        image('catalog-1', 'https://example.test/catalog-1.jpg', 0),
+        image('catalog-2', 'https://example.test/catalog-2.jpg', 1),
+      ],
+      variants: [
+        {
+          sizeOptionId: 'medium',
+          size: 'Medium',
+          price: 250000,
+          status: 'active',
+          images: [
+            image('medium-1', 'https://example.test/medium-1.jpg', 0),
+            image('medium-2', 'https://example.test/medium-2.jpg', 1),
+          ],
+          flowerRecipe: [{ id: 'rose-m', flowerName: 'Mawar', quantity: 18, unit: 'stem' }],
+        },
+        {
+          sizeOptionId: 'large',
+          size: 'Large',
+          price: 350000,
+          status: 'active',
+          images: [image('large-1', 'https://example.test/large-1.jpg', 0)],
+          flowerRecipe: [{ id: 'rose-l', flowerName: 'Mawar', quantity: 26, unit: 'stem' }],
+        },
+      ],
+      isActive: true,
+    }, 'BDY', [], [])
+
+    expect(product.variants.map((variant) => variant.sizeOptionId)).toEqual(['medium', 'large'])
+    expect(product.images).toHaveLength(1)
+    expect(product.variants[0].images).toHaveLength(1)
+    expect(product.variants[1].images).toHaveLength(1)
+    expect(product.variants[0].flowerRecipe?.[0]?.quantity).toBe(18)
+    expect(product.variants[1].flowerRecipe?.[0]?.quantity).toBe(26)
+  })
+
   it('prevents removing the last sellable variant from an active product', () => {
     const product: CatalogProduct = {
       id: 'product-active',
