@@ -48,7 +48,7 @@ export const NewOrderPaymentDetailsSection: FC<NewOrderPaymentDetailsSectionProp
       )}
     >
       <h3 className="text-sm font-semibold leading-5 text-foreground">Payment</h3>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 lg:grid-cols-2">
         <div className="space-y-1.5">
           <label htmlFor="paymentMethod" className="text-xs font-medium text-muted-foreground">Payment method</label>
           <Select
