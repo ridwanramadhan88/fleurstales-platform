@@ -18,7 +18,7 @@ describe('catalog size-template and image-carousel regressions', () => {
   })
 
   it('uses template-backed size slots without free-text additional options', () => {
-    expect(variantsSource).toContain('Belum dikonfigurasi untuk produk ini.')
+    expect(variantsSource).toContain('Ukuran ini belum ditambahkan ke produk.')
     expect(variantsSource).toContain('Belum ditautkan ke ukuran')
     expect(variantEditorSource).toContain('Tautkan ke ukuran template · Opsional')
     expect(variantsSource + variantEditorSource).not.toContain('Opsi tambahan · Opsional')
@@ -41,12 +41,14 @@ describe('catalog size-template and image-carousel regressions', () => {
     expect(guideSource).toContain('dipakai varian aktif')
   })
 
-  it('keeps view and edit product photos square and carousel-based', () => {
+  it('keeps Product view compatible while Product Editor uses one default photo', () => {
     expect(detailSource).toContain('aspect-square')
     expect(detailSource).toContain('Product image carousel')
-    expect(imagesSource).toContain('Galeri foto produk')
-    expect(imagesSource).toContain('Foto produk sebelumnya')
-    expect(imagesSource).toContain('Foto produk berikutnya')
+    expect(imagesSource).toContain('Foto katalog default')
+    expect(imagesSource).toContain('Foto varian ukuran')
+    expect(imagesSource).toContain('Maksimal 1 foto')
+    expect(imagesSource).not.toContain('Foto produk sebelumnya')
+    expect(imagesSource).not.toContain('Foto produk berikutnya')
   })
 
   it('still parses historical labels without exposing a new option editor', () => {
