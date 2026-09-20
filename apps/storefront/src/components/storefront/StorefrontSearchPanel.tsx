@@ -2,6 +2,7 @@ import type { FC, FormEvent } from 'react'
 import { useEffect, useRef } from 'react'
 import { Search, X } from 'lucide-react'
 import { StorefrontContainer } from './StorefrontContainer'
+import { useStorefrontModalFocus } from '../../hooks/useStorefrontModalFocus'
 
 interface Props {
   open: boolean
@@ -21,6 +22,7 @@ export const StorefrontSearchPanel: FC<Props> = ({
   onClose,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const { containerRef, onKeyDown } = useStorefrontModalFocus<HTMLDivElement>(open, inputRef)
 
   useEffect(() => {
     if (!open) return
@@ -43,10 +45,17 @@ export const StorefrontSearchPanel: FC<Props> = ({
         className="storefront-search-backdrop"
         onClick={onClose}
         aria-label="Close search"
-        tabIndex={open ? 0 : -1}
+        tabIndex={-1}
       />
 
-      <div className="storefront-search-panel" role="dialog" aria-modal="true" aria-label="Search products">
+      <div
+        ref={containerRef}
+        className="storefront-search-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search products"
+        onKeyDown={onKeyDown}
+      >
         <StorefrontContainer>
           <form className="storefront-search-form" onSubmit={handleSubmit}>
             <Search className="storefront-search-form__icon" strokeWidth={1.8} aria-hidden="true" />
@@ -66,6 +75,7 @@ export const StorefrontSearchPanel: FC<Props> = ({
                 onClick={() => onChange('')}
                 className="storefront-search-form__clear tap-scale"
                 aria-label="Clear search"
+                tabIndex={open ? 0 : -1}
               >
                 <X className="size-4" strokeWidth={1.8} />
               </button>
@@ -78,11 +88,21 @@ export const StorefrontSearchPanel: FC<Props> = ({
               Search
             </button>
           </form>
-          {value.trim().length > 0 && (
-            <p className="storefront-search-panel__support">
-              {resultCount} {resultCount === 1 ? 'product' : 'products'} found
-            </p>
-          )}
+          <div className="storefront-search-panel__actions">
+            {value.trim().length > 0 ? (
+              <p className="storefront-search-panel__support">
+                {resultCount} {resultCount === 1 ? 'product' : 'products'} found
+              </p>
+            ) : <span aria-hidden="true" />}
+            <button
+              type="button"
+              onClick={onClose}
+              className="storefront-search-panel__close tap-scale"
+              tabIndex={open ? 0 : -1}
+            >
+              Close
+            </button>
+          </div>
         </StorefrontContainer>
       </div>
     </div>
