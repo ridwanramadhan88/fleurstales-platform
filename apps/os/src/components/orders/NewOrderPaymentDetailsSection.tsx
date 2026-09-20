@@ -56,7 +56,12 @@ export const NewOrderPaymentDetailsSection: FC<NewOrderPaymentDetailsSectionProp
             disabled={values.fulfillmentType === 'delivery'}
             onValueChange={(value) => onPaymentMethodChange(value as 'cash' | 'transfer')}
           >
-            <SelectTrigger id="paymentMethod" className={fieldClass(activeGuideField === 'paymentMethod')}>
+            <SelectTrigger
+              id="paymentMethod"
+              className={fieldClass(activeGuideField === 'paymentMethod')}
+              aria-invalid={Boolean(errors.paymentMethod)}
+              aria-describedby={errors.paymentMethod ? 'paymentMethod-error' : undefined}
+            >
               <SelectValue placeholder="Choose method" />
             </SelectTrigger>
             <SelectContent>
@@ -65,7 +70,7 @@ export const NewOrderPaymentDetailsSection: FC<NewOrderPaymentDetailsSectionProp
             </SelectContent>
           </Select>
           {values.fulfillmentType === 'delivery' && <p className="text-2xs text-muted-foreground">Delivery orders are bank transfer only.</p>}
-          {errors.paymentMethod && <p className="text-xs text-destructive">{errors.paymentMethod}</p>}
+          {errors.paymentMethod && <p id="paymentMethod-error" className="text-xs text-destructive" role="alert">{errors.paymentMethod}</p>}
         </div>
 
         <div className="space-y-1.5">
