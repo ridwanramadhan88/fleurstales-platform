@@ -233,10 +233,6 @@ export const StorefrontProductDetailPage: FC<Props> = ({
                 className="pointer-events-none absolute inset-x-0 top-0 z-[9] h-28 bg-gradient-to-b from-black/45 via-black/15 to-transparent md:hidden"
               />
 
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 z-[9] h-28 bg-gradient-to-b from-black/40 via-black/16 to-transparent md:hidden"
-              />
               <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-7 sm:pt-7 md:hidden">
                 <button
                   type="button"
