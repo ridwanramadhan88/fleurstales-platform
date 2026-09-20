@@ -13,6 +13,7 @@ describe('New Order workflow UX', () => {
     expect(validation).toContain('getFirstNewOrderErrorField')
     expect(controller).toContain('requestValidationFocus(nextErrors)')
     expect(controller).toContain('validationFocusRequest')
+    expect(controller).toContain('setValidationFocusField(null)')
     expect(sheet).toContain('document.getElementById(validationFocusField)')
     expect(sheet).toContain("scrollIntoView({ block: 'center', behavior: 'smooth' })")
   })
