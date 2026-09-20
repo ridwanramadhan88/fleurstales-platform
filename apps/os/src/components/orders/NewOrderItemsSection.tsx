@@ -53,7 +53,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => onOrderItemModeChange('catalog')}
-                      className={`flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
+                      className={`flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-xs font-medium transition cursor-pointer ${
                         values.orderItemMode === 'catalog'
                           ? 'bg-primary text-primary-foreground shadow-ios-sm'
                           : 'text-muted-foreground hover:text-foreground'
@@ -64,7 +64,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => onOrderItemModeChange('custom')}
-                      className={`flex-1 rounded-full px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
+                      className={`flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-xs font-medium transition cursor-pointer ${
                         values.orderItemMode === 'custom'
                           ? 'bg-primary text-primary-foreground shadow-ios-sm'
                           : 'text-muted-foreground hover:text-foreground'
@@ -90,7 +90,9 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                         >
                           <SelectTrigger
                             id="orderItemCatalogId"
-                            className={fieldClass(activeGuideField === 'orderItemCatalogId')}
+                            className={fieldClass(activeGuideField === 'orderItemCatalogId') + (errors.orderItemCatalogId ? ' border-destructive ring-destructive/25' : '')}
+                            aria-invalid={Boolean(errors.orderItemCatalogId)}
+                            aria-describedby={errors.orderItemCatalogId ? 'orderItemCatalogId-error' : undefined}
                           >
                             <SelectValue placeholder="Select product" />
                           </SelectTrigger>
@@ -103,7 +105,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                           </SelectContent>
                         </Select>
                         {errors.orderItemCatalogId && (
-                          <p className="text-xs text-destructive">
+                          <p id="orderItemCatalogId-error" className="text-xs text-destructive" role="alert">
                             {errors.orderItemCatalogId}
                           </p>
                         )}
@@ -113,7 +115,12 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                               Choose size or variant
                             </label>
                             <Select value={values.orderItemVariantId} onValueChange={onCatalogVariantChange}>
-                              <SelectTrigger id="orderItemVariantId" className={fieldClass(activeGuideField === 'orderItemVariantId')}>
+                              <SelectTrigger
+                                id="orderItemVariantId"
+                                className={fieldClass(activeGuideField === 'orderItemVariantId') + (errors.orderItemVariantId ? ' border-destructive ring-destructive/25' : '')}
+                                aria-invalid={Boolean(errors.orderItemVariantId)}
+                                aria-describedby={errors.orderItemVariantId ? 'orderItemVariantId-error' : undefined}
+                              >
                                 <SelectValue placeholder="Select size or variant" />
                               </SelectTrigger>
                               <SelectContent>
@@ -122,12 +129,12 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                                 ))}
                               </SelectContent>
                             </Select>
-                            {errors.orderItemVariantId && <p className="text-xs text-destructive">{errors.orderItemVariantId}</p>}
+                            {errors.orderItemVariantId && <p id="orderItemVariantId-error" className="text-xs text-destructive" role="alert">{errors.orderItemVariantId}</p>}
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+                      <div className="grid gap-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
                         <div className="space-y-1.5">
                           <label
                             htmlFor="orderItemCustomName"
@@ -138,13 +145,16 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                           <input
                             id="orderItemCustomName"
                             type="text"
+                            enterKeyHint="next"
                             value={values.orderItemCustomName}
                             onChange={onFieldChange('orderItemCustomName')}
-                            className={fieldClass(activeGuideField === 'orderItemCustomName')}
+                            className={fieldClass(activeGuideField === 'orderItemCustomName') + (errors.orderItemCustomName ? ' border-destructive ring-destructive/25' : '')}
                             placeholder="e.g. Custom bouquet for anniversary"
+                            aria-invalid={Boolean(errors.orderItemCustomName)}
+                            aria-describedby={errors.orderItemCustomName ? 'orderItemCustomName-error' : undefined}
                           />
                           {errors.orderItemCustomName && (
-                            <p className="text-xs text-destructive">
+                            <p id="orderItemCustomName-error" className="text-xs text-destructive" role="alert">
                               {errors.orderItemCustomName}
                             </p>
                           )}
@@ -160,6 +170,7 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                             id="orderItemCustomPrice"
                             type="text"
                             inputMode="numeric"
+                            enterKeyHint="next"
                             value={values.orderItemCustomPrice}
                             onChange={(event) =>
                               onCurrencyFieldChange(
@@ -167,11 +178,13 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                                 event.target.value,
                               )
                             }
-                            className={fieldClass(activeGuideField === 'orderItemCustomPrice')}
+                            className={fieldClass(activeGuideField === 'orderItemCustomPrice') + (errors.orderItemCustomPrice ? ' border-destructive ring-destructive/25' : '')}
                             placeholder="e.g. 350000"
+                            aria-invalid={Boolean(errors.orderItemCustomPrice)}
+                            aria-describedby={errors.orderItemCustomPrice ? 'orderItemCustomPrice-error' : undefined}
                           />
                           {errors.orderItemCustomPrice && (
-                            <p className="text-xs text-destructive">
+                            <p id="orderItemCustomPrice-error" className="text-xs text-destructive" role="alert">
                               {errors.orderItemCustomPrice}
                             </p>
                           )}

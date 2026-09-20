@@ -146,7 +146,7 @@ export const NewOrderReviewStep: FC<NewOrderReviewStepProps> = ({
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full px-4 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           >
             Edit <ChevronRight className="size-3.5" />
           </button>
@@ -197,7 +197,7 @@ export const NewOrderReviewStep: FC<NewOrderReviewStepProps> = ({
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full px-4 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           >
             Edit <ChevronRight className="size-3.5" />
           </button>
@@ -239,7 +239,7 @@ export const NewOrderReviewStep: FC<NewOrderReviewStepProps> = ({
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full px-4 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           >
             Edit <ChevronRight className="size-3.5" />
           </button>

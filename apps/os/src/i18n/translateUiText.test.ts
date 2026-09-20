@@ -243,6 +243,13 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('New order unavailable', 'id')).toBe('Pesanan baru tidak tersedia')
     expect(translateUiText('Search order #, customer, phone…', 'id')).toBe('Cari nomor pesanan, pelanggan, telepon…')
     expect(translateUiText('Search orders…', 'id')).toBe('Cari pesanan…')
+    expect(translateUiText('New order', 'id')).toBe('Pesanan baru')
+    expect(translateUiText('Save draft', 'id')).toBe('Simpan draft')
+    expect(translateUiText('Review order', 'id')).toBe('Tinjau Pesanan')
+    expect(translateUiText('Confirm & create', 'id')).toBe('Konfirmasi & buat')
+    expect(translateUiText('Customer name is required.', 'id')).toBe('Nama pelanggan wajib diisi.')
+    expect(translateUiText('Complete 2 highlighted fields before review.', 'id')).toBe('Lengkapi 2 kolom yang ditandai sebelum meninjau pesanan.')
+    expect(translateUiText('Review order · Rp 350.000', 'id')).toBe('Tinjau Pesanan · Rp 350.000')
   })
 
   it('returns original English when selected', () => {

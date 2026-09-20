@@ -5,7 +5,7 @@
  * future-ready customer linking structure for CRM integration.
  */
 
-import type { FC, KeyboardEvent } from 'react'
+import { useEffect, type FC, type KeyboardEvent } from 'react'
 import { FileText, Save, Trash2, X } from 'lucide-react'
 import type { NewOrderSheetViewModel } from './NewOrderSheetController'
 import { NewOrderCustomerSection } from './NewOrderCustomerSection'
@@ -106,6 +106,8 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
     catalogPriceFormatter,
     isFormReady,
     closeConfirmationOpen,
+    validationFocusField,
+    validationFocusRequest,
     onClose,
     onContinueEditing,
     onDiscardAndClose,
@@ -116,8 +118,23 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
     onGuideFieldBlur,
   } = viewModel
 
+  useEffect(() => {
+    if (!open || step !== 'edit' || !validationFocusField || validationFocusRequest === 0) return
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById(validationFocusField)
+        if (typeof target?.scrollIntoView === 'function') {
+          target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        }
+        target?.focus()
+      })
+    })
+  }, [open, step, validationFocusField, validationFocusRequest])
+
   if (!open) return null
 
+  const validationMessages = Object.values(errors).filter((message): message is string => Boolean(message))
   const validationErrorCount = Object.values(errors).filter(Boolean).length
 
   return (
@@ -179,12 +196,15 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
                       Complete {validationErrorCount} highlighted {validationErrorCount === 1 ? 'field' : 'fields'} before review.
                     </p>
                     <p className="mt-0.5 text-2xs text-muted-foreground">
-                      Start with the highlighted section below. Your entered details are still saved in this form.
+                      Start with the first highlighted field below. Your entered details are still saved in this form.
                     </p>
+                    <ul className="mt-2 space-y-1 text-xs text-destructive/90">
+                      {validationMessages.map((message) => <li key={message}>• {message}</li>)}
+                    </ul>
                   </section>
                 )}
 
-                <div className="grid gap-6 sm:grid-cols-2 sm:items-start sm:gap-8">
+                <div className="grid gap-6 md:grid-cols-2 md:items-start md:gap-8">
                   <div className="space-y-6">
                     <NewOrderCustomerSection
                       viewModel={viewModel}
@@ -215,24 +235,24 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
             )}
           </div>
 
-          <div className="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-border bg-surface-footer px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:flex sm:justify-between sm:px-5 sm:pb-3">
+          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-border bg-surface-footer px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:pb-3">
             {step === 'edit' ? (
               <>
                 <button type="button" onClick={onClose} className="sr-only min-h-11 rounded-full px-[18px] whitespace-nowrap">Cancel</button>
                 <button
                   type="button"
                   onClick={onSaveDraft}
-                  className="inline-flex items-center justify-center rounded-full text-xs font-medium text-muted-foreground ring-1 ring-border transition hover:bg-muted hover:text-foreground rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-[18px] text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:bg-muted hover:text-foreground sm:w-auto"
                 >
                   Save draft
                 </button>
                 <button
                   type="submit"
                   className={[
-                    'inline-flex h-11 items-center justify-center rounded-full px-[18px] text-sm font-semibold shadow-ios-sm transition',
+                    'inline-flex h-11 w-full items-center justify-center rounded-full px-[18px] text-sm font-semibold shadow-ios-sm transition sm:w-auto',
                     isFormReady
                       ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                      : 'bg-muted text-muted-foreground',
+                      : 'bg-card text-foreground ring-1 ring-border hover:bg-muted',
                   ].join(' ')}
                 >
                   Review order · Rp {catalogPriceFormatter.format(estimatedOrderTotalIdr)}
@@ -243,14 +263,14 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
                 <button
                   type="button"
                   onClick={onBackToEdit}
-                  className="inline-flex items-center justify-center rounded-full text-xs font-medium text-muted-foreground ring-1 ring-border transition hover:bg-muted rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-[18px] text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:bg-muted sm:w-auto"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   aria-label="Confirm & create order"
-                  className="inline-flex items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 sm:w-auto"
                 >
                   Confirm & create
                 </button>

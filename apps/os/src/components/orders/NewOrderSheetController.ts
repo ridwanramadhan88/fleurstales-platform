@@ -33,7 +33,7 @@ import {
   useNewOrderPricing,
 } from './useNewOrderPricing'
 import { useNewOrderSubmit } from './useNewOrderSubmit'
-import { validateNewOrderForm } from './useNewOrderValidation'
+import { getFirstNewOrderErrorField, validateNewOrderForm } from './useNewOrderValidation'
 import { type GuideSection, getActiveGuideStep, isGuideFieldFilled, isGuideSectionComplete } from './newOrderGuide'
 import { deleteOrderDraft, getOrderDraft, saveOrderDraft } from './orderDraftStore'
 import { describeBranchHoursForDate, getBranchHoursForDate, getOpeningHourTimeSlots } from '../../domain/branchOpeningHoursDomain'
@@ -91,6 +91,8 @@ export interface NewOrderSheetViewModel {
   catalogPriceFormatter: Intl.NumberFormat
   isFormReady: boolean
   closeConfirmationOpen: boolean
+  validationFocusField: keyof NewOrderFormValues | null
+  validationFocusRequest: number
   onClose: () => void
   onContinueEditing: () => void
   onDiscardAndClose: () => void
@@ -121,6 +123,12 @@ export const useNewOrderSheetController = ({
   const form = useNewOrderForm(open)
   const baselineValuesRef = useRef<NewOrderFormValues>(initialNewOrderValues)
   const [closeConfirmationOpen, setCloseConfirmationOpen] = useState(false)
+  const [validationFocusField, setValidationFocusField] = useState<keyof NewOrderFormValues | null>(null)
+  const [validationFocusRequest, setValidationFocusRequest] = useState(0)
+
+  useEffect(() => {
+    if (!open) setValidationFocusField(null)
+  }, [open])
   const configuredBranches = useSettingsStore((state) => state.branches)
   const branchForForm: BranchFilter = activeBranch?.trim() ? activeBranch : 'All'
   const authoritativeDeliveryFeeIdr = branchForForm === 'All'
@@ -319,6 +327,12 @@ export const useNewOrderSheetController = ({
 
   useDismissableModal(open && !closeConfirmationOpen, requestClose)
 
+  const requestValidationFocus = (errors: NewOrderFormErrors) => {
+    const field = getFirstNewOrderErrorField(errors)
+    setValidationFocusField(field)
+    setValidationFocusRequest((current) => current + 1)
+  }
+
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
     void (async () => {
@@ -330,8 +344,11 @@ export const useNewOrderSheetController = ({
       if (Object.keys(nextErrors).length > 0) {
         form.setErrors(nextErrors)
         form.setStep('edit')
+        requestValidationFocus(nextErrors)
         return
       }
+
+      setValidationFocusField(null)
 
       if (form.step === 'edit') {
         try {
@@ -343,14 +360,18 @@ export const useNewOrderSheetController = ({
               return
             }
             if (form.values.paymentStatus === 'partial' && depositIdr >= quote.totalIdr) {
-              form.setErrors({ depositAmount: 'Deposit must be lower than the order total.' })
+              const depositErrors = { depositAmount: 'Deposit must be lower than the order total.' }
+              form.setErrors(depositErrors)
               form.setStep('edit')
+              requestValidationFocus(depositErrors)
               return
             }
             setServerQuote(quote)
           } else if (form.values.paymentStatus === 'partial' && depositIdr >= pricing.estimatedOrderTotalIdr) {
-            form.setErrors({ depositAmount: 'Deposit must be lower than the order total.' })
+            const depositErrors = { depositAmount: 'Deposit must be lower than the order total.' }
+            form.setErrors(depositErrors)
             form.setStep('edit')
+            requestValidationFocus(depositErrors)
             return
           }
           form.setInfoMessage(null)
@@ -501,6 +522,8 @@ export const useNewOrderSheetController = ({
     catalogPriceFormatter: pricing.catalogPriceFormatter,
     isFormReady,
     closeConfirmationOpen,
+    validationFocusField,
+    validationFocusRequest,
     onClose: requestClose,
     onContinueEditing: () => setCloseConfirmationOpen(false),
     onDiscardAndClose: discardAndClose,

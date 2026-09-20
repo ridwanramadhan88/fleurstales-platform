@@ -148,7 +148,7 @@ describe('critical application workflows', () => {
     await user.click(form.getByRole('button', { name: 'Custom' }))
     await user.type(form.getByLabelText('Item name'), 'Workflow Bouquet')
     await user.type(form.getByLabelText('Price (IDR)'), '250000')
-    await user.click(form.getByRole('button', { name: 'Whatsapp' }))
+    await user.click(form.getByRole('button', { name: 'WhatsApp' }))
     await user.click(form.getByRole('button', { name: 'Pickup' }))
 
     await user.click(form.getByRole('button', { name: 'Pickup date' }))

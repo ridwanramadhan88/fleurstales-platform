@@ -59,13 +59,18 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                     <input
                       id="customerName"
                       type="text"
+                      autoFocus
+                      autoComplete="name"
+                      enterKeyHint="next"
                       value={values.customerName}
                       onChange={onFieldChange('customerName')}
-                      className={fieldClass(activeGuideField === 'customerName')}
+                      className={fieldClass(activeGuideField === 'customerName') + (errors.customerName ? ' border-destructive ring-destructive/25' : '')}
                       placeholder="e.g. Dita Anjani"
+                      aria-invalid={Boolean(errors.customerName)}
+                      aria-describedby={errors.customerName ? 'customerName-error' : undefined}
                     />
                     {errors.customerName && (
-                      <p className="text-xs text-destructive">
+                      <p id="customerName-error" className="text-xs text-destructive" role="alert">
                         {errors.customerName}
                       </p>
                     )}
@@ -83,13 +88,18 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                     <input
                       id="customerWhatsappNumber"
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      enterKeyHint="next"
                       value={values.customerWhatsappNumber}
                       onChange={onFieldChange('customerWhatsappNumber')}
-                      className={fieldClass(activeGuideField === 'customerWhatsappNumber')}
+                      className={fieldClass(activeGuideField === 'customerWhatsappNumber') + (errors.customerWhatsappNumber ? ' border-destructive ring-destructive/25' : '')}
                       placeholder="e.g. 0812 3456 7890"
+                      aria-invalid={Boolean(errors.customerWhatsappNumber)}
+                      aria-describedby={errors.customerWhatsappNumber ? 'customerWhatsappNumber-error' : undefined}
                     />
                     {errors.customerWhatsappNumber && (
-                      <p className="text-xs text-destructive">
+                      <p id="customerWhatsappNumber-error" className="text-xs text-destructive" role="alert">
                         {errors.customerWhatsappNumber}
                       </p>
                     )}
@@ -189,7 +199,7 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                         + Add birthday
                       </button>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid gap-2 lg:grid-cols-2">
                         <label className="space-y-1">
                           <span className="block text-xs font-medium text-muted-foreground">
                             Email
@@ -197,6 +207,9 @@ export const NewOrderCustomerSection: FC<NewOrderCustomerSectionProps> = ({
                           <input
                             id="customerEmail"
                             type="email"
+                            autoComplete="email"
+                            inputMode="email"
+                            enterKeyHint="next"
                             value={values.customerEmail}
                             onChange={onFieldChange('customerEmail')}
                             placeholder="name@example.com"
