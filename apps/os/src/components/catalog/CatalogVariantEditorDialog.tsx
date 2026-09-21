@@ -95,7 +95,11 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
     })
 
     setErrors([...new Set(nextErrors)])
-    if (nextErrors.length > 0) return
+    if (nextErrors.length > 0) {
+      if (draft.status === 'active' && draft.images.length !== 1) setTab('foto')
+      else if (draft.status === 'active' && draft.flowerRecipe.length === 0) setTab('resep')
+      return
+    }
     onApply(draft)
     onOpenChange(false)
   }
