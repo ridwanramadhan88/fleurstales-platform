@@ -113,6 +113,14 @@ describe('Storefront Catalog projection', () => {
     expect(getStorefrontVariantSizeGuide(current, current.variants[0], [template], [target])).toBeNull()
   })
 
+  it('projects only the size variants explicitly configured on the product', () => {
+    const current = product()
+    const projected = projectStorefrontProduct(current, [template], [target])
+
+    expect(template.sizes.map((size) => size.name)).toEqual(['Small', 'Large'])
+    expect(projected?.variants.map((variant) => variant.size)).toEqual(['Small'])
+  })
+
   it('strips internal Cost but keeps the selected-size flower recipe customer-facing', () => {
     const projected = projectStorefrontProduct(product(), [template], [target])
     expect(projected?.variants[0]).not.toHaveProperty('cost')
