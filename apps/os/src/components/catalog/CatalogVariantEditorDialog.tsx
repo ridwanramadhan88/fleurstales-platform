@@ -82,6 +82,9 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
     if (!Number.isFinite(price) || price <= 0) nextErrors.push('Harga jual harus lebih dari Rp0.')
     if (draft.sizeOptionId && reservedSizeOptionIds.has(draft.sizeOptionId)) nextErrors.push('Ukuran template ini sudah digunakan varian lain.')
     if (draft.status === 'active' && selectedSizeArchived) nextErrors.push('Ukuran yang diarsipkan tidak dapat dijual.')
+    if (draft.status === 'active' && sizeTemplate && !draft.sizeOptionId) nextErrors.push('Varian aktif harus memakai ukuran dari Size Template.')
+    if (draft.status === 'active' && draft.images.length !== 1) nextErrors.push('Varian aktif wajib memiliki tepat 1 foto ukuran.')
+    if (draft.status === 'active' && draft.flowerRecipe.length === 0) nextErrors.push('Varian aktif wajib memiliki minimal 1 item Resep Bunga.')
     const cost = draft.cost.trim() ? Number.parseInt(draft.cost, 10) : undefined
     if (cost !== undefined && (!Number.isFinite(cost) || cost < 0)) nextErrors.push('Cost tidak valid.')
 
@@ -92,7 +95,11 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
     })
 
     setErrors([...new Set(nextErrors)])
-    if (nextErrors.length > 0) return
+    if (nextErrors.length > 0) {
+      if (draft.status === 'active' && draft.images.length !== 1) setTab('foto')
+      else if (draft.status === 'active' && draft.flowerRecipe.length === 0) setTab('resep')
+      return
+    }
     onApply(draft)
     onOpenChange(false)
   }

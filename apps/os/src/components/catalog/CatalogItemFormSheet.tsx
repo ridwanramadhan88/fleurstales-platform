@@ -311,6 +311,9 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       nextFieldErrors.productType = 'Arrangement type is required.'
       nextErrors.push(nextFieldErrors.productType)
     }
+    if (form.availability === 'active' && form.images.length !== 1) {
+      nextErrors.push('Foto katalog default wajib diisi untuk produk aktif.')
+    }
     if (form.variants.length === 0) {
       nextErrors.push('Tambahkan minimal satu varian produk.')
       hasVariantError = true
@@ -344,6 +347,22 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       const costParsed = row.cost.trim() ? Number.parseInt(row.cost, 10) : undefined
       if (costParsed !== undefined && (!Number.isFinite(costParsed) || costParsed < 0)) {
         nextErrors.push(label + ': cost tidak valid.')
+        nextVariantErrorIndexes.add(index)
+        hasVariantError = true
+      }
+
+      if (row.status === 'active' && sizeTemplate && !row.sizeOptionId) {
+        nextErrors.push(label + ': varian aktif harus memakai ukuran dari Size Template.')
+        nextVariantErrorIndexes.add(index)
+        hasVariantError = true
+      }
+      if (row.status === 'active' && row.images.length !== 1) {
+        nextErrors.push(label + ': varian aktif wajib memiliki tepat 1 foto ukuran.')
+        nextVariantErrorIndexes.add(index)
+        hasVariantError = true
+      }
+      if (row.status === 'active' && row.flowerRecipe.length === 0) {
+        nextErrors.push(label + ': varian aktif wajib memiliki minimal 1 item Resep Bunga.')
         nextVariantErrorIndexes.add(index)
         hasVariantError = true
       }

@@ -97,4 +97,23 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(variantDialogSource).toContain('Resep tersimpan khusus untuk ukuran ini')
     expect(variantDialogSource).toContain('Foto ini akan dipakai saat ukuran ini dipilih di Storefront')
   })
+
+  it('requires complete Storefront data for every active size variant before save', () => {
+    expect(variantDialogSource).toContain('Varian aktif wajib memiliki tepat 1 foto ukuran.')
+    expect(variantDialogSource).toContain('Varian aktif wajib memiliki minimal 1 item Resep Bunga.')
+    expect(variantDialogSource).toContain('Varian aktif harus memakai ukuran dari Size Template.')
+    expect(variantDialogSource).toContain("setTab('foto')")
+    expect(variantDialogSource).toContain("setTab('resep')")
+    expect(formSource).toContain('Foto katalog default wajib diisi untuk produk aktif.')
+    expect(formSource).toContain("row.status === 'active' && row.images.length !== 1")
+    expect(formSource).toContain("row.status === 'active' && row.flowerRecipe.length === 0")
+  })
+
+  it('does not create new free-text unlinked variants while preserving legacy unlinked review', () => {
+    expect(variantsSource).not.toContain('openNewUnlinked')
+    expect(variantsSource).not.toContain('Varian tanpa tautan ukuran')
+    expect(variantsSource).toContain('Buat atau tetapkan Size Template terlebih dahulu sebelum menambahkan varian baru.')
+    expect(variantsSource).toContain('Belum ditautkan ke ukuran')
+    expect(variantsSource).toContain('Tinjau & tautkan')
+  })
 })
