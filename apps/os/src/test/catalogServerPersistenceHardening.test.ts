@@ -11,6 +11,10 @@ const migrationSource = readFileSync(
   join(root, '../../supabase/migrations/20260919100000_catalog_server_persistence_hardening.sql'),
   'utf8',
 )
+const publicRecipeMigrationSource = readFileSync(
+  join(root, '../../supabase/migrations/20260920213000_public_variant_flower_recipes.sql'),
+  'utf8',
+)
 
 const publicRepositoryStart = repositoriesSource.indexOf('export const createCatalogReadRepository')
 const adminRepositoryStart = repositoriesSource.indexOf('export const createCatalogAdminRepository')
@@ -18,13 +22,16 @@ const publicRepositorySource = repositoriesSource.slice(publicRepositoryStart, a
 const adminRepositorySource = repositoriesSource.slice(adminRepositoryStart)
 
 describe('Catalog PR 1B server and persistence hardening', () => {
-  it('keeps internal recipes out of the public Storefront repository', () => {
+  it('exposes customer-facing recipes through the public Storefront repository with scoped RLS', () => {
     expect(publicRepositoryStart).toBeGreaterThan(-1)
     expect(adminRepositoryStart).toBeGreaterThan(publicRepositoryStart)
-    expect(publicRepositorySource).not.toContain('readRecipeMap(client)')
+    expect(publicRepositorySource).toContain('readRecipeMap(client)')
     expect(adminRepositorySource).toContain('readRecipeMap(client)')
-    expect(migrationSource).toContain('revoke select on table public.product_variant_flower_recipes from anon')
-    expect(migrationSource).toContain('product_variant_flower_recipes_catalog_read')
+    expect(publicRecipeMigrationSource).toContain('grant select on table public.product_variant_flower_recipes to anon, authenticated')
+    expect(publicRecipeMigrationSource).toContain("v.status = 'active'")
+    expect(publicRecipeMigrationSource).toContain('v.archived_at is null')
+    expect(publicRecipeMigrationSource).toContain('p.is_active = true')
+    expect(publicRecipeMigrationSource).toContain('p.archived_at is null')
   })
 
   it('hydrates Cost only when the server-authorized role requests it', () => {

@@ -1,4 +1,4 @@
--- Internal Catalog recipe privacy + immutable Order snapshot coverage.
+-- Customer-facing active variant recipes + immutable Order snapshot coverage.
 do $$
 declare
   v_trigger_source text;
@@ -7,8 +7,19 @@ begin
     raise exception 'Flower recipe table is missing';
   end if;
 
-  if has_table_privilege('anon','public.product_variant_flower_recipes','SELECT') then
-    raise exception 'Storefront can still read internal live flower recipes';
+  if not has_table_privilege('anon','public.product_variant_flower_recipes','SELECT') then
+    raise exception 'Storefront cannot read customer-facing variant flower recipes';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname='public'
+      and tablename='product_variant_flower_recipes'
+      and policyname='product_variant_flower_recipes_public_read'
+      and 'anon' = any(roles)
+  ) then
+    raise exception 'Scoped Storefront flower-recipe read policy is missing';
   end if;
 
   if not exists (

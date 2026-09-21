@@ -1,30 +1,46 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CatalogProduct } from '../store/catalogStoreTypes'
 import { DEFAULT_OWNER_SETTINGS } from '../domain/settings/defaultOwnerSettings'
+import { useCatalogStore } from '../store/catalogStore'
 import { StorefrontProductDetailPage } from './StorefrontProductDetailPage'
 
 const product: CatalogProduct = {
   id: 'test_bouquet',
   productId: 'BOQ-TEST-001',
   category: 'Bouquets',
+  productType: 'Bouquet',
   material: 'fresh',
   name: 'Test Bouquet',
   description: 'A detailed bouquet description.',
+  images: [{
+    id: 'catalog-default',
+    url: 'https://example.com/catalog.jpg',
+    sortOrder: 0,
+    isPrimary: true,
+  }],
   variants: [
     {
       id: 'small',
       sku: 'SMALL',
+      sizeOptionId: 'small-size',
       size: 'Small',
       price: 100_000,
       cost: 40_000,
       status: 'active',
+      images: [{
+        id: 'small-image',
+        url: 'https://example.com/small.jpg',
+        sortOrder: 0,
+        isPrimary: true,
+      }],
       flowerRecipe: [{ id: 'rose', flowerName: 'Red Rose', quantity: 10, unit: 'stem' }],
     },
     {
       id: 'large',
       sku: 'LARGE',
+      sizeOptionId: 'large-size',
       size: 'Large',
       price: 175_000,
       status: 'active',
@@ -34,6 +50,7 @@ const product: CatalogProduct = {
         sortOrder: 0,
         isPrimary: true,
       }],
+      flowerRecipe: [{ id: 'rose-large', flowerName: 'Red Rose', quantity: 18, unit: 'stem' }],
     },
     { id: 'retired', sku: 'OLD', size: 'Retired', price: 80_000, status: 'inactive' },
   ],
@@ -67,7 +84,43 @@ const renderPage = (onAddToCart = vi.fn(), onOpenCart = vi.fn()) => {
 }
 
 describe('StorefrontProductDetailPage purchase behavior', () => {
-  it('selects a size, updates quantity and adds the selected variant', async () => {
+  beforeEach(() => {
+    useCatalogStore.setState({
+      sizeGuideTemplates: [{
+        id: 'guide-bouquet',
+        name: 'Bouquet Standard',
+        sizes: [
+          { id: 'small-size', name: 'Small', guideImageUrl: 'https://example.com/small-chart.jpg', isActive: true },
+          { id: 'large-size', name: 'Large', guideImageUrl: 'https://example.com/large-chart.jpg', isActive: true },
+        ],
+        imageUrl: '',
+        byteSize: 0,
+        width: 800,
+        height: 800,
+        createdAt: '2026-09-20T00:00:00.000Z',
+        updatedAt: '2026-09-20T00:00:00.000Z',
+      }],
+      sizeGuideTargets: [{
+        id: 'target-bouquet',
+        templateId: 'guide-bouquet',
+        scope: 'product',
+        productId: product.id,
+      }],
+    })
+  })
+
+  it('opens on the Catalog default photo without preselecting a size', () => {
+    renderPage()
+
+    expect(screen.getByRole('img', { name: 'Test Bouquet — image 1' })).toHaveAttribute(
+      'src',
+      'https://example.com/catalog.jpg',
+    )
+    expect(screen.getByRole('button', { name: 'Small' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Large' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('selects a size, jumps to its photo, updates quantity and adds that variant', async () => {
     const user = userEvent.setup()
     const { onAddToCart, onOpenCart } = renderPage()
 
@@ -75,7 +128,7 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
     await user.click(screen.getByRole('button', { name: 'Increase quantity' }))
 
     expect(screen.getAllByText('Rp. 350.000').length).toBeGreaterThan(0)
-    expect(screen.getByRole('img', { name: 'Test Bouquet — image 1' })).toHaveAttribute(
+    expect(screen.getByRole('img', { name: 'Test Bouquet — image 3' })).toHaveAttribute(
       'src',
       'https://example.com/large.jpg',
     )
@@ -87,6 +140,22 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
     expect(onOpenCart).not.toHaveBeenCalled()
   })
 
+  it('changes the selected size when navigating to a variant photo and keeps it when returning to Catalog default', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'View Large product image' }))
+    expect(screen.getByRole('button', { name: 'Large' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('18 tangkai')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'View catalog default image' }))
+    expect(screen.getByRole('button', { name: 'Large' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('img', { name: 'Test Bouquet — image 1' })).toHaveAttribute(
+      'src',
+      'https://example.com/catalog.jpg',
+    )
+  })
+
   it('shows the flower recipe for the selected size variant', async () => {
     const user = userEvent.setup()
     renderPage()
@@ -96,6 +165,27 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
     expect(screen.getByText('Resep Bunga')).toBeInTheDocument()
     expect(screen.getByText('Red Rose')).toBeInTheDocument()
     expect(screen.getByText('10 tangkai')).toBeInTheDocument()
+  })
+
+  it('shows Size Chart beside Description and follows the selected size', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    expect(screen.getByRole('tab', { name: 'Description' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Size Chart' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Small' }))
+    await user.click(screen.getByRole('tab', { name: 'Size Chart' }))
+    expect(screen.getByRole('img', { name: 'Test Bouquet Small size chart' })).toHaveAttribute(
+      'src',
+      'https://example.com/small-chart.jpg',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Large' }))
+    expect(screen.getByRole('img', { name: 'Test Bouquet Large size chart' })).toHaveAttribute(
+      'src',
+      'https://example.com/large-chart.jpg',
+    )
   })
 
   it('shows description, material and customer-facing details without exposing SKU', () => {

@@ -53,7 +53,6 @@ export const getStorefrontSellableVariants = (
 const asPublicVariant = (variant: CatalogVariant): CatalogVariant => {
   const {
     cost: _cost,
-    flowerRecipe: _flowerRecipe,
     ...publicVariant
   } = variant
   return publicVariant
@@ -63,9 +62,8 @@ const asPublicVariant = (variant: CatalogVariant): CatalogVariant => {
  * Customer-facing Catalog projection.
  *
  * Business OS may intentionally retain inactive and "needs review" variants,
- * but Storefront only receives sellable variants. Internal Cost and recipe
- * data are stripped defensively even when a local/demo source happens to
- * contain them.
+ * but Storefront only receives sellable variants. Internal Cost remains
+ * stripped; the flower recipe is customer-facing data for the selected size.
  */
 export const projectStorefrontProduct = (
   product: CatalogProduct,
