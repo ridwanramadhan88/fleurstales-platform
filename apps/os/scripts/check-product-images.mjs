@@ -39,6 +39,7 @@ for (const token of [
 
 for (const token of [
   'CATALOG_IMAGE_MAX_COUNT = 5',
+  'CATALOG_EDITOR_IMAGE_MAX_COUNT = 1',
   'CATALOG_IMAGE_MAX_BYTES = 100 * 1024',
   'normalizeCatalogProductImages',
   'prepareCatalogImageUpload',
@@ -72,8 +73,8 @@ if (imageField.includes('storagePath: image.storagePath')) {
   console.error('Image replacement must not reuse the old Storage object path before revision acceptance.')
   process.exit(1)
 }
-if ((imageField.match(/id: generateId\('img'\)/g) ?? []).length < 2) {
-  console.error('Both image replacement and append flows must allocate a fresh image identity.')
+if (!imageField.includes('createLocalCatalogProductImage') || (imageField.match(/id: generateId\('img'\)/g) ?? []).length < 1) {
+  console.error('Catalog image replacement must allocate a fresh image identity.')
   process.exit(1)
 }
 

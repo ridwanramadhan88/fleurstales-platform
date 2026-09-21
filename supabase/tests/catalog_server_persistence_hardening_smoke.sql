@@ -4,8 +4,35 @@ declare
   v_catalog_source text;
   v_size_source text;
 begin
-  if has_table_privilege('anon','public.product_variant_flower_recipes','SELECT') then
-    raise exception 'anon can read internal Catalog recipes';
+  if not has_table_privilege('anon','public.product_variant_flower_recipes','SELECT') then
+    raise exception 'anon cannot read customer-facing variant flower recipes';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relname = 'product_variant_flower_recipes'
+      and c.relrowsecurity
+  ) then
+    raise exception 'Variant flower recipe RLS must remain enabled';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'product_variant_flower_recipes'
+      and policyname = 'product_variant_flower_recipes_public_read'
+      and cmd = 'SELECT'
+      and 'anon' = any(roles)
+      and 'authenticated' = any(roles)
+      and qual ilike '%active%'
+      and qual ilike '%archived_at%'
+      and qual ilike '%is_active%'
+  ) then
+    raise exception 'Storefront recipe read policy is missing active/archive guards';
   end if;
 
   if not exists (
