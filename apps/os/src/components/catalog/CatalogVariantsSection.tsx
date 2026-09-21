@@ -91,14 +91,6 @@ export const CatalogVariantsSection: FC<Props> = ({
     })
   }
 
-  const openNewUnlinked = () => {
-    setEditorTarget({
-      index: null,
-      variant: blankVariant(),
-      label: 'Tambah varian belum ditautkan',
-    })
-  }
-
   const reservedSizeOptionIds = useMemo(() => {
     const currentId = editorTarget?.variant.sizeOptionId
     return new Set(
@@ -286,15 +278,11 @@ export const CatalogVariantsSection: FC<Props> = ({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border px-4 py-4">
-        <div>
-          <p className="text-sm font-semibold">Varian tanpa tautan ukuran</p>
-          <p className="mt-1 text-xs text-muted-foreground">Gunakan hanya jika produk memang belum dapat memakai template ukuran.</p>
+      {!sizeTemplate ? (
+        <div className="rounded-2xl border border-dashed border-border px-4 py-4 text-sm text-muted-foreground">
+          Buat atau tetapkan Size Template terlebih dahulu sebelum menambahkan varian baru.
         </div>
-        <button type="button" onClick={openNewUnlinked} className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold hover:bg-muted">
-          <Plus className="size-4" /> Tambah varian
-        </button>
-      </div>
+      ) : null}
 
       {editorTarget ? (
         <CatalogVariantEditorDialog
