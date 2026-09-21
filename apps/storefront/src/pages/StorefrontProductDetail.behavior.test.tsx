@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CatalogProduct } from '../store/catalogStoreTypes'
@@ -140,6 +140,23 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
     expect(onOpenCart).not.toHaveBeenCalled()
   })
 
+  it('changes size when the customer swipes from the Catalog photo to a variant photo', () => {
+    renderPage()
+
+    const catalogImage = screen.getByRole('img', { name: 'Test Bouquet — image 1' })
+    const gallery = catalogImage.parentElement
+    if (!gallery) throw new Error('Expected product gallery')
+
+    fireEvent.touchStart(gallery, { touches: [{ clientX: 240 }] })
+    fireEvent.touchEnd(gallery, { changedTouches: [{ clientX: 120 }] })
+
+    expect(screen.getByRole('button', { name: 'Small' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('img', { name: 'Test Bouquet — image 2' })).toHaveAttribute(
+      'src',
+      'https://example.com/small.jpg',
+    )
+  })
+
   it('changes the selected size when navigating to a variant photo and keeps it when returning to Catalog default', async () => {
     const user = userEvent.setup()
     renderPage()
@@ -150,6 +167,41 @@ describe('StorefrontProductDetailPage purchase behavior', () => {
 
     await user.click(screen.getByRole('button', { name: 'View catalog default image' }))
     expect(screen.getByRole('button', { name: 'Large' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('img', { name: 'Test Bouquet — image 1' })).toHaveAttribute(
+      'src',
+      'https://example.com/catalog.jpg',
+    )
+  })
+
+  it('auto-selects a single size but still opens on the Catalog default photo', () => {
+    const singleSizeProduct: CatalogProduct = {
+      ...product,
+      id: 'single-size-product',
+      productId: 'BOQ-SINGLE-001',
+      variants: [product.variants[0]],
+    }
+
+    render(
+      <StorefrontProductDetailPage
+        product={singleSizeProduct}
+        relatedProducts={[]}
+        cartCount={0}
+        cartTotalIdr={0}
+        cartOpen={false}
+        formatter={formatter}
+        storeProfile={DEFAULT_OWNER_SETTINGS.storeProfile}
+        onBack={vi.fn()}
+        onOpenHome={vi.fn()}
+        onOpenCart={vi.fn()}
+        onOpenSearch={vi.fn()}
+        onToggleMenu={vi.fn()}
+        menuOpen={false}
+        onOpenProduct={vi.fn()}
+        onAddToCart={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Small' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('img', { name: 'Test Bouquet — image 1' })).toHaveAttribute(
       'src',
       'https://example.com/catalog.jpg',
