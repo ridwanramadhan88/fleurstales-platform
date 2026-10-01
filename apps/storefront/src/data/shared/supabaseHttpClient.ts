@@ -49,6 +49,63 @@ const buildQuery = (options: SupabaseSelectOptions = {}): string => {
 const GUARDED_RPC_NAMES: Record<string, string> = {
   save_hr_operational_state: 'save_hr_operational_state_guarded',
   save_order_operational_state: 'save_order_operational_state_guarded',
+  replace_catalog_snapshot: 'replace_catalog_snapshot_guarded',
+  replace_catalog_flower_recipes: 'replace_catalog_flower_recipes_guarded',
+  replace_product_images_metadata: 'replace_product_images_metadata_guarded',
+}
+
+// Client-side retry brake. A screen that keeps re-sending a failing write (stale revision,
+// revoked permission, server overload) must never be able to flood the API again. After
+// RPC_BREAKER_THRESHOLD consecutive failures of the same RPC within RPC_BREAKER_WINDOW_MS the
+// call fails locally, without any network request, for a cooldown that doubles on every
+// repeat (30s up to 10min). A success, or an explicit reset after reloading fresh data,
+// closes the breaker.
+const RPC_BREAKER_THRESHOLD = 3
+const RPC_BREAKER_WINDOW_MS = 10_000
+const RPC_BREAKER_BASE_COOLDOWN_MS = 30_000
+const RPC_BREAKER_MAX_COOLDOWN_MS = 600_000
+
+interface RpcBreakerState {
+  failures: number
+  windowStartedAt: number
+  blockedUntil: number
+  nextCooldownMs: number
+}
+
+const rpcBreakers = new Map<string, RpcBreakerState>()
+
+export const RPC_CIRCUIT_OPEN = 'RPC_CIRCUIT_OPEN'
+
+export const resetSupabaseRpcBreakers = (): void => {
+  rpcBreakers.clear()
+}
+
+const breakerFor = (rpcName: string): RpcBreakerState => {
+  let state = rpcBreakers.get(rpcName)
+  if (!state) {
+    state = { failures: 0, windowStartedAt: 0, blockedUntil: 0, nextCooldownMs: RPC_BREAKER_BASE_COOLDOWN_MS }
+    rpcBreakers.set(rpcName, state)
+  }
+  return state
+}
+
+const recordRpcFailure = (rpcName: string, now: number): void => {
+  const state = breakerFor(rpcName)
+  if (now - state.windowStartedAt > RPC_BREAKER_WINDOW_MS) {
+    state.windowStartedAt = now
+    state.failures = 0
+  }
+  state.failures += 1
+  if (state.failures >= RPC_BREAKER_THRESHOLD) {
+    state.blockedUntil = now + state.nextCooldownMs
+    state.nextCooldownMs = Math.min(state.nextCooldownMs * 2, RPC_BREAKER_MAX_COOLDOWN_MS)
+    state.failures = 0
+    state.windowStartedAt = now
+  }
+}
+
+const recordRpcSuccess = (rpcName: string): void => {
+  rpcBreakers.delete(rpcName)
 }
 
 export class SupabaseHttpClient {
@@ -127,10 +184,30 @@ export class SupabaseHttpClient {
 
   async rpc<T>(functionName: string, args: Record<string, Json | undefined>): Promise<T> {
     const rpcName = GUARDED_RPC_NAMES[functionName] ?? functionName
-    return this.request<T>(`/rest/v1/rpc/${rpcName}`, {
-      method: 'POST',
-      body: JSON.stringify(args),
-    })
+    const now = Date.now()
+    const breaker = rpcBreakers.get(rpcName)
+    if (breaker && breaker.blockedUntil > now) {
+      throw new SupabaseHttpError(
+        'Permintaan ditahan sementara karena gagal berulang. Muat ulang halaman lalu coba lagi.',
+        429,
+        { code: RPC_CIRCUIT_OPEN, rpc: rpcName, retryAfterMs: breaker.blockedUntil - now },
+      )
+    }
+    try {
+      const result = await this.request<T>(`/rest/v1/rpc/${rpcName}`, {
+        method: 'POST',
+        body: JSON.stringify(args),
+      })
+      recordRpcSuccess(rpcName)
+      return result
+    } catch (error) {
+      // SESSION_REQUIRED is raised locally before any request is sent, so it is not a server failure.
+      const isLocalSessionGap = error instanceof SupabaseHttpError && error.status === 401
+        && typeof error.payload === 'object' && error.payload !== null
+        && 'code' in error.payload && error.payload.code === 'SESSION_REQUIRED'
+      if (!isLocalSessionGap) recordRpcFailure(rpcName, Date.now())
+      throw error
+    }
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
