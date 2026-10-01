@@ -56,6 +56,14 @@ begin
     raise exception 'Retired flower recipe RPC is executable by browser roles again';
   end if;
 
+  if has_function_privilege(
+    'anon',
+    'public.replace_catalog_flower_recipes(bigint,jsonb)',
+    'EXECUTE'
+  ) then
+    raise exception 'Retired flower recipe RPC is executable by anonymous visitors';
+  end if;
+
   select pg_get_functiondef('public.replace_catalog_flower_recipes(bigint,jsonb)'::regprocedure)
   into v_source;
 
