@@ -42,10 +42,18 @@ begin
 
   if not has_function_privilege(
     'authenticated',
-    'public.replace_catalog_flower_recipes(bigint,jsonb)',
+    'public.replace_catalog_flower_recipes_guarded(bigint,jsonb)',
     'EXECUTE'
   ) then
     raise exception 'Catalog editors cannot save flower recipes';
+  end if;
+
+  if has_function_privilege(
+    'authenticated',
+    'public.replace_catalog_flower_recipes(bigint,jsonb)',
+    'EXECUTE'
+  ) then
+    raise exception 'Retired flower recipe RPC is executable by browser roles again';
   end if;
 
   select pg_get_functiondef('public.replace_catalog_flower_recipes(bigint,jsonb)'::regprocedure)
