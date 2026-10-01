@@ -33,10 +33,19 @@ begin
 
   if not has_function_privilege(
     'authenticated',
+    'public.replace_catalog_snapshot_guarded(bigint,jsonb,jsonb)',
+    'EXECUTE'
+  ) then
+    raise exception 'Authenticated Catalog editors cannot execute the guarded atomic snapshot RPC';
+  end if;
+
+  -- The retired name must stay closed to browser roles so stale tabs fail before payload decoding.
+  if has_function_privilege(
+    'authenticated',
     'public.replace_catalog_snapshot(bigint,jsonb,jsonb)',
     'EXECUTE'
   ) then
-    raise exception 'Authenticated Catalog editors cannot execute the atomic snapshot RPC';
+    raise exception 'Retired Catalog snapshot RPC is executable by browser roles again';
   end if;
 end;
 $$;
