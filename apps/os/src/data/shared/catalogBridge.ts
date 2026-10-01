@@ -12,6 +12,7 @@ import type {
 import type { SharedOccasion, SharedProduct, SharedProductImage, SharedProductImageMetadataInput } from './contracts'
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from './supabaseSession'
+import { resetSupabaseRpcBreakers } from './supabaseHttpClient'
 import { buildCatalogImageStoragePlan, materializeCatalogImagesAfterCommit } from './catalogImageBridge'
 import { applyRemoteSizeGuideLibrary, syncLocalSizeGuideLibrary, syncSizeGuideLibrary } from './sizeGuideBridge'
 
@@ -266,6 +267,13 @@ let businessFocusAttached = false
 let storefrontFocusAttached = false
 let saveInFlight = false
 let saveRequestedWhileSaving = false
+// Set when the server says this tab's Catalog revision is stale. While set, nothing may call
+// the server to save: no autosave timer, no focus retry, no manual flush. It is released only
+// by loading the latest Catalog from the server (or by stopping the bridge). It is deliberately
+// separate from bridgeStatus.phase, which other code paths overwrite.
+let conflictLocked = false
+const CATALOG_CONFLICT_MESSAGE =
+  'Catalog berubah di sesi lain. Draft lokal tidak ditimpa; muat ulang data terbaru sebelum mencoba menyimpan lagi.'
 const remoteImagePaths = new Set<string>()
 
 const collectRemoteImagePaths = (products: CatalogProduct[]): Set<string> => new Set(
@@ -353,7 +361,7 @@ export const refreshStorefrontCatalogFromRemote = async (): Promise<boolean> => 
 const ensureBusinessSubscription = (): void => {
   if (catalogUnsubscribe) return
   catalogUnsubscribe = useCatalogStore.subscribe((state: CatalogStoreState) => {
-    if (suppressLocalSync || remoteRevision === undefined) return
+    if (suppressLocalSync || remoteRevision === undefined || conflictLocked) return
     const currentHash = snapshotHash(state)
     if (currentHash === lastSyncedHash) return
     if (saveTimer) clearTimeout(saveTimer)
@@ -393,10 +401,12 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
     && snapshotHash(useCatalogStore.getState()) !== lastSyncedHash
   if (hasPendingLocalChanges && !options?.discardLocalChanges) {
     setBridgeStatus({
-      phase: 'remote',
+      phase: conflictLocked ? 'conflict' : 'remote',
       remoteConfigured: true,
       writable: true,
-      message: 'Remote refresh skipped because local Catalog changes are waiting to be saved.',
+      message: conflictLocked
+        ? CATALOG_CONFLICT_MESSAGE
+        : 'Remote refresh skipped because local Catalog changes are waiting to be saved.',
     })
     return false
   }
@@ -442,6 +452,8 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
     try { applyRemoteSizeGuideLibrary(sizeGuideTemplates, sizeGuideTargets) } finally { suppressLocalSync = false }
     remoteRevision = canManageCatalog ? adminState.revision : undefined
     lastSyncedHash = snapshotHash(useCatalogStore.getState())
+    conflictLocked = false
+    resetSupabaseRpcBreakers()
     remoteImagePaths.clear()
     for (const path of collectRemoteImagePaths(useCatalogStore.getState().products)) remoteImagePaths.add(path)
     if (canManageCatalog) ensureBusinessSubscription()
@@ -471,6 +483,10 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
     saveTimer = undefined
   }
   if (remoteRevision === undefined) return false
+  if (conflictLocked) {
+    setBridgeStatus({ phase: 'conflict', writable: true, message: CATALOG_CONFLICT_MESSAGE })
+    return false
+  }
   if (saveInFlight) {
     saveRequestedWhileSaving = true
     return true
@@ -578,12 +594,12 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
 
     const message = explainError(error)
     const conflict = /CATALOG_CONFLICT|revision/i.test(message)
+      || (typeof error === 'object' && error !== null && 'status' in error && error.status === 409)
+    if (conflict) conflictLocked = true
     setBridgeStatus({
       phase: conflict ? 'conflict' : 'error',
       writable: true,
-      message: conflict
-        ? 'Catalog berubah di sesi lain. Draft lokal tidak ditimpa; muat ulang data terbaru sebelum mencoba menyimpan lagi.'
-        : message,
+      message: conflict ? CATALOG_CONFLICT_MESSAGE : message,
     })
     return false
   } finally {
@@ -660,7 +676,7 @@ export const initializeBusinessOsCatalogBridge = async (): Promise<void> => {
   if (!businessFocusAttached && typeof window !== 'undefined') {
     businessFocusAttached = true
     window.addEventListener('focus', () => {
-      if (getCatalogBridgeStatus().phase === 'conflict') return
+      if (conflictLocked || getCatalogBridgeStatus().phase === 'conflict') return
       const hasPendingLocalChanges = remoteRevision !== undefined
         && lastSyncedHash !== undefined
         && snapshotHash(useCatalogStore.getState()) !== lastSyncedHash
@@ -679,5 +695,6 @@ export const stopBusinessOsCatalogBridge = (): void => {
   lastSyncedHash = undefined
   saveInFlight = false
   saveRequestedWhileSaving = false
+  conflictLocked = false
   remoteImagePaths.clear()
 }
