@@ -11,6 +11,10 @@ declare
 begin
   if not has_function_privilege(
        'authenticated',
+       'public.save_hr_operational_state_guarded(bigint,jsonb)',
+       'EXECUTE'
+     ) or has_function_privilege(
+       'authenticated',
        'public.save_hr_operational_state(bigint,jsonb)',
        'EXECUTE'
      ) or has_function_privilege(
@@ -33,6 +37,10 @@ begin
   end if;
 
   if not has_function_privilege(
+       'authenticated',
+       'public.save_order_operational_state_guarded(text,integer,integer,jsonb,jsonb,jsonb)',
+       'EXECUTE'
+     ) or has_function_privilege(
        'authenticated',
        'public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)',
        'EXECUTE'

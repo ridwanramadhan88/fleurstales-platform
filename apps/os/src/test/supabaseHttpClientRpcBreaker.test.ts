@@ -39,6 +39,27 @@ describe('SupabaseHttpClient guarded Catalog entrypoints', () => {
       'https://example.supabase.co/rest/v1/rpc/replace_product_images_metadata_guarded',
     ])
   })
+
+  it('calls the guarded autosave writers, never the retired names', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const client = new SupabaseHttpClient(config, { getAccessToken: () => 'jwt' })
+    const writers = [
+      'save_operational_domain_state',
+      'save_finance_operational_state',
+      'replace_public_store_snapshot',
+      'save_authorization_config',
+      'save_internal_settings_config',
+      'save_customer_profile',
+      'delete_customer_profile',
+    ]
+
+    for (const writer of writers) await client.rpc(writer, {})
+
+    expect(fetchMock.mock.calls.map((call) => String(call[0]))).toEqual(
+      writers.map((writer) => `https://example.supabase.co/rest/v1/rpc/${writer}_guarded`),
+    )
+  })
 })
 
 describe('SupabaseHttpClient RPC circuit breaker', () => {

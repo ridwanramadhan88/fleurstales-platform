@@ -62,7 +62,7 @@ begin
 
   if not has_function_privilege(
     'authenticated',
-    'public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)',
+    'public.save_order_operational_state_guarded(text,integer,integer,jsonb,jsonb,jsonb)',
     'EXECUTE'
   ) then
     raise exception 'Authenticated staff cannot execute the protected public Order writer';

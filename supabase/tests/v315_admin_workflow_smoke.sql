@@ -21,7 +21,9 @@ begin
     raise exception 'Internal-order RPC grants are incorrect';
   end if;
 
-  if not has_function_privilege('authenticated','public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE')
+  if not has_function_privilege('authenticated','public.save_order_operational_state_guarded(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE')
+     or has_function_privilege('anon','public.save_order_operational_state_guarded(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE')
+     or has_function_privilege('authenticated','public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE')
      or has_function_privilege('anon','public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)','EXECUTE') then
     raise exception 'Order-state RPC grants are incorrect';
   end if;

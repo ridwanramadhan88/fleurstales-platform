@@ -77,10 +77,17 @@ begin
   end if;
   if not has_function_privilege(
     'authenticated',
-    'public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)',
+    'public.save_order_operational_state_guarded(text,integer,integer,jsonb,jsonb,jsonb)',
     'EXECUTE'
   ) then
     raise exception 'authenticated cannot execute secured Orders RPC';
+  end if;
+  if has_function_privilege(
+    'authenticated',
+    'public.save_order_operational_state(text,integer,integer,jsonb,jsonb,jsonb)',
+    'EXECUTE'
+  ) then
+    raise exception 'authenticated can call the retired Orders RPC name';
   end if;
   if has_function_privilege('anon', 'private.can_read_order_row(text,text)', 'EXECUTE') then
     raise exception 'anon can execute staff Orders RLS helper';
