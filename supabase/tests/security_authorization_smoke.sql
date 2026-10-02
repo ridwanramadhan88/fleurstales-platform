@@ -62,7 +62,7 @@ begin
     if to_regprocedure(format('public.%I(bigint,jsonb)', v_name)) is null then
       raise exception 'Payroll workflow RPC missing: %', v_name;
     end if;
-    if not has_function_privilege('authenticated', format('public.%I(bigint,jsonb)', v_name), 'EXECUTE') then
+    if not has_function_privilege('authenticated', format('public.%I(bigint,jsonb)', v_name || '_guarded'), 'EXECUTE') then
       raise exception 'authenticated cannot execute Payroll workflow RPC: %', v_name;
     end if;
   end loop;

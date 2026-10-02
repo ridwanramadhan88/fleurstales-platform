@@ -50,14 +50,14 @@ begin
      or not has_function_privilege('service_role','public.search_order_public_status(text)','EXECUTE') then
     raise exception 'Order-number-only tracking lookup is still publicly executable';
   end if;
-  if not has_function_privilege('authenticated','public.attach_order_finish_photo(text,integer,text,text)','EXECUTE')
+  if not has_function_privilege('authenticated','public.attach_order_finish_photo_guarded(text,integer,text,text)','EXECUTE')
      or has_function_privilege('anon','public.attach_order_finish_photo(text,integer,text,text)','EXECUTE') then
     raise exception 'Finish photo attachment grants are incorrect';
   end if;
 
   if not has_function_privilege(
        'authenticated',
-       'public.confirm_order_payment_with_proof(text,integer,text,text)',
+       'public.confirm_order_payment_with_proof_guarded(text,integer,text,text)',
        'EXECUTE'
      ) or has_function_privilege(
        'anon',
@@ -69,7 +69,7 @@ begin
 
   if not has_function_privilege(
        'authenticated',
-       'public.start_paid_order_production(text,integer,text,date,time without time zone,boolean,text,time without time zone,time without time zone)',
+       'public.start_paid_order_production_guarded(text,integer,text,date,time without time zone,boolean,text,time without time zone,time without time zone)',
        'EXECUTE'
      ) or has_function_privilege(
        'anon',

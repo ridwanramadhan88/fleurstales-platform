@@ -27,7 +27,7 @@ begin
   if has_function_privilege('anon','public.create_internal_order(jsonb)','execute') then
     raise exception 'anon must not execute internal order creation';
   end if;
-  if not has_function_privilege('authenticated','public.create_internal_order(jsonb)','execute') then
+  if not has_function_privilege('authenticated','public.create_internal_order_guarded(jsonb)','execute') then
     raise exception 'authenticated staff cannot execute internal order creation';
   end if;
 end $$;
