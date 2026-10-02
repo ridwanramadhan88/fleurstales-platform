@@ -258,8 +258,16 @@ const snapshotHash = (state: CatalogStoreState): string => JSON.stringify({
   arrangementTypes: state.arrangementTypes,
 })
 
+// Arrangement types and the size-guide library have no revision of their own and are replaced
+// wholesale, so only send them when they differ from what the server last confirmed.
+const arrangementTypesHash = (names: readonly string[]): string => JSON.stringify(names)
+const sizeGuideLibraryHash = (state: Pick<CatalogStoreState, 'sizeGuideTemplates' | 'sizeGuideTargets'>): string =>
+  JSON.stringify({ templates: state.sizeGuideTemplates, targets: state.sizeGuideTargets })
+
 let suppressLocalSync = false
 let catalogUnsubscribe: (() => void) | undefined
+let lastSyncedArrangementTypesHash: string | undefined
+let lastSyncedSizeGuideLibraryHash: string | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 let remoteRevision: number | undefined
 let lastSyncedHash: string | undefined
@@ -452,6 +460,8 @@ export const refreshBusinessOsCatalogFromRemote = async (options?: { discardLoca
     try { applyRemoteSizeGuideLibrary(sizeGuideTemplates, sizeGuideTargets) } finally { suppressLocalSync = false }
     remoteRevision = canManageCatalog ? adminState.revision : undefined
     lastSyncedHash = snapshotHash(useCatalogStore.getState())
+    lastSyncedArrangementTypesHash = arrangementTypesHash(arrangementTypes.map((item) => item.name))
+    lastSyncedSizeGuideLibraryHash = sizeGuideLibraryHash(useCatalogStore.getState())
     conflictLocked = false
     resetSupabaseRpcBreakers()
     remoteImagePaths.clear()
@@ -569,10 +579,15 @@ export const flushBusinessOsCatalogSync = async (): Promise<boolean> => {
 
     let secondaryMessage: string | undefined
     try {
-      await shared.repositories.catalogAdmin.replaceArrangementTypes(
-        useCatalogStore.getState().arrangementTypes,
-      )
-      await syncLocalSizeGuideLibrary(shared.repositories.catalogAdmin)
+      const localArrangementTypes = useCatalogStore.getState().arrangementTypes
+      if (arrangementTypesHash(localArrangementTypes) !== lastSyncedArrangementTypesHash) {
+        await shared.repositories.catalogAdmin.replaceArrangementTypes(localArrangementTypes)
+        lastSyncedArrangementTypesHash = arrangementTypesHash(localArrangementTypes)
+      }
+      if (sizeGuideLibraryHash(useCatalogStore.getState()) !== lastSyncedSizeGuideLibraryHash) {
+        await syncLocalSizeGuideLibrary(shared.repositories.catalogAdmin)
+        lastSyncedSizeGuideLibraryHash = sizeGuideLibraryHash(useCatalogStore.getState())
+      }
       lastSyncedHash = snapshotHash(useCatalogStore.getState())
     } catch (secondaryError) {
       secondaryMessage = 'Produk tersimpan, tetapi pengaturan Catalog lain masih perlu disinkronkan: ' + explainError(secondaryError)
@@ -619,6 +634,10 @@ export const flushBusinessOsSizeGuideSync = async (
     saveTimer = undefined
   }
   if (remoteRevision === undefined) return false
+  if (conflictLocked) {
+    setBridgeStatus({ phase: 'conflict', writable: true, message: CATALOG_CONFLICT_MESSAGE })
+    return false
+  }
 
   const accessToken = getSupabaseAccessToken()
   if (!accessToken) {
@@ -636,6 +655,7 @@ export const flushBusinessOsSizeGuideSync = async (
       sizeGuideTemplates: state.sizeGuideTemplates,
       sizeGuideTargets: state.sizeGuideTargets,
     })
+    lastSyncedSizeGuideLibraryHash = sizeGuideLibraryHash(useCatalogStore.getState())
     lastSyncedHash = snapshotHash(useCatalogStore.getState())
     if (saveTimer) {
       clearTimeout(saveTimer)
@@ -693,6 +713,8 @@ export const stopBusinessOsCatalogBridge = (): void => {
   catalogUnsubscribe = undefined
   remoteRevision = undefined
   lastSyncedHash = undefined
+  lastSyncedArrangementTypesHash = undefined
+  lastSyncedSizeGuideLibraryHash = undefined
   saveInFlight = false
   saveRequestedWhileSaving = false
   conflictLocked = false
