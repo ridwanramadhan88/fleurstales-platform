@@ -16,7 +16,7 @@ begin
     raise exception 'Runtime-context RPC grants are incorrect';
   end if;
 
-  if not has_function_privilege('authenticated','public.create_internal_order(jsonb)','EXECUTE')
+  if not has_function_privilege('authenticated','public.create_internal_order_guarded(jsonb)','EXECUTE')
      or has_function_privilege('anon','public.create_internal_order(jsonb)','EXECUTE') then
     raise exception 'Internal-order RPC grants are incorrect';
   end if;

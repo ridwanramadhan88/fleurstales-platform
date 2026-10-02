@@ -37,12 +37,12 @@ begin
     raise exception 'Rate limiter helper is browser-executable';
   end if;
 
-  if not has_function_privilege('authenticated','public.save_order_finance_reference(text,integer,text)','EXECUTE')
+  if not has_function_privilege('authenticated','public.save_order_finance_reference_guarded(text,integer,text)','EXECUTE')
      or has_function_privilege('anon','public.save_order_finance_reference(text,integer,text)','EXECUTE') then
     raise exception 'Finance reference RPC grants are incorrect';
   end if;
-  if not has_function_privilege('authenticated','public.confirm_pending_storefront_order(text,integer)','EXECUTE')
-     or not has_function_privilege('authenticated','public.cancel_pending_storefront_order(text,integer,text)','EXECUTE')
+  if not has_function_privilege('authenticated','public.confirm_pending_storefront_order_guarded(text,integer)','EXECUTE')
+     or not has_function_privilege('authenticated','public.cancel_pending_storefront_order_guarded(text,integer,text)','EXECUTE')
      or has_function_privilege('anon','public.confirm_pending_storefront_order(text,integer)','EXECUTE')
      or has_function_privilege('anon','public.cancel_pending_storefront_order(text,integer,text)','EXECUTE') then
     raise exception 'Storefront decision RPC grants are incorrect';

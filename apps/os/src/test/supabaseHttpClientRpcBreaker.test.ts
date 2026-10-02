@@ -60,6 +60,45 @@ describe('SupabaseHttpClient guarded Catalog entrypoints', () => {
       writers.map((writer) => `https://example.supabase.co/rest/v1/rpc/${writer}_guarded`),
     )
   })
+
+  it('calls the guarded click-action writers, never the retired names', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const client = new SupabaseHttpClient(config, { getAccessToken: () => 'jwt' })
+    const writers = [
+      'attach_order_finish_photo',
+      'cancel_pending_storefront_order',
+      'complete_order_refund_with_account',
+      'confirm_order_payment_for_processing',
+      'confirm_order_payment_with_proof',
+      'confirm_pending_storefront_order',
+      'create_finance_cashflow_entry',
+      'decide_order_finance_reconciliation',
+      'edit_manual_finance_transaction',
+      'record_payroll_payment_with_account',
+      'save_manual_finance_transaction',
+      'save_order_finance_reference',
+      'start_paid_order_production',
+      'create_internal_order',
+      'save_review_reward_settings',
+      'payroll_set_compensation',
+      'payroll_prepare',
+      'payroll_generate',
+      'payroll_submit',
+      'payroll_resolve_rejected',
+      'payroll_approve_employee',
+      'payroll_reject_employee',
+      'payroll_approve_all',
+      'payroll_record_payment',
+      'payroll_adjust_schedule',
+    ]
+
+    for (const writer of writers) await client.rpc(writer, {})
+
+    expect(fetchMock.mock.calls.map((call) => String(call[0]))).toEqual(
+      writers.map((writer) => `https://example.supabase.co/rest/v1/rpc/${writer}_guarded`),
+    )
+  })
 })
 
 describe('SupabaseHttpClient RPC circuit breaker', () => {

@@ -28,7 +28,7 @@ begin
   if to_regprocedure('public.save_manual_finance_transaction(bigint,jsonb,bigint,text,text)') is null then
     raise exception 'Atomic manual Finance transaction RPC is missing';
   end if;
-  if not has_function_privilege('authenticated','public.save_manual_finance_transaction(bigint,jsonb,bigint,text,text)','EXECUTE')
+  if not has_function_privilege('authenticated','public.save_manual_finance_transaction_guarded(bigint,jsonb,bigint,text,text)','EXECUTE')
      or has_function_privilege('anon','public.save_manual_finance_transaction(bigint,jsonb,bigint,text,text)','EXECUTE') then
     raise exception 'Atomic manual Finance transaction RPC grants are incorrect';
   end if;
