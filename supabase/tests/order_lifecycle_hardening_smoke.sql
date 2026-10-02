@@ -164,8 +164,9 @@ begin
   where schemaname='storage' and tablename='objects' and policyname='order_payment_proofs_storage_select';
   if v_policy is null
      or position('current_staff_role' in v_policy)=0
-     or position('finance' in lower(v_policy))=0 then
-    raise exception 'Payment proof read policy is not Finance-only';
+     or position('finance' in lower(v_policy))=0
+     or position('can_write_order_media_object' in v_policy)=0 then
+    raise exception 'Payment proof reads must be limited to Finance and the Owner/Admin who may upload them';
   end if;
 
   select pg_get_functiondef('public.confirm_order_payment_with_proof(text,integer,text,text)'::regprocedure) into v_source;
