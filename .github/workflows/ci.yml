@@ -44,6 +44,7 @@ jobs:
     outputs:
       storefront: ${{ steps.paths.outputs.storefront }}
       os: ${{ steps.paths.outputs.os }}
+      supabase: ${{ steps.paths.outputs.supabase }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,8 +71,17 @@ jobs:
 
           storefront=false
           os=false
+          supabase=false
 
           while IFS= read -r file; do
+            # Migrations, SQL smoke tests and the gate's own scripts/workflow must
+            # replay against a real database before merge, not first at release.
+            case "$file" in
+              supabase/*|scripts/run-local-supabase-database-gate.sh|scripts/run-supabase-smoke-tests.sh|.github/workflows/ci.yml)
+                supabase=true
+                ;;
+            esac
+
             case "$file" in
               apps/storefront/*)
                 storefront=true
@@ -92,6 +102,7 @@ jobs:
 
           echo "storefront=$storefront" >> "$GITHUB_OUTPUT"
           echo "os=$os" >> "$GITHUB_OUTPUT"
+          echo "supabase=$supabase" >> "$GITHUB_OUTPUT"
 
   critical:
     name: Critical contracts
@@ -205,8 +216,11 @@ jobs:
 
   database-gate:
     name: Full Supabase database gate
-    needs: mode
-    if: needs.mode.outputs.full == 'true'
+    needs: [mode, app-paths]
+    # app-paths is skipped in full mode, so evaluate even when a need was skipped.
+    if: >-
+      !cancelled() && needs.mode.result == 'success' &&
+      (needs.mode.outputs.full == 'true' || needs.app-paths.outputs.supabase == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -241,6 +255,7 @@ jobs:
       APP_PATHS_RESULT: ${{ needs.app-paths.result }}
       STOREFRONT_NEEDED: ${{ needs.app-paths.outputs.storefront }}
       OS_NEEDED: ${{ needs.app-paths.outputs.os }}
+      SUPABASE_NEEDED: ${{ needs.app-paths.outputs.supabase }}
       CRITICAL_RESULT: ${{ needs.critical.result }}
       STOREFRONT_RESULT: ${{ needs.storefront.result }}
       OS_RESULT: ${{ needs.os.result }}
@@ -289,5 +304,6 @@ jobs:
             require_success "Critical contracts" "$CRITICAL_RESULT"
             require_app_result "Storefront fast checks" "$STOREFRONT_NEEDED" "$STOREFRONT_RESULT"
             require_app_result "Business OS fast checks" "$OS_NEEDED" "$OS_RESULT"
+            require_app_result "Supabase database gate" "$SUPABASE_NEEDED" "$DATABASE_RESULT"
             echo "Fast CI passed."
           fi
