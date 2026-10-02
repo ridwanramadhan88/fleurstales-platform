@@ -87,7 +87,7 @@ declare
   v_blocked boolean;
   i integer;
 begin
-  -- Two Storefront orders: one fresh, one 49 hours old.
+  -- Two Storefront orders: one 3 days old (inside the 7-day window), one just over 7 days old.
   for i in 1..2 loop
     v_result := public.create_storefront_order(
       'smoke-hygiene-order-000' || i,
@@ -99,7 +99,8 @@ begin
     if i = 2 then select * into v_old from public.orders where id = v_result->>'orderId'; end if;
   end loop;
 
-  update public.orders set created_at = now() - interval '49 hours' where id = v_old.id;
+  update public.orders set created_at = now() - interval '3 days' where id = v_fresh.id;
+  update public.orders set created_at = now() - interval '7 days 1 hour' where id = v_old.id;
 
   -- The capacity guard rejects past slots on purpose, so the passed-slot rule is checked
   -- in the function body rather than by moving a live order into the past.
@@ -115,11 +116,11 @@ begin
   select * into v_fresh from public.orders where id = v_fresh.id;
   select * into v_old from public.orders where id = v_old.id;
   if v_fresh.status <> 'pending_verification' then
-    raise exception 'A fresh unpaid order must not expire, got %', v_fresh.status;
+    raise exception 'A 3-day-old unpaid order must wait for the 7-day window, got %', v_fresh.status;
   end if;
   if v_old.status <> 'cancelled' or v_old.cancelled_by <> 'System'
-     or position('48 hours' in v_old.cancellation_reason) = 0 then
-    raise exception 'A 49-hour-old unpaid order must be cancelled by System, got % / % / %',
+     or position('7 days' in v_old.cancellation_reason) = 0 then
+    raise exception 'An unpaid order older than 7 days must be cancelled by System, got % / % / %',
       v_old.status, v_old.cancelled_by, v_old.cancellation_reason;
   end if;
   if not exists (select 1 from public.order_activities where order_id = v_old.id and actor = 'System') then
