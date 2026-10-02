@@ -1,0 +1,80 @@
+name: Prune merged branches
+
+# Manual cleanup of remote branches whose work is already in main.
+# A branch is deleted only when it is fully contained in main, or when a merged pull request's
+# head commit is still the branch tip (nothing was pushed after the merge). main, branches with
+# an open pull request, and anything with newer commits are always kept.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List what would be deleted without deleting anything
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: prune-merged-branches
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: Prune merged branches
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - name: Delete branches whose work is already in main
+        shell: bash
+        run: |
+          set -euo pipefail
+          default_branch=$(gh api "repos/$REPO" --jq .default_branch)
+
+          gh api --paginate "repos/$REPO/pulls?state=all&per_page=100" \
+            --jq '.[] | select(.head.repo.full_name == env.REPO) | [.head.ref, .head.sha, (if .merged_at then "merged" elif .state == "open" then "open" else "closed" end)] | @tsv' \
+            > "$RUNNER_TEMP/prs.tsv"
+          gh api --paginate "repos/$REPO/branches?per_page=100" \
+            --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv' > "$RUNNER_TEMP/branches.tsv"
+
+          deleted=0; kept=0
+          while IFS=$'\t' read -r branch sha protected; do
+            if [[ "$branch" == "$default_branch" || "$protected" == "true" ]]; then
+              continue
+            fi
+            if awk -F'\t' -v b="$branch" '$1 == b && $3 == "open" { found = 1 } END { exit !found }' "$RUNNER_TEMP/prs.tsv"; then
+              echo "keep    $branch (open pull request)"; kept=$((kept + 1)); continue
+            fi
+            reason=""
+            if awk -F'\t' -v b="$branch" -v s="$sha" '$1 == b && $2 == s && $3 == "merged" { found = 1 } END { exit !found }' "$RUNNER_TEMP/prs.tsv"; then
+              reason="merged pull request, tip unchanged"
+            else
+              status=$(gh api "repos/$REPO/compare/$default_branch...$sha" --jq .status 2>/dev/null < /dev/null || echo unknown)
+              if [[ "$status" == "behind" || "$status" == "identical" ]]; then
+                reason="fully contained in $default_branch"
+              fi
+            fi
+            if [[ -z "$reason" ]]; then
+              echo "keep    $branch (not verifiably merged)"; kept=$((kept + 1)); continue
+            fi
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "would delete  $branch ($reason)"
+            else
+              # Re-read the tip so a branch updated during the run is never removed.
+              current=$(gh api "repos/$REPO/git/ref/heads/$branch" --jq .object.sha 2>/dev/null < /dev/null || echo gone)
+              if [[ "$current" != "$sha" ]]; then
+                echo "keep    $branch (changed during run)"; kept=$((kept + 1)); continue
+              fi
+              gh api -X DELETE "repos/$REPO/git/refs/heads/$branch" > /dev/null < /dev/null
+              echo "deleted $branch ($reason)"
+            fi
+            deleted=$((deleted + 1))
+          done < "$RUNNER_TEMP/branches.tsv"
+
+          verb=$([[ "$DRY_RUN" == "true" ]] && echo "would delete" || echo "deleted")
+          echo "Summary: $verb $deleted, kept $kept" | tee -a "$GITHUB_STEP_SUMMARY"
