@@ -3,6 +3,7 @@ import { useUserStore } from '../../store/userStore'
 import type { SharedStoreSnapshot } from './contracts'
 import { bootstrapSharedData } from './bootstrap'
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from './supabaseSession'
+import { resetSupabaseRpcBreakers } from './supabaseHttpClient'
 import { applySharedStoreSnapshotToLocalState, getLocalSharedStoreSnapshot } from './storeLocalAdapter'
 import { buildSharedStoreSnapshot } from './storeSettingsDomain'
 
@@ -79,6 +80,13 @@ let businessFocusAttached = false
 let storefrontFocusAttached = false
 let saveInFlight = false
 let saveRequestedWhileSaving = false
+// Set when the server says this tab's Store revision is stale. While set, nothing may call
+// the server to save: no autosave timer, no focus retry, no manual flush. It is released only
+// by loading the latest Store details from the server (or by stopping the bridge). It is
+// deliberately separate from bridgeStatus.phase, which other code paths overwrite.
+let conflictLocked = false
+const STORE_CONFLICT_MESSAGE =
+  'Store details changed in another OS session. Local edits were kept and were not overwritten; reload the remote Store data before saving again.'
 
 const applySnapshot = (snapshot: SharedStoreSnapshot): void => {
   suppressLocalSync = true
@@ -185,7 +193,7 @@ export const refreshStorefrontStoreFromRemote = async (): Promise<boolean> => {
 const ensureBusinessSubscription = (): void => {
   if (settingsUnsubscribe) return
   settingsUnsubscribe = useSettingsStore.subscribe(() => {
-    if (suppressLocalSync || remoteRevision === undefined) return
+    if (suppressLocalSync || remoteRevision === undefined || conflictLocked) return
     const currentHash = snapshotHash()
     if (currentHash === lastSyncedHash) return
     if (saveTimer) clearTimeout(saveTimer)
@@ -226,10 +234,12 @@ export const refreshBusinessOsStoreFromRemote = async (options?: { discardLocalC
     && snapshotHash() !== lastSyncedHash
   if (hasPendingLocalChanges && !options?.discardLocalChanges) {
     setBridgeStatus({
-      phase: 'remote',
+      phase: conflictLocked ? 'conflict' : 'remote',
       remoteConfigured: true,
       writable: true,
-      message: 'Remote Store refresh skipped because local Store changes are waiting to be saved.',
+      message: conflictLocked
+        ? STORE_CONFLICT_MESSAGE
+        : 'Remote Store refresh skipped because local Store changes are waiting to be saved.',
     })
     return false
   }
@@ -241,6 +251,8 @@ export const refreshBusinessOsStoreFromRemote = async (options?: { discardLocalC
     applySnapshot(remote.snapshot)
     remoteRevision = writable ? remote.revision : undefined
     lastSyncedHash = snapshotHash()
+    conflictLocked = false
+    resetSupabaseRpcBreakers()
     if (writable) ensureBusinessSubscription()
     setBridgeStatus({
       phase: 'remote',
@@ -264,6 +276,10 @@ export const refreshBusinessOsStoreFromRemote = async (options?: { discardLocalC
 
 export const flushBusinessOsStoreSync = async (): Promise<boolean> => {
   if (remoteRevision === undefined) return false
+  if (conflictLocked) {
+    setBridgeStatus({ phase: 'conflict', writable: true, message: STORE_CONFLICT_MESSAGE })
+    return false
+  }
   if (saveInFlight) {
     saveRequestedWhileSaving = true
     return true
@@ -316,12 +332,12 @@ export const flushBusinessOsStoreSync = async (): Promise<boolean> => {
   } catch (error) {
     const message = explainError(error)
     const conflict = /STORE_CONFLICT|revision/i.test(message)
+      || (typeof error === 'object' && error !== null && 'status' in error && error.status === 409)
+    if (conflict) conflictLocked = true
     setBridgeStatus({
       phase: conflict ? 'conflict' : 'error',
       writable: true,
-      message: conflict
-        ? 'Store details changed in another OS session. Local edits were kept and were not overwritten; reload the remote Store data before saving again.'
-        : message,
+      message: conflict ? STORE_CONFLICT_MESSAGE : message,
     })
     return false
   } finally {
@@ -348,7 +364,7 @@ export const initializeBusinessOsStoreBridge = async (): Promise<void> => {
   if (!businessFocusAttached && typeof window !== 'undefined') {
     businessFocusAttached = true
     window.addEventListener('focus', () => {
-      if (getStoreBridgeStatus().phase === 'conflict') return
+      if (conflictLocked || getStoreBridgeStatus().phase === 'conflict') return
       const hasPendingLocalChanges = remoteRevision !== undefined
         && lastSyncedHash !== undefined
         && snapshotHash() !== lastSyncedHash
@@ -367,4 +383,5 @@ export const stopBusinessOsStoreBridge = (): void => {
   lastSyncedHash = undefined
   saveInFlight = false
   saveRequestedWhileSaving = false
+  conflictLocked = false
 }

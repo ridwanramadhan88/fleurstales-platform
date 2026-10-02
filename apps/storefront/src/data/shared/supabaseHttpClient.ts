@@ -52,6 +52,13 @@ const GUARDED_RPC_NAMES: Record<string, string> = {
   replace_catalog_snapshot: 'replace_catalog_snapshot_guarded',
   replace_catalog_flower_recipes: 'replace_catalog_flower_recipes_guarded',
   replace_product_images_metadata: 'replace_product_images_metadata_guarded',
+  save_operational_domain_state: 'save_operational_domain_state_guarded',
+  save_finance_operational_state: 'save_finance_operational_state_guarded',
+  replace_public_store_snapshot: 'replace_public_store_snapshot_guarded',
+  save_authorization_config: 'save_authorization_config_guarded',
+  save_internal_settings_config: 'save_internal_settings_config_guarded',
+  save_customer_profile: 'save_customer_profile_guarded',
+  delete_customer_profile: 'delete_customer_profile_guarded',
 }
 
 // Client-side retry brake. A screen that keeps re-sending a failing write (stale revision,

@@ -12,7 +12,9 @@ begin
     raise exception 'Self-attendance RPC grants are incorrect';
   end if;
 
-  if not has_function_privilege('authenticated','public.save_hr_operational_state(bigint,jsonb)','EXECUTE')
+  if not has_function_privilege('authenticated','public.save_hr_operational_state_guarded(bigint,jsonb)','EXECUTE')
+     or has_function_privilege('anon','public.save_hr_operational_state_guarded(bigint,jsonb)','EXECUTE')
+     or has_function_privilege('authenticated','public.save_hr_operational_state(bigint,jsonb)','EXECUTE')
      or has_function_privilege('anon','public.save_hr_operational_state(bigint,jsonb)','EXECUTE') then
     raise exception 'HR state RPC grants are incorrect';
   end if;
