@@ -6,17 +6,17 @@
 import type { FC } from 'react'
 import type { BranchFilter } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
-import { toFinanceModule, toOrders, type AppNavigationRequest } from '../../config/appNavigation'
+import { toAppTab, toOrders, type AppNavigationRequest } from '../../config/appNavigation'
 import { DashboardHeader } from './DashboardHeader'
 import { ModuleShortcuts } from './ModuleShortcuts'
-import { RoleFocusNotice } from './RoleFocusNotice'
 import { AdminTodayQueue } from './AdminTodayQueue'
 import { OverviewCardsContainer } from './OverviewCardsContainer'
-import { SelfieAttendanceCard } from '../hr/SelfieAttendanceCard'
 import { OwnerAttentionQueue } from './OwnerAttentionQueue'
-import { MySchedulePanel } from '../hr/MySchedulePanel'
 import { FloristAssignedOrders } from './FloristAssignedOrders'
 import { AdminFinishedMetrics } from './AdminFinishedMetrics'
+import { MyDayStrip } from './MyDayStrip'
+import { FinanceHomeWork, HrHomeWork } from './HomeWorkCards'
+import { RevenueTrendCard } from './RevenueTrendCard'
 
 export interface DashboardTabProps {
   activeBranch: BranchFilter
@@ -52,45 +52,46 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         onOpenOrders={onGoToOrders}
       />
 
+      {/* Each role sees its own work first. */}
       {userRole === 'owner' && (
         <>
           <OverviewCardsContainer />
           <OwnerAttentionQueue onNavigate={onNavigate} />
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start">
+            <AdminTodayQueue
+              activeBranch={activeBranch}
+              onGoToOrders={onGoToOrders}
+              onOpenOrder={(orderNumber) => onNavigate(toOrders({ orderNumber }))}
+            />
+            <RevenueTrendCard activeBranch={activeBranch} onOpenRevenue={() => onNavigate(toAppTab('revenue'))} />
+          </div>
           <ModuleShortcuts userRole={userRole} onNavigate={onNavigate} />
         </>
       )}
 
       {userRole === 'admin' && (
         <>
-          <SelfieAttendanceCard />
-          <MySchedulePanel />
-          <AdminFinishedMetrics activeBranch={activeBranch} onOpenFinishedOrders={onGoToFinishedOrders} />
+          <MyDayStrip />
           <AdminTodayQueue
             activeBranch={activeBranch}
             onGoToOrders={onGoToOrders}
             onOpenOrder={(orderNumber) => onNavigate(toOrders({ orderNumber }))}
           />
+          <AdminFinishedMetrics activeBranch={activeBranch} onOpenFinishedOrders={onGoToFinishedOrders} />
           <ModuleShortcuts userRole={userRole} onNavigate={onNavigate} />
         </>
       )}
 
       {userRole === 'florist' && (
         <>
-          <SelfieAttendanceCard />
-          <MySchedulePanel />
+          <MyDayStrip />
           <FloristAssignedOrders onGoToOrders={onGoToOrders} />
         </>
       )}
 
-      {(userRole === 'finance' || userRole === 'hr') && (
-        <>
-          <ModuleShortcuts userRole={userRole} onNavigate={onNavigate} />
-          <RoleFocusNotice
-            userRole={userRole}
-            onOpenReconciliation={() => onNavigate(toFinanceModule('order_verification'))}
-          />
-        </>
-      )}
+      {userRole === 'finance' && <FinanceHomeWork onNavigate={onNavigate} />}
+
+      {userRole === 'hr' && <HrHomeWork onNavigate={onNavigate} />}
     </section>
   )
 }
