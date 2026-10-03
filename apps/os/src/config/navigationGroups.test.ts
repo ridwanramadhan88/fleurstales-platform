@@ -149,7 +149,7 @@ describe('navigation grouping', () => {
 
   it('keeps destination labels centralized per surface without changing route IDs', () => {
     expect(getNavigationDestinationLabel('finance', 'finance', 'desktop')).toBe(
-      'Order Reconciliation',
+      'Reconcile',
     )
     expect(getNavigationDestinationLabel('finance', 'owner', 'workspace')).toBe(
       'Finance',
@@ -157,5 +157,15 @@ describe('navigation grouping', () => {
     expect(getNavigationDestinationLabel('dashboard', 'admin', 'mobile-bottom')).toBe(
       'Today',
     )
+  })
+
+  it('uses the same name for every menu item on phone and desktop', () => {
+    for (const role of ['owner', 'admin', 'finance', 'hr', 'florist'] as const) {
+      for (const id of NAVIGATION_DESTINATION_ORDER) {
+        expect(getNavigationDestinationLabel(id, role, 'mobile-bottom'), `${role} ${id}`).toBe(
+          getNavigationDestinationLabel(id, role, 'desktop'),
+        )
+      }
+    }
   })
 })

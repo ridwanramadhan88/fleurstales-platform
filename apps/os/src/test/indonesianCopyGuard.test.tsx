@@ -26,6 +26,7 @@ const ENGLISH_WORDS = [
   'cleanup', 'legacy', 'rows', 'blockers', 'blocker', 'default', 'role', 'roles', 'employee', 'employees',
   'people', 'base', 'salary', 'monthly', 'correction', 'awaiting', 'refunds', 'ready', 'pay', 'paid',
   'unpaid', 'waiting', 'completion', 'account', 'accounts', 'balance', 'history', 'week', 'month',
+  'showing', 'reference', 'entry', 'transaction', 'code',
 ]
 const ENGLISH = new RegExp(`\\b(${ENGLISH_WORDS.join('|')})\\b`, 'i')
 // Brand and business names that contain an English word.

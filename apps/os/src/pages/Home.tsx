@@ -490,8 +490,6 @@ const HomePage: FC<HomePageProps> = ({
         onBranchChange={handleBranchChange}
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        activeHrSection={peopleSection}
-        onHrSectionChange={(section) => navigate(toHrSection(section))}
         onSignOut={onSignOut}
         theme={theme}
         onToggleTheme={onToggleTheme}
@@ -688,13 +686,7 @@ const HomePage: FC<HomePageProps> = ({
         <div className="md:hidden">
           <BottomTabBarContainer
             activeTab={activeTab}
-            activeHrSection={peopleSection}
-            onTabChange={(tab) => {
-              if (tab === 'hr-attendance') navigate(toHrSection('attendance'))
-              else if (tab === 'hr-people') navigate(toHrSection('employees'))
-              else if (tab === 'hr-payroll') navigate(toHrSection('payroll'))
-              else handleTabChange(tab)
-            }}
+            onTabChange={handleTabChange}
             onOpenNewOrder={() => { if (activeBranch === 'All') return; setEditingOrderDraftId(null); setIsNewOrderOpen(true) }}
           />
         </div>

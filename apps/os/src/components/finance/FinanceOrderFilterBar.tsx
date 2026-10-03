@@ -113,7 +113,7 @@ export const FinanceOrderFilterBar: FC<FinanceOrderFilterBarProps> = ({
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <p className="text-[11px] text-foreground">
         <span className="font-semibold">{dateScopeLabel(dateScope)}</span>
-        <span className="text-muted-foreground"> · Showing {filteredCount} of {dateScopedCount}</span>
+        <span className="text-muted-foreground"> · {`Showing ${filteredCount} of ${dateScopedCount}`}</span>
       </p>
 
       {onSearchQueryChange && (

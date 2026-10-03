@@ -17,12 +17,6 @@ import {
   Store,
   ChevronDown,
   Settings,
-  CalendarCheck2,
-  CalendarDays,
-  UsersRound,
-  FileBarChart,
-  WalletCards,
-  BadgeCent,
 } from 'lucide-react'
 import type { AppTabId } from '../../config/appNavigation'
 import type { BranchFilter } from '../../types/orders'
@@ -43,8 +37,6 @@ export interface DesktopSidebarProps {
   activeTab: AppTabId
   /** Change the active section (kept in sync with Home + bottom tab bar). */
   onTabChange: (tab: AppTabId) => void
-  activeHrSection?: import('../hr/HrTabContentController').HrSection
-  onHrSectionChange?: (section: import('../hr/HrTabContentController').HrSection) => void
   /** Active branch filter. */
   activeBranch: BranchFilter
   /** Handler to switch active branch. */
@@ -132,8 +124,6 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
   canSwitchBranch,
   userRole,
   visibleDestinationIds,
-  activeHrSection,
-  onHrSectionChange,
   onToggleBranchMenu,
   onSelectBranch,
 }) => {
@@ -208,14 +198,7 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
         className="flex-1 space-y-3 overflow-visible pr-0.5"
         aria-label="Primary"
       >
-        {userRole === 'hr' ? <>
-          {visibleDestinationIds.includes('dashboard') && <section><p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">Overview</p><SidebarNavButton label="Overview" icon={<LayoutDashboard className="size-4" />} active={activeTab === 'dashboard'} onClick={() => onTabChange('dashboard')} /></section>}
-          {([
-            { label:'Attendance', items:[['attendance','Attendance',<CalendarCheck2 className="size-4" />],['scheduling','Scheduling',<CalendarDays className="size-4" />]] },
-            { label:'People', items:[['employees','Employees',<UsersRound className="size-4" />],['reports','Reports',<FileBarChart className="size-4" />]] },
-            { label:'Payroll', items:[['payroll','Payroll',<WalletCards className="size-4" />],['points','Points',<BadgeCent className="size-4" />]] },
-          ] as const).map((group) => <section key={group.label}><p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">{group.label}</p><div className="space-y-0.5">{group.items.map(([section,label,icon]) => <SidebarNavButton key={section} label={label} icon={icon} active={activeTab === 'hr' && activeHrSection === section} onClick={() => onHrSectionChange?.(section)} />)}</div></section>)}
-        </> : getNavigationGroupsForDestinations(visibleDestinationIds).map((group) => (
+        {getNavigationGroupsForDestinations(visibleDestinationIds).map((group) => (
           <section key={group.id}>
             <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">
               {group.label}
