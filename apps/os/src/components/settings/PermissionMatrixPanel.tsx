@@ -16,6 +16,7 @@ import { CAPABILITY_REGISTRY, isCapabilityEligibleForRole, type ActionCapability
 import type { UserRole } from '../../store/userStore'
 import type { PermissionMatrix } from '../../types/settings'
 import { InfoDisclosure } from '../ui/info-disclosure'
+import { getAccessExceptions, restoreRolePreset } from '../../domain/accessPresetDomain'
 import { SettingsSectionHeader } from './SettingsPrimitives'
 
 interface Props {
@@ -150,6 +151,14 @@ const isViewCapability = (capability: ActionCapability) => capability.includes('
 
 const getEffectiveLevel = (workspace: WorkspaceDefinition, level: AccessLevel): AccessLevel => workspace.readOnly && level === 'edit' ? 'view' : level
 
+const WORKSPACE_LABELS = Object.fromEntries(
+  SECTORS.flatMap((sector) => sector.workspaces).map((workspace) => [workspace.section, workspace.label]),
+) as Record<AppSection, string>
+
+const AllowedBadge: FC<{ allowed: boolean }> = ({ allowed }) => (
+  <span className={`inline-flex rounded-full px-2 py-0.5 text-2xs font-semibold ${allowed ? 'bg-surface-success text-success' : 'bg-muted text-muted-foreground'}`}>{allowed ? 'Allowed' : 'Off'}</span>
+)
+
 const AccessBadge: FC<{ level: AccessLevel }> = ({ level }) => (
   <span className={`inline-flex rounded-full px-2 py-0.5 text-2xs font-semibold ${
     level === 'edit' ? 'bg-surface-success text-success' : level === 'view' ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'
@@ -183,6 +192,10 @@ export const PermissionMatrixPanel: FC<Props> = ({
     return parent !== 'none'
   }), [permissions, role])
 
+  const exceptions = useMemo(
+    () => getAccessExceptions(role, permissions, actionPermissions),
+    [role, permissions, actionPermissions],
+  )
   const allowedActions = roleActions.filter((item) => Boolean(actionPermissions[role]?.[item.id]))
   const deniedActions = roleActions.filter((item) => !actionPermissions[role]?.[item.id])
 
@@ -381,7 +394,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
         <section className="space-y-4 rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h3 className="text-sm font-semibold leading-5">{ROLE_LABELS[role]} Access</h3>
+              <h3 className="text-sm font-semibold leading-5">Access details</h3>
               <p className="mt-1 text-xs text-muted-foreground">{isEditing ? 'Edit Section Access and Detailed Feature Access for this role.' : 'Review the current Section Access and Detailed Feature Access for this role.'}</p>
             </div>
             <button
@@ -394,35 +407,45 @@ export const PermissionMatrixPanel: FC<Props> = ({
             </button>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-success/30 bg-surface-success p-4">
-              <div className="flex items-center justify-between gap-3">
-                <h4 className="flex items-center gap-2 text-xs font-semibold"><CheckCircle2 className="size-4 text-success" />Available workspaces</h4>
-                <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">{SECTORS.flatMap((sector) => sector.workspaces).filter((workspace) => (permissions[role]?.[workspace.section] ?? 'none') !== 'none').length} enabled</span>
+          {/* Start from the role preset; list only what differs from it. */}
+          <div className="rounded-xl border border-border/70 bg-background p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h4 className="text-sm font-semibold">Role preset</h4>
+                <p className="mt-0.5 text-xs text-muted-foreground">{exceptions.length === 0 ? 'Same as the preset' : `${exceptions.length} changes from the preset`}</p>
               </div>
-              <div className="mt-3 space-y-2">
-                {SECTORS.flatMap((sector) => sector.workspaces).filter((workspace) => (permissions[role]?.[workspace.section] ?? 'none') !== 'none').map((workspace) => {
-                  const level = getEffectiveLevel(workspace, permissions[role]?.[workspace.section] ?? 'none')
-                  return <div key={workspace.section} className="flex items-center justify-between gap-3 rounded-lg bg-background/80 px-3 py-2"><span className="text-xs font-medium">{workspace.label}</span><AccessBadge level={level} /></div>
-                })}
-                {SECTORS.flatMap((sector) => sector.workspaces).every((workspace) => (permissions[role]?.[workspace.section] ?? 'none') === 'none') && <p className="text-xs text-muted-foreground">No workspace access is currently enabled.</p>}
-              </div>
+              {isEditing && exceptions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => restoreRolePreset(role, exceptions, { section: onUpdateAccess, action: onUpdateActionAccess })}
+                  className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-border bg-background px-[18px] text-sm font-semibold text-foreground transition hover:bg-muted"
+                >
+                  <RotateCcw className="size-3.5" />
+                  Restore preset
+                </button>
+              )}
             </div>
-
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-ios-sm sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h4 className="text-xs font-semibold">Detailed Feature Access</h4>
-                <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">{allowedActions.length} total</span>
-              </div>
-              <ul className="mt-3 space-y-2">
-                {allowedActions.slice(0, 8).map((item) => <li key={item.id} className="flex items-start gap-2 text-xs text-muted-foreground"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" /><span>{item.label}</span></li>)}
-                {allowedActions.length === 0 && <li className="text-xs text-muted-foreground">No Detailed Feature Access is currently enabled.</li>}
+            {exceptions.length > 0 && (
+              <ul aria-label="Changes from the preset" className="mt-3 divide-y divide-border/60">
+                {exceptions.map((item) => (
+                  <li key={item.kind === 'section' ? item.section : item.capability} className="flex flex-col gap-1.5 py-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-xs font-medium">{item.kind === 'section' ? WORKSPACE_LABELS[item.section] : item.label}</span>
+                    <span className="flex items-center gap-1.5 text-2xs text-muted-foreground">
+                      {item.kind === 'section' ? <AccessBadge level={item.preset} /> : <AllowedBadge allowed={item.preset} />}
+                      <span aria-hidden="true">→</span>
+                      {item.kind === 'section' ? <AccessBadge level={item.current} /> : <AllowedBadge allowed={item.current} />}
+                    </span>
+                  </li>
+                ))}
               </ul>
-              {allowedActions.length > 8 && <p className="mt-3 text-xs text-muted-foreground">{`+${allowedActions.length - 8} more enabled features. Open access controls to review all of them.`}</p>}
-              <div className="mt-4 rounded-lg border border-border/70 bg-background p-3">
-                <p className="flex items-center gap-2 text-xs font-semibold"><Lock className="size-3.5" />Protected records stay protected</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Verified, approved, paid, and historical records still use their supported correction workflows, even when this role has Manage access.</p>
-              </div>
+            )}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {SECTORS.flatMap((sector) => sector.workspaces).filter((workspace) => (permissions[role]?.[workspace.section] ?? 'none') !== 'none').map((workspace) => (
+                <span key={workspace.section} className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-2xs font-medium">
+                  {workspace.label}
+                  <AccessBadge level={getEffectiveLevel(workspace, permissions[role]?.[workspace.section] ?? 'none')} />
+                </span>
+              ))}
             </div>
           </div>
         </section>

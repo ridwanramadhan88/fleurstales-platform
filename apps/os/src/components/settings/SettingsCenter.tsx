@@ -525,7 +525,7 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-xs font-semibold text-foreground">
-                      Editing {activeSectionLabel}
+                      {activeSectionLabel}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {isDirty
