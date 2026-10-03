@@ -87,4 +87,21 @@ describe('Editing an existing product', () => {
 
     expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({ name: 'Rosy' }), { sizeTemplateId: '' })
   })
+
+  it('saves the name exactly as typed without adding the collection in front', async () => {
+    const product = { ...legacyProduct(), name: 'Thumbelina - Baby Thumbelina', collectionSeries: 'Thumbelina' }
+    useCatalogStore.setState({ products: [product] })
+    const user = userEvent.setup()
+    const onUpdate = renderEditor(product)
+
+    const name = screen.getByDisplayValue('Thumbelina - Baby Thumbelina')
+    await user.clear(name)
+    await user.type(name, 'Baby Thumbelina')
+    await user.click(screen.getByRole('button', { name: 'Simpan perubahan' }))
+
+    expect(onUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Baby Thumbelina', collectionSeries: 'Thumbelina' }),
+      { sizeTemplateId: 'guide-bouquet' },
+    )
+  })
 })

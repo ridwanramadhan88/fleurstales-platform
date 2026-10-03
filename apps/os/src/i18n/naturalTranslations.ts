@@ -1587,7 +1587,7 @@ export const ID_NATURAL_TRANSLATIONS: Record<string, string> = {
   'Role availability, new-account defaults, HR management scope, and employee base salaries.': 'Ketersediaan peran, bawaan akun baru, cakupan manajemen SDM, dan gaji pokok karyawan.',
   'Same every day': 'Sama setiap hari',
   'Saved monthly salary per employee.': 'Gaji bulanan tersimpan per karyawan.',
-  'Saved separately; the storefront name follows Collection / Series - Product Name.': 'Disimpan terpisah; nama toko online mengikuti Koleksi / Seri - Nama Produk.',
+  'Groups products in the storefront. It is not added to the product name.': 'Mengelompokkan produk di toko online. Tidak ditambahkan ke nama produk.',
   'schedule history records': 'catatan riwayat jadwal',
   'Schedule:': 'Jadwal:',
   'Search paid orders, customer, account...': 'Cari pesanan lunas, pelanggan, akun...',

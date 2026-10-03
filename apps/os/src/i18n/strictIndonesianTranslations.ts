@@ -425,7 +425,7 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Select arrangement type': 'Pilih jenis rangkaian',
   'Collection / Series': 'Koleksi / Seri',
   'Example: Omakase': 'Contoh: Omakase',
-  'Stored separately; Storefront name follows Collection / Series - Product Name.': 'Disimpan terpisah; nama Storefront mengikuti Koleksi / Seri - Nama Produk.',
+  'Groups products in the storefront. It is not added to the product name.': 'Mengelompokkan produk di toko online. Tidak ditambahkan ke nama produk.',
   'Pricing type': 'Jenis harga',
   'Fixed price': 'Harga tetap',
   'Order type': 'Jenis pesanan',

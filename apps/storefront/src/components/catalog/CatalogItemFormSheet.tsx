@@ -218,11 +218,8 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     if (nextErrors.length) return
 
     const collection = form.collectionSeries.trim()
-    const typedName = form.name.trim()
-    const unprefixedName = collection && typedName.toLowerCase().startsWith(`${collection.toLowerCase()} - `)
-      ? typedName.slice(collection.length + 3).trim()
-      : typedName
-    const customerFacingName = collection ? `${collection} - ${unprefixedName}` : typedName
+    // Customers see exactly the typed name; Collection / Series only groups products.
+    const customerFacingName = form.name.trim()
 
     const normalizedImages = form.images
       .slice(0, CATALOG_IMAGE_MAX_COUNT)
