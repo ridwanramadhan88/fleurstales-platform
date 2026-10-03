@@ -13,7 +13,7 @@ describe('Catalog Size Template manager regressions', () => {
     expect(guideSource).not.toContain('Default Jenis rangkaian')
     expect(guideSource).not.toContain("target.scope === 'product_type'")
     expect(guideSource).not.toContain('state.arrangementTypes')
-    expect(guideSource).toContain('Template dipilih per produk saat menambah atau mengedit produk.')
+    expect(guideSource).toContain('Dipilih per produk di editor produk.')
     expect(guideSource).toContain('{templateProductCount(template.id)} produk')
   })
 
@@ -43,8 +43,12 @@ describe('Catalog Size Template manager regressions', () => {
     expect(arrangementSource).toContain('h-[100dvh] max-h-[100dvh]')
   })
 
-  it('keeps guide image editing stacked on small tablets before splitting at md', () => {
-    expect(guideSource).toContain('md:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]')
+  it('opens a template list first on phones, then one template with collapsed size rows', () => {
+    expect(guideSource).toContain("useState<'list' | 'detail'>('list')")
+    expect(guideSource).toContain("mobileView === 'detail' ? 'hidden lg:block' : ''")
+    expect(guideSource).toContain('Semua template')
+    expect(guideSource).toContain('aria-expanded={expanded}')
+    expect(guideSource).not.toContain('ID ukuran stabil')
     expect(guideSource).not.toContain('sm:grid-cols-[minmax(0,1fr)_360px]')
   })
 

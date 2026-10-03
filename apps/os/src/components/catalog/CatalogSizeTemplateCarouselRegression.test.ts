@@ -31,13 +31,13 @@ describe('catalog size-template and image-carousel regressions', () => {
     expect(guideSource).toContain('Template ukuran')
     expect(guideSource).toContain('handleAddSize')
     expect(guideSource).toContain("generateId('guide_size')")
-    expect(guideSource).toContain('Tambah ukuran')
+    expect(guideSource).toContain('Ukuran baru, contoh: XL')
   })
 
   it('blocks size archive only for sellable linked variants and labels usage precisely', () => {
     expect(guideSource).toContain('activeSizeUsageCount')
     expect(guideSource).toContain('disabled={activeUsage > 0}')
-    expect(guideSource).toContain('varian tertaut')
+    expect(guideSource).toContain('Tidak bisa diarsipkan: masih dijual di {activeUsage} varian.')
     expect(guideSource).toContain('dipakai varian aktif')
   })
 
