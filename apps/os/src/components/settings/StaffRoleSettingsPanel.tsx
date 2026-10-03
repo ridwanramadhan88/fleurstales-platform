@@ -213,7 +213,7 @@ const SalarySectionHeader: FC<{ count: number; description: string }> = ({ count
       <h3 className="text-sm font-semibold leading-5">Employee base salaries</h3>
       <p className="mt-1 text-xs text-muted-foreground">{description}</p>
     </div>
-    <span className="rounded-full bg-surface-panel px-2.5 py-1 text-2xs font-semibold text-muted-foreground ring-1 ring-border/60">{count} employees</span>
+    <span className="rounded-full bg-surface-panel px-2.5 py-1 text-2xs font-semibold text-muted-foreground ring-1 ring-border/60">{`${count} employees`}</span>
   </div>
 )
 

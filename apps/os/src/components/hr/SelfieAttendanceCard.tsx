@@ -12,6 +12,7 @@ import { InfoDisclosure } from '../ui/info-disclosure'
 import { StatusChip } from '../ui/chip'
 import { surfaceCardClass } from '../ui/card'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
+import { formatHumanDate } from '../../lib/humanDates'
 
 const stopStream = (stream: MediaStream | null) => stream?.getTracks().forEach((track) => track.stop())
 const formatTime = (iso?: string) => iso ? new Date(iso).toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit' }) : '—'
@@ -326,7 +327,7 @@ export const SelfieAttendanceCard: FC = () => {
 
       {expanded && (
         <div className="mt-3 border-t border-border/70 pt-3">
-          <p className="text-xs text-muted-foreground">Check in and check out with a square selfie for {today}.</p>
+          <p className="text-xs text-muted-foreground">{`Check in and check out with a square selfie for ${formatHumanDate(today)}.`}</p>
           {todayShift && (
             <div className="mt-3 rounded-xl bg-surface-panel px-3 py-2 text-xs">
               <span className="font-semibold">Scheduled:</span>{' '}
@@ -334,7 +335,7 @@ export const SelfieAttendanceCard: FC = () => {
             </div>
           )}
 
-          {employee ? <p className="mt-3 text-xs text-muted-foreground">Linked employee: <span className="font-medium text-foreground">{employee.name}</span> · {employee.position}</p> : <p className="mt-3 rounded-lg bg-warning/10 p-3 text-xs text-warning">No active {role} employee record is linked to this account.</p>}
+          {employee ? <p className="mt-3 text-xs text-muted-foreground">Linked employee: <span className="font-medium text-foreground">{employee.name}</span> · {employee.position}</p> : <p className="mt-3 rounded-lg bg-warning/10 p-3 text-xs text-warning">{`No active ${role} employee record is linked to this account.`}</p>}
 
           {!todayRecord && todayShift?.isWorking && captureArea('check-in')}
           {!todayRecord && !todayShift && <p className="mt-3 rounded-lg bg-warning/10 p-3 text-xs text-warning">A dated working schedule is required before check-in. Ask Admin or HR to schedule today.</p>}

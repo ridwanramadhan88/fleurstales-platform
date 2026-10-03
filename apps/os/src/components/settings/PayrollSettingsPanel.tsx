@@ -4,6 +4,7 @@ import type { PayrollDefaultSettings } from '../../types/settings'
 import type { SettingsValidationErrors } from '../../domain/settings/settingsValidation'
 import type { PayrollSettingsRevision } from '../../domain/settings/effectiveSettingsDomain'
 import { SettingsCard, SettingsSectionHeader } from './SettingsPrimitives'
+import { formatHumanDate } from '../../lib/humanDates'
 
 interface Props {
   isEditing: boolean
@@ -93,13 +94,13 @@ export const PayrollSettingsPanel: FC<Props> = ({ isEditing, settings, validatio
     <SettingsCard className="text-sm" emphasis="secondary">
       <p className="font-semibold">Default monthly cycle</p>
       <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-        <p>Earning period: day {settings.periodStartDay} previous month – day {settings.periodEndDay}</p><p>HR deadline: day {settings.hrSubmissionDay}</p><p>Finance deadline: day {settings.financeReviewDay}</p><p>Payment date: day {settings.paymentDay}</p>
+        <p>{`Earning period: day ${settings.periodStartDay} previous month – day ${settings.periodEndDay}`}</p><p>{`HR deadline: day ${settings.hrSubmissionDay}`}</p><p>{`Finance deadline: day ${settings.financeReviewDay}`}</p><p>{`Payment date: day ${settings.paymentDay}`}</p>
       </div>
     </SettingsCard>
 
     <SettingsCard emphasis="secondary">
       <h3 className="text-sm font-semibold leading-5">Configuration history</h3>
-      <div className="mt-3 space-y-2">{[...revisions].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom)).slice(0, 5).map((revision) => <div key={revision.id} className="rounded-lg bg-muted/40 px-3 py-2 text-xs"><div className="flex justify-between gap-3"><span className="font-medium">From {revision.effectiveFrom}</span><span className="text-muted-foreground">{revision.effectiveUntil ? `until ${revision.effectiveUntil}` : 'current/future'}</span></div><p className="mt-1 text-muted-foreground">{revision.changeReason} · {revision.createdBy}</p></div>)}</div>
+      <div className="mt-3 space-y-2">{[...revisions].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom)).slice(0, 5).map((revision) => <div key={revision.id} className="rounded-lg bg-muted/40 px-3 py-2 text-xs"><div className="flex justify-between gap-3"><span className="font-medium">{`From ${formatHumanDate(revision.effectiveFrom)}`}</span><span className="text-muted-foreground">{revision.effectiveUntil ? `until ${revision.effectiveUntil}` : 'current/future'}</span></div><p className="mt-1 text-muted-foreground">{revision.changeReason} · {revision.createdBy}</p></div>)}</div>
     </SettingsCard>
   </section>
 )

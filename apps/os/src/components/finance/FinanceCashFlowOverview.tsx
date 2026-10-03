@@ -188,7 +188,7 @@ export const FinanceCashFlowOverview: FC = () => {
             <p className="mt-0.5 text-xs text-muted-foreground">Work queues and data-quality items that still need a Finance action.</p>
           </div>
           {attention.total > 0 && (
-            <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">{attention.total} open</span>
+            <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">{`${attention.total} open`}</span>
           )}
         </div>
 

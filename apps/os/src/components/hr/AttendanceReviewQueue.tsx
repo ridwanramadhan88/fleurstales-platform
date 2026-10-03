@@ -125,7 +125,7 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
       </div>
       {pendingCases.length > 0 && (
         <span className="shrink-0 rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">
-          {pendingCases.length} to review
+          {`${pendingCases.length} to review`}
         </span>
       )}
     </div>

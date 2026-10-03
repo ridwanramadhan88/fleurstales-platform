@@ -14,9 +14,11 @@ export const useDismissableModal = (open: boolean, onClose: () => void): void =>
     if (!open) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
+      if (event.key !== 'Escape') return
+      // Escape belongs to an open menu, list or popover first: it closes only
+      // that layer, never the whole sheet behind it.
+      if (document.querySelector('[data-radix-popper-content-wrapper]')) return
+      onClose()
     }
 
     window.addEventListener('keydown', handleKeyDown)

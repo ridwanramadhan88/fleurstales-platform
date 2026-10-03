@@ -372,7 +372,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
             </label>
             <div className="flex flex-wrap items-center gap-3">
               <div><p className="text-sm font-semibold leading-5">{ROLE_LABELS[role]}</p><p className="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[role]}</p></div>
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground"><Users className="size-3" />{employeeCount} active employee{employeeCount === 1 ? '' : 's'}</span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground"><Users className="size-3" />{`${employeeCount} active employees`}</span>
               {role === 'owner' && <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-2xs font-medium text-background"><Lock className="size-3" />Protected role</span>}
             </div>
           </div>
@@ -418,7 +418,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
                 {allowedActions.slice(0, 8).map((item) => <li key={item.id} className="flex items-start gap-2 text-xs text-muted-foreground"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" /><span>{item.label}</span></li>)}
                 {allowedActions.length === 0 && <li className="text-xs text-muted-foreground">No Detailed Feature Access is currently enabled.</li>}
               </ul>
-              {allowedActions.length > 8 && <p className="mt-3 text-xs text-muted-foreground">+{allowedActions.length - 8} more enabled features. Open access controls to review all of them.</p>}
+              {allowedActions.length > 8 && <p className="mt-3 text-xs text-muted-foreground">{`+${allowedActions.length - 8} more enabled features. Open access controls to review all of them.`}</p>}
               <div className="mt-4 rounded-lg border border-border/70 bg-background p-3">
                 <p className="flex items-center gap-2 text-xs font-semibold"><Lock className="size-3.5" />Protected records stay protected</p>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Verified, approved, paid, and historical records still use their supported correction workflows, even when this role has Manage access.</p>
