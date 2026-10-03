@@ -83,7 +83,6 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
     if (draft.sizeOptionId && reservedSizeOptionIds.has(draft.sizeOptionId)) nextErrors.push('Ukuran template ini sudah digunakan varian lain.')
     if (draft.status === 'active' && selectedSizeArchived) nextErrors.push('Ukuran yang diarsipkan tidak dapat dijual.')
     if (draft.status === 'active' && sizeTemplate && !draft.sizeOptionId) nextErrors.push('Varian aktif harus memakai ukuran dari Size Template.')
-    if (draft.status === 'active' && draft.images.length !== 1) nextErrors.push('Varian aktif wajib memiliki tepat 1 foto ukuran.')
     if (draft.status === 'active' && draft.flowerRecipe.length === 0) nextErrors.push('Varian aktif wajib memiliki minimal 1 item Resep Bunga.')
     const cost = draft.cost.trim() ? Number.parseInt(draft.cost, 10) : undefined
     if (cost !== undefined && (!Number.isFinite(cost) || cost < 0)) nextErrors.push('Cost tidak valid.')
@@ -96,8 +95,7 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
 
     setErrors([...new Set(nextErrors)])
     if (nextErrors.length > 0) {
-      if (draft.status === 'active' && draft.images.length !== 1) setTab('foto')
-      else if (draft.status === 'active' && draft.flowerRecipe.length === 0) setTab('resep')
+      if (draft.status === 'active' && draft.flowerRecipe.length === 0) setTab('resep')
       return
     }
     onApply(draft)
@@ -118,7 +116,7 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
           <div className="shrink-0 border-b border-border/70 bg-surface-card px-4 py-2 sm:px-6">
             <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
               <TabsTrigger value="detail">Detail</TabsTrigger>
-              <TabsTrigger value="foto">Foto</TabsTrigger>
+              <TabsTrigger value="foto">Foto · opsional</TabsTrigger>
               <TabsTrigger value="resep">Resep</TabsTrigger>
             </TabsList>
           </div>
@@ -210,7 +208,7 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
               <div className="space-y-3">
                 <div>
                   <p className="flex items-center gap-2 text-sm font-semibold"><ImageIcon className="size-4 text-primary" /> Foto varian</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Setiap ukuran memiliki maksimal 1 foto sendiri. Foto ini akan dipakai saat ukuran ini dipilih di Storefront.</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Opsional. Setiap ukuran dapat memiliki maksimal 1 foto sendiri yang dipakai saat ukuran ini dipilih di Storefront. Tanpa foto, Storefront memakai foto katalog produk.</p>
                 </div>
                 <CatalogProductImagesField
                   images={draft.images}

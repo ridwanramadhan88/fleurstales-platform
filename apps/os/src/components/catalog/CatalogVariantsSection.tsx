@@ -160,7 +160,7 @@ export const CatalogVariantsSection: FC<Props> = ({
                             <p className="mt-1 text-sm font-medium text-foreground">{formatPrice(variant.price)}</p>
                             <p className="mt-1 text-xs text-muted-foreground">{statusBadge(variant)}{variant.sku ? ' · ' + variant.sku : ''}</p>
                             <p className="mt-2 text-2xs leading-4 text-muted-foreground">
-                              {variant.images.length > 0 ? 'Foto siap' : 'Foto belum ada'} · {variant.flowerRecipe.length > 0 ? variant.flowerRecipe.length + ' item resep' : 'Resep belum ada'}
+                              {variant.images.length > 0 ? 'Foto ukuran siap' : 'Memakai foto katalog'} · {variant.flowerRecipe.length > 0 ? variant.flowerRecipe.length + ' item resep' : 'Resep belum ada'}
                             </p>
                           </>
                         ) : (
@@ -211,9 +211,9 @@ export const CatalogVariantsSection: FC<Props> = ({
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 size-5 shrink-0 text-warning" />
             <div>
-              <p className="text-sm font-semibold text-foreground">Belum ada template ukuran</p>
+              <p className="text-sm font-semibold text-foreground">Template ukuran belum dipilih</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Jenis rangkaian ini belum memiliki template ukuran yang ditetapkan. Varian lama tetap aman dan tidak akan ditautkan otomatis.
+                Pilih template ukuran untuk produk ini. Varian lama tetap aman dan tidak akan ditautkan otomatis.
               </p>
             </div>
           </div>
@@ -280,7 +280,7 @@ export const CatalogVariantsSection: FC<Props> = ({
 
       {!sizeTemplate ? (
         <div className="rounded-2xl border border-dashed border-border px-4 py-4 text-sm text-muted-foreground">
-          Buat atau tetapkan Size Template terlebih dahulu sebelum menambahkan varian baru.
+          Pilih template ukuran di atas untuk menambahkan ukuran ke produk ini.
         </div>
       ) : null}
 

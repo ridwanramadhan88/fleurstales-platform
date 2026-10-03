@@ -5,10 +5,9 @@
 
 import type { FC, FormEvent } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CatalogCategory, CatalogMaterial, CatalogProduct, CatalogProductImage, CatalogVariantStatus } from '../../store/catalogStoreTypes'
+import type { CatalogCategory, CatalogMaterial, CatalogProduct, CatalogProductImage, CatalogSizeGuideTarget, CatalogVariantStatus } from '../../store/catalogStoreTypes'
 import type { NewCatalogProductInput, NewCatalogVariantInput } from '../../store/catalogStore'
 import { useCatalogStore } from '../../store/catalogStore'
-import { resolveCatalogSizeGuide } from '../../store/catalogStoreSizeGuideActions'
 import { CatalogProductDetailsSection } from './CatalogProductDetailsSection'
 import { CatalogVariantsSection } from './CatalogVariantsSection'
 import { AppSheet } from '../ui/app-sheet'
@@ -20,13 +19,18 @@ import { CATALOG_EDITOR_IMAGE_MAX_COUNT, getCatalogProductImageAliases, normaliz
 
 type SaveResult = boolean | void | Promise<boolean | void>
 
+/** The size chart (Template ukuran) picked for the product, saved alongside it. */
+export interface CatalogProductSizeChart {
+  sizeTemplateId: string
+}
+
 export interface CatalogItemFormSheetProps {
   open: boolean
   onClose: () => void
   product?: CatalogProduct | null
   categoryOptions: CatalogCategory[]
   arrangementTypeOptions: string[]
-  onCreate: (params: NewCatalogProductInput) => SaveResult
+  onCreate: (params: NewCatalogProductInput, sizeChart: CatalogProductSizeChart) => SaveResult
   onUpdate: (params: {
     productId: string
     name: string
@@ -44,7 +48,7 @@ export interface CatalogItemFormSheetProps {
     isCustomizable: boolean
     isActive: boolean
     variants: NewCatalogVariantInput[]
-  }) => SaveResult
+  }, sizeChart: CatalogProductSizeChart) => SaveResult
 }
 
 export interface VariantRow {
@@ -72,6 +76,7 @@ export interface CatalogFormState {
   isCustomizable: 'yes' | 'no'
   availability: 'active' | 'inactive'
   images: CatalogProductImage[]
+  sizeTemplateId: string
   variants: VariantRow[]
 }
 
@@ -97,10 +102,14 @@ const emptyForm = (defaultCategory: CatalogCategory): CatalogFormState => ({
   isCustomizable: 'no',
   availability: 'active',
   images: [],
+  sizeTemplateId: '',
   variants: [],
 })
 
-const formFromProduct = (product: CatalogProduct): CatalogFormState => ({
+const productSizeTemplateId = (productId: string, targets: CatalogSizeGuideTarget[]): string =>
+  targets.find((target) => target.scope === 'product' && target.productId === productId)?.templateId ?? ''
+
+const formFromProduct = (product: CatalogProduct, targets: CatalogSizeGuideTarget[]): CatalogFormState => ({
   name: product.name,
   description: product.description ?? '',
   category: product.category,
@@ -113,6 +122,7 @@ const formFromProduct = (product: CatalogProduct): CatalogFormState => ({
   isCustomizable: product.isCustomizable ? 'yes' : 'no',
   availability: product.isActive ? 'active' : 'inactive',
   images: normalizeCatalogProductImages(product),
+  sizeTemplateId: productSizeTemplateId(product.id, targets),
   variants: product.variants.map((variant) => ({
     id: variant.id,
     sku: variant.sku,
@@ -132,10 +142,10 @@ const formFromProduct = (product: CatalogProduct): CatalogFormState => ({
 })
 
 const detailFingerprint = (form: CatalogFormState): string => {
-  const { variants: _variants, ...detail } = form
+  const { variants: _variants, sizeTemplateId: _sizeTemplateId, ...detail } = form
   return JSON.stringify(detail)
 }
-const variantFingerprint = (form: CatalogFormState): string => JSON.stringify(form.variants)
+const variantFingerprint = (form: CatalogFormState): string => JSON.stringify([form.sizeTemplateId, form.variants])
 const productFingerprint = (product?: CatalogProduct | null): string => JSON.stringify(product ?? null)
 
 const readOnlyInputClass = 'h-11 w-full rounded-xl border border-border bg-muted px-3.5 text-sm text-muted-foreground'
@@ -152,12 +162,11 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   onUpdate,
 }) => {
   const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
-  const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets)
   const isEditMode = Boolean(product)
   const defaultCategory = categoryOptions[0] ?? ''
 
   const initial = useMemo(
-    () => product ? formFromProduct(product) : emptyForm(defaultCategory),
+    () => product ? formFromProduct(product, useCatalogStore.getState().sizeGuideTargets) : emptyForm(defaultCategory),
     [product?.id, defaultCategory],
   )
   const [baseline, setBaseline] = useState<CatalogFormState>(initial)
@@ -171,45 +180,21 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
   const [activeTab, setActiveTab] = useState<'info' | 'variants'>('info')
   const [isSaving, setIsSaving] = useState(false)
 
-  const assignedSizeTemplate = useMemo(
-    () => resolveCatalogSizeGuide(
-      { id: product?.id ?? '__new__', productType: form.productType || undefined },
-      sizeGuideTemplates,
-      sizeGuideTargets,
-      { includeLogical: true },
-    ),
-    [form.productType, product?.id, sizeGuideTargets, sizeGuideTemplates],
-  )
   const usableSizeTemplates = useMemo(
     () => sizeGuideTemplates.filter((template) => template.sizes.some((size) => size.isActive !== false)),
     [sizeGuideTemplates],
   )
-  // A newly-created Product has no Product-specific target yet. When there is
-  // exactly one usable template in the library, expose it as the draft
-  // template instead of incorrectly presenting the library as unavailable.
-  // Multiple usable templates remain explicit: the Arrangement Type must have
-  // a default assignment so we never guess which size model applies.
-  const sizeTemplate = assignedSizeTemplate
-    ?? (!product && usableSizeTemplates.length === 1 ? usableSizeTemplates[0] : undefined)
-  const usingUnassignedNewProductFallback = Boolean(!assignedSizeTemplate && !product && sizeTemplate)
-
-  const productSizeTarget = product
-    ? sizeGuideTargets.find((target) => target.scope === 'product' && target.productId === product.id)
-    : undefined
-  const arrangementSizeTarget = form.productType
-    ? sizeGuideTargets.find((target) => target.scope === 'product_type' && target.productType === form.productType)
-    : undefined
-  const sizeTemplateSource = assignedSizeTemplate && productSizeTarget?.templateId === assignedSizeTemplate.id
-    ? 'product_override' as const
-    : assignedSizeTemplate && arrangementSizeTarget?.templateId === assignedSizeTemplate.id
-      ? 'arrangement_default' as const
-      : usingUnassignedNewProductFallback
-        ? 'new_product_preview' as const
-        : 'none' as const
+  // The product picks its size chart directly; Arrangement Type is only a label.
+  const sizeTemplate = sizeGuideTemplates.find((template) => template.id === form.sizeTemplateId)
+  const sizeTemplateSizeIds = new Set(sizeTemplate?.sizes.map((size) => size.id) ?? [])
+  // Keep the product's current chart selectable even if it no longer has active sizes.
+  const sizeTemplateOptions = sizeTemplate && !usableSizeTemplates.includes(sizeTemplate)
+    ? [...usableSizeTemplates, sizeTemplate]
+    : usableSizeTemplates
 
   useEffect(() => {
     if (!open) return
-    const next = product ? formFromProduct(product) : emptyForm(defaultCategory)
+    const next = product ? formFromProduct(product, useCatalogStore.getState().sizeGuideTargets) : emptyForm(defaultCategory)
     setBaseline(structuredClone(next))
     setForm(structuredClone(next))
     setSourceAtOpen(productFingerprint(product))
@@ -266,6 +251,8 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         ? { tab: 'info' as const, id: 'catalog-product-category' }
         : error === 'Arrangement type is required.'
           ? { tab: 'info' as const, id: 'catalog-product-type' }
+          : /template ukuran/i.test(error) && variantIndex === null
+            ? { tab: 'variants' as const, id: 'catalog-size-template' }
           : {
               tab: 'variants' as const,
               id: variantIndex !== null && variantIndex >= 0
@@ -314,6 +301,12 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     if (form.availability === 'active' && form.images.length !== 1) {
       nextErrors.push('Foto katalog default wajib diisi untuk produk aktif.')
     }
+    if (!sizeTemplate) {
+      nextErrors.push(usableSizeTemplates.length > 0
+        ? 'Pilih template ukuran untuk produk ini.'
+        : 'Buat template ukuran terlebih dahulu di Template ukuran.')
+      hasVariantError = true
+    }
     if (form.variants.length === 0) {
       nextErrors.push('Tambahkan minimal satu varian produk.')
       hasVariantError = true
@@ -351,13 +344,8 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         hasVariantError = true
       }
 
-      if (row.status === 'active' && sizeTemplate && !row.sizeOptionId) {
-        nextErrors.push(label + ': varian aktif harus memakai ukuran dari Size Template.')
-        nextVariantErrorIndexes.add(index)
-        hasVariantError = true
-      }
-      if (row.status === 'active' && row.images.length !== 1) {
-        nextErrors.push(label + ': varian aktif wajib memiliki tepat 1 foto ukuran.')
+      if (row.status === 'active' && sizeTemplate && (!row.sizeOptionId || !sizeTemplateSizeIds.has(row.sizeOptionId))) {
+        nextErrors.push(label + ': varian aktif harus memakai ukuran dari template ' + sizeTemplate.name + '.')
         nextVariantErrorIndexes.add(index)
         hasVariantError = true
       }
@@ -452,9 +440,10 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
 
     setIsSaving(true)
     try {
+      const sizeChart = { sizeTemplateId: form.sizeTemplateId }
       const result = isEditMode && product
-        ? await onUpdate({ productId: product.id, ...common })
-        : await onCreate(common)
+        ? await onUpdate({ productId: product.id, ...common }, sizeChart)
+        : await onCreate(common, sizeChart)
       if (result === false) {
         setErrors(['Perubahan belum tersimpan. Periksa pesan sinkronisasi Catalog, lalu coba lagi.'])
         return
@@ -523,27 +512,27 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
               <TabsContent value="variants" className="mt-0">
                 <FormSection
                   title="Varian & ukuran"
-                  description={sizeTemplate
-                    ? 'Template: ' + sizeTemplate.name + '. Tambahkan hanya ukuran yang memang dimiliki produk ini.'
-                    : usableSizeTemplates.length > 0
-                      ? 'Template ukuran tersedia, tetapi belum ditetapkan untuk jenis rangkaian ini. Atur di Template ukuran → Penetapan.'
-                      : 'Belum ada template ukuran yang memiliki ukuran aktif.'}
+                  description="Pilih template ukuran (size chart), lalu tambahkan ukuran yang dijual produk ini. Foto per ukuran opsional; tanpa foto, Storefront memakai foto katalog produk."
                 >
-                  {sizeTemplate ? (
-                    <div className="mb-4 rounded-xl border border-border/70 bg-muted/35 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sumber template ukuran</p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">{sizeTemplate.name}</p>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        {sizeTemplateSource === 'product_override'
-                          ? 'Template khusus produk · disimpan sebagai override untuk produk ini.'
-                          : sizeTemplateSource === 'arrangement_default'
-                            ? 'Default Jenis rangkaian · produk mengikuti template default dari jenis rangkaiannya.'
-                            : sizeTemplateSource === 'new_product_preview'
-                              ? 'Pratinjau produk baru · satu-satunya template aktif ditampilkan hanya untuk membantu setup. Pilihan ini belum ditetapkan dan tidak akan tersimpan sebagai assignment.'
-                              : 'Template efektif saat ini.'}
-                      </p>
-                    </div>
-                  ) : null}
+                  <label className="mb-4 block space-y-1.5">
+                    <span className={labelClass}>Template ukuran</span>
+                    <select
+                      id="catalog-size-template"
+                      value={form.sizeTemplateId}
+                      onChange={(event) => setForm((previous) => ({ ...previous, sizeTemplateId: event.target.value }))}
+                      className="h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm text-foreground"
+                    >
+                      <option value="">Pilih template ukuran</option>
+                      {sizeTemplateOptions.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name} · {template.sizes.filter((size) => size.isActive !== false).map((size) => size.name).join(', ')}
+                        </option>
+                      ))}
+                    </select>
+                    {usableSizeTemplates.length === 0 ? (
+                      <span className="block text-xs text-muted-foreground">Belum ada template ukuran dengan ukuran aktif. Buat dulu di Template ukuran.</span>
+                    ) : null}
+                  </label>
                   <div id="catalog-variants-section" tabIndex={-1} className="focus-visible:outline-none">
                   <CatalogVariantsSection
                     variants={form.variants}

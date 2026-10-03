@@ -36,11 +36,12 @@ const template: CatalogSizeGuideTemplate = {
   ],
 }
 
+// Size charts are picked per product.
 const assignedTargets = [{
   id: 'target-bouquet',
   templateId: template.id,
-  scope: 'product_type' as const,
-  productType: 'Bouquet',
+  scope: 'product' as const,
+  productId: 'product-1',
 }]
 
 describe('catalog variant integrity audit', () => {

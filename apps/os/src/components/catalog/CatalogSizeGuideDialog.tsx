@@ -17,9 +17,6 @@ interface CatalogSizeGuideDialogProps {
   onClose: () => void
 }
 
-type ViewTab = 'templates' | 'assignments'
-
-const selectClass = 'h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm text-foreground'
 const inputClass = 'h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20'
 const fingerprint = (templates: CatalogSizeGuideTemplate[], targets: CatalogSizeGuideTarget[]) =>
   JSON.stringify({ templates, targets })
@@ -28,10 +25,8 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
   const products = useCatalogStore((state) => state.products)
   const sourceTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
   const sourceTargets = useCatalogStore((state) => state.sizeGuideTargets)
-  const arrangementTypes = useCatalogStore((state) => state.arrangementTypes)
   const applyDraft = useCatalogStore((state) => state.applySizeGuideLibraryDraft)
 
-  const [tab, setTab] = useState<ViewTab>('templates')
   const [draftTemplates, setDraftTemplates] = useState<CatalogSizeGuideTemplate[]>([])
   const [draftTargets, setDraftTargets] = useState<CatalogSizeGuideTarget[]>([])
   const [baselineFingerprint, setBaselineFingerprint] = useState('')
@@ -40,7 +35,6 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
   const [newTemplateName, setNewTemplateName] = useState('')
   const [newSizeName, setNewSizeName] = useState('')
-  const [overrideProductId, setOverrideProductId] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -64,11 +58,9 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
         : templates[0]?.id ?? '')
       setNewTemplateName('')
       setNewSizeName('')
-      setOverrideProductId('')
       setPendingDeleteId(null)
       setConfirmClose(false)
       setIsSaving(false)
-      setTab('templates')
       setInitializedOpen(true)
     } else if (!open && initializedOpen) {
       setInitializedOpen(false)
@@ -92,9 +84,12 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty, open])
 
-  const sortedProducts = useMemo(() => [...products].sort((a, b) => a.name.localeCompare(b.name)), [products])
   const selectedTemplate = draftTemplates.find((template) => template.id === selectedTemplateId) ?? draftTemplates[0]
   const activeTemplateId = selectedTemplate?.id ?? ''
+
+  // Products pick their size chart in the product editor; the manager only shows usage.
+  const templateProductCount = (templateId: string): number =>
+    draftTargets.filter((target) => target.scope === 'product' && target.templateId === templateId).length
 
   const sizeUsageCount = (sizeId: string): number => products.reduce(
     (count, product) => count + product.variants.filter((variant) => variant.sizeOptionId === sizeId).length,
@@ -190,43 +185,6 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
     setSelectedTemplateId(nextTemplates[0]?.id ?? '')
   }
 
-  const setArrangementDefault = (productType: string, templateId: string) => {
-    setDraftTargets((current) => {
-      const withoutCurrent = current.filter((target) => !(target.scope === 'product_type' && target.productType === productType))
-      if (!templateId) return withoutCurrent
-      return [...withoutCurrent, {
-        id: generateId('guide_target'),
-        templateId,
-        scope: 'product_type' as const,
-        productType,
-      }]
-    })
-  }
-
-  const setProductOverride = (productId: string, templateId: string) => {
-    setDraftTargets((current) => {
-      const withoutCurrent = current.filter((target) => !(target.scope === 'product' && target.productId === productId))
-      if (!templateId) return withoutCurrent
-      return [...withoutCurrent, {
-        id: generateId('guide_target'),
-        templateId,
-        scope: 'product' as const,
-        productId,
-      }]
-    })
-  }
-
-  const selectedProduct = products.find((product) => product.id === overrideProductId)
-  const selectedProductOverride = selectedProduct
-    ? draftTargets.find((target) => target.scope === 'product' && target.productId === selectedProduct.id)
-    : undefined
-  const selectedProductDefault = selectedProduct?.productType
-    ? draftTargets.find((target) => target.scope === 'product_type' && target.productType === selectedProduct.productType)
-    : undefined
-  const selectedEffectiveTemplateId = selectedProductOverride?.templateId ?? selectedProductDefault?.templateId
-  const selectedEffectiveTemplate = draftTemplates.find((template) => template.id === selectedEffectiveTemplateId)
-  const productOverrides = draftTargets.filter((target): target is Extract<CatalogSizeGuideTarget, { scope: 'product' }> => target.scope === 'product')
-
   const validateDraft = (): string | undefined => {
     if (draftTemplates.some((template) => !template.name.trim())) return 'Nama template ukuran tidak boleh kosong.'
     const templateNames = draftTemplates.map((template) => template.name.trim().toLowerCase())
@@ -241,7 +199,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
       if (blockedArchived) return 'Ukuran yang masih dipakai varian aktif tidak dapat diarsipkan.'
     }
     const templateIds = new Set(draftTemplates.map((template) => template.id))
-    if (draftTargets.some((target) => !templateIds.has(target.templateId))) return 'Ada penetapan yang mengarah ke template yang sudah tidak tersedia.'
+    if (draftTargets.some((target) => !templateIds.has(target.templateId))) return 'Ada produk yang memakai template yang sudah tidak tersedia.'
     return undefined
   }
 
@@ -297,16 +255,9 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
               {isDirty ? <span className="rounded-full bg-warning/10 px-2 py-1 text-2xs font-semibold text-warning">Belum disimpan</span> : null}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              Kelola ukuran yang dapat dipakai ulang, gambar panduan, default Jenis rangkaian, dan template khusus produk.
+              Kelola template ukuran (size chart) beserta ukuran dan gambar panduannya. Template dipilih per produk saat menambah atau mengedit produk.
             </p>
           </DialogHeader>
-
-          <div className="shrink-0 border-b border-border/70 bg-surface-card px-4 py-2 sm:px-6">
-            <div className="flex gap-2 rounded-xl bg-muted p-1">
-              <button type="button" onClick={() => setTab('templates')} className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold ${tab === 'templates' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>Template & ukuran</button>
-              <button type="button" onClick={() => setTab('assignments')} className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold ${tab === 'assignments' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>Penetapan</button>
-            </div>
-          </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
             {sourceChanged ? (
@@ -319,8 +270,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
               </div>
             ) : null}
 
-            {tab === 'templates' ? (
-              <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
                 <aside className="space-y-4 rounded-2xl bg-muted/45 p-4">
                   <div>
                     <h3 className="text-sm font-semibold">Buat template</h3>
@@ -336,7 +286,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                       return (
                         <button key={template.id} type="button" onClick={() => setSelectedTemplateId(template.id)} className={`w-full rounded-xl p-3 text-left ring-1 ${selected ? 'bg-primary/5 ring-primary/50' : 'bg-card ring-border'}`}>
                           <span className="block truncate text-sm font-semibold">{template.name || 'Template tanpa nama'}</span>
-                          <span className="mt-1 block text-2xs text-muted-foreground">{template.sizes.length} ukuran · {configured} panduan siap</span>
+                          <span className="mt-1 block text-2xs text-muted-foreground">{template.sizes.length} ukuran · {configured} panduan siap · {templateProductCount(template.id)} produk</span>
                         </button>
                       )
                     })}
@@ -352,7 +302,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                           <span className="text-sm font-medium">Nama template</span>
                           <input value={selectedTemplate.name} onChange={(event) => updateTemplate(selectedTemplate.id, { name: event.target.value })} className={inputClass} />
                         </label>
-                        <button type="button" disabled={templateDeleteBlocked(selectedTemplate.id)} onClick={() => setPendingDeleteId(selectedTemplate.id)} className="inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-40" title={templateDeleteBlocked(selectedTemplate.id) ? 'Template sedang ditetapkan atau masih direferensikan varian.' : undefined}><Trash2 className="size-4" /> Hapus template</button>
+                        <button type="button" disabled={templateDeleteBlocked(selectedTemplate.id)} onClick={() => setPendingDeleteId(selectedTemplate.id)} className="inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-40" title={templateDeleteBlocked(selectedTemplate.id) ? 'Template masih dipakai produk atau varian.' : undefined}><Trash2 className="size-4" /> Hapus template</button>
                       </div>
 
                       <div className="space-y-3">
@@ -396,107 +346,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                     <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">Buat atau pilih template ukuran.</div>
                   )}
                 </section>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <section className="space-y-4">
-                  <div>
-                    <h3 className="text-base font-semibold">Default Jenis rangkaian</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Setiap Jenis rangkaian dapat memiliki satu template default. Ini berlaku untuk produk yang tidak memiliki override sendiri.</p>
-                  </div>
-
-                  {arrangementTypes.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Belum ada Jenis rangkaian. Tambahkan dari pengelola Jenis rangkaian.</div>
-                  ) : (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {arrangementTypes.map((productType) => {
-                        const target = draftTargets.find((item) => item.scope === 'product_type' && item.productType === productType)
-                        const productCount = products.filter((product) => product.productType === productType).length
-                        return (
-                          <article key={productType} className="rounded-2xl border border-border/75 bg-card p-4">
-                            <div className="mb-3">
-                              <p className="font-semibold">{productType}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">{productCount} produk</p>
-                            </div>
-                            <label className="space-y-1.5">
-                              <span className="text-xs font-medium">Template default</span>
-                              <select value={target?.templateId ?? ''} onChange={(event) => setArrangementDefault(productType, event.target.value)} className={selectClass}>
-                                <option value="">Belum ditetapkan</option>
-                                {draftTemplates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
-                              </select>
-                            </label>
-                          </article>
-                        )
-                      })}
-                    </div>
-                  )}
-                </section>
-
-                <section className="space-y-4 border-t border-border/70 pt-5">
-                  <div>
-                    <h3 className="text-base font-semibold">Template khusus produk</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Gunakan hanya untuk produk yang membutuhkan struktur ukuran berbeda dari default Jenis rangkaiannya.</p>
-                  </div>
-
-                  <div className="grid gap-4 rounded-2xl bg-muted/45 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                    <label className="space-y-1.5">
-                      <span className="text-xs font-medium">Produk</span>
-                      <select value={overrideProductId} onChange={(event) => setOverrideProductId(event.target.value)} className={selectClass}>
-                        <option value="">Pilih produk</option>
-                        {sortedProducts.map((product) => <option key={product.id} value={product.id}>{product.name} · {product.productId}</option>)}
-                      </select>
-                    </label>
-
-                    <label className="space-y-1.5">
-                      <span className="text-xs font-medium">Template khusus</span>
-                      <select
-                        value={selectedProductOverride?.templateId ?? ''}
-                        disabled={!selectedProduct}
-                        onChange={(event) => { if (selectedProduct) setProductOverride(selectedProduct.id, event.target.value) }}
-                        className={selectClass}
-                      >
-                        <option value="">Gunakan default Jenis rangkaian</option>
-                        {draftTemplates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
-                      </select>
-                    </label>
-
-                    {selectedProduct ? (
-                      <div className="rounded-xl border border-border bg-card p-3 lg:col-span-2">
-                        <p className="text-xs font-medium text-muted-foreground">Template efektif</p>
-                        <p className="mt-1 text-sm font-semibold">{selectedEffectiveTemplate?.name ?? 'Belum ada template ukuran'}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {selectedProductOverride
-                            ? 'Menggunakan template khusus untuk produk ini.'
-                            : selectedProductDefault
-                              ? 'Mengikuti default Jenis rangkaian: ' + (selectedProduct.productType ?? '-')
-                              : 'Tidak ada template khusus dan Jenis rangkaian belum memiliki default.'}
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <details className="rounded-2xl border border-border/75 bg-card">
-                    <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Template khusus saat ini · {productOverrides.length}</summary>
-                    <div className="max-h-72 space-y-2 overflow-y-auto border-t border-border/70 p-3">
-                      {productOverrides.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">Belum ada template khusus produk.</p> : null}
-                      {productOverrides.map((target) => {
-                        const product = products.find((item) => item.id === target.productId)
-                        const template = draftTemplates.find((item) => item.id === target.templateId)
-                        return (
-                          <div key={target.id} className="flex items-center gap-3 rounded-xl bg-muted/45 px-3 py-2.5">
-                            <span className="min-w-0 flex-1 text-xs">
-                              <span className="block truncate font-semibold">{product?.name ?? 'Produk tidak ditemukan'}</span>
-                              <span className="text-muted-foreground">Template khusus → {template?.name ?? 'Template tidak ditemukan'}</span>
-                            </span>
-                            <button type="button" aria-label="Hapus template khusus produk" onClick={() => setProductOverride(target.productId, '')} className="inline-flex size-9 items-center justify-center rounded-full text-destructive hover:bg-destructive/10"><Trash2 className="size-4" /></button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </details>
-                </section>
-              </div>
-            )}
+            </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-3 border-t border-border bg-surface-footer px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
@@ -513,7 +363,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
         open={pendingDeleteId !== null}
         onOpenChange={(nextOpen) => { if (!nextOpen) setPendingDeleteId(null) }}
         title="Hapus template ukuran?"
-        description="Template hanya dapat dihapus bila tidak lagi ditetapkan dan tidak direferensikan oleh varian historis."
+        description="Template hanya dapat dihapus bila tidak lagi dipakai produk dan tidak direferensikan oleh varian historis."
         confirmLabel="Hapus template"
         destructive
         onConfirm={() => {

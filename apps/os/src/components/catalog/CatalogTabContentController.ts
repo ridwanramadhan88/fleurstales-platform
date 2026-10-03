@@ -25,6 +25,7 @@ import { buildCatalogCsvTemplate } from '../../domain/catalogCsvDomain'
 import { toast } from '../../hooks/use-toast'
 import type { CatalogTabContentProps } from './CatalogTabContent'
 import { flushBusinessOsCatalogSync, getCatalogBridgeStatus } from '../../data/shared/catalogBridge'
+import type { CatalogProductSizeChart } from './CatalogItemFormSheet'
 
 const CATALOG_INITIAL_VISIBLE_COUNT = 30
 const CATALOG_VISIBLE_BATCH_SIZE = 30
@@ -92,12 +93,12 @@ export interface CatalogTabContentViewModel {
   onCloseDetail: () => void
   onEditDetailProduct: () => void
   onToggleDetailActive: (isActive: boolean) => void
-  onCreateProduct: (params: NewCatalogProductInput) => Promise<boolean>
+  onCreateProduct: (params: NewCatalogProductInput, sizeChart: CatalogProductSizeChart) => Promise<boolean>
   onUpdateProduct: (params: {
     productId: string
   } & Partial<Omit<CatalogProduct, 'id' | 'productId' | 'variants'>> & {
       variants?: NewCatalogVariantInput[]
-    }) => Promise<boolean>
+    }, sizeChart: CatalogProductSizeChart) => Promise<boolean>
   onOpenCategoriesDialog: () => void
   onCloseCategoriesDialog: () => void
   onOpenArrangementTypesDialog: () => void
@@ -108,6 +109,17 @@ export interface CatalogTabContentViewModel {
   onCloseSizeGuideDialog: () => void
   onClearFilters: () => void
   onLoadMoreProducts: () => void
+}
+
+// A product's size chart is stored as its product-scoped Size Template target. The
+// catalog flush saves the product first and then the size-guide library, so a new
+// product exists before its target is written.
+export const setProductSizeChart = (productId: string, templateId: string) => {
+  const { sizeGuideTargets, assignSizeGuide, removeSizeGuideTarget } = useCatalogStore.getState()
+  const current = sizeGuideTargets.find((target) => target.scope === 'product' && target.productId === productId)
+  if ((current?.templateId ?? '') === templateId) return
+  if (templateId) assignSizeGuide({ templateId, scope: 'product', productId })
+  else if (current) removeSizeGuideTarget(current.id)
 }
 
 const downloadCsv = (filename: string, csv: string) => {
@@ -404,20 +416,23 @@ export const useCatalogTabContentController = ({
       }
       setProductActive(detailProduct.id, isActive)
     },
-    onCreateProduct: async (params) => {
-      const previousProducts = useCatalogStore.getState().products
+    onCreateProduct: async (params, sizeChart) => {
+      const { products: previousProducts, sizeGuideTargets: previousTargets } = useCatalogStore.getState()
       addProduct(params)
+      const previousIds = new Set(previousProducts.map((product) => product.id))
+      const created = useCatalogStore.getState().products.find((product) => !previousIds.has(product.id))
+      if (created) setProductSizeChart(created.id, sizeChart.sizeTemplateId)
       if (!getCatalogBridgeStatus().remoteConfigured) return true
 
       const saved = await flushBusinessOsCatalogSync()
       if (saved) return true
 
-      useCatalogStore.setState({ products: previousProducts })
+      useCatalogStore.setState({ products: previousProducts, sizeGuideTargets: previousTargets })
       toast({ description: getCatalogBridgeStatus().message ?? 'Produk belum tersimpan ke server.' })
       return false
     },
-    onUpdateProduct: async ({ productId, ...patch }) => {
-      const previousProducts = useCatalogStore.getState().products
+    onUpdateProduct: async ({ productId, ...patch }, sizeChart) => {
+      const { products: previousProducts, sizeGuideTargets: previousTargets } = useCatalogStore.getState()
       const current = previousProducts.find((product) => product.id === productId)
       const statusChanges = (patch.variants ?? []).flatMap((variant) => {
         if (!variant.id) return []
@@ -436,6 +451,7 @@ export const useCatalogTabContentController = ({
       }
 
       updateProduct(productId, patch)
+      setProductSizeChart(productId, sizeChart.sizeTemplateId)
 
       for (const change of statusChanges.filter((item) => patch.isActive === false || item.status === 'inactive')) {
         setCatalogVariantStatus({ productId, variantId: change.variantId, status: change.status, role: userRole })
@@ -445,7 +461,7 @@ export const useCatalogTabContentController = ({
       const saved = await flushBusinessOsCatalogSync()
       if (saved) return true
 
-      useCatalogStore.setState({ products: previousProducts })
+      useCatalogStore.setState({ products: previousProducts, sizeGuideTargets: previousTargets })
       toast({ description: getCatalogBridgeStatus().message ?? 'Perubahan produk belum tersimpan ke server.' })
       return false
     },

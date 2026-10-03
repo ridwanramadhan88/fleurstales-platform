@@ -15,12 +15,20 @@ const template = (id: string): CatalogSizeGuideTemplate => ({
 })
 
 describe('catalog size guide resolution', () => {
-  it('uses an arrangement type assignment as the default', () => {
+  it('uses the size chart picked for the product', () => {
+    const templates = [template('bouquet')]
+    const targets: CatalogSizeGuideTarget[] = [
+      { id: 'target-1', templateId: 'bouquet', scope: 'product', productId: 'product-1' },
+    ]
+    expect(resolveCatalogSizeGuide({ id: 'product-1', productType: 'Bouquet' }, templates, targets)?.id).toBe('bouquet')
+  })
+
+  it('ignores Arrangement Type defaults: the arrangement type is only a label', () => {
     const templates = [template('bouquet')]
     const targets: CatalogSizeGuideTarget[] = [
       { id: 'target-1', templateId: 'bouquet', scope: 'product_type', productType: 'Bouquet' },
     ]
-    expect(resolveCatalogSizeGuide({ id: 'product-1', productType: 'Bouquet' }, templates, targets)?.id).toBe('bouquet')
+    expect(resolveCatalogSizeGuide({ id: 'product-1', productType: 'Bouquet' }, templates, targets)).toBeUndefined()
   })
 
   it('does not silently fall back to an unrelated template', () => {
@@ -28,7 +36,7 @@ describe('catalog size guide resolution', () => {
     expect(resolveCatalogSizeGuide({ id: 'product-1', productType: 'Bouquet' }, templates, [])).toBeUndefined()
   })
 
-  it('lets a product-specific assignment override its arrangement type', () => {
+  it('keeps the product chart even when an old Arrangement Type default exists', () => {
     const templates = [template('bouquet'), template('large-product')]
     const targets: CatalogSizeGuideTarget[] = [
       { id: 'target-1', templateId: 'bouquet', scope: 'product_type', productType: 'Bouquet' },
