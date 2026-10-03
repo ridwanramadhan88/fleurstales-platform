@@ -409,6 +409,11 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Same as the preset': 'Sama dengan bawaan',
   'Restore preset': 'Kembalikan ke bawaan',
   'Changes from the preset': 'Perubahan dari bawaan',
+  // Pre-release sweep: calendar and tooltip labels.
+  'Go to previous month': 'Bulan sebelumnya',
+  'Go to next month': 'Bulan berikutnya',
+  'Approved proposals waiting for final payment will appear here.': 'Proposal yang sudah disetujui dan menunggu pembayaran akan muncul di sini.',
+  'Paid and resolved payroll proposals will appear here.': 'Proposal penggajian yang sudah dibayar atau diselesaikan akan muncul di sini.',
   'Access details': 'Rincian akses',
   'Customize access': 'Sesuaikan akses',
   'Editing': 'Sedang diubah',
@@ -667,6 +672,7 @@ const translateScheduleLabel = (date: string, time?: string): string =>
   time ? `${translateScheduleDate(date)} · ${time}` : translateScheduleDate(date)
 const ID_PAYMENT_STATUS: Record<string, string> = {
   Paid: 'Lunas', Unpaid: 'Belum dibayar', Partial: 'Sebagian', Refunded: 'Dana dikembalikan', 'Refund pending': 'Pengembalian dana diproses',
+  'Partial payment': 'Pembayaran sebagian',
 }
 const translateFloristReason = (reason: string): string =>
   ID_STRICT_TRANSLATIONS[reason] ?? reason
