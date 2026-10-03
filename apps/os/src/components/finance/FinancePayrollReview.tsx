@@ -6,13 +6,15 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { useUserStore } from '../../store/userStore'
 import { recordPayrollPaymentWithAccount } from '../../data/financePayrollPayment'
 import { PayrollStatusBadge, type PayrollVisualStatus } from '../payroll/PayrollStatusBadge'
+import { PayrollStageTrack } from '../payroll/PayrollStageTrack'
+import { formatHumanDate, formatHumanDateRange } from '../../lib/humanDates'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import { DatePickerField } from '../ui/date-time-field'
 import { InfoDisclosure } from '../ui/info-disclosure'
 import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
 
 const formatIdr = (value: number) => `Rp${Math.round(value).toLocaleString('id-ID')}`
-const formatPeriod = (start?: string, end?: string) => start && end ? `${start}–${end}` : ''
+const formatPeriod = (start?: string, end?: string) => start && end ? formatHumanDateRange(start, end) : ''
 const manualPayeeLabel = { owner:'Owner', part_time:'Part-time', contractor:'Contractor', other:'Other' } as const
 const roleLabel = (draft: EmployeePayrollDraft) => draft.entryMode === 'manual' && draft.manualPayeeType
   ? manualPayeeLabel[draft.manualPayeeType]
@@ -286,7 +288,7 @@ export const FinancePayrollReview = () => {
                   </button>
                 </div>
                 {proposal.status === 'paid' && (
-                  <p className="mt-3 rounded-lg bg-success/10 p-2.5 text-xs text-success">Paid {proposal.paidAt} via {proposal.paymentMethod} · {proposal.paymentReference}</p>
+                  <p className="mt-3 rounded-lg bg-success/10 p-2.5 text-xs text-success">{`Paid ${proposal.paidAt ? formatHumanDate(proposal.paidAt.slice(0, 10)) : ''} via ${proposal.paymentMethod ?? ''} · ${proposal.paymentReference ?? ''}`}</p>
                 )}
               </article>
             )
@@ -308,6 +310,7 @@ export const FinancePayrollReview = () => {
                 </div>
                 <button aria-label="Close payroll proposal" onClick={close} className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-5" /></button>
               </div>
+              <PayrollStageTrack status={selected.status} viewer={role} className="mt-4" />
               <div className={`mt-4 rounded-xl border p-4 ${rejectedRows.length ? 'border-destructive/25 bg-destructive/[0.025]' : pendingRows.length ? 'border-info/25 bg-info/[0.025]' : 'border-border/70 bg-background/50'}`}>
                 <div className="flex items-end justify-between gap-3">
                   <div>

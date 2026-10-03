@@ -1,4 +1,4 @@
-import { Check, ChevronDown, CircleAlert, CircleCheck, MoreHorizontal, Plus, type LucideIcon } from 'lucide-react'
+import { CircleAlert, CircleCheck, MoreHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { validatePayrollForFinance } from '../../domain/payrollFinanceReviewDomain'
 import { doesEmploymentOverlapPeriod, isPartialPeriodEmployment } from '../../domain/hrEmployeeLifecycleDomain'
@@ -10,6 +10,7 @@ import { ActionFooter } from '../ui/action-footer'
 import { AppDialog } from '../ui/app-dialog'
 import { DatePickerField } from '../ui/date-time-field'
 import { PayrollStatusBadge } from '../payroll/PayrollStatusBadge'
+import { PayrollStageTrack } from '../payroll/PayrollStageTrack'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
 import { PeopleMonthPeriodFields } from './PeoplePeriodControls'
 import { PeoplePageHeader, PeopleSummaryCard, PeopleSummaryGrid } from './PeopleWorkspaceUI'
@@ -87,7 +88,6 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
-  const [readinessOpen, setReadinessOpen] = useState(true)
 
   useEffect(() => { ensureCurrentPeriod() }, [ensureCurrentPeriod])
   const latestPeriod = useMemo(() => periods.slice().sort((a, b) => b.paymentDate.localeCompare(a.paymentDate))[0], [periods])
@@ -183,9 +183,9 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const warnings = readinessItems.filter((item) => !item.complete && item.severity === 'warning')
   const readyToSubmit = blockers.length === 0 && !locked
 
-  useEffect(() => {
-    setReadinessOpen(blockers.length > 0 || warnings.length > 0)
-  }, [period?.id, blockers.length, warnings.length])
+  // Only what still needs doing is listed; passed checks fold into the count.
+  const openReadinessItems = readinessItems.filter((item) => !item.complete)
+  const passedCount = readinessItems.length - openReadinessItems.length
 
   const handleGenerate = () => {
     if (!period) return
@@ -318,25 +318,17 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
         action={proposal ? <PayrollStatusBadge status={proposal.status} label={proposalLabel[proposal.status]} /> : undefined}
       />
 
+      <PayrollStageTrack status={proposal?.status} viewer={role} />
+
       <div className="flex flex-col gap-3 border-y border-border/60 py-3 md:flex-row md:items-center md:justify-between">
         <PeopleMonthPeriodFields month={monthKey} onMonthChange={setSelectedMonth} settings={payrollSettings} className="md:flex-1" />
-        <div className="flex flex-wrap gap-2 md:shrink-0 md:justify-end">
-          {!locked && (
-            <button type="button" onClick={() => openManualEditor()} className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-background px-[18px] text-sm font-semibold text-foreground">
-              <Plus className="size-4" /> Add manual payee
-            </button>
-          )}
-          {!generatedDrafts.length && (
+        {/* The main step comes first; occasional tools live under "More". */}
+        <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:justify-end">
+          {!generatedDrafts.length ? (
             <button type="button" onClick={handleGenerate} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground">
               Generate staff payroll
             </button>
-          )}
-          {generatedDrafts.length > 0 && !locked && (
-            <button type="button" onClick={handleGenerate} className="h-11 rounded-full border border-border bg-background px-[18px] text-sm font-semibold text-foreground">
-              Regenerate
-            </button>
-          )}
-          {currentAction && (
+          ) : currentAction && (
             <button
               type="button"
               onClick={currentAction.onClick}
@@ -346,6 +338,19 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
             >
               {currentAction.label}
             </button>
+          )}
+          {!locked && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" aria-label="More payroll actions" className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-semibold text-foreground">
+                  <MoreHorizontal className="size-4" /> More
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => openManualEditor()}>Add manual payee</DropdownMenuItem>
+                {generatedDrafts.length > 0 && <DropdownMenuItem onSelect={handleGenerate}>Regenerate staff payroll</DropdownMenuItem>}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
@@ -367,24 +372,17 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
         </PeopleSummaryGrid>
 
         <div className={`rounded-xl border p-3.5 ${blockers.length ? 'border-destructive/25 bg-destructive/5' : warnings.length ? 'border-warning/25 bg-warning/5' : 'border-success/20 bg-success/5'}`}>
-          <button
-            type="button"
-            aria-expanded={readinessOpen}
-            onClick={() => setReadinessOpen((open) => !open)}
-            className="flex w-full items-center justify-between gap-3 text-left md:cursor-default"
-          >
-            <div>
-              <h3 className="text-sm font-semibold">Payroll readiness</h3>
-              <p className="text-xs text-muted-foreground">{blockers.length ? `${blockers.length} blocker${blockers.length === 1 ? '' : 's'}` : warnings.length ? `Ready · ${warnings.length} review item${warnings.length === 1 ? '' : 's'}` : 'Ready to send to Finance'}</p>
-            </div>
-            <span className="flex items-center gap-2">
-              {blockers.length === 0 && <Check className="size-5 text-success" />}
-              <ChevronDown className={`size-5 text-muted-foreground transition-transform md:hidden ${readinessOpen ? 'rotate-180' : ''}`} />
-            </span>
-          </button>
-          <div className={`${readinessOpen ? 'grid' : 'hidden'} mt-3 gap-2 sm:grid-cols-2 md:grid xl:grid-cols-6`}>
-            {readinessItems.map((item) => <ReadinessRow key={item.label} item={item} />)}
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">Payroll readiness</h3>
+            <p className="text-xs font-medium text-muted-foreground">{`${passedCount} of ${readinessItems.length} ready`}</p>
           </div>
+          {openReadinessItems.length === 0 ? (
+            <p className="mt-1 text-xs text-muted-foreground">Ready to send to Finance</p>
+          ) : (
+            <div className="mt-2 grid gap-1 sm:grid-cols-2">
+              {openReadinessItems.map((item) => <ReadinessRow key={item.label} item={item} />)}
+            </div>
+          )}
         </div>
 
         {pendingPoints.length > 0 && (
