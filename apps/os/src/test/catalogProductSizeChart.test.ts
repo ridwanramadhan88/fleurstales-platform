@@ -3,6 +3,7 @@ import { useCatalogStore } from '../store/catalogStore'
 import type { CatalogSizeGuideTemplate } from '../store/catalogStoreTypes'
 import { useUserStore } from '../store/userStore'
 import { setProductSizeChart } from '../components/catalog/CatalogTabContentController'
+import { remapVariantsToSizeChart, type VariantRow } from '../components/catalog/CatalogItemFormSheet'
 
 const chart = (id: string, name: string): CatalogSizeGuideTemplate => ({
   id,
@@ -50,5 +51,53 @@ describe('Product size chart saved from the product editor', () => {
     setProductSizeChart('product-1', 'guide-box')
     setProductSizeChart('product-1', '')
     expect(productTargets()).toEqual([])
+  })
+})
+
+describe('Switching a product to another size chart', () => {
+  const row = (sizeOptionId: string | undefined, size: string): VariantRow => ({
+    sizeOptionId,
+    size,
+    images: [],
+    price: '100000',
+    cost: '',
+    status: 'active',
+    flowerRecipe: [],
+  })
+  const bloomBox: CatalogSizeGuideTemplate = {
+    ...chart('guide-box', 'Bloom Box'),
+    sizes: [
+      { id: 'box-small', name: 'Small', sortOrder: 0, isActive: true },
+      { id: 'box-large', name: 'Large', sortOrder: 1, isActive: true },
+      { id: 'box-xl', name: 'Extra Large', sortOrder: 2, isActive: false },
+    ],
+  }
+
+  it('carries sizes over by name, case-insensitively', () => {
+    const remapped = remapVariantsToSizeChart(
+      [row('bouquet-standard-large', 'Large'), row('bouquet-standard-small', 'small')],
+      bloomBox,
+    )
+    expect(remapped.map((variant) => [variant.sizeOptionId, variant.size])).toEqual([
+      ['box-large', 'Large'],
+      ['box-small', 'Small'],
+    ])
+  })
+
+  it('leaves sizes the new chart lacks, archived sizes, and duplicates for the user to pick', () => {
+    const remapped = remapVariantsToSizeChart(
+      [row('bouquet-standard-medium', 'Medium'), row('vase-xl', 'Extra Large'), row('box-large', 'Large'), row('bouquet-standard-large', 'Large')],
+      bloomBox,
+    )
+    expect(remapped.map((variant) => variant.sizeOptionId)).toEqual([
+      'bouquet-standard-medium',
+      'vase-xl',
+      'box-large',
+      'bouquet-standard-large',
+    ])
+  })
+
+  it('also links older unlinked variants when a matching size exists', () => {
+    expect(remapVariantsToSizeChart([row(undefined, 'Small')], bloomBox)[0].sizeOptionId).toBe('box-small')
   })
 })

@@ -1,5 +1,5 @@
 import { useMemo, useState, type FC } from 'react'
-import { AlertCircle, CheckCircle2, Link2, Pencil, Plus, Ruler, Trash2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Pencil, Plus, Ruler, Trash2 } from 'lucide-react'
 import type { CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
 import type { VariantRow } from './CatalogItemFormSheet'
 import { CatalogVariantEditorDialog } from './CatalogVariantEditorDialog'
@@ -64,12 +64,13 @@ export const CatalogVariantsSection: FC<Props> = ({
     return map
   }, [variants])
 
-  const unlinked = variants
+  // Variants whose size is not in the chosen chart: older unlinked variants, or sizes
+  // from the previously chosen chart that had no same-named size in the new one.
+  const needsSize = variants
     .map((variant, index) => ({ variant, index }))
-    .filter(({ variant }) => !variant.sizeOptionId)
-  const incompatible = variants
-    .map((variant, index) => ({ variant, index }))
-    .filter(({ variant }) => Boolean(variant.sizeOptionId) && !sizeById.has(variant.sizeOptionId as string))
+    .filter(({ variant }) => !variant.sizeOptionId || !sizeById.has(variant.sizeOptionId))
+  const usedSizeIds = new Set(variants.map((variant) => variant.sizeOptionId).filter((id): id is string => Boolean(id)))
+  const replacementSizes = templateSizes.filter((size) => size.isActive !== false && !usedSizeIds.has(size.id))
 
   const openExisting = (index: number, label?: string) => {
     const variant = variants[index]
@@ -220,61 +221,55 @@ export const CatalogVariantsSection: FC<Props> = ({
         </div>
       )}
 
-      {unlinked.length > 0 ? (
-        <div className="space-y-3 rounded-2xl border border-warning/25 bg-warning/5 p-4">
+      {needsSize.length > 0 ? (
+        <div className="space-y-3 rounded-2xl border border-border bg-muted/35 p-4">
           <div>
-            <p className="flex items-center gap-2 text-sm font-semibold"><Link2 className="size-4 text-warning" /> Belum ditautkan ke ukuran</p>
+            <p className="text-sm font-semibold text-foreground">Pilih ukuran baru</p>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Data lama ini tetap disimpan apa adanya. Tautkan secara eksplisit jika sudah mengetahui ukuran template yang benar.
+              {sizeTemplate
+                ? 'Ukuran berikut belum ada di template ' + sizeTemplate.name + '. Pilih ukuran penggantinya, atau hapus jika tidak dijual lagi.'
+                : 'Pilih template ukuran terlebih dahulu, lalu pilih ukuran untuk varian berikut.'}
             </p>
           </div>
           <div className="space-y-2">
-            {unlinked.map(({ variant, index }) => (
-              <button
-                key={variant.id ?? 'unlinked-' + index}
-                type="button"
-                onClick={() => openExisting(index)}
+            {needsSize.map(({ variant, index }) => (
+              <div
+                key={variant.id ?? 'needs-size-' + index}
                 id={`catalog-variant-${index}`}
-                className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/35 ${
+                tabIndex={-1}
+                className={`grid gap-2 rounded-xl border bg-card p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/35 sm:grid-cols-[minmax(0,1fr)_minmax(0,14rem)_auto] sm:items-center ${
                   validationErrorIndexes.has(index) ? 'border-destructive/45 ring-1 ring-destructive/25' : 'border-border'
                 }`}
               >
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold">{variant.size || 'Nama ukuran belum tersedia'}</span>
+                  <span className="block truncate text-sm font-semibold">{variant.size || 'Tanpa ukuran'}</span>
                   <span className="block text-xs text-muted-foreground">{formatPrice(variant.price)} · {statusBadge(variant)}</span>
                 </span>
-                <span className="shrink-0 text-xs font-semibold text-primary">Tinjau & tautkan</span>
-              </button>
+                {sizeTemplate ? (
+                  <select
+                    aria-label={'Ukuran pengganti untuk ' + (variant.size || 'varian ini')}
+                    value=""
+                    onChange={(event) => {
+                      const size = sizeById.get(event.target.value)
+                      if (size) updateVariant(index, { sizeOptionId: size.id, size: size.name })
+                    }}
+                    className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground"
+                  >
+                    <option value="">Pilih ukuran</option>
+                    {replacementSizes.map((size) => <option key={size.id} value={size.id}>{size.name}</option>)}
+                  </select>
+                ) : <span />}
+                <button
+                  type="button"
+                  aria-label={'Hapus ' + (variant.size || 'varian ini')}
+                  onClick={() => removeVariant(index)}
+                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-medium text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="size-4" /> Hapus
+                </button>
+              </div>
             ))}
           </div>
-        </div>
-      ) : null}
-
-      {incompatible.length > 0 ? (
-        <div className="space-y-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
-          <div>
-            <p className="text-sm font-semibold text-foreground">Ukuran tidak cocok dengan template saat ini</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Varian ini tidak dihapus. Pilih ukuran template yang benar sebelum menjualnya kembali.
-            </p>
-          </div>
-          {incompatible.map(({ variant, index }) => (
-            <button
-              key={variant.id ?? 'review-' + index}
-              type="button"
-              onClick={() => openExisting(index, 'Tinjau varian · ' + (variant.size || 'Tanpa ukuran'))}
-              id={`catalog-variant-${index}`}
-              className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/35 ${
-                validationErrorIndexes.has(index) ? 'border-destructive/45 ring-1 ring-destructive/25' : 'border-border'
-              }`}
-            >
-              <span>
-                <span className="block text-sm font-semibold">{variant.size || 'Tanpa ukuran'}</span>
-                <span className="block text-xs text-muted-foreground">ID ukuran: {variant.sizeOptionId}</span>
-              </span>
-              <span className="text-xs font-semibold text-destructive">Perlu ditinjau</span>
-            </button>
-          ))}
         </div>
       ) : null}
 

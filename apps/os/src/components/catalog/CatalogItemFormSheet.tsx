@@ -5,7 +5,7 @@
 
 import type { FC, FormEvent } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CatalogCategory, CatalogMaterial, CatalogProduct, CatalogProductImage, CatalogSizeGuideTarget, CatalogVariantStatus } from '../../store/catalogStoreTypes'
+import type { CatalogCategory, CatalogMaterial, CatalogProduct, CatalogProductImage, CatalogSizeGuideTarget, CatalogSizeGuideTemplate, CatalogVariantStatus } from '../../store/catalogStoreTypes'
 import type { NewCatalogProductInput, NewCatalogVariantInput } from '../../store/catalogStore'
 import { useCatalogStore } from '../../store/catalogStore'
 import { CatalogProductDetailsSection } from './CatalogProductDetailsSection'
@@ -105,6 +105,25 @@ const emptyForm = (defaultCategory: CatalogCategory): CatalogFormState => ({
   sizeTemplateId: '',
   variants: [],
 })
+
+/**
+ * When the product switches size chart, carry each variant over to the size with the
+ * same name in the new chart (Large -> Large). Variants already on the new chart are
+ * kept; variants with no same-named, unused, active size are left for the user to pick.
+ */
+export const remapVariantsToSizeChart = (variants: VariantRow[], template: CatalogSizeGuideTemplate): VariantRow[] => {
+  const chartIds = new Set(template.sizes.map((size) => size.id))
+  const taken = new Set(variants.map((variant) => variant.sizeOptionId).filter((id): id is string => Boolean(id) && chartIds.has(id as string)))
+  return variants.map((variant) => {
+    if (variant.sizeOptionId && chartIds.has(variant.sizeOptionId)) return variant
+    const name = variant.size.trim().toLowerCase()
+    const match = template.sizes.find((size) =>
+      size.isActive !== false && !taken.has(size.id) && size.name.trim().toLowerCase() === name)
+    if (!match) return variant
+    taken.add(match.id)
+    return { ...variant, sizeOptionId: match.id, size: match.name }
+  })
+}
 
 const productSizeTemplateId = (productId: string, targets: CatalogSizeGuideTarget[]): string =>
   targets.find((target) => target.scope === 'product' && target.productId === productId)?.templateId ?? ''
@@ -519,7 +538,15 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
                     <select
                       id="catalog-size-template"
                       value={form.sizeTemplateId}
-                      onChange={(event) => setForm((previous) => ({ ...previous, sizeTemplateId: event.target.value }))}
+                      onChange={(event) => {
+                        const templateId = event.target.value
+                        const nextTemplate = sizeGuideTemplates.find((template) => template.id === templateId)
+                        setForm((previous) => ({
+                          ...previous,
+                          sizeTemplateId: templateId,
+                          variants: nextTemplate ? remapVariantsToSizeChart(previous.variants, nextTemplate) : previous.variants,
+                        }))
+                      }}
                       className="h-11 w-full rounded-xl border border-border bg-background px-3.5 text-sm text-foreground"
                     >
                       <option value="">Pilih template ukuran</option>

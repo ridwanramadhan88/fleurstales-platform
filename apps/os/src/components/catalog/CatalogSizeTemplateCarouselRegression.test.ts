@@ -19,7 +19,7 @@ describe('catalog size-template and image-carousel regressions', () => {
 
   it('uses template-backed size slots without free-text additional options', () => {
     expect(variantsSource).toContain('Ukuran ini belum ditambahkan ke produk.')
-    expect(variantsSource).toContain('Belum ditautkan ke ukuran')
+    expect(variantsSource).toContain('Pilih ukuran baru')
     expect(variantEditorSource).toContain('Tautkan ke ukuran template · Opsional')
     expect(variantsSource + variantEditorSource).not.toContain('Opsi tambahan · Opsional')
     expect(variantsSource + variantEditorSource).not.toContain('formatCatalogVariantLabel')
