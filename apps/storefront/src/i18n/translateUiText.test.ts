@@ -245,6 +245,7 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('Choose a branch to create an order', 'id')).toBe('Pilih cabang untuk membuat pesanan')
     expect(translateUiText('orders waiting for reconciliation', 'id')).toBe('pesanan menunggu rekonsiliasi')
     expect(translateUiText('Open reconciliation', 'id')).toBe('Buka rekonsiliasi')
+    expect(translateUiText('No active branch assignment was found for your shift.', 'id')).toBe('Belum ada cabang untuk giliran kerja Anda. Minta SDM atau Pemilik memperbarui jadwal.')
     expect(translateUiText('Search order #, customer, phone…', 'id')).toBe('Cari nomor pesanan, pelanggan, telepon…')
     expect(translateUiText('Search orders…', 'id')).toBe('Cari pesanan…')
     expect(translateUiText('New order', 'id')).toBe('Pesanan baru')
