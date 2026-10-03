@@ -6,6 +6,7 @@ import { surfaceCardClass } from '../ui/card'
 import { getOrderStatusGroup } from '../../domain/orderGroupingDomain'
 import { getLocalDateString, nowInJakarta } from '../../domain/orderTimingDomain'
 import { getOrderNextActionLabel } from '../orders/orderNextActionLabels'
+import { getDisplayScheduleLabel } from '../orders/orderTableFormatters'
 
 const toDateValue = (order: OrderTableRow) => {
   if (!order.scheduleDate) return Number.POSITIVE_INFINITY
@@ -101,7 +102,7 @@ export function AdminTodayQueue({
                   <p className="mt-1 truncate text-sm">{order.customerName} · {order.productName ?? order.items?.[0]?.productName ?? 'Custom order'}</p>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     <CalendarClock className="size-3.5" />
-                    {order.scheduleLabel ?? order.scheduleDate ?? 'Schedule not set'}
+                    {getDisplayScheduleLabel(order) ?? 'Schedule not set'}
                   </p>
                 </div>
 

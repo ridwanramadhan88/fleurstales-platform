@@ -71,6 +71,7 @@ describe('Indonesian copy guard', () => {
     useOrdersStore.setState({ orders: [
       makeOrder({ id: 'w1', orderNumber: 'KDM-2026-9101', customerName: 'Guard Lunas', status: 'delivered', paymentStatus: 'paid', financeVerified: false } as never),
       makeOrder({ id: 'w2', orderNumber: 'KDM-2026-9102', customerName: 'Guard Refund', status: 'cancelled', paymentStatus: 'refund_pending' } as never),
+      makeOrder({ id: 'w3', orderNumber: 'KDM-2026-9103', customerName: 'Guard Aktif', status: 'confirmed', scheduleDate: new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10), scheduleTime: '23:00', branch: 'Kedamaian' } as never),
     ] })
     useFinanceStore.setState({ transactions: [
       { id: 'tx-w1', status: 'verified', source: 'order_payment', orderNumber: 'KDM-2026-9101', accountId: 'cash:main', type: 'income', category: 'order_payment', branch: 'Kedamaian', method: 'cash', description: 'Pembayaran pesanan', amount: 100000, createdAt: new Date().toISOString() } as never,
