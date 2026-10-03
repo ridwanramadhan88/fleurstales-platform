@@ -8,9 +8,6 @@ import {
   ShieldCheck,
   Users,
   UserRoundCog,
-  CalendarCheck2,
-  UsersRound,
-  WalletCards,
 } from 'lucide-react'
 import {
   getAccessibleNavigationDestinationIds,
@@ -37,12 +34,9 @@ const TAB_ICON: Record<BottomTabId, BottomTabItem['icon']> = {
   catalog: BookOpen,
   stock: Boxes,
   customers: Users,
-  'hr-attendance': CalendarCheck2,
-  'hr-people': UsersRound,
-  'hr-payroll': WalletCards,
 }
 
-type DirectBottomTabId = Exclude<BottomTabId, 'hr-attendance' | 'hr-people' | 'hr-payroll'>
+type DirectBottomTabId = BottomTabId
 
 const isBottomTabId = (id: NavigationDestinationId): id is DirectBottomTabId =>
   id !== 'settings'
@@ -77,24 +71,6 @@ export const useBottomTabBarController = (
   const userRole = useUserStore((state) => state.role)
   const permissions = useSettingsStore((state) => state.permissions)
   const inventoryEnabled = useSettingsStore((state) => state.storeProfile.inventoryEnabled)
-
-  if (userRole === 'hr') {
-    const visibleTabs: BottomTabItem[] = [
-      { id: 'dashboard', label: 'Overview', icon: TAB_ICON.dashboard },
-      { id: 'hr-attendance', label: 'Attendance', icon: TAB_ICON['hr-attendance'] },
-      { id: 'hr-people', label: 'People', icon: TAB_ICON['hr-people'] },
-      { id: 'hr-payroll', label: 'Payroll', icon: TAB_ICON['hr-payroll'] },
-    ]
-    const section = props.activeHrSection ?? 'attendance'
-    const activeBottomTab: BottomTabId = props.activeTab === 'dashboard'
-      ? 'dashboard'
-      : ['attendance', 'scheduling'].includes(section)
-        ? 'hr-attendance'
-        : ['employees', 'reports'].includes(section)
-          ? 'hr-people'
-          : 'hr-payroll'
-    return { ...props, visibleTabs, activeBottomTab }
-  }
 
   const accessibleIds = getAccessibleNavigationDestinationIds({
     role: userRole,

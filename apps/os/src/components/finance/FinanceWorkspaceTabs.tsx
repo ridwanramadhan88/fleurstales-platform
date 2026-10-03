@@ -26,7 +26,8 @@ const GROUP_ITEMS: Record<
   { label: string; description: string; icon: typeof ClipboardCheck }
 > = {
   overview: {
-    label: 'Overview',
+    // Not "Overview": that name belongs to the home screen in the main menu.
+    label: 'Balances',
     description: 'Cash position, account balances, and Finance workload',
     icon: Landmark,
   },

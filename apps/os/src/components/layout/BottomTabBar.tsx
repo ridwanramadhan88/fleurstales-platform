@@ -16,13 +16,9 @@ export type BottomTabId =
   | 'catalog'
   | 'stock'
   | 'customers'
-  | 'hr-attendance'
-  | 'hr-people'
-  | 'hr-payroll'
 
 export interface BottomTabBarProps {
   activeTab: AppTabId
-  activeHrSection?: import('../hr/HrTabContentController').HrSection
   onTabChange: (tab: BottomTabId) => void
   /** Kept for shell compatibility; order creation now lives in the Orders page. */
   onOpenNewOrder?: () => void

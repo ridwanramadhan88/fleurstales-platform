@@ -20,7 +20,8 @@ import { InfoHint } from '../ui/info-hint'
 
 export const PEOPLE_SECTION_META: Record<HrSection, { label: string; description: string; icon: LucideIcon }> = {
   employees: {
-    label: 'People',
+    // Not "People": that is the name of the whole workspace in the main menu.
+    label: 'Employees',
     description: 'Create staff, finish setup, manage access, and deactivate or remove unused records.',
     icon: UsersRound,
   },

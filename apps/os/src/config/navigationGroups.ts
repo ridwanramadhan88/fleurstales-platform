@@ -85,6 +85,11 @@ export const getNavigationDestination = (
   return destination
 }
 
+/**
+ * One name per destination: the phone bar and the desktop sidebar always use
+ * the same words, so staff never have to learn two menus. Only the home
+ * workspace cards ("workspace") may use a broader name for Finance.
+ */
 export const getNavigationDestinationLabel = (
   id: NavigationDestinationId,
   role: UserRole,
@@ -92,17 +97,11 @@ export const getNavigationDestinationLabel = (
 ): string => {
   if (id === 'dashboard') {
     if (role === 'florist') return 'My Work'
-    if (role === 'admin') return surface === 'desktop' ? "Today's Operations" : 'Today'
-    return surface === 'desktop' ? 'Business Overview' : 'Overview'
+    if (role === 'admin') return 'Today'
+    return 'Overview'
   }
 
-  if (id === 'finance') {
-    if (surface === 'workspace') return 'Finance'
-    if (role === 'finance') return surface === 'mobile-bottom' ? 'Reconcile' : 'Order Reconciliation'
-    return surface === 'mobile-bottom' ? 'Reconcile' : 'Order Reconciliation'
-  }
-
-  if (id === 'hr' && surface === 'desktop') return 'People & Attendance'
+  if (id === 'finance') return surface === 'workspace' ? 'Finance' : 'Reconcile'
 
   return getNavigationDestination(id).label
 }

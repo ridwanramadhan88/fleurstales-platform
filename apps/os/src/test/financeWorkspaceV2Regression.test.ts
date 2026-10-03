@@ -10,7 +10,7 @@ describe('Finance workspace v2 regressions', () => {
 
     expect(tabs).toContain("type FinanceWorkspaceGroup = 'overview' | 'reconciliation' | 'transactions' | 'payroll'")
     expect(tabs).toContain("const GROUP_ORDER: FinanceWorkspaceGroup[] = ['overview', 'reconciliation', 'transactions', 'payroll']")
-    expect(tabs).toContain("label: 'Overview'")
+    expect(tabs).toContain("label: 'Balances'")
     expect(tabs).toContain("label: 'Reconciliation'")
     expect(tabs).toContain("label: 'Transactions'")
     expect(tabs).toContain("label: 'Payroll'")

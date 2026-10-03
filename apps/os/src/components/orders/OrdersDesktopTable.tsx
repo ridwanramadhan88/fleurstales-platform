@@ -39,6 +39,20 @@ const ColumnHeader: FC<{ label: string; align?: 'left' | 'right' }> = ({
 const slotKey = (order: OrdersTableViewModel['sortedOrders'][number]) =>
   `${order.scheduleDate ?? ''}|${order.scheduleTime?.slice(0, 5) ?? ''}`
 
+/**
+ * Header and rows share these widths so the columns line up. Sized for the
+ * Indonesian labels ("Pengambilan di toko", "Menunggu Konfirmasi"), which
+ * wrap to a second line instead of being cut off. The Order column takes
+ * what is left. Florist shows from xl up (it is also in the order details).
+ */
+const COLUMN_WIDTH = {
+  time: 'w-[136px]',
+  fulfillment: 'w-[128px]',
+  status: 'w-[156px]',
+  florist: 'hidden w-[96px] xl:block',
+  total: 'w-[128px]',
+} as const
+
 export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
   viewModel,
   setDesktopRowRef,
@@ -61,13 +75,13 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
     <>
       <div className="hidden overflow-hidden rounded-xs bg-card/90 ring-1 ring-border/60 lg:block lg:w-full lg:rounded-xl">
         <div className="min-w-full text-sm text-foreground/90 sm:text-sm">
-          <div className="flex items-center gap-3 bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">
+          <div className="flex items-center gap-3 bg-muted px-4 py-2 text-xs font-semibold text-muted-foreground">
             <div className="min-w-0 flex-1"><ColumnHeader label="ORDER" /></div>
-            <div className="w-[150px] shrink-0"><ColumnHeader label="TIME" /></div>
-            <div className="w-[110px] shrink-0"><ColumnHeader label="FULFILLMENT" /></div>
-            <div className="w-[120px] shrink-0"><ColumnHeader label="STATUS" /></div>
-            <div className="w-[90px] shrink-0"><ColumnHeader label="FLORIST" /></div>
-            <div className="w-[130px] shrink-0"><ColumnHeader label="TOTAL" /></div>
+            <div className={`${COLUMN_WIDTH.time} shrink-0`}><ColumnHeader label="TIME" /></div>
+            <div className={`${COLUMN_WIDTH.fulfillment} shrink-0`}><ColumnHeader label="FULFILLMENT" /></div>
+            <div className={`${COLUMN_WIDTH.status} shrink-0`}><ColumnHeader label="STATUS" /></div>
+            <div className={`${COLUMN_WIDTH.florist} shrink-0`}><ColumnHeader label="FLORIST" /></div>
+            <div className={`${COLUMN_WIDTH.total} shrink-0`}><ColumnHeader label="TOTAL" /></div>
           </div>
 
           {displayOrders.map((order, index) => {
@@ -113,7 +127,7 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
                     <div className="mt-0.5 truncate text-xs text-muted-foreground">{order.orderNumber}</div>
                   </div>
 
-                  <div className="flex w-[150px] shrink-0 items-center">
+                  <div className={`flex ${COLUMN_WIDTH.time} shrink-0 items-center`}>
                     {urgency === 'late' || urgency === 'dueSoon' || isFutureCustomOrder ? (
                       <StatusChip tone={isFutureCustomOrder ? 'info' : URGENCY_CHIP[urgency].tone} className="px-2 py-0.5 text-xs">
                         {getDisplayScheduleLabel(order) ?? URGENCY_CHIP[urgency].label}
@@ -123,21 +137,21 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
                     )}
                   </div>
 
-                  <div className="flex w-[110px] shrink-0 items-center gap-1.5 text-muted-foreground">
+                  <div className={`flex ${COLUMN_WIDTH.fulfillment} shrink-0 items-center gap-1.5 text-muted-foreground`}>
                     {order.fulfillment === 'delivery' ? <Truck className="size-3.5 shrink-0" /> : <MapPin className="size-3.5 shrink-0" />}
-                    <span className="truncate">{order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}</span>
+                    <span className="line-clamp-2 leading-tight">{order.fulfillment === 'delivery' ? 'Delivery' : 'Pickup'}</span>
                   </div>
 
-                  <div className="flex w-[120px] shrink-0 items-center gap-1.5 text-foreground/90">
+                  <div className={`flex ${COLUMN_WIDTH.status} shrink-0 items-center gap-1.5 text-foreground/90`}>
                     <StatusIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="truncate text-2xs font-medium">{STATUS_LABELS[order.status]}</span>
+                    <span className="line-clamp-2 text-xs font-medium leading-tight">{STATUS_LABELS[order.status]}</span>
                   </div>
 
-                  <div className="w-[90px] shrink-0 truncate text-muted-foreground">
+                  <div className={`${COLUMN_WIDTH.florist} shrink-0 truncate text-muted-foreground`}>
                     {order.florist ? order.florist : <span className="text-muted-foreground">—</span>}
                   </div>
 
-                  <div className="flex w-[130px] shrink-0 items-center gap-2">
+                  <div className={`flex ${COLUMN_WIDTH.total} shrink-0 items-center gap-2`}>
                     <span
                       className={`h-2 w-2 shrink-0 rounded-full ${
                         highlightPayment

@@ -65,8 +65,6 @@ export const useDesktopSidebarController = ({
     role: userRole,
     permissions,
     inventoryEnabled: storeProfile.inventoryEnabled,
-    // Preserve the current desktop landing behavior for specialist roles.
-    includeDashboard: userRole !== 'finance',
   })
 
   useEffect(() => {

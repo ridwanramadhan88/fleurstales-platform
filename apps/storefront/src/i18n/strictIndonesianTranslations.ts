@@ -382,6 +382,15 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Message customer': 'Kirim pesan ke pelanggan',
   'After payment is confirmed, the order can go into production.': 'Setelah pembayaran dikonfirmasi, pesanan bisa masuk produksi.',
   'Choose from Library': 'Pilih dari galeri',
+  // One menu (UX plan PR 8).
+  'Balances': 'Saldo',
+  'Reconciliation views': 'Tampilan rekonsiliasi',
+  'Transaction code': 'Kode transaksi',
+  'Reference': 'Referensi',
+  'Ledger entry': 'Catatan ledger',
+  'Transaction Code': 'Kode transaksi',
+  'Transaction categories': 'Kategori transaksi',
+  'Finance transaction categories': 'Kategori transaksi keuangan',
   // Indonesian everywhere (UX plan PR 2): found by src/test/indonesianCopyGuard.test.tsx.
   "My day": "Hari saya",
   "Day off today": "Libur hari ini",
