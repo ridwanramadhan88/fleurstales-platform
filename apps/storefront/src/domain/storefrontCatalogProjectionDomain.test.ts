@@ -41,8 +41,8 @@ const template: CatalogSizeGuideTemplate = {
 const target: CatalogSizeGuideTarget = {
   id: 'target-bouquet',
   templateId: template.id,
-  scope: 'product_type',
-  productType: 'Bouquet',
+  scope: 'product',
+  productId: 'product-1',
 }
 
 const product = (): CatalogProduct => ({
@@ -75,7 +75,7 @@ describe('Storefront Catalog projection', () => {
     )
   })
 
-  it('hides an active variant when an Arrangement Type change makes its stable child incompatible', () => {
+  it('hides an active variant when the product switches to a size chart without its stable child', () => {
     const current = product()
     const changedTemplate: CatalogSizeGuideTemplate = {
       ...template,

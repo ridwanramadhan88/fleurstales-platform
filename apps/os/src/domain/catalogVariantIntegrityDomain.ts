@@ -44,13 +44,7 @@ const findAssignedTemplate = (
   const directTarget = targets.find(
     (target) => target.scope === 'product' && target.productId === product.id,
   )
-  if (directTarget) return templates.find((template) => template.id === directTarget.templateId)
-
-  if (!product.productType) return undefined
-  const typeTarget = targets.find(
-    (target) => target.scope === 'product_type' && target.productType === product.productType,
-  )
-  return typeTarget ? templates.find((template) => template.id === typeTarget.templateId) : undefined
+  return directTarget ? templates.find((template) => template.id === directTarget.templateId) : undefined
 }
 
 export const auditCatalogVariantIntegrity = (

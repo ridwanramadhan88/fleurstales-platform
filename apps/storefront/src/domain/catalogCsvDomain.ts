@@ -398,20 +398,6 @@ export const parseCatalogCsv = (
   return { rows, errors }
 }
 
-/** Customer-facing name rule shared by form entry and CSV imports. */
-export const buildCatalogDisplayName = (
-  productName: string,
-  collectionSeries?: string,
-): string => {
-  const name = productName.trim()
-  const collection = collectionSeries?.trim()
-  if (!collection) return name
-  const prefix = `${collection} - `
-  return name.toLowerCase().startsWith(prefix.toLowerCase())
-    ? name
-    : `${prefix}${name}`
-}
-
 /**
  * @description Legacy fallback key for matching a product when no stable
  * Product ID is supplied in an import row.

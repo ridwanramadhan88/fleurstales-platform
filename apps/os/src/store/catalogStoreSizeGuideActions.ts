@@ -264,9 +264,9 @@ export const resolveCatalogSizeGuide = (
   targets: CatalogSizeGuideTarget[],
   options?: { includeLogical?: boolean },
 ): CatalogSizeGuideTemplate | undefined => {
-  const productTarget = targets.find((target) => target.scope === 'product' && target.productId === product.id)
-  const typeTarget = product.productType ? targets.find((target) => target.scope === 'product_type' && target.productType === product.productType) : undefined
-  const templateId = productTarget?.templateId ?? typeTarget?.templateId
+  // A size chart is picked per product. Arrangement Type is only a label and no
+  // longer selects a chart.
+  const templateId = targets.find((target) => target.scope === 'product' && target.productId === product.id)?.templateId
   return templates.find((template) => template.id === templateId && (options?.includeLogical === true || template.sizes.some((size) => Boolean(size.guideImageUrl)) || template.byteSize > 0))
 }
 

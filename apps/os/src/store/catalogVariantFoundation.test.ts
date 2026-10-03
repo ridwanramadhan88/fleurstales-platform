@@ -22,7 +22,7 @@ describe('catalog variant foundation', () => {
     }]
     const product = { id: 'product-1', productType: 'Bouquet' } as Pick<CatalogProduct, 'id' | 'productType'>
     const resolved = resolveCatalogSizeGuide(product, templates, [
-      { id: 'target-1', templateId: 'guide-bouquet', scope: 'product_type', productType: 'Bouquet' },
+      { id: 'target-1', templateId: 'guide-bouquet', scope: 'product', productId: 'product-1' },
     ])
 
     expect(resolved?.sizes.map((size) => [size.id, size.guideImageUrl])).toEqual([

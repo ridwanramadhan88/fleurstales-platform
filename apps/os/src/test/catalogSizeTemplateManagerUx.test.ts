@@ -8,19 +8,18 @@ const sizeGuideBridgeSource = readFileSync('src/data/shared/sizeGuideBridge.ts',
 const actionsSource = readFileSync('src/store/catalogStoreSizeGuideActions.ts', 'utf8')
 
 describe('Catalog Size Template manager regressions', () => {
-  it('uses the canonical Arrangement Type registry, including types with zero products', () => {
-    expect(guideSource).toContain("const arrangementTypes = useCatalogStore((state) => state.arrangementTypes)")
-    expect(guideSource).toContain('arrangementTypes.map((productType)')
-    expect(guideSource).not.toContain('new Set(products.map((product) => product.productType')
+  it('manages size charts only; products pick their chart in the product editor', () => {
+    expect(guideSource).not.toContain('Penetapan')
+    expect(guideSource).not.toContain('Default Jenis rangkaian')
+    expect(guideSource).not.toContain("target.scope === 'product_type'")
+    expect(guideSource).not.toContain('state.arrangementTypes')
+    expect(guideSource).toContain('Dipilih per produk di editor produk.')
+    expect(guideSource).toContain('{templateProductCount(template.id)} produk')
   })
 
-  it('separates Arrangement Type defaults from Product overrides and shows the effective template', () => {
-    expect(guideSource).toContain('Default Jenis rangkaian')
-    expect(guideSource).toContain('Template khusus produk')
-    expect(guideSource).toContain('Template efektif')
-    expect(guideSource).toContain('Gunakan default Jenis rangkaian')
-    expect(guideSource).toContain("target.scope === 'product_type'")
-    expect(guideSource).toContain("target.scope === 'product'")
+  it('resolves a product size chart only from its own product target', () => {
+    expect(actionsSource).toContain("targets.find((target) => target.scope === 'product' && target.productId === product.id)?.templateId")
+    expect(actionsSource).not.toContain("target.scope === 'product_type' && target.productType === product.productType")
   })
 
   it('keeps Size Template edits local until the explicit Save action', () => {
@@ -44,8 +43,12 @@ describe('Catalog Size Template manager regressions', () => {
     expect(arrangementSource).toContain('h-[100dvh] max-h-[100dvh]')
   })
 
-  it('keeps guide image editing stacked on small tablets before splitting at md', () => {
-    expect(guideSource).toContain('md:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]')
+  it('opens a template list first on phones, then one template with collapsed size rows', () => {
+    expect(guideSource).toContain("useState<'list' | 'detail'>('list')")
+    expect(guideSource).toContain("mobileView === 'detail' ? 'hidden lg:block' : ''")
+    expect(guideSource).toContain('Semua template')
+    expect(guideSource).toContain('aria-expanded={expanded}')
+    expect(guideSource).not.toContain('ID ukuran stabil')
     expect(guideSource).not.toContain('sm:grid-cols-[minmax(0,1fr)_360px]')
   })
 
@@ -63,9 +66,9 @@ describe('Catalog Size Template manager regressions', () => {
       .toBeGreaterThan(sizeGuideBridgeSource.indexOf('best-effort cleanup after committed metadata'))
   })
 
-  it('keeps Arrangement Type management user-facing strings in Indonesian and shows its default Size Template', () => {
+  it('keeps Arrangement Type management user-facing strings in Indonesian without a default Size Template', () => {
     expect(arrangementSource).toContain('Kelola Jenis rangkaian')
-    expect(arrangementSource).toContain('Template default:')
+    expect(arrangementSource).not.toContain('Template default:')
     expect(arrangementSource).not.toContain('Manage arrangement types')
     expect(arrangementSource).not.toContain('No arrangement types yet.')
   })

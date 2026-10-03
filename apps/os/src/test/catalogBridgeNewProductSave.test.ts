@@ -35,15 +35,17 @@ describe('Catalog product editor persistence regressions', () => {
 
   it('keeps product form and nested variant edits as local drafts until explicit save/apply', () => {
     expect(formSource).toContain('Data baru tersimpan saat tombol Simpan dipilih.')
-    expect(formSource).toContain('await onUpdate({ productId: product.id, ...common })')
-    expect(variantEditorSource).toContain('hanya masuk ke draft produk setelah memilih Terapkan')
+    expect(formSource).toContain('await onUpdate({ productId: product.id, ...common }, sizeChart)')
+    expect(formSource).toContain('await onCreate(common, sizeChart)')
+    expect(variantEditorSource).toContain('hanya masuk ke draft produk setelah memilih Simpan ukuran')
     expect(variantEditorSource).toContain('onApply(draft)')
-    expect(variantEditorSource).toContain('Terapkan')
+    expect(variantEditorSource).toContain('Simpan ukuran')
   })
 
   it('waits for remote persistence and restores the store after a failed editor save', () => {
     expect(controllerSource).toContain('const saved = await flushBusinessOsCatalogSync()')
-    expect(controllerSource).toContain('useCatalogStore.setState({ products: previousProducts })')
+    // A failed save restores both the products and the size chart picked for them.
+    expect(controllerSource).toContain('useCatalogStore.setState({ products: previousProducts, sizeGuideTargets: previousTargets })')
     expect(controllerSource).toContain('return false')
   })
 

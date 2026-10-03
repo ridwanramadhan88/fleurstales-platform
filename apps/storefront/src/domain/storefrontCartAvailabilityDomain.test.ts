@@ -36,8 +36,8 @@ const template: CatalogSizeGuideTemplate = {
 const target: CatalogSizeGuideTarget = {
   id: 'target-bouquet',
   templateId: template.id,
-  scope: 'product_type',
-  productType: 'Bouquet',
+  scope: 'product',
+  productId: 'product-1',
 }
 
 const line = { lineId: 'line-1', productId: 'product-1', variantId: 'variant-1' }
@@ -56,7 +56,7 @@ describe('Storefront cart Catalog availability', () => {
     ])
   })
 
-  it('blocks a linked variant when an Arrangement Type change makes its stable size incompatible', () => {
+  it('blocks a linked variant when the product switches to a size chart without its stable size', () => {
     const otherTemplate: CatalogSizeGuideTemplate = {
       ...template,
       id: 'guide-other',
@@ -66,8 +66,8 @@ describe('Storefront cart Catalog availability', () => {
     const otherTarget: CatalogSizeGuideTarget = {
       id: 'target-other',
       templateId: 'guide-other',
-      scope: 'product_type',
-      productType: 'Bouquet',
+      scope: 'product',
+      productId: 'product-1',
     }
     expect(getStorefrontCartIssues([line], [product()], [otherTemplate], [otherTarget])).toEqual([
       expect.objectContaining({ code: 'size_needs_review' }),

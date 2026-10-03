@@ -38,16 +38,16 @@ describe('Catalog scale and Product Editor workflow', () => {
     expect(variants).toContain('validationErrorIndexes.has(index)')
   })
 
-  it('explains the effective size-template source without changing assignment semantics', () => {
+  it('saves the size chart picked in the editor with the product, not from inside the form', () => {
     const form = read('src/components/catalog/CatalogItemFormSheet.tsx')
+    const controller = read('src/components/catalog/CatalogTabContentController.ts')
 
-    expect(form).toContain("'product_override' as const")
-    expect(form).toContain("'arrangement_default' as const")
-    expect(form).toContain("'new_product_preview' as const")
-    expect(form).toContain('Template khusus produk')
-    expect(form).toContain('Default Jenis rangkaian')
-    expect(form).toContain('tidak akan tersimpan sebagai assignment')
+    expect(form).toContain('const sizeChart = { sizeTemplateId: form.sizeTemplateId }')
     expect(form).not.toContain('assignSizeGuide(')
+    expect(controller).toContain('export const setProductSizeChart = (productId: string, templateId: string) => {')
+    expect(controller).toContain("if ((current?.templateId ?? '') === templateId) return")
+    expect(controller).toContain('setProductSizeChart(created.id, sizeChart.sizeTemplateId)')
+    expect(controller).toContain('setProductSizeChart(productId, sizeChart.sizeTemplateId)')
   })
 
   it('keeps single-image Catalog controls explicit and touch-safe', () => {

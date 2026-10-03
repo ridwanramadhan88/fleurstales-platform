@@ -15,7 +15,6 @@ import type {
 } from './catalogStoreTypes'
 import { generateCategoryPrefix, generateSku } from '../domain/catalogIdDomain'
 import {
-  buildCatalogDisplayName,
   exportCatalogCsv,
   parseCatalogCsv,
   productMatchKey,
@@ -56,7 +55,7 @@ export const createCatalogCsvActions = (
         generateCategoryPrefix(category, [])
 
       for (const row of rows) {
-        const displayName = buildCatalogDisplayName(row.productName, row.collectionSeries)
+        const displayName = row.productName.trim()
         const key = productMatchKey(row.category, row.material, displayName)
         let existingIndex = row.productId
           ? products.findIndex((product) => product.productId === row.productId)

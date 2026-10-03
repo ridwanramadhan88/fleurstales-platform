@@ -16,8 +16,6 @@ const iconButton = 'inline-flex size-11 shrink-0 items-center justify-center rou
 export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
   const arrangementTypes = useCatalogStore((state) => state.arrangementTypes)
   const products = useCatalogStore((state) => state.products)
-  const sizeGuideTemplates = useCatalogStore((state) => state.sizeGuideTemplates)
-  const sizeGuideTargets = useCatalogStore((state) => state.sizeGuideTargets)
   const addArrangementType = useCatalogStore((state) => state.addArrangementType)
   const renameArrangementType = useCatalogStore((state) => state.renameArrangementType)
   const deleteArrangementType = useCatalogStore((state) => state.deleteArrangementType)
@@ -26,15 +24,10 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
   const [draftName, setDraftName] = useState('')
   const [confirmRemoveName, setConfirmRemoveName] = useState<string | null>(null)
 
-  const rows = useMemo(() => arrangementTypes.map((name) => {
-    const defaultTarget = sizeGuideTargets.find((target) => target.scope === 'product_type' && target.productType === name)
-    const defaultTemplate = defaultTarget ? sizeGuideTemplates.find((template) => template.id === defaultTarget.templateId) : undefined
-    return {
-      name,
-      productCount: products.filter((product) => product.productType === name).length,
-      defaultTemplateName: defaultTemplate?.name,
-    }
-  }), [arrangementTypes, products, sizeGuideTargets, sizeGuideTemplates])
+  const rows = useMemo(() => arrangementTypes.map((name) => ({
+    name,
+    productCount: products.filter((product) => product.productType === name).length,
+  })), [arrangementTypes, products])
 
   const showResult = (result: ReturnType<typeof addArrangementType>): boolean => {
     if (result.ok) return true
@@ -49,7 +42,7 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
           <DialogHeader className="border-b border-border/70 px-5 py-5 sm:px-6">
             <DialogTitle>Kelola Jenis rangkaian</DialogTitle>
             <DialogDescription>
-              Jaga penamaan Jenis rangkaian tetap konsisten di Catalog, Storefront, dan Template ukuran.
+              Jaga penamaan Jenis rangkaian tetap konsisten di Catalog dan Storefront.
             </DialogDescription>
           </DialogHeader>
 
@@ -73,9 +66,6 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
                       <div className="min-w-0 flex-1">
                         <h3 className="truncate text-base font-semibold">{row.name}</h3>
                         <p className="mt-1 text-sm text-muted-foreground">{row.productCount} produk</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Template default: {row.defaultTemplateName ?? 'Belum ditetapkan'}
-                        </p>
                       </div>
                       <button type="button" aria-label={`Ubah ${row.name}`} className={iconButton} onClick={() => { setEditingName(row.name); setDraftName(row.name) }}><Pencil className="size-4" /></button>
                       <button type="button" aria-label={`Hapus ${row.name}`} disabled={row.productCount > 0} className={`${iconButton} text-destructive disabled:cursor-not-allowed disabled:text-muted-foreground/35 disabled:hover:bg-transparent`} onClick={() => {
@@ -108,7 +98,7 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
         open={confirmRemoveName !== null}
         onOpenChange={(nextOpen) => { if (!nextOpen) setConfirmRemoveName(null) }}
         title={confirmRemoveName ? `Hapus “${confirmRemoveName}”?` : 'Hapus Jenis rangkaian?'}
-        description="Jenis rangkaian yang tidak dipakai ini juga akan dihapus dari penetapan Template ukuran."
+        description="Jenis rangkaian yang tidak dipakai ini akan dihapus dari daftar."
         confirmLabel="Hapus jenis"
         destructive
         onConfirm={() => {

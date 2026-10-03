@@ -33,12 +33,14 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(formSource).toContain('disabled={isSaving || sourceChanged}')
   })
 
-  it('makes the only usable size template available as a clearly non-persisted new Product preview', () => {
-    expect(formSource).toContain('usableSizeTemplates.length === 1')
-    expect(formSource).toContain('Template ukuran tersedia, tetapi belum ditetapkan')
-    expect(formSource).toContain("'new_product_preview' as const")
-    expect(formSource).toContain('Pratinjau produk baru')
-    expect(formSource).toContain('belum ditetapkan dan tidak akan tersimpan sebagai assignment')
+  it('lets the product pick its size chart directly, independent of Arrangement Type', () => {
+    expect(formSource).toContain('id="catalog-size-template"')
+    expect(formSource).toContain('<option value="">Pilih template ukuran</option>')
+    expect(formSource).toContain('sizeGuideTemplates.find((template) => template.id === form.sizeTemplateId)')
+    expect(formSource).toContain("'Pilih template ukuran untuk produk ini.'")
+    expect(formSource).not.toContain('resolveCatalogSizeGuide')
+    expect(formSource).not.toContain("'new_product_preview' as const")
+    expect(formSource).not.toContain("target.scope === 'product_type'")
   })
 
   it('marks required Product fields inline and lets the error summary navigate to them', () => {
@@ -63,14 +65,17 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(variantsSource).toContain('removeVariant(variantIndex)')
     expect(variantsSource).toContain('openNewForSize')
     expect(variantsSource).toContain('if (editorTarget.index === null) addVariant(next)')
-    expect(variantsSource).toContain('Belum ditautkan ke ukuran')
+    expect(variantsSource).toContain('Pilih ukuran baru')
   })
 
-  it('keeps the nested variant editor full-screen on mobile with Detail Foto Resep tabs', () => {
+  it('keeps the nested variant editor full-screen on mobile as linear Detail, Foto, Resep steps', () => {
     expect(variantDialogSource).toContain('h-[100dvh] max-h-[100dvh]')
-    expect(variantDialogSource).toContain('<TabsTrigger value="detail">Detail</TabsTrigger>')
-    expect(variantDialogSource).toContain('<TabsTrigger value="foto">Foto</TabsTrigger>')
-    expect(variantDialogSource).toContain('<TabsTrigger value="resep">Resep</TabsTrigger>')
+    expect(variantDialogSource).toContain("{ id: 'detail', label: 'Detail' }")
+    expect(variantDialogSource).toContain("{ id: 'foto', label: 'Foto · opsional' }")
+    expect(variantDialogSource).toContain("{ id: 'resep', label: 'Resep' }")
+    expect(variantDialogSource).not.toContain('TabsTrigger')
+    expect(variantDialogSource).toContain("{stepIndex === 0 ? 'Batal' : 'Kembali'}")
+    expect(variantDialogSource).toContain("{step === 'foto' && draft.images.length === 0 ? 'Lewati' : 'Lanjut'}")
     expect(variantDialogSource).toContain('pb-[max(1.25rem,env(safe-area-inset-bottom))]')
   })
 
@@ -95,25 +100,27 @@ describe('Catalog Product Editor UX regressions', () => {
   it('keeps photo and flower recipe owned by the selected size variant', () => {
     expect(variantDialogSource).toContain('Resep bunga ukuran ini')
     expect(variantDialogSource).toContain('Resep tersimpan khusus untuk ukuran ini')
-    expect(variantDialogSource).toContain('Foto ini akan dipakai saat ukuran ini dipilih di Storefront')
+    expect(variantDialogSource).toContain('dipakai saat ukuran ini dipilih di Storefront')
   })
 
-  it('requires complete Storefront data for every active size variant before save', () => {
-    expect(variantDialogSource).toContain('Varian aktif wajib memiliki tepat 1 foto ukuran.')
+  it('requires price, recipe and a chart size for active variants, with the size photo optional', () => {
     expect(variantDialogSource).toContain('Varian aktif wajib memiliki minimal 1 item Resep Bunga.')
     expect(variantDialogSource).toContain('Varian aktif harus memakai ukuran dari Size Template.')
-    expect(variantDialogSource).toContain("setTab('foto')")
-    expect(variantDialogSource).toContain("setTab('resep')")
+    expect(variantDialogSource).toContain("setStep('resep')")
+    expect(variantDialogSource).not.toContain('wajib memiliki tepat 1 foto ukuran')
+    expect(variantDialogSource).not.toContain("setStep('foto')")
     expect(formSource).toContain('Foto katalog default wajib diisi untuk produk aktif.')
-    expect(formSource).toContain("row.status === 'active' && row.images.length !== 1")
+    expect(formSource).not.toContain("row.status === 'active' && row.images.length !== 1")
     expect(formSource).toContain("row.status === 'active' && row.flowerRecipe.length === 0")
+    expect(formSource).toContain('!sizeTemplateSizeIds.has(row.sizeOptionId)')
   })
 
   it('does not create new free-text unlinked variants while preserving legacy unlinked review', () => {
     expect(variantsSource).not.toContain('openNewUnlinked')
     expect(variantsSource).not.toContain('Varian tanpa tautan ukuran')
-    expect(variantsSource).toContain('Buat atau tetapkan Size Template terlebih dahulu sebelum menambahkan varian baru.')
-    expect(variantsSource).toContain('Belum ditautkan ke ukuran')
-    expect(variantsSource).toContain('Tinjau & tautkan')
+    expect(variantsSource).toContain('Pilih template ukuran di atas untuk menambahkan ukuran ke produk ini.')
+    expect(variantsSource).toContain('Pilih ukuran baru')
+    expect(variantsSource).toContain('Pilih ukuran penggantinya, atau hapus jika tidak dijual lagi.')
+    expect(variantsSource).not.toContain('Ukuran tidak cocok dengan template saat ini')
   })
 })

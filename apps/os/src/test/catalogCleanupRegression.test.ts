@@ -28,7 +28,7 @@ describe('Catalog cleanup regressions', () => {
     expect(images).toContain('Foto katalog default')
 
     expect(variants).toContain('Varian berdasarkan ukuran')
-    expect(variants).toContain('Belum ditautkan ke ukuran')
+    expect(variants).toContain('Pilih ukuran baru')
     expect(variants).toContain('Atur varian')
     expect(variants).not.toContain('Opsi tambahan')
   })
