@@ -3,7 +3,7 @@ import { useCatalogStore } from '../store/catalogStore'
 import type { CatalogSizeGuideTemplate } from '../store/catalogStoreTypes'
 import { useUserStore } from '../store/userStore'
 import { setProductSizeChart } from '../components/catalog/CatalogTabContentController'
-import { remapVariantsToSizeChart, type VariantRow } from '../components/catalog/CatalogItemFormSheet'
+import { remapVariantsToSizeChart, variantNeedsChartSize, type VariantRow } from '../components/catalog/CatalogItemFormSheet'
 
 const chart = (id: string, name: string): CatalogSizeGuideTemplate => ({
   id,
@@ -99,5 +99,21 @@ describe('Switching a product to another size chart', () => {
 
   it('also links older unlinked variants when a matching size exists', () => {
     expect(remapVariantsToSizeChart([row(undefined, 'Small')], bloomBox)[0].sizeOptionId).toBe('box-small')
+  })
+})
+
+describe('When the size-chart rule blocks saving', () => {
+  const saved: VariantRow = {
+    id: 'var-1', sizeOptionId: undefined, size: 'XL', images: [], price: '1', cost: '', status: 'active', flowerRecipe: [],
+  }
+
+  it('does not block an untouched older size', () => {
+    expect(variantNeedsChartSize({ ...saved }, [saved], false)).toBe(false)
+  })
+
+  it('blocks new sizes, sizes whose choice changed, and every size after a chart switch', () => {
+    expect(variantNeedsChartSize({ ...saved, id: undefined }, [saved], false)).toBe(true)
+    expect(variantNeedsChartSize({ ...saved, sizeOptionId: 'other-chart-xl' }, [saved], false)).toBe(true)
+    expect(variantNeedsChartSize({ ...saved }, [saved], true)).toBe(true)
   })
 })

@@ -125,6 +125,23 @@ export const remapVariantsToSizeChart = (variants: VariantRow[], template: Catal
   })
 }
 
+/**
+ * Whether an active variant must use a size from the product's chart before saving.
+ * Older variants whose size was never touched (still unlinked, or on another chart)
+ * must not block an unrelated edit such as renaming the product. The rule applies to
+ * new variants, variants whose size was changed, and every variant once the product
+ * switches to a different chart.
+ */
+export const variantNeedsChartSize = (
+  row: VariantRow,
+  baselineVariants: VariantRow[],
+  chartChanged: boolean,
+): boolean => {
+  if (chartChanged || !row.id) return true
+  const saved = baselineVariants.find((variant) => variant.id === row.id)
+  return !saved || saved.sizeOptionId !== row.sizeOptionId
+}
+
 const productSizeTemplateId = (productId: string, targets: CatalogSizeGuideTarget[]): string =>
   targets.find((target) => target.scope === 'product' && target.productId === productId)?.templateId ?? ''
 
@@ -320,7 +337,9 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
     if (form.availability === 'active' && form.images.length !== 1) {
       nextErrors.push('Foto katalog default wajib diisi untuk produk aktif.')
     }
-    if (!sizeTemplate) {
+    const chartChanged = form.sizeTemplateId !== baseline.sizeTemplateId
+    // An existing product that never had a chart can still be saved for other edits.
+    if (!sizeTemplate && (!isEditMode || baseline.sizeTemplateId !== '')) {
       nextErrors.push(usableSizeTemplates.length > 0
         ? 'Pilih template ukuran untuk produk ini.'
         : 'Buat template ukuran terlebih dahulu di Template ukuran.')
@@ -363,7 +382,12 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         hasVariantError = true
       }
 
-      if (row.status === 'active' && sizeTemplate && (!row.sizeOptionId || !sizeTemplateSizeIds.has(row.sizeOptionId))) {
+      if (
+        row.status === 'active'
+        && sizeTemplate
+        && (!row.sizeOptionId || !sizeTemplateSizeIds.has(row.sizeOptionId))
+        && variantNeedsChartSize(row, baseline.variants, chartChanged)
+      ) {
         nextErrors.push(label + ': varian aktif harus memakai ukuran dari template ' + sizeTemplate.name + '.')
         nextVariantErrorIndexes.add(index)
         hasVariantError = true
