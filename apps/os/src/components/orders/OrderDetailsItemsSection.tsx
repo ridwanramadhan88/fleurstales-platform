@@ -129,19 +129,20 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
             return (
               <div key={item.id} className="flex items-start justify-between gap-4 py-4">
                 <div className="flex min-w-0 flex-1 items-start gap-5">
-                  <div className="size-40 shrink-0 overflow-hidden rounded-3xl bg-surface-panel ring-1 ring-border/30 sm:size-48">
-                    {itemDisplay?.imageUrl ? (
+                  {itemDisplay?.imageUrl ? (
+                    <div className="size-40 shrink-0 overflow-hidden rounded-3xl bg-surface-panel ring-1 ring-border/30 sm:size-48">
                       <img
                         src={itemDisplay.imageUrl}
                         alt={item.productName || itemDisplay.name || 'Product'}
                         className="size-full object-cover"
                       />
-                    ) : (
-                      <span className="flex size-full items-center justify-center text-muted-foreground">
-                        <Package2 className="size-8" />
-                      </span>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    // No photo: a small icon instead of a large empty frame.
+                    <span data-testid="order-item-no-photo" className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-surface-panel text-muted-foreground ring-1 ring-border/30">
+                      <Package2 className="size-5" />
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1 pt-1">
                     {isEditableCustomLine ? (
                       <input

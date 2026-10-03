@@ -130,7 +130,7 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('Showing 3 of 8 active orders.', 'id')).toBe('Menampilkan 3 dari 8 pesanan aktif.')
     expect(translateUiText('Showing 1 of 1 active order.', 'id')).toBe('Menampilkan 1 dari 1 pesanan aktif.')
     expect(translateUiText('2 decisions waiting for you.', 'id')).toBe('2 keputusan menunggu Anda.')
-    expect(translateUiText('Availability for Today · 19:00', 'id')).toBe('Ketersediaan untuk Today · 19:00')
+    expect(translateUiText('Availability for Today · 19:00', 'id')).toBe('Ketersediaan untuk Hari ini · 19:00')
     expect(translateUiText('3 recommended · 5 active', 'id')).toBe('3 direkomendasikan · 5 aktif')
     expect(translateUiText('Approved points and estimated bonus for 2026-09.', 'id')).toBe(
       'Poin disetujui dan estimasi bonus untuk 2026-09.',
@@ -246,6 +246,14 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('orders waiting for reconciliation', 'id')).toBe('pesanan menunggu rekonsiliasi')
     expect(translateUiText('Open reconciliation', 'id')).toBe('Buka rekonsiliasi')
     expect(translateUiText('No active branch assignment was found for your shift.', 'id')).toBe('Belum ada cabang untuk giliran kerja Anda. Minta SDM atau Pemilik memperbarui jadwal.')
+    expect(translateUiText('Today · 14:00', 'id')).toBe('Hari ini · 14:00')
+    expect(translateUiText('Tomorrow · 09:00', 'id')).toBe('Besok · 09:00')
+    expect(translateUiText('03 Oct', 'id')).toBe('3 Okt')
+    expect(translateUiText('Delivery · 21 Sep · 10:00', 'id')).toBe('Pengiriman · 21 Sep · 10:00')
+    expect(translateUiText('Availability for Today · 14:00', 'id')).toBe('Ketersediaan untuk Hari ini · 14:00')
+    expect(translateUiText('Process Order', 'id')).toBe('Proses Pesanan')
+    expect(translateUiText('Review & confirm', 'id')).toBe('Tinjau & konfirmasi')
+    expect(translateUiText('Agus is not scheduled at this branch and order time. OFF on this date.', 'id')).toBe('Agus tidak terjadwal di cabang dan waktu pesanan ini. Libur pada tanggal ini.')
     expect(translateUiText('Search order #, customer, phone…', 'id')).toBe('Cari nomor pesanan, pelanggan, telepon…')
     expect(translateUiText('Search orders…', 'id')).toBe('Cari pesanan…')
     expect(translateUiText('New order', 'id')).toBe('Pesanan baru')

@@ -14,6 +14,7 @@ import {
 import { formatOrderCreatedAtLabel, getDisplayScheduleLabel } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { InfoHint } from '../ui/info-hint'
+import { ORDER_PRODUCT_FALLBACK_NAME } from '../../domain/catalogDomain'
 
 interface OrderDetailsHeaderProps {
   viewModel: OrderDetailsViewModel
@@ -55,8 +56,6 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
     >
       <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex min-w-0 items-center gap-1 text-2xs font-semibold text-muted-foreground">
-          <span className="shrink-0">Order</span>
-          <span aria-hidden="true" className="text-muted-foreground/55">·</span>
           <span className="truncate text-foreground/75">{order.orderNumber}</span>
           <InfoHint label="Order information" align="start" className="size-6">
             <div className="space-y-1">
@@ -168,9 +167,12 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
             placeholder="Customer name"
           />
         )}
-        <p className="truncate text-sm font-semibold leading-5 text-foreground sm:text-base">
-          {productDisplay.name}
-        </p>
+        {/* The bare fallback name would just repeat "Order"; skip it. */}
+        {productDisplay.name !== ORDER_PRODUCT_FALLBACK_NAME && (
+          <p className="truncate text-sm font-semibold leading-5 text-foreground sm:text-base">
+            {productDisplay.name}
+          </p>
+        )}
       </div>
 
       {progress && <div className="mt-2.5 w-full">{progress}</div>}

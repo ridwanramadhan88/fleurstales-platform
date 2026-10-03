@@ -69,7 +69,11 @@ export const validateNewOrderForm = (
   const scheduleTime = values.fulfillmentType === 'delivery' ? values.deliveryTime : values.pickupTime
   const dateField = values.fulfillmentType === 'delivery' ? 'deliveryDate' : 'pickupDate'
   const timeField = values.fulfillmentType === 'delivery' ? 'deliveryTime' : 'pickupTime'
-  if (values.fulfillmentType && (scheduleDate || scheduleTime)) {
+  // Delivery always needs a slot; a pickup may stay unscheduled unless one
+  // part of its slot is filled. Walk-in pickups get the earliest slot filled
+  // in for them (see newOrderWalkIn.ts), so they are checked like any other.
+  const requiresSchedule = values.fulfillmentType === 'delivery'
+  if (values.fulfillmentType && (requiresSchedule || scheduleDate || scheduleTime)) {
     if (!scheduleDate) nextErrors[dateField] = 'Select a fulfillment date.'
     if (!scheduleTime) nextErrors[timeField] = 'Select a fulfillment time.'
     if (scheduleDate) {

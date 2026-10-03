@@ -21,6 +21,7 @@ import {
 import { processOrderForProduction } from '../../data/orderPaymentProcessing'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
+import { formatOrderScheduleLabel } from './orderTableFormatters'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 
 const STATUS_LABELS: Record<FloristScheduleStatus, string> = {
@@ -160,7 +161,8 @@ export const AssignFloristDialog: FC<{
   }
 
   const branchName = branches.find((branch) => branch.id === order.branch)?.name ?? order.branch
-  const timing = moment.time ? `${moment.date} · ${moment.time}` : `${moment.date} · scheduled day`
+  // Human date ("Today · 14:00", "03 Oct"), never a raw ISO date.
+  const timing = formatOrderScheduleLabel(order.fulfillment, moment.date, moment.time ?? '') ?? moment.date
   const paymentReady = mode === 'reassign'
     || (order.paymentStatus === 'paid' && (order.paidAmountIdr ?? 0) >= order.totalIdr)
 
@@ -204,13 +206,13 @@ export const AssignFloristDialog: FC<{
               </section>
             )}
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold leading-5">{showAll ? 'All active florists' : 'Scheduled florists'}</p>
                 <p className="text-xs text-muted-foreground">{`${scheduled.length} recommended · ${options.length} active`}</p>
               </div>
               {(options.length > scheduled.length || scheduled.length === 0) && (
-                <button type="button" onClick={() => setShowAll((value) => !value)} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-border px-[18px] text-sm font-semibold hover:bg-muted">
+                <button type="button" onClick={() => setShowAll((value) => !value)} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-full border border-border px-[18px] text-sm font-semibold hover:bg-muted sm:self-auto">
                   <Users className="size-4" />{showAll ? 'Show scheduled' : 'Show all florists'}<ChevronDown className={`size-4 transition ${showAll ? 'rotate-180' : ''}`} />
                 </button>
               )}
@@ -239,7 +241,7 @@ export const AssignFloristDialog: FC<{
                         <span className="mt-0.5 block text-xs text-muted-foreground">{florist.shiftStart && florist.shiftEnd ? `${florist.branchId} · ${florist.shiftStart}-${florist.shiftEnd}` : florist.scheduleReason}</span>
                       </span>
                     </span>
-                    <span className="shrink-0 rounded-full bg-surface-neutral px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-border/80">{florist.assignedProcessingOrders} active</span>
+                    <span className="shrink-0 rounded-full bg-surface-neutral px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-border/80">{`${florist.assignedProcessingOrders} active`}</span>
                   </label>
                 ))}
               </div>
@@ -247,7 +249,7 @@ export const AssignFloristDialog: FC<{
           </div>
 
           {selected && !selected.isRecommended && (
-            <div className="mx-5 mb-3 flex shrink-0 items-start gap-2 rounded-xl bg-warning/10 p-3 text-xs text-warning ring-1 ring-warning/25 sm:mx-6"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><p>{selected.scheduleReason} Confirmation will be required.</p></div>
+            <div className="mx-5 mb-3 flex shrink-0 items-start gap-2 rounded-xl bg-warning/10 p-3 text-xs text-warning ring-1 ring-warning/25 sm:mx-6"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><p><span className="block">{selected.scheduleReason}</span><span className="block">Confirmation will be required.</span></p></div>
           )}
 
           <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-surface-footer px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:pb-5">

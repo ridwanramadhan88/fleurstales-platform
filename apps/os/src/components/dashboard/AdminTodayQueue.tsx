@@ -5,6 +5,7 @@ import { useOrdersStore } from '../../store/ordersStore'
 import { surfaceCardClass } from '../ui/card'
 import { getOrderStatusGroup } from '../../domain/orderGroupingDomain'
 import { getLocalDateString, nowInJakarta } from '../../domain/orderTimingDomain'
+import { getOrderNextActionLabel } from '../orders/orderNextActionLabels'
 
 const toDateValue = (order: OrderTableRow) => {
   if (!order.scheduleDate) return Number.POSITIVE_INFINITY
@@ -17,15 +18,6 @@ const getPriorityLabel = (order: OrderTableRow, today: string) => {
   if (order.scheduleDate < today) return { label: 'Late', tone: 'bg-destructive/10 text-destructive' }
   if (order.scheduleDate === today) return { label: 'Due today', tone: 'bg-warning/10 text-warning' }
   return { label: 'Upcoming', tone: 'bg-info/10 text-info' }
-}
-
-const getNextActionLabel = (order: OrderTableRow): string => {
-  if (order.status === 'pending_verification') return 'Review & confirm'
-  if (order.status === 'confirmed') return 'Assign & start'
-  if (order.status === 'processing') return 'Mark ready'
-  if (order.status === 'ready') return order.fulfillment === 'delivery' ? 'Start delivery' : 'Complete pickup'
-  if (order.status === 'delivering') return 'Mark delivered'
-  return 'Open order'
 }
 
 export function AdminTodayQueue({
@@ -130,7 +122,7 @@ export function AdminTodayQueue({
                     onClick={() => onOpenOrder(order.orderNumber)}
                     className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                   >
-                    {getNextActionLabel(order)}
+                    {getOrderNextActionLabel(order)}
                     <ArrowRight className="size-3.5" />
                   </button>
                 </div>

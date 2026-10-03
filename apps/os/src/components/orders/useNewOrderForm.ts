@@ -32,6 +32,14 @@ export interface NewOrderFormValues {
 }
 
 export type NewOrderFormErrors = Partial<Record<keyof NewOrderFormValues, string>>
+
+/**
+ * A walk-in customer collecting at the counter: the order is picked up now,
+ * so it needs no pickup date/time and no greeting card.
+ */
+export const isWalkInPickup = (
+  values: Pick<NewOrderFormValues, 'orderType' | 'fulfillmentType'>,
+): boolean => values.orderType === 'walk_in' && values.fulfillmentType === 'pickup'
 export type FormStep = 'edit' | 'review'
 
 export const initialNewOrderValues: NewOrderFormValues = {

@@ -209,6 +209,9 @@ export interface OrderProductDisplay {
   isLinkedToCatalog: boolean
 }
 
+/** Shown when an order line has no product name at all. */
+export const ORDER_PRODUCT_FALLBACK_NAME = 'Order'
+
 /**
  * @description Resolves an order's product/variant reference against the
  * live Catalog product list. Falls back to the order's own free-text
@@ -241,7 +244,7 @@ export const resolveOrderProductDisplay = (
   }
 
   return {
-    name: order.productName?.trim() || 'Order',
+    name: order.productName?.trim() || ORDER_PRODUCT_FALLBACK_NAME,
     isLinkedToCatalog: false,
   }
 }

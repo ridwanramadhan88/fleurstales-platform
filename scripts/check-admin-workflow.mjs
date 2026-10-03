@@ -19,6 +19,7 @@ const [
   runtimeMigration,
   attendanceMigration,
   readScopeMigration,
+  nextActionLabels,
 ] = await Promise.all([
   read('apps/os/src/App.tsx'),
   read('apps/os/src/domain/branchSelectionDomain.ts'),
@@ -30,6 +31,7 @@ const [
   read('supabase/migrations/20260907133500_allow_unscheduled_staff_runtime_context.sql'),
   read('supabase/migrations/20260804152500_simplify_attendance_flow.sql'),
   read('supabase/migrations/20260905221500_staff_review_read_access.sql'),
+  read('apps/os/src/components/orders/orderNextActionLabels.ts'),
 ])
 
 assert(app.includes('resolveStaffBranchContext'), 'Staff login does not resolve safe unscheduled branch context.')
@@ -45,7 +47,9 @@ assert(readScopeMigration.includes("v_role is distinct from 'admin'"), 'Admin or
 assert(readScopeMigration.includes('ORDER_OUTSIDE_BRANCH_SCOPE'), 'Admin order mutation branch rejection is missing.')
 assert(!queue.includes("new Date().toISOString().slice(0, 10)"), 'Admin dashboard still uses UTC for today.')
 assert(queue.includes('getLocalDateString(nowInJakarta())'), 'Admin dashboard does not use Jakarta business date.')
-assert(queue.includes('Review & confirm') && queue.includes('Assign & start'), 'Admin next-action labels are incomplete.')
+// The labels are shared with the order details panel, so they live in one place.
+assert(queue.includes('getOrderNextActionLabel(order)'), 'Admin queue does not use the shared next-action labels.')
+assert(nextActionLabels.includes('Review & confirm') && nextActionLabels.includes('Assign & start'), 'Admin next-action labels are incomplete.')
 assert(dashboard.includes('onOpenOrder={(orderNumber) => onNavigate(toOrders({ orderNumber }))}'), 'Admin queue does not deep-link directly to orders.')
 
 for (const token of [

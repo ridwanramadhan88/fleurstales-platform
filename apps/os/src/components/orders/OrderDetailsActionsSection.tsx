@@ -2,7 +2,7 @@ import type { FC } from 'react'
 import { ArrowRight, Check, Copy, MessageCircle, X } from 'lucide-react'
 import { OrderPostActionModal } from './OrderPostActionModal'
 import { OrderFinishPhotoDialog } from './OrderFinishPhotoDialog'
-import { getQuickActionLabel, getQuickActionButtonClassName } from './orderStatusBadgeStyles'
+import { getOrderNextActionLabel } from './orderNextActionLabels'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { OrderPaymentGateDialog } from './OrderPaymentGateDialog'
 import { AppDialog } from '../ui/app-dialog'
@@ -58,7 +58,7 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
     nextStatus === 'processing'
     && (order.paymentStatus !== 'paid' || (order.paidAmountIdr ?? 0) < order.totalIdr),
   )
-  const nextActionLabel = paymentBlocked ? 'Konfirmasi Pembayaran' : nextStatus ? getQuickActionLabel(nextStatus) : ''
+  const nextActionLabel = paymentBlocked ? 'Konfirmasi Pembayaran' : nextStatus ? getOrderNextActionLabel(order) : ''
   const decisionBusy = storefrontDecisionBusy !== null || storefrontPreviewLoading
   const customerMessageLink = customerWhatsappNumber
     ? buildWhatsAppLink(customerWhatsappNumber, '')
@@ -116,8 +116,8 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
               <button
                 type="button"
                 onClick={onMoveToNextStatus}
-                title={paymentBlocked ? 'Confirm payment before production starts.' : `Advance to ${nextActionLabel}`}
-                className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-[18px] whitespace-nowrap text-sm font-medium shadow-ios-sm transition hover:brightness-95 sm:min-h-10 sm:text-xs ${getQuickActionButtonClassName(order.fulfillment, nextStatus)}`}
+                title={paymentBlocked ? 'Confirm payment before production starts.' : undefined}
+                className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 sm:min-h-10 sm:text-xs"
               >
                 {nextActionLabel}
                 <ArrowRight className="size-3.5 shrink-0" />

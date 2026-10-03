@@ -356,6 +356,27 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'No active branch assignment was found for your shift.': 'Belum ada cabang untuk giliran kerja Anda. Minta SDM atau Pemilik memperbarui jadwal.',
   'You cannot create an order outside your assigned branch.': 'Anda hanya bisa membuat pesanan di cabang tugas Anda. Ganti cabang di menu cabang.',
   'You do not have permission to create orders.': 'Anda tidak punya izin membuat pesanan.',
+  // Orders clean-up: New Order, order details and Process Order.
+  'Pickup or delivery': 'Ambil atau kirim',
+  'How the customer gets it': 'Cara pelanggan menerima pesanan',
+  'Earliest free time for a walk-in order.': 'Waktu kosong paling cepat untuk pesanan walk-in.',
+  'Change': 'Ubah',
+  '+ Add greeting card': '+ Tambah kartu ucapan',
+  '+ Add note': '+ Tambah catatan',
+  'Review & confirm': 'Tinjau & konfirmasi',
+  'No phone number': 'Tidak ada nomor telepon',
+  'Customer and fulfillment': 'Pelanggan & pemenuhan',
+  'Process Order': 'Proses Pesanan',
+  'Payment is already confirmed. Choose the florist who will produce this order.': 'Pembayaran sudah dikonfirmasi. Pilih perangkai bunga yang akan membuat pesanan ini.',
+  'Choose who should continue handling this order. The current status will not change.': 'Pilih siapa yang melanjutkan pesanan ini. Status pesanan tidak berubah.',
+  'Add an active florist profile in HR before assigning this order.': 'Tambahkan profil perangkai bunga aktif di SDM sebelum menugaskan pesanan ini.',
+  'Use Show all florists to check for an operational override, or ask HR/Owner to update the schedule.': 'Ketuk "Tampilkan semua Perangkai Bunga" untuk memilih di luar jadwal, atau minta SDM/Pemilik memperbarui jadwal.',
+  'Confirmation will be required.': 'Perlu konfirmasi.',
+  'WFH on this date.': 'WFH pada tanggal ini.',
+  'No schedule is assigned for this date.': 'Belum ada jadwal pada tanggal ini.',
+  'OFF on this date.': 'Libur pada tanggal ini.',
+  'Scheduled at this branch for the assignment time.': 'Terjadwal di cabang ini pada waktu penugasan.',
+  'Select a date to see available hours.': 'Pilih tanggal untuk melihat jam yang tersedia.',
   'Search order #, customer, phone…': 'Cari nomor pesanan, pelanggan, telepon…',
   'Search orders…': 'Cari pesanan…',
   'Load more products': 'Muat lebih banyak produk',
@@ -452,10 +473,38 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'This is the only active size template. Set it as the arrangement default to reuse it automatically.': 'Ini satu-satunya template ukuran aktif. Tetapkan sebagai default jenis rangkaian agar digunakan otomatis.',
 }
 
+
+// Human date labels built by formatOrderScheduleLabel: "Today", "Tomorrow"
+// or "03 Oct", optionally followed by " · 14:00".
+const ID_SHORT_MONTHS: Record<string, string> = {
+  Jan: 'Jan', Feb: 'Feb', Mar: 'Mar', Apr: 'Apr', May: 'Mei', Jun: 'Jun',
+  Jul: 'Jul', Aug: 'Agu', Sep: 'Sep', Oct: 'Okt', Nov: 'Nov', Dec: 'Des',
+}
+const SCHEDULE_DATE_LABEL = String.raw`(Today|Tomorrow|\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))`
+const translateScheduleDate = (label: string): string => {
+  if (label === 'Today') return 'Hari ini'
+  if (label === 'Tomorrow') return 'Besok'
+  const [day, month] = label.split(' ')
+  return `${Number(day)} ${ID_SHORT_MONTHS[month] ?? month}`
+}
+const translateScheduleLabel = (date: string, time?: string): string =>
+  time ? `${translateScheduleDate(date)} · ${time}` : translateScheduleDate(date)
+const translateFloristReason = (reason: string): string =>
+  ID_STRICT_TRANSLATIONS[reason] ?? reason
+
 export const ID_STRICT_PATTERN_TRANSLATIONS: Array<
   [RegExp, (...matches: string[]) => string]
 > = [
   [/^Rate (\d+) out of 5$/i, (_full, score) => `Beri nilai ${score} dari 5`],
+  [new RegExp(String.raw`^${SCHEDULE_DATE_LABEL}(?: · (\d{1,2}[:.]\d{2}))?$`), (_full, date, time) => translateScheduleLabel(date, time)],
+  [new RegExp(String.raw`^(Delivery|Pickup) · ${SCHEDULE_DATE_LABEL}(?: · (\d{1,2}[:.]\d{2}))?$`), (_full, kind, date, time) => `${kind === 'Delivery' ? 'Pengiriman' : 'Pengambilan'} · ${translateScheduleLabel(date, time)}`],
+  [/^(Delivery|Pickup) · No schedule$/, (_full, kind) => `${kind === 'Delivery' ? 'Pengiriman' : 'Pengambilan'} · Belum dijadwalkan`],
+  [new RegExp(String.raw`^Availability for ${SCHEDULE_DATE_LABEL}(?: · (\d{1,2}[:.]\d{2}))?$`), (_full, date, time) => `Ketersediaan untuk ${translateScheduleLabel(date, time)}`],
+  [/^Pickup today · (\d{1,2}[:.]\d{2})$/, (_full, time) => `Diambil hari ini · ${time}`],
+  [/^(\d+) active$/, (_full, count) => `${count} aktif`],
+  [/^Scheduled at (.+), not (.+)\.$/, (_full, scheduled, orderBranch) => `Terjadwal di ${scheduled}, bukan ${orderBranch}.`],
+  [/^Shift (\S+) does not cover the assignment time\.$/, (_full, hours) => `Jam kerja ${hours} tidak mencakup waktu penugasan.`],
+  [/^(.+) is not scheduled at this branch and order time\. (.+)$/, (_full, name, reason) => `${name} tidak terjadwal di cabang dan waktu pesanan ini. ${translateFloristReason(reason)}`],
   [/^Complete (\d+) highlighted fields? before review\.$/i, (_full, count) => `Lengkapi ${count} kolom yang ditandai sebelum meninjau pesanan.`],
   [/^Review order · (.+)$/i, (_full, total) => `Tinjau Pesanan · ${total}`],
   [/^(\d+) products?$/i, (_full, count) => `${count} produk`],

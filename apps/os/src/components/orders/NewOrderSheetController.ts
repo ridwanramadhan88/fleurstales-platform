@@ -25,6 +25,7 @@ import {
   type NewOrderFormErrors,
   type NewOrderFormValues,
   initialNewOrderValues,
+  isWalkInPickup,
   useNewOrderForm,
 } from './useNewOrderForm'
 import {
@@ -37,6 +38,7 @@ import { getFirstNewOrderErrorField, validateNewOrderForm } from './useNewOrderV
 import { type GuideSection, getActiveGuideStep, isGuideFieldFilled, isGuideSectionComplete } from './newOrderGuide'
 import { deleteOrderDraft, getOrderDraft, saveOrderDraft } from './orderDraftStore'
 import { describeBranchHoursForDate, getBranchHoursForDate, getOpeningHourTimeSlots } from '../../domain/branchOpeningHoursDomain'
+import { applyWalkInDefaults, getWalkInPickupSlot } from './newOrderWalkIn'
 import { useVoucherStore } from '../../store/voucherStore'
 import { validateVoucherCode } from '../../domain/voucherDomain'
 import { sanitizeCurrency } from '../../lib/formatters'
@@ -90,6 +92,8 @@ export interface NewOrderSheetViewModel {
   fulfillmentLabelForReview: string
   catalogPriceFormatter: Intl.NumberFormat
   isFormReady: boolean
+  /** Walk-in customer collecting now: no date/time pickers, no greeting card by default. */
+  isWalkInPickup: boolean
   closeConfirmationOpen: boolean
   validationFocusField: keyof NewOrderFormValues | null
   validationFocusRequest: number
@@ -439,6 +443,16 @@ export const useNewOrderSheetController = ({
         ? 'Pickup'
         : 'Not set'
 
+  // A walk-in pickup is collected at the counter: fill the earliest free slot
+  // today so staff don't pick a date and time. The form shows the slot.
+  const walkInPickup = isWalkInPickup(form.values)
+  const hasPickupSchedule = Boolean(form.values.pickupDate || form.values.pickupTime)
+  useEffect(() => {
+    if (!open || !walkInPickup || hasPickupSchedule) return
+    const slot = getWalkInPickupSlot({ branch: selectedBranch, branchId: branchLabel, orders: allOrders })
+    if (slot) form.setValues((prev) => (isWalkInPickup(prev) && !prev.pickupDate && !prev.pickupTime ? { ...prev, ...slot } : prev))
+  }, [open, walkInPickup, hasPickupSchedule, branchLabel])
+
   const isFormReady = Object.keys(validateNewOrderForm(form.values, selectedBranch)).length === 0
 
   const activeGuideStep = useMemo(
@@ -521,6 +535,7 @@ export const useNewOrderSheetController = ({
     fulfillmentLabelForReview,
     catalogPriceFormatter: pricing.catalogPriceFormatter,
     isFormReady,
+    isWalkInPickup: walkInPickup,
     closeConfirmationOpen,
     validationFocusField,
     validationFocusRequest,
@@ -584,7 +599,12 @@ export const useNewOrderSheetController = ({
       advanceAfterDiscreteSelection()
     },
     onOrderTypeChange: (value) => {
-      form.onFieldValueChange('orderType', value)
+      if (value === 'walk_in') {
+        form.setValues((prev) => applyWalkInDefaults(prev))
+        form.setErrors((prev) => ({ ...prev, orderType: undefined, fulfillmentType: undefined, paymentMethod: undefined }))
+      } else {
+        form.onFieldValueChange('orderType', value)
+      }
       advanceAfterDiscreteSelection()
     },
     onPaymentMethodChange: (value) => {

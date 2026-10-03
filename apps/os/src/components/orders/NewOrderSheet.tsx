@@ -134,7 +134,6 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
 
   if (!open) return null
 
-  const validationMessages = Object.values(errors).filter((message): message is string => Boolean(message))
   const validationErrorCount = Object.values(errors).filter(Boolean).length
 
   return (
@@ -193,14 +192,8 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
                     className="rounded-xl border border-destructive/25 bg-destructive/8 px-3 py-2.5"
                   >
                     <p className="text-xs font-semibold text-destructive">
-                      Complete {validationErrorCount} highlighted {validationErrorCount === 1 ? 'field' : 'fields'} before review.
+                      {`Complete ${validationErrorCount} highlighted ${validationErrorCount === 1 ? 'field' : 'fields'} before review.`}
                     </p>
-                    <p className="mt-0.5 text-2xs text-muted-foreground">
-                      Start with the first highlighted field below. Your entered details are still saved in this form.
-                    </p>
-                    <ul className="mt-2 space-y-1 text-xs text-destructive/90">
-                      {validationMessages.map((message) => <li key={message}>• {message}</li>)}
-                    </ul>
                   </section>
                 )}
 
@@ -248,14 +241,12 @@ export const NewOrderSheet: FC<NewOrderSheetViewModel> = (viewModel) => {
                 </button>
                 <button
                   type="submit"
-                  className={[
-                    'inline-flex h-11 w-full items-center justify-center rounded-full px-[18px] text-sm font-semibold shadow-ios-sm transition sm:w-auto',
-                    isFormReady
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                      : 'bg-card text-foreground ring-1 ring-border hover:bg-muted',
-                  ].join(' ')}
+                  // Always the primary action, even before every field is
+                  // filled: tapping it shows what is still missing.
+                  data-ready={isFormReady ? 'true' : 'false'}
+                  className="inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 sm:w-auto"
                 >
-                  Review order · Rp {catalogPriceFormatter.format(estimatedOrderTotalIdr)}
+                  {`Review order · Rp ${catalogPriceFormatter.format(estimatedOrderTotalIdr)}`}
                 </button>
               </>
             ) : (
