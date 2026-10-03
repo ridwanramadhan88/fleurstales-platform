@@ -1,12 +1,11 @@
 import type { DateRange } from 'react-day-picker'
 import type { OrderTableRow } from '../../types/orders'
 import type { OrdersSubTabId } from './OrdersSubTabs'
-import { getLocalDateString, getOrderDateTime, nowInJakarta, parseOrderDateString } from './orderTableFormatters'
+import { getLocalDateString, isFutureOrder, nowInJakarta, parseOrderDateString } from './orderTableFormatters'
 
 /**
  * @description Returns a list of orders filtered by high-level scope.
- * Future is based on the exact expected fulfillment timestamp, so later-today
- * orders remain visible instead of only dates after today.
+ * Future (Mendatang) starts tomorrow; later-today orders stay in Today only.
  */
 export const filterOrdersByScope = (
   scope: OrdersSubTabId,
@@ -15,7 +14,6 @@ export const filterOrdersByScope = (
 ): OrderTableRow[] => {
   const today = nowInJakarta()
   const todayStr = getLocalDateString(today)
-  const nowMs = today.getTime()
 
   return orders.filter((order) => {
     const orderDateStr = parseOrderDateString(order)
@@ -27,8 +25,7 @@ export const filterOrdersByScope = (
     }
 
     if (scope === 'future') {
-      const scheduledAt = getOrderDateTime(order)
-      return scheduledAt !== null && scheduledAt.getTime() > nowMs
+      return isFutureOrder(order, today)
     }
 
     if (scope === 'custom') {

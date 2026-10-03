@@ -35,8 +35,16 @@ export const getFinanceWorkspaceModules = (
     hasActionPermission(role, CAPABILITY_BY_MODULE[module], actionPermissions, sectionPermissions),
   )
 
+/**
+ * The Finance menu item is labelled "Order Reconciliation", so it opens
+ * reconciliation when the role can see it. Overview stays the first tab.
+ */
 export const getDefaultFinanceWorkspaceModule = (
   role: UserRole,
   actionPermissions?: ActionPermissionMatrix,
   sectionPermissions?: PermissionMatrix,
-): FinanceWorkspaceModule => getFinanceWorkspaceModules(role, actionPermissions, sectionPermissions)[0] ?? 'balance'
+): FinanceWorkspaceModule => {
+  const modules = getFinanceWorkspaceModules(role, actionPermissions, sectionPermissions)
+  if (modules.includes('order_verification')) return 'order_verification'
+  return modules[0] ?? 'balance'
+}

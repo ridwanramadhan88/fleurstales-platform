@@ -1,5 +1,5 @@
 import type { OrderTableRow } from '../types/orders'
-import { getOrderDateTime, nowInJakarta } from './orderTimingDomain'
+import { isFutureOrder, nowInJakarta } from './orderTimingDomain'
 
 const ACTIVE_FUTURE_BADGE_STATUSES = new Set<OrderTableRow['status']>([
   'pending_verification',
@@ -11,8 +11,7 @@ const ACTIVE_FUTURE_BADGE_STATUSES = new Set<OrderTableRow['status']>([
 
 export const isActiveFutureOrder = (order: OrderTableRow, now: Date = nowInJakarta()): boolean => {
   if (!ACTIVE_FUTURE_BADGE_STATUSES.has(order.status)) return false
-  const scheduledAt = getOrderDateTime(order)
-  return scheduledAt !== null && scheduledAt.getTime() > now.getTime()
+  return isFutureOrder(order, now)
 }
 
 export const countActiveFutureOrders = (orders: OrderTableRow[]): number => {

@@ -30,11 +30,14 @@ describe('Finance workspace v2 regressions', () => {
 
   it('surfaces actionable Finance workload on Overview', () => {
     const overview = read('src/components/finance/FinanceCashFlowOverview.tsx')
+    // The attention rules live in one shared selector (also used by the Finance home card).
+    const attention = read('src/domain/financeAttentionDomain.ts')
 
     expect(overview).toContain('Needs Attention')
-    expect(overview).toContain("order.financeVerificationStatus === 'rejected'")
-    expect(overview).toContain("order.paymentStatus === 'refund_pending'")
-    expect(overview).toContain("proposal.status === 'finance_approved'")
+    expect(overview).toContain('getFinanceAttention({ orders, transactions, payrollProposals })')
+    expect(attention).toContain("order.financeVerificationStatus === 'rejected'")
+    expect(attention).toContain("order.paymentStatus === 'refund_pending'")
+    expect(attention).toContain("proposal.status === 'finance_approved'")
     expect(overview).toContain('Legacy / unassigned ledger rows')
   })
 
