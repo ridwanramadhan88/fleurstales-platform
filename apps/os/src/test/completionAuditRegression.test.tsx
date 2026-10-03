@@ -25,10 +25,9 @@ describe('V2.7.29 completion regressions', () => {
 
   it('keeps payroll readiness inline and responsive rather than opening another workflow surface', () => {
     const source = read('src/components/hr/HrPayrollSection.tsx')
-    expect(source).toContain('aria-expanded={readinessOpen}')
-    expect(source).toContain("setReadinessOpen(blockers.length > 0 || warnings.length > 0)")
-    expect(source).toContain("${readinessOpen ? 'grid' : 'hidden'}")
-    expect(source).toContain('md:grid')
+    // Only open checks are listed; passed ones fold into "N of M ready".
+    expect(source).toContain('readinessItems.filter((item) => !item.complete)')
+    expect(source).toContain('`${passedCount} of ${readinessItems.length} ready`')
     expect(source).not.toContain('Payroll readiness dialog')
   })
 
