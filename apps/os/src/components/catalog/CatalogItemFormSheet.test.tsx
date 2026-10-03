@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useUiLanguage } from '../../i18n/uiLanguage'
 import { useUserStore } from '../../store/userStore'
 import { useCatalogStore } from '../../store/catalogStore'
-import type { CatalogProduct } from '../../store/catalogStoreTypes'
+import type { CatalogProduct, CatalogSizeGuideTemplate } from '../../store/catalogStoreTypes'
 import { CatalogItemFormSheet } from './CatalogItemFormSheet'
 
-const chart = {
+const chart: CatalogSizeGuideTemplate = {
   id: 'guide-bouquet', name: 'Bouquet Standard', imageUrl: '', byteSize: 0, width: 800, height: 800,
   createdAt: '2026-10-03T00:00:00.000Z', updatedAt: '2026-10-03T00:00:00.000Z',
   sizes: [{ id: 'bouquet-standard-medium', name: 'Medium', sortOrder: 0, isActive: true }],
