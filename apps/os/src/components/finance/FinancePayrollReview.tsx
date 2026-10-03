@@ -452,7 +452,7 @@ export const FinancePayrollReview = () => {
 }
 
 const Metric = ({ label, value }: { label: string; value: number }) => (
-  <p className="text-muted-foreground"><span className="font-semibold text-foreground">{value}</span> {label.toLowerCase()}</p>
+  <p className="text-muted-foreground"><span className="font-semibold text-foreground">{value}</span> <span className="lowercase">{label}</span></p>
 )
 
 const Breakdown = ({ label, value }: { label: string; value: string }) => (

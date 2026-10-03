@@ -13,6 +13,7 @@ import { PayrollStatusBadge } from '../payroll/PayrollStatusBadge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
 import { PeopleMonthPeriodFields } from './PeoplePeriodControls'
 import { PeoplePageHeader, PeopleSummaryCard, PeopleSummaryGrid } from './PeopleWorkspaceUI'
+import { formatHumanDateRange } from '../../lib/humanDates'
 
 const formatIdr = (value: number) => `Rp${Math.round(value).toLocaleString('id-ID')}`
 const manualPayeeLabels: Record<PayrollManualPayeeType,string> = { owner:'Owner', part_time:'Part-time', contractor:'Contractor', other:'Other' }
@@ -353,7 +354,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold leading-6">Monthly payroll proposal</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{period.periodStart}–{period.periodEnd} · {generatedDrafts.length || eligibleEmployees.length} staff · {manualDrafts.length} manual</p>
+            <p className="mt-1 text-sm text-muted-foreground">{`${formatHumanDateRange(period.periodStart, period.periodEnd)} · ${generatedDrafts.length || eligibleEmployees.length} staff · ${manualDrafts.length} manual`}</p>
           </div>
           {proposal && <PayrollStatusBadge status={proposal.status} label={proposalLabel[proposal.status]} />}
         </div>

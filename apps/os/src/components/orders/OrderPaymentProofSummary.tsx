@@ -4,6 +4,7 @@ import type { OrderTableRow } from '../../types/orders'
 import { formatIdrCurrency } from '../../lib/formatters'
 import { OrderPaymentProofFinanceCard } from './OrderPaymentProofFinanceCard'
 import { getFinancePresentation } from './orderDetailsPresentation'
+import { PAYMENT_STATUS_LABELS } from './orderStatusLabels'
 
 interface OrderPaymentProofSummaryProps {
   order: OrderTableRow
@@ -70,7 +71,7 @@ export const OrderPaymentProofSummary: FC<OrderPaymentProofSummaryProps> = ({ or
             {finance.state === 'resolved' ? 'Payment reconciled' : 'Payment reference'}
           </p>
           <p className="mt-0.5 text-2xs text-muted-foreground">
-            {method} · {order.paymentStatus === 'paid' ? 'Paid' : order.paymentStatus}
+            {`${method} · ${PAYMENT_STATUS_LABELS[order.paymentStatus] ?? order.paymentStatus}`}
           </p>
         </div>
         <p className="text-sm font-semibold text-foreground">{formatIdrCurrency(finance.paidAmount || order.totalIdr)}</p>

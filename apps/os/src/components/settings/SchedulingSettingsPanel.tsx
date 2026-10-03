@@ -6,6 +6,7 @@ import type { SchedulingSettings } from '../../types/settings'
 import type { SettingsValidationErrors } from '../../domain/settings/settingsValidation'
 import type { SchedulingSettingsRevision } from '../../domain/settings/effectiveSettingsDomain'
 import { compactSettingCardClass, SettingsCard, SettingsSectionHeader } from './SettingsPrimitives'
+import { formatHumanDate } from '../../lib/humanDates'
 
 interface Props {
   isEditing: boolean
@@ -95,7 +96,7 @@ export const SchedulingSettingsPanel: FC<Props> = ({ isEditing, settings, onUpda
 }
 
 const History: FC<{ revisions: SchedulingSettingsRevision[] }> = ({ revisions }) => (
-  <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5"><h3 className="text-base font-semibold leading-6">Configuration history</h3><div className="mt-3 space-y-2">{[...revisions].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom)).slice(0, 5).map((revision) => <div key={revision.id} className="rounded-lg bg-muted/40 px-3 py-2 text-xs"><div className="flex justify-between gap-3"><span className="font-medium">From {revision.effectiveFrom}</span><span className="text-muted-foreground">{revision.effectiveUntil ? `until ${revision.effectiveUntil}` : 'current/future'}</span></div><p className="mt-1 text-muted-foreground">{revision.changeReason} · {revision.createdBy}</p></div>)}</div></section>
+  <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5"><h3 className="text-base font-semibold leading-6">Configuration history</h3><div className="mt-3 space-y-2">{[...revisions].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom)).slice(0, 5).map((revision) => <div key={revision.id} className="rounded-lg bg-muted/40 px-3 py-2 text-xs"><div className="flex justify-between gap-3"><span className="font-medium">{`From ${formatHumanDate(revision.effectiveFrom)}`}</span><span className="text-muted-foreground">{revision.effectiveUntil ? `until ${revision.effectiveUntil}` : 'current/future'}</span></div><p className="mt-1 text-muted-foreground">{revision.changeReason} · {revision.createdBy}</p></div>)}</div></section>
 )
 
 

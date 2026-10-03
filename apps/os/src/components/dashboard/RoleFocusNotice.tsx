@@ -57,7 +57,7 @@ export const RoleFocusNotice: FC<RoleFocusNoticeProps> = ({ userRole, onOpenReco
         </h2>
         <p className="text-sm text-muted-foreground">
           <span className="block text-2xl font-semibold text-foreground">{attendanceExceptions}</span>
-          attendance exception{attendanceExceptions === 1 ? '' : 's'} waiting for HR review.
+          <span>attendance exceptions waiting for HR review</span>
         </p>
       </section>
     )
