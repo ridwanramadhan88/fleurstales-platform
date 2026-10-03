@@ -80,3 +80,10 @@ describe('order details panel', () => {
     expect(document.querySelector('.size-40')).toBeNull()
   })
 })
+
+describe('schedule time from the database', () => {
+  it('drops the seconds the database adds ("08:30:00" → "08:30")', async () => {
+    const { formatOrderScheduleLabel } = await import('./orderTableFormatters')
+    expect(formatOrderScheduleLabel('pickup', '2020-01-01', '08:30:00')).toMatch(/· 08:30$/)
+  })
+})

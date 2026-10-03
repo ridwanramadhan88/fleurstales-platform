@@ -2,8 +2,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NewOrderSheetContainer } from './NewOrderSheetContainer'
 
-const openSheet = () => {
-  render(<NewOrderSheetContainer open onClose={() => {}} activeBranch="Kedamaian" />)
+const openSheet = (onClose: () => void = () => {}) => {
+  render(<NewOrderSheetContainer open onClose={onClose} activeBranch="Kedamaian" />)
   return screen.getByRole('dialog', { name: 'New order' })
 }
 
@@ -55,5 +55,22 @@ describe('New Order form', () => {
     expect(review).toHaveAttribute('type', 'submit')
     expect(review).toHaveClass('bg-primary', 'text-primary-foreground')
     expect(within(sheet).getByRole('button', { name: 'Save draft' })).not.toHaveClass('bg-primary')
+  })
+
+  it('clips the footer to the rounded corners of the dialog', () => {
+    const sheet = openSheet()
+    expect(sheet).toHaveClass('overflow-hidden', 'sm:rounded-2xl')
+  })
+
+  it('lets staff search the catalog when picking a product', () => {
+    const onClose = vi.fn()
+    const sheet = openSheet(onClose)
+    fireEvent.click(within(sheet).getByRole('combobox', { name: /Choose a product from catalog/ }))
+    expect(screen.getByRole('searchbox', { name: 'Search product' })).toBeInTheDocument()
+
+    // Escape closes the product list only, never the whole form.
+    fireEvent.keyDown(screen.getByRole('searchbox', { name: 'Search product' }), { key: 'Escape' })
+    expect(screen.queryByRole('searchbox', { name: 'Search product' })).toBeNull()
+    expect(onClose).not.toHaveBeenCalled()
   })
 })

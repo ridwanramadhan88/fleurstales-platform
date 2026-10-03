@@ -385,6 +385,25 @@ textarea:focus-visible {
   animation: dot-pop 250ms ease-out;
 }
 
+/* Current order step: the dot stays solid; a soft halo of the same colour
+   slowly grows and fades behind it. Calm, never a blink. */
+@keyframes step-halo {
+  0% { transform: scale(1); opacity: 0.32; }
+  70%, 100% { transform: scale(1.6); opacity: 0; }
+}
+.animate-step-halo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 9999px;
+  background: inherit;
+  animation: step-halo 2.8s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-step-halo::after { animation: none; opacity: 0; }
+}
+
 /* Stronger light-mode hierarchy: preserve the quiet monochrome system while
    making cards, tables, controls, and empty states visually distinct. */
 :root:not(.dark) .shadow-ios-sm,

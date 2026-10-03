@@ -127,9 +127,7 @@ export const OrderProgressStepper: FC<OrderProgressStepperProps> = ({
                   : "upcoming";
             const Icon = state === "done" ? CheckCircle2 : STATUS_ICONS[option.id];
             const justPopped = poppedIndex === index;
-            const slowPulse = style.pulse
-              ? " animate-[pulse_6s_ease-in-out_infinite] motion-reduce:animate-none"
-              : "";
+            const slowPulse = style.pulse ? " animate-step-halo" : "";
             const nodeClass = compact
               ? state === "current"
                 ? `relative z-10 flex size-8 items-center justify-center rounded-full text-white transition-all duration-300 ease-out motion-reduce:transition-none ${style.currentDot}${slowPulse}`

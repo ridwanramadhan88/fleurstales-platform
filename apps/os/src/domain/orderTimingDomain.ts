@@ -234,7 +234,9 @@ export const formatOrderScheduleLabel = (
     dateLabel = fulfillment === 'delivery' ? 'Delivery' : 'Pickup'
   }
 
-  return scheduleTime ? `${dateLabel} · ${scheduleTime}` : dateLabel
+  // The database returns times as "08:30:00"; staff only need "08:30".
+  const time = scheduleTime.replace(/^(\d{1,2}:\d{2}):\d{2}$/, '$1')
+  return time ? `${dateLabel} · ${time}` : dateLabel
 }
 
 /**

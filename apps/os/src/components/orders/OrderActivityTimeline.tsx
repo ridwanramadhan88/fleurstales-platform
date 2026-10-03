@@ -95,7 +95,7 @@ export const OrderActivityTimeline: FC<OrderActivityTimelineProps> = ({
                 <span
                   className={
                     row.state === 'current'
-                      ? `relative z-10 mt-1 size-2.5 rounded-full ring-4 ring-card ${style.currentDot}${style.pulse ? ' animate-pulse motion-reduce:animate-none' : ''}`
+                      ? `relative z-10 mt-1 size-2.5 rounded-full ring-4 ring-card ${style.currentDot}${style.pulse ? ' animate-step-halo' : ''}`
                       : `relative z-10 mt-1 size-2.5 rounded-full ring-4 ring-card ${style.doneDot}`
                   }
                 />

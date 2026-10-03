@@ -7,7 +7,6 @@ import { removeOrderPaymentProof, uploadOrderPaymentProof } from '../../data/ord
 import { dataUrlToBlob, PAYMENT_PROOF_MAX_BYTES, prepareUploadedPaymentProof } from '../../domain/paymentProofImageDomain'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
-import { getQuickActionLabel } from './orderTableLabels'
 
 interface OrderPaymentGateDialogProps {
   order: OrderTableRow
@@ -19,7 +18,6 @@ interface OrderPaymentGateDialogProps {
 
 export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
   order,
-  nextStatus,
   formatter,
   onCancel,
   onMarkPaidAndContinue,
@@ -114,12 +112,12 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
       description="Select receiving account and attach bukti transfer. This marks the order PAID only; florist assignment stays in Process Order."
     >
       <div className="space-y-4">
-        <div className="flex items-start gap-3 rounded-xl bg-surface-panel p-3 ring-1 ring-border/60">
+        <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><CreditCard className="size-5" /></span>
           <div className="min-w-0">
             <p className="text-sm font-semibold">{order.orderNumber}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">Rp {formatter.format(order.totalIdr)} · {order.paymentMethod === 'cash' ? 'Cash' : order.paymentMethod === 'transfer' ? 'Transfer' : 'Payment method not set'}</p>
-            <p className="mt-1 text-2xs text-muted-foreground">{`After payment is confirmed, ${getQuickActionLabel(nextStatus)} becomes available.`}</p>
+            <p className="mt-1 text-2xs text-muted-foreground">After payment is confirmed, the order can go into production.</p>
           </div>
         </div>
 
@@ -160,7 +158,7 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
               )}
               <input ref={proofInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { void handleProofInput(event) }} />
               {paymentProofError && <p className="text-2xs text-destructive">{paymentProofError}</p>}
-              <p className="text-2xs text-muted-foreground">Private Finance evidence · max {PAYMENT_PROOF_MAX_BYTES / 1024} KB after compression.</p>
+              <p className="text-2xs text-muted-foreground">{`Private payment proof · max ${PAYMENT_PROOF_MAX_BYTES / 1024} KB after compression.`}</p>
             </div>
           </div>
         ) : order.paymentMethod === 'cash' ? (
@@ -177,7 +175,7 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
             type="button"
             onClick={() => { void confirmPayment() }}
             disabled={busy || proofPreparing || !proofReady || !accountReady || (order.paymentMethod !== 'cash' && order.paymentMethod !== 'transfer')}
-            className="h-11 rounded-full bg-success px-[18px] text-sm font-semibold text-white shadow-ios-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? 'Confirming…' : 'Confirm PAID'}
           </button>

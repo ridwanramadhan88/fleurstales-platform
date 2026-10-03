@@ -61,19 +61,15 @@ export const OrderDetailsMetaSection: FC<OrderDetailsMetaSectionProps> = ({
     }
 
     return (
-      <section className="rounded-2xl bg-surface-card p-4 ring-1 ring-border/60" aria-label="Order details">
-        <div className="grid gap-x-6 gap-y-1 sm:grid-cols-[repeat(2,minmax(0,1fr))] sm:gap-x-6">
-          {[leftRows, rightRows].map((rows, groupIndex) => (
-            <dl key={groupIndex} className={groupIndex === 1 ? 'divide-y divide-border/50 sm:border-l sm:border-border/50 sm:pl-6' : 'divide-y divide-border/50'}>
-              {rows.map(([label, value]) => (
-                <div key={label} className="flex items-baseline justify-between gap-4 py-2.5">
-                  <dt className="shrink-0 text-xs text-muted-foreground">{label}</dt>
-                  <dd className="break-words text-right text-sm font-medium text-foreground">{value}</dd>
-                </div>
-              ))}
-            </dl>
+      <section aria-label="Order details">
+        <dl className="divide-y divide-border/50">
+          {[...leftRows, ...rightRows].map(([label, value]) => (
+            <div key={label} className="flex items-baseline justify-between gap-4 py-2.5">
+              <dt className="min-w-0 text-xs text-muted-foreground">{label}</dt>
+              <dd className="shrink-0 whitespace-nowrap text-right text-sm font-medium text-foreground">{value}</dd>
+            </div>
           ))}
-        </div>
+        </dl>
       </section>
     )
   }
@@ -83,7 +79,7 @@ export const OrderDetailsMetaSection: FC<OrderDetailsMetaSectionProps> = ({
   const isDelivery = draft.fulfillment === 'delivery'
 
   return (
-    <section className="space-y-3 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60" aria-label="Order details">
+    <section className="space-y-3" aria-label="Order details">
       <div className="grid gap-3 sm:grid-cols-[repeat(2,minmax(0,1fr))] sm:gap-x-6">
         <div className="space-y-3">
           <label className="space-y-1 text-2xs font-medium text-muted-foreground/80">

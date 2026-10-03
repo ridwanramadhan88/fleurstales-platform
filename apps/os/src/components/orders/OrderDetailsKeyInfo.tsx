@@ -24,7 +24,7 @@ export const OrderDetailsKeyInfo: FC<OrderDetailsKeyInfoProps> = ({ order, custo
   return (
     <section
       aria-label="Customer and fulfillment"
-      className="grid gap-2 pb-4 pt-3 text-sm sm:grid-cols-2 lg:grid-cols-3"
+      className="grid gap-2.5 pb-3 pt-5 text-sm sm:grid-cols-2 lg:grid-cols-3"
     >
       <div className="flex min-w-0 items-center gap-2">
         <MessageCircle className="size-4 shrink-0 text-success" />

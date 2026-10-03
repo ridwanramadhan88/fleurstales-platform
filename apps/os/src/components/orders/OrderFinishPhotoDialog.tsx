@@ -8,7 +8,7 @@
 
 import type { ChangeEvent, FC } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Crop, ImageOff, UploadCloud } from 'lucide-react'
+import { Camera, ImageOff, UploadCloud } from 'lucide-react'
 import {
   FINISH_PHOTO_HEIGHT_PX,
   FINISH_PHOTO_MAX_BYTES,
@@ -128,7 +128,7 @@ export const OrderFinishPhotoDialog: FC<OrderFinishPhotoDialogProps> = ({ open, 
     <Dialog open={open} onOpenChange={(next) => { if (!next && !uploading) onCancel() }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Crop className="size-4" /> Photo the finished order</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><Camera className="size-4" /> Photo the finished order</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -188,7 +188,7 @@ export const OrderFinishPhotoDialog: FC<OrderFinishPhotoDialogProps> = ({ open, 
               >
                 {isDragActive ? <UploadCloud className="size-6 text-primary" /> : <ImageOff className="size-6 text-muted-foreground" />}
                 <p className="text-2xs font-medium text-foreground">Drag & drop a photo</p>
-                <p className="text-2xs text-muted-foreground">4:5 crop · max {FINISH_PHOTO_MAX_BYTES / 1024} KB after compression</p>
+                <p className="text-2xs text-muted-foreground">{`4:5 crop · max ${FINISH_PHOTO_MAX_BYTES / 1024} KB after compression`}</p>
               </div>
             </>
           )}

@@ -19,7 +19,7 @@ export const OrderDetailsNotesSection: FC<OrderDetailsNotesSectionProps> = ({
 
   return (
     <>
-      <section className="rounded-2xl bg-surface-card p-4 ring-1 ring-border/60" aria-label="Additional information">
+      <section aria-label="Additional information">
         <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground/80">Additional information</p>
         <p className="mt-1 text-sm font-semibold text-foreground">Greeting card message</p>
         {!isEditing ? (
@@ -60,7 +60,7 @@ export const OrderDetailsNotesSection: FC<OrderDetailsNotesSectionProps> = ({
         )}
       </section>
 
-      <section className="rounded-2xl bg-surface-card p-4 ring-1 ring-border/60" aria-label="Operational note">
+      <section aria-label="Operational note">
         <p className="text-sm font-semibold leading-5 text-foreground">Operational note</p>
         {!isEditing ? (
           <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">

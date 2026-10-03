@@ -188,10 +188,8 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                       <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
                     </span>
                   </summary>
-                  <div className="space-y-5 border-t border-border/60 p-4">
-                    <div className="[&_.size-16]:!size-20">
-                      <OrderDetailsItemsSection viewModel={panelViewModel} />
-                    </div>
+                  <div className="divide-y divide-border/60 border-t border-border/60 px-4 [&>*]:py-4">
+                    <OrderDetailsItemsSection viewModel={panelViewModel} />
                     <OrderDetailsMetaSection viewModel={panelViewModel} />
                   </div>
                 </details>
@@ -206,7 +204,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                       <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
                     </span>
                   </summary>
-                  <div className="space-y-4 border-t border-border/60 p-4">
+                  <div className="divide-y divide-border/60 border-t border-border/60 px-4 [&>*]:py-4">
                     <OrderDetailsNotesSection viewModel={panelViewModel} />
                   </div>
                 </details>
@@ -220,7 +218,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                       <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
                     </span>
                   </summary>
-                  <div className="space-y-4 border-t border-border/60 p-4">
+                  <div className="divide-y divide-border/60 border-t border-border/60 px-4 [&>*]:py-4">
                     <OrderDetailsDeliverySection viewModel={panelViewModel} />
                   </div>
                 </details>
