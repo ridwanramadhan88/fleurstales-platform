@@ -24,13 +24,11 @@ const ENGLISH_WORDS = [
   'attendance', 'payroll', 'points', 'adjustments', 'employment', 'dates', 'access', 'section',
   'yet', 'available', 'required', 'optional', 'loading', 'empty', 'found', 'export',
   'cleanup', 'legacy', 'rows', 'blockers', 'blocker', 'default', 'role', 'roles', 'employee', 'employees',
-  'base', 'salary', 'monthly', 'correction', 'awaiting', 'refunds', 'ready', 'pay', 'paid',
+  'people', 'base', 'salary', 'monthly', 'correction', 'awaiting', 'refunds', 'ready', 'pay', 'paid',
   'unpaid', 'waiting', 'completion', 'account', 'accounts', 'balance', 'history', 'week', 'month',
 ]
 const ENGLISH = new RegExp(`\\b(${ENGLISH_WORDS.join('|')})\\b`, 'i')
 // Brand and business names that contain an English word.
-// "People" is the agreed name of the staff workspace (see the wording
-// contract in naturalTranslations.ts), not a leftover.
 const ALLOWED = [/^Fleurstales Florist$/]
 // Raw ISO dates ("2026-10-03") are machine format; staff read "3 Okt".
 const ISO_DATE = /\b\d{4}-\d{2}-\d{2}\b/

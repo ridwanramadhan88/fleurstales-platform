@@ -185,7 +185,7 @@ describe('natural Indonesian UI copy', () => {
 
   it('translates batch-3 screenshot findings with the current contract', () => {
     expect(translateUiText('Manage business, people, and operational defaults.', 'id')).toBe(
-      'Kelola setelan bisnis, people, dan operasional.',
+      'Kelola setelan bisnis, staf, dan operasional.',
     )
     expect(translateUiText('Business health and key actions.', 'id')).toBe(
       'Kesehatan bisnis dan aksi penting.',
