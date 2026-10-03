@@ -1,10 +1,10 @@
-import { useEffect, type FC } from 'react'
+import { useEffect, useState, type FC } from 'react'
 import { DatePickerField, TimeSelectField } from '../ui/date-time-field'
 import type { NewOrderSheetViewModel } from './NewOrderSheetController'
 import { useOrderSlotAvailability } from '../../hooks/useOrderSlotAvailability'
 
 /**
- * @description "Order structure" card of the New Order sheet: fulfillment
+ * @description "Pickup or delivery" card of the New Order sheet: fulfillment
  * type (pickup/delivery), order source, and the fulfillment-specific fields
  * (delivery address/fee/instructions, or pickup date/time). Split out of
  * `NewOrderPaymentSection.tsx` — this section makes its own decisions about
@@ -72,7 +72,16 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
     deliveryHoursLabel,
     pickupHoursLabel,
     isBranchClosedOnDate,
+    isWalkInPickup,
   } = viewModel
+  const [showWalkInSchedule, setShowWalkInSchedule] = useState(false)
+  // A walk-in pickup shows the filled-in earliest slot as one line. The
+  // pickers come back when the user asks, or when the slot needs fixing.
+  const collapseWalkInSchedule = isWalkInPickup
+    && !showWalkInSchedule
+    && Boolean(values.pickupDate && values.pickupTime)
+    && !errors.pickupDate
+    && !errors.pickupTime
 
   return (
     <section
@@ -82,10 +91,10 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
         'space-y-3 px-1 py-1',
       )}
     >
-      <h3 className="text-sm font-semibold leading-5 text-foreground">Order structure</h3>
+      <h3 className="text-sm font-semibold leading-5 text-foreground">Pickup or delivery</h3>
       <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="w-24 shrink-0 text-xs font-medium text-foreground">Order source</span>
+        <div className="space-y-1.5">
+          <span className="block text-xs font-medium text-muted-foreground">Order source</span>
           <div
             role="group"
             aria-label="Order source"
@@ -132,8 +141,8 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
         )}
       </div>
       <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="w-24 shrink-0 text-xs font-medium text-foreground">Fulfillment</span>
+        <div className="space-y-1.5">
+          <span className="block text-xs font-medium text-muted-foreground">How the customer gets it</span>
           <div
             role="group"
             aria-label="Fulfillment"
@@ -285,7 +294,22 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
           </div>
         </>
       )}
-      {values.fulfillmentType === 'pickup' && (
+      {values.fulfillmentType === 'pickup' && collapseWalkInSchedule && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-surface-panel px-3.5 py-2.5 ring-1 ring-border/60">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">{`Pickup today · ${values.pickupTime}`}</p>
+            <p className="text-2xs text-muted-foreground">Earliest free time for a walk-in order.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowWalkInSchedule(true)}
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-xs font-semibold text-primary hover:bg-primary/10"
+          >
+            Change
+          </button>
+        </div>
+      )}
+      {values.fulfillmentType === 'pickup' && !collapseWalkInSchedule && (
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
             <label
@@ -322,7 +346,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
           </div>
         </div>
       )}
-      {values.fulfillmentType === 'pickup' && (
+      {values.fulfillmentType === 'pickup' && !collapseWalkInSchedule && (
         <>
           <p className={`text-2xs ${pickupTimeSlots.length === 0 && values.pickupDate ? 'text-destructive' : 'text-muted-foreground'}`}>
             {pickupHoursLabel}

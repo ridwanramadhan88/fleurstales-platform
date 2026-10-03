@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import { useState, type FC } from 'react'
 import type { NewOrderSheetViewModel } from './NewOrderSheetController'
 
 /**
@@ -21,8 +21,25 @@ export const NewOrderGreetingCardSection: FC<NewOrderGreetingCardSectionProps> =
   textAreaClass,
   sectionClass,
 }) => {
-  const { values, activeGuideField, activeGuideSection, onFieldChange, onSectionFocus } =
+  const { values, activeGuideField, activeGuideSection, onFieldChange, onSectionFocus, isWalkInPickup } =
     viewModel
+  const hasCard = Boolean(values.greetingMessage.trim() || values.greetingCardName.trim())
+  const [expanded, setExpanded] = useState(hasCard)
+
+  // Optional: collapsed to a link. A walk-in pickup has no card, unless one
+  // was already typed (never hide what the user entered).
+  if (isWalkInPickup && !hasCard) return null
+  if (!expanded && !hasCard) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="inline-flex min-h-11 items-center px-1 text-sm font-semibold text-primary hover:underline"
+      >
+        + Add greeting card
+      </button>
+    )
+  }
 
   return (
     <section
@@ -32,12 +49,15 @@ export const NewOrderGreetingCardSection: FC<NewOrderGreetingCardSectionProps> =
         'space-y-3 px-1 py-1',
       )}
     >
-      <h3 className="text-sm font-semibold leading-5 text-foreground">Greeting card</h3>
+      <h3 className="text-sm font-semibold leading-5 text-foreground">
+        Greeting card <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+      </h3>
       <div className="space-y-1.5">
         <label htmlFor="greetingMessage" className="text-xs font-medium text-muted-foreground">
           Message
         </label>
         <textarea
+          autoFocus={!hasCard}
           id="greetingMessage"
           value={values.greetingMessage}
           onChange={onFieldChange('greetingMessage')}

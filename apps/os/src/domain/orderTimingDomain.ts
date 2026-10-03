@@ -123,16 +123,14 @@ export const getOrderDateTime = (order: OrderTableRow): Date | null => {
   return new Date(year, month - 1, day, hour, minute, 0, 0)
 }
 
-export const isFutureOrder = (order: OrderTableRow): boolean => {
-  const orderDate = getOrderDateTime(order)
-  if (!orderDate) return false
-
-  const today = nowInJakarta()
-  today.setHours(0, 0, 0, 0)
-
-  const compareDate = new Date(orderDate)
-  compareDate.setHours(0, 0, 0, 0)
-  return compareDate > today
+/**
+ * @description The one definition of an "upcoming" (Mendatang) order: it is
+ * scheduled on a date after today in Asia/Jakarta. Orders later today stay in
+ * "Today" only. The Mendatang badge, calendar dots and list all use this.
+ */
+export const isFutureOrder = (order: OrderTableRow, now: Date = nowInJakarta()): boolean => {
+  const orderDate = parseOrderDateString(order)
+  return orderDate !== undefined && orderDate > getLocalDateString(now)
 }
 
 /**
@@ -236,7 +234,9 @@ export const formatOrderScheduleLabel = (
     dateLabel = fulfillment === 'delivery' ? 'Delivery' : 'Pickup'
   }
 
-  return scheduleTime ? `${dateLabel} · ${scheduleTime}` : dateLabel
+  // The database returns times as "08:30:00"; staff only need "08:30".
+  const time = scheduleTime.replace(/^(\d{1,2}:\d{2}):\d{2}$/, '$1')
+  return time ? `${dateLabel} · ${time}` : dateLabel
 }
 
 /**

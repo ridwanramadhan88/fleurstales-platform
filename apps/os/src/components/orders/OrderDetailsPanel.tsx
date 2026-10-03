@@ -12,6 +12,7 @@ import { OrderDetailsDeliverySection } from './OrderDetailsDeliverySection'
 import { OrderDetailsFinanceSection } from './OrderDetailsFinanceSection'
 import { OrderDetailsHeader } from './OrderDetailsHeader'
 import { OrderDetailsItemsSection } from './OrderDetailsItemsSection'
+import { OrderDetailsKeyInfo } from './OrderDetailsKeyInfo'
 import { OrderDetailsMetaSection } from './OrderDetailsMetaSection'
 import { OrderDetailsNotesSection } from './OrderDetailsNotesSection'
 import { OrderStatusStepper } from './OrderStatusStepper'
@@ -53,6 +54,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
     onFloristAssigned,
     onOpenReviewRequest,
     actionModal,
+    customerWhatsappNumber,
   } = viewModel
   const language = useUiLanguage((state) => state.language)
 
@@ -150,6 +152,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         <OrderDetailsHeader viewModel={panelViewModel} progress={lifecycle} />
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-10 px-px pt-0 text-sm text-foreground/90">
+          <OrderDetailsKeyInfo order={order} customerWhatsappNumber={customerWhatsappNumber} />
           <div role="tablist" aria-label="Order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
             {tabs.map(([id, label]) => (
               <button
@@ -175,7 +178,8 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
             )}
 
             {tab === 'details' && (
-              <>
+              <div className="space-y-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+                <div data-testid="order-details-column-order" className="space-y-8 lg:space-y-6">
                 <details open className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
                   <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-foreground marker:hidden">
                     <span className="flex items-center justify-between gap-3">
@@ -184,26 +188,13 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                       <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
                     </span>
                   </summary>
-                  <div className="space-y-5 border-t border-border/60 p-4">
-                    <div className="[&_.size-16]:!size-20">
-                      <OrderDetailsItemsSection viewModel={panelViewModel} />
-                    </div>
+                  <div className="divide-y divide-border/60 border-t border-border/60 px-4 [&>*]:py-4">
+                    <OrderDetailsItemsSection viewModel={panelViewModel} />
                     <OrderDetailsMetaSection viewModel={panelViewModel} />
                   </div>
                 </details>
 
-                <details className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
-                  <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-foreground marker:hidden">
-                    <span className="flex items-center justify-between gap-3">
-                      Customer & fulfillment
-                      <span className="text-2xs font-medium text-muted-foreground group-open:hidden">Show</span>
-                      <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
-                    </span>
-                  </summary>
-                  <div className="space-y-4 border-t border-border/60 p-4">
-                    <OrderDetailsDeliverySection viewModel={panelViewModel} />
-                  </div>
-                </details>
+
 
                 <details className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
                   <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-foreground marker:hidden">
@@ -213,8 +204,22 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                       <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
                     </span>
                   </summary>
-                  <div className="space-y-4 border-t border-border/60 p-4">
+                  <div className="divide-y divide-border/60 border-t border-border/60 px-4 [&>*]:py-4">
                     <OrderDetailsNotesSection viewModel={panelViewModel} />
+                  </div>
+                </details>
+                </div>
+                <div data-testid="order-details-column-customer" className="space-y-8 lg:space-y-6">
+                <details open className="group rounded-2xl bg-surface-card ring-1 ring-border/60">
+                  <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-semibold text-foreground marker:hidden">
+                    <span className="flex items-center justify-between gap-3">
+                      Customer & fulfillment
+                      <span className="text-2xs font-medium text-muted-foreground group-open:hidden">Show</span>
+                      <span className="hidden text-2xs font-medium text-muted-foreground group-open:inline">Hide</span>
+                    </span>
+                  </summary>
+                  <div className="divide-y divide-border/60 border-t border-border/60 px-4 [&>*]:py-4">
+                    <OrderDetailsDeliverySection viewModel={panelViewModel} />
                   </div>
                 </details>
 
@@ -268,7 +273,8 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                     Review history is unavailable for this legacy order.
                   </section>
                 )}
-              </>
+                </div>
+              </div>
             )}
 
             {tab === 'activity' && (

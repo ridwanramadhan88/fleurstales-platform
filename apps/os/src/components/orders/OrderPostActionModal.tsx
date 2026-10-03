@@ -113,7 +113,7 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
               <div className="rounded-lg bg-surface-panel px-3 py-2.5 text-sm text-foreground/90">{deliveryAddress ?? 'No delivery address on file for this order.'}</div>
               <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
                 <button type="button" onClick={onClose} className="inline-flex h-11 items-center justify-center rounded-full px-[18px] text-sm font-medium text-muted-foreground hover:bg-muted">Close</button>
-                <button type="button" disabled={!deliveryAddress} onClick={onCopyAddress} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-success px-[18px] text-sm font-medium text-white shadow-ios-sm disabled:opacity-50">
+                <button type="button" disabled={!deliveryAddress} onClick={onCopyAddress} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 disabled:opacity-50">
                   {addressCopied ? <><CheckCheck className="size-3.5" />Copied</> : <><Copy className="size-3.5" />Copy address</>}
                 </button>
               </div>

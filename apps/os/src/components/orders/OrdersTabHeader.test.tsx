@@ -21,8 +21,41 @@ describe('OrdersTabHeader recovery states', () => {
     const blockedButton = screen.getByRole('button', { name: 'Select branch first' })
     expect(blockedButton).toHaveAttribute('aria-disabled', 'true')
     expect(blockedButton).toHaveTextContent('Select branch first')
-    fireEvent.click(blockedButton)
-    expect(screen.getByText('Select a specific branch before creating an order.')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Select a specific branch before creating an order.')
+  })
+
+  it('shows why New order is blocked as visible text, without tapping', () => {
+    render(
+      <OrdersTabHeader
+        activeOrdersSubTab="today"
+        orderCounts={counts}
+        draftCount={0}
+        canCreateOrder={false}
+        createOrderBlockedReason="No branch is assigned for your current shift. Ask HR or Owner to update the schedule."
+        onNewOrder={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('Ask HR or Owner to update the schedule.')
+  })
+
+  it('lets an owner on all branches pick a branch right under the blocked button', () => {
+    const onSelect = vi.fn()
+    render(
+      <OrdersTabHeader
+        activeOrdersSubTab="today"
+        orderCounts={counts}
+        draftCount={0}
+        canCreateOrder={false}
+        createOrderBlockedReason="Select a specific branch before creating an order."
+        branchPicker={{ options: [{ id: 'Kedamaian', label: 'Kedamaian' }, { id: 'Pahoman', label: 'Pahoman' }], onSelect }}
+        onNewOrder={vi.fn()}
+      />,
+    )
+
+    const picker = screen.getByRole('combobox', { name: /Choose a branch to create an order/ })
+    fireEvent.change(picker, { target: { value: 'Pahoman' } })
+    expect(onSelect).toHaveBeenCalledWith('Pahoman')
   })
 
   it('keeps the same action-area geometry when branch availability changes', () => {

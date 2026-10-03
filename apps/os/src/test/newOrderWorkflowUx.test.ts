@@ -25,7 +25,9 @@ describe('New Order workflow UX', () => {
     expect(sheet).toContain('pb-[max(1rem,env(safe-area-inset-bottom))]')
     expect(sheet).toContain('h-11 w-full')
     expect(sheet).toContain('sm:w-auto')
-    expect(sheet).toContain("'bg-card text-foreground ring-1 ring-border hover:bg-muted'")
+    // Review is always the solid primary action; Save draft stays secondary.
+    expect(sheet).toContain('rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground')
+    expect(sheet).not.toContain("'bg-card text-foreground ring-1 ring-border hover:bg-muted'")
   })
 
   it('uses a safer tablet layout instead of squeezing nested controls', () => {

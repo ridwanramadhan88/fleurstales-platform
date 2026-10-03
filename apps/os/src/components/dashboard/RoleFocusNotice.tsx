@@ -8,24 +8,43 @@
 import type { FC } from 'react'
 import type { UserRole } from '../../store/userStore'
 import { useOrdersStore } from '../../store/ordersStore'
+import { useFinanceStore } from '../../store/financeStore'
+import { usePayrollStore } from '../../store/payrollStore'
 import { useHrStore } from '../../store/hrStore'
+import { countOrdersAwaitingReconciliation, getFinanceAttention } from '../../domain/financeAttentionDomain'
 import { surfaceCardClass } from '../ui/card'
 
 export interface RoleFocusNoticeProps {
   userRole: UserRole
+  /** Opens the Finance reconciliation queue the card counts. */
+  onOpenReconciliation?: () => void
 }
 
-export const RoleFocusNotice: FC<RoleFocusNoticeProps> = ({ userRole }) => {
+export const RoleFocusNotice: FC<RoleFocusNoticeProps> = ({ userRole, onOpenReconciliation }) => {
   const orders = useOrdersStore((state) => state.orders)
+  const transactions = useFinanceStore((state) => state.transactions)
+  const payrollProposals = usePayrollStore((state) => state.payrollProposals)
   const attendance = useHrStore((state) => state.attendance)
-  const pendingVerification = orders.filter((order) => order.status === 'pending_verification' && !order.financeVerified).length
+  // Same selector as the Finance overview, so the two numbers always match.
+  const awaitingReconciliation = countOrdersAwaitingReconciliation(
+    getFinanceAttention({ orders, transactions, payrollProposals }),
+  )
   const attendanceExceptions = attendance.filter((record) => record.checkInLocation?.reviewStatus === 'pending_review' || record.checkOutLocation?.reviewStatus === 'pending_review').length
   if (userRole === 'finance') {
     return (
       <section className={surfaceCardClass('standard')}>
         <p className="text-xs font-semibold text-muted-foreground">Finance focus</p>
-        <p className="mt-1 text-2xl font-semibold text-foreground">{pendingVerification}</p>
-        <p className="text-sm text-muted-foreground">completed order{pendingVerification === 1 ? '' : 's'} waiting for reconciliation.</p>
+        <p className="mt-1 text-2xl font-semibold text-foreground">{awaitingReconciliation}</p>
+        <p className="text-sm text-muted-foreground">orders waiting for reconciliation</p>
+        {onOpenReconciliation && (
+          <button
+            type="button"
+            onClick={onOpenReconciliation}
+            className="mt-3 inline-flex h-11 items-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90"
+          >
+            Open reconciliation
+          </button>
+        )}
       </section>
     )
   }

@@ -8,7 +8,8 @@ import { NewOrderNotesSection } from './NewOrderNotesSection'
 /**
  * @file NewOrderPaymentSection.tsx
  * @description Composes the four cards shown in this part of the New Order
- * sheet — order structure, greeting card, payment, and order notes. Each
+ * sheet, in fill order: pickup or delivery (+ time), payment, then the
+ * optional greeting card and order note (collapsed to "+ Add …" links). Each
  * card previously lived inline in this one file; they're now their own
  * components (`NewOrderStructureSection`, `NewOrderGreetingCardSection`,
  * `NewOrderPaymentDetailsSection`, `NewOrderNotesSection`) so each can be
@@ -37,15 +38,15 @@ export const NewOrderPaymentSection: FC<NewOrderPaymentSectionProps> = ({
         textAreaClass={textAreaClass}
         sectionClass={sectionClass}
       />
+      <NewOrderPaymentDetailsSection
+        viewModel={viewModel}
+        fieldClass={fieldClass}
+        sectionClass={sectionClass}
+      />
       <NewOrderGreetingCardSection
         viewModel={viewModel}
         fieldClass={fieldClass}
         textAreaClass={textAreaClass}
-        sectionClass={sectionClass}
-      />
-      <NewOrderPaymentDetailsSection
-        viewModel={viewModel}
-        fieldClass={fieldClass}
         sectionClass={sectionClass}
       />
       <NewOrderNotesSection

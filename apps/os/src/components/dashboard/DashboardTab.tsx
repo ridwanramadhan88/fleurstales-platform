@@ -6,7 +6,7 @@
 import type { FC } from 'react'
 import type { BranchFilter } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
-import { toOrders, type AppNavigationRequest } from '../../config/appNavigation'
+import { toFinanceModule, toOrders, type AppNavigationRequest } from '../../config/appNavigation'
 import { DashboardHeader } from './DashboardHeader'
 import { ModuleShortcuts } from './ModuleShortcuts'
 import { RoleFocusNotice } from './RoleFocusNotice'
@@ -85,7 +85,10 @@ export const DashboardTab: FC<DashboardTabProps> = ({
       {(userRole === 'finance' || userRole === 'hr') && (
         <>
           <ModuleShortcuts userRole={userRole} onNavigate={onNavigate} />
-          <RoleFocusNotice userRole={userRole} />
+          <RoleFocusNotice
+            userRole={userRole}
+            onOpenReconciliation={() => onNavigate(toFinanceModule('order_verification'))}
+          />
         </>
       )}
     </section>

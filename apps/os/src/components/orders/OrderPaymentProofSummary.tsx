@@ -60,7 +60,7 @@ export const OrderPaymentProofSummary: FC<OrderPaymentProofSummaryProps> = ({ or
   }
 
   return (
-    <section className="mb-3 rounded-2xl bg-surface-card p-3.5 ring-1 ring-border/60" aria-label="Payment summary">
+    <section className="mb-3 border-b border-border/60 pb-3.5" aria-label="Payment summary">
       <div className="flex flex-wrap items-center gap-3">
         <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${finance.state === 'resolved' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
           {finance.state === 'resolved' ? <CheckCircle2 className="size-4" /> : <CreditCard className="size-4" />}

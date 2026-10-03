@@ -24,6 +24,7 @@ import { AppSheet } from '../ui/app-sheet'
 import { FinanceCategorySettingsPanel } from '../settings/FinanceCategorySettingsPanel'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
 import { requestFinanceWorkspaceNavigation } from './financeWorkspaceNavigation'
+import { getFinanceAttention } from '../../domain/financeAttentionDomain'
 
 const formatIdr = (value: number): string => `Rp ${Math.round(value).toLocaleString('id-ID')}`
 const CASH_ACCOUNT_ID = 'cash:main'
@@ -110,26 +111,10 @@ export const FinanceCashFlowOverview: FC = () => {
     return { total, moneyIn, moneyOut, net: moneyIn - moneyOut }
   }, [balances, transactions])
 
-  const attention = useMemo(() => {
-    const postedOrderNumbers = new Set(
-      transactions
-        .filter((transaction) => transaction.status === 'verified' && transaction.source === 'order_payment' && transaction.orderNumber)
-        .map((transaction) => transaction.orderNumber as string),
-    )
-    const reconciliationOrders = orders.filter(
-      (order) => postedOrderNumbers.has(order.orderNumber) && !order.financeVerified,
-    )
-    const correction = reconciliationOrders.filter((order) => order.financeVerificationStatus === 'rejected').length
-    const awaiting = Math.max(0, reconciliationOrders.length - correction)
-    const refunds = orders.filter((order) => order.paymentStatus === 'refund_pending').length
-    const payrollReview = payrollProposals.filter((proposal) => ['submitted_to_finance', 'returned_to_hr'].includes(proposal.status)).length
-    const payrollReady = payrollProposals.filter((proposal) => proposal.status === 'finance_approved').length
-    const legacyRows = transactions.filter(
-      (transaction) => transaction.status === 'verified' && (!transaction.accountId || transaction.accountId === LEGACY_ACCOUNT_ID),
-    ).length
-    const total = awaiting + correction + refunds + payrollReview + payrollReady + legacyRows
-    return { awaiting, correction, refunds, payrollReview, payrollReady, legacyRows, total }
-  }, [orders, payrollProposals, transactions])
+  const attention = useMemo(
+    () => getFinanceAttention({ orders, transactions, payrollProposals }),
+    [orders, payrollProposals, transactions],
+  )
 
   if (role !== 'finance') return null
 

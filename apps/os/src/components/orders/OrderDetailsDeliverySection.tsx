@@ -94,7 +94,7 @@ export const OrderDetailsDeliverySection: FC<OrderDetailsDeliverySectionProps> =
         </div>
       )}
 
-      <section className="space-y-3 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60">
+      <section className="space-y-3">
         <div>
           <p className="text-sm font-semibold leading-5 text-foreground">Customer contact</p>
           <p className="text-2xs text-muted-foreground">Saved snapshot for this Order.</p>
@@ -128,7 +128,7 @@ export const OrderDetailsDeliverySection: FC<OrderDetailsDeliverySectionProps> =
       </section>
 
       {order.fulfillment === 'delivery' || draft.fulfillment === 'delivery' ? (
-        <section className="space-y-3 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60">
+        <section className="space-y-3">
           <div>
             <p className="text-sm font-semibold leading-5 text-foreground">Delivery details</p>
             <p className="text-2xs text-muted-foreground">Address and courier instructions.</p>

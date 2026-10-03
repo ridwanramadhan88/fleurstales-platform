@@ -107,7 +107,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
         </section>
       ) : null}
 
-      <section className="space-y-5 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60">
+      <section className="space-y-5">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold leading-5 text-foreground">Order summary</p>
           {!isEditing && (
@@ -128,20 +128,21 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
 
             return (
               <div key={item.id} className="flex items-start justify-between gap-4 py-4">
-                <div className="flex min-w-0 flex-1 items-start gap-5">
-                  <div className="size-40 shrink-0 overflow-hidden rounded-3xl bg-surface-panel ring-1 ring-border/30 sm:size-48">
-                    {itemDisplay?.imageUrl ? (
+                <div className="flex min-w-0 flex-1 items-start gap-4">
+                  {itemDisplay?.imageUrl ? (
+                    <div className="size-24 shrink-0 overflow-hidden rounded-2xl bg-surface-panel ring-1 ring-border/30 sm:size-28">
                       <img
                         src={itemDisplay.imageUrl}
                         alt={item.productName || itemDisplay.name || 'Product'}
                         className="size-full object-cover"
                       />
-                    ) : (
-                      <span className="flex size-full items-center justify-center text-muted-foreground">
-                        <Package2 className="size-8" />
-                      </span>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    // No photo: a small icon instead of a large empty frame.
+                    <span data-testid="order-item-no-photo" className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-surface-panel text-muted-foreground ring-1 ring-border/30">
+                      <Package2 className="size-5" />
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1 pt-1">
                     {isEditableCustomLine ? (
                       <input
@@ -155,10 +156,13 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
                         {item.productName || itemDisplay?.name || 'Custom order'}
                       </p>
                     )}
+                    {/* One fact per line, so nothing breaks mid-word in a narrow column. */}
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      {item.quantity} × Rp {formatter.format(item.unitPriceIdr)}
-                      {itemMetadata.length > 0 ? ` · ${itemMetadata.join(' · ')}` : ''}
+                      {`${item.quantity} × Rp ${formatter.format(item.unitPriceIdr)}`}
                     </p>
+                    {itemMetadata.map((meta) => (
+                      <p key={meta} className="text-xs leading-5 text-muted-foreground [overflow-wrap:anywhere]">{meta}</p>
+                    ))}
                     {(item.flowerRecipeSnapshot?.length ?? 0) > 0 ? (
                       <div className="mt-3 rounded-xl bg-primary/[0.055] px-3 py-2.5 ring-1 ring-primary/10">
                         <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-primary" data-no-translate>

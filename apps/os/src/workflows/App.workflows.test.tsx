@@ -245,8 +245,8 @@ describe('critical application workflows', () => {
     expect(screen.queryByRole('heading', { name: 'Process Order' })).not.toBeInTheDocument()
 
     // The details panel stays open on the paid order; advance straight
-    // from its footer.
-    await user.click(screen.getByRole('button', { name: 'Processing' }))
+    // from its footer, labelled with the action rather than the next status.
+    await user.click(screen.getByRole('button', { name: 'Assign & start' }))
 
     expect(await screen.findByRole('heading', { name: 'Process Order' })).toBeInTheDocument()
     await user.click((await screen.findAllByRole('radio'))[0])
@@ -302,7 +302,7 @@ describe('critical application workflows', () => {
       throw new Error('Payment-gated order row not found')
     }
     await user.click(orderRow)
-    const blockedAction = screen.getByTitle('Advance to Finished')
+    const blockedAction = screen.getByRole('button', { name: /^(Complete pickup|Start delivery)$/ })
     expect(blockedAction).toBeEnabled()
     expect(
       useOrdersStore

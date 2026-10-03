@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
+import { SearchableSelect } from '../ui/searchable-select'
 import type { NewOrderSheetViewModel } from './NewOrderSheetController'
 
 interface NewOrderItemsSectionProps {
@@ -84,26 +85,18 @@ export const NewOrderItemsSection: FC<NewOrderItemsSectionProps> = ({
                         >
                           Choose a product from catalog
                         </label>
-                        <Select
+                        <SearchableSelect
+                          id="orderItemCatalogId"
                           value={values.orderItemCatalogId}
+                          options={catalogProductOptions}
                           onValueChange={onCatalogProductChange}
-                        >
-                          <SelectTrigger
-                            id="orderItemCatalogId"
-                            className={fieldClass(activeGuideField === 'orderItemCatalogId') + (errors.orderItemCatalogId ? ' border-destructive ring-destructive/25' : '')}
-                            aria-invalid={Boolean(errors.orderItemCatalogId)}
-                            aria-describedby={errors.orderItemCatalogId ? 'orderItemCatalogId-error' : undefined}
-                          >
-                            <SelectValue placeholder="Select product" />
-                          </SelectTrigger>
-                          <SelectContent>
-                          {catalogProductOptions.map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.label}
-                            </SelectItem>
-                          ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Select product"
+                          searchPlaceholder="Search product"
+                          emptyLabel="No product matches."
+                          className={fieldClass(activeGuideField === 'orderItemCatalogId') + (errors.orderItemCatalogId ? ' border-destructive ring-destructive/25' : '')}
+                          aria-invalid={Boolean(errors.orderItemCatalogId)}
+                          aria-describedby={errors.orderItemCatalogId ? 'orderItemCatalogId-error' : undefined}
+                        />
                         {errors.orderItemCatalogId && (
                           <p id="orderItemCatalogId-error" className="text-xs text-destructive" role="alert">
                             {errors.orderItemCatalogId}

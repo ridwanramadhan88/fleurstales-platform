@@ -17,6 +17,9 @@ describe('finance workspace privacy', () => {
     expect(getFinanceWorkspaceModules('finance')).toEqual([
       'balance', 'order_verification', 'refunds', 'ledger', 'payroll',
     ])
-    expect(getDefaultFinanceWorkspaceModule('finance')).toBe('balance')
+  })
+
+  it('opens reconciliation from the "Order Reconciliation" menu item', () => {
+    expect(getDefaultFinanceWorkspaceModule('finance')).toBe('order_verification')
   })
 })

@@ -236,12 +236,14 @@ const HomePage: FC<HomePageProps> = ({
   useEffect(() => {
     if (activeTab !== 'finance') return
     if (financeModules.includes(financeModule)) return
-    const fallback = financeModules[0]
+    const fallback = financeModules.length > 0
+      ? getDefaultFinanceWorkspaceModule(userRole, actionPermissions, permissions)
+      : undefined
     if (fallback) {
       setFinanceModule(fallback)
       setSearchQuery('')
     }
-  }, [activeTab, financeModule, financeModules])
+  }, [activeTab, actionPermissions, financeModule, financeModules, permissions, userRole])
 
   const accessibleNavigationIds = useMemo(
     () => getAccessibleNavigationDestinationIds({
@@ -289,7 +291,7 @@ const HomePage: FC<HomePageProps> = ({
         return false
       }
 
-      nextFinanceModule = target.financeModule ?? financeModules[0]
+      nextFinanceModule = target.financeModule ?? getDefaultFinanceWorkspaceModule(userRole, actionPermissions, permissions)
     }
 
     const continueNavigation = () => {
@@ -533,6 +535,12 @@ const HomePage: FC<HomePageProps> = ({
                 draftCount={draftCount}
                 canCreateOrder={canCreateOrder}
                 createOrderBlockedReason={createOrderBlockedReason}
+                branchPicker={activeBranch === 'All' && createOrderBlockedReason
+                  ? {
+                      options: getActiveBranches({ branches: configuredBranches }).map((branch) => ({ id: branch.id, label: branch.name })),
+                      onSelect: (branchId) => { void handleBranchChange(branchId) },
+                    }
+                  : undefined}
                 onNewOrder={() => { setEditingOrderDraftId(null); setIsNewOrderOpen(true) }}
               />
 
