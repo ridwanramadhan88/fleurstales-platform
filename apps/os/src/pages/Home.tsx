@@ -35,7 +35,6 @@ import { RevenueDashboardContainer } from '../components/dashboard/RevenueDashbo
 import { OrderVerificationQueueContainer } from '../components/finance/OrderVerificationQueueContainer'
 import { TransactionLedgerContainer } from '../components/finance/TransactionLedgerContainer'
 import { FinanceRefundQueue } from '../components/finance/FinanceRefundQueue'
-import { PayrollScheduleCard } from '../components/payroll/PayrollScheduleCard'
 import { FinancePayrollReview } from '../components/finance/FinancePayrollReview'
 import { FinancePayrollScheduleAdjustment } from '../components/finance/FinancePayrollScheduleAdjustment'
 import { AddInternalTransaction } from '../components/finance/AddInternalTransaction'
@@ -607,7 +606,7 @@ const HomePage: FC<HomePageProps> = ({
                     title="Payroll"
                     description="Review monthly payroll proposals"
                   />
-                  <PayrollScheduleCard title="Payroll schedule" />
+                  {/* One schedule card: dates plus "Edit schedule". */}
                   <FinancePayrollScheduleAdjustment />
                   <FinancePayrollReview />
                 </>

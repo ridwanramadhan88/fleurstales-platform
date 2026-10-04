@@ -82,7 +82,8 @@ describe('Indonesian copy guard', () => {
     const { container } = render(<><UiLanguageBridge /><HomePage initialBranch="All" /></>)
     const leftovers = new Map<string, string[]>()
     const nav = within(container).getByRole('navigation', { name: /Primary|Utama/ })
-    const items = within(nav).getAllByRole('button').map((button) => button.textContent ?? '')
+    // "More" only opens a list of the same pages; they are visited directly.
+    const items = within(nav).getAllByRole('button').map((button) => button.textContent ?? '').filter((label) => !/^(More|Lainnya)$/.test(label))
     for (const label of items) {
       const button = within(nav).getAllByRole('button').find((candidate) => candidate.textContent === label)
       if (!button) continue
@@ -95,7 +96,7 @@ describe('Indonesian copy guard', () => {
       record(label)
       // Then every tab inside the screen (Finance modules, sub-tabs).
       const tabLabels = Array.from(container.querySelectorAll<HTMLElement>('[role="tab"], nav button'))
-        .filter((tab) => !nav.contains(tab))
+        .filter((tab) => !nav.contains(tab) && !/^(More|Lainnya)$/.test(tab.textContent ?? ''))
         .map((tab) => tab.textContent ?? '')
       for (const tabLabel of tabLabels) {
         const tab = Array.from(container.querySelectorAll<HTMLElement>('[role="tab"], nav button'))

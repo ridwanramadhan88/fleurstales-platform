@@ -149,7 +149,7 @@ describe('navigation grouping', () => {
 
   it('keeps destination labels centralized per surface without changing route IDs', () => {
     expect(getNavigationDestinationLabel('finance', 'finance', 'desktop')).toBe(
-      'Reconcile',
+      'Finance',
     )
     expect(getNavigationDestinationLabel('finance', 'owner', 'workspace')).toBe(
       'Finance',

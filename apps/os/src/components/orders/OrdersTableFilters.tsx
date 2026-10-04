@@ -51,7 +51,9 @@ export const OrdersTableFilters: FC<OrdersTableFiltersProps> = ({ viewModel }) =
         </div>}
       </div>
       <div className="relative min-w-0">
-        <ChipRow activeKey={statusGroupFilter} edge="card" className="pr-10 md:pr-0">
+        {/* Status chips wrap onto a second line on phones, so every status
+            is visible; none hide past the screen edge. */}
+        <ChipRow activeKey={statusGroupFilter} edge="none" className="flex-wrap overflow-visible">
           {STATUS_GROUP_FILTER_OPTIONS.flatMap((option) => {
             const isActive = statusGroupFilter === option.id
             const chips = [<FilterChip key={option.id} active={isActive} onClick={() => onStatusGroupFilterChange(option.id as UiStatusGroup | 'all')} className="h-11 shrink-0 md:h-9">{option.label}{option.id === 'new' && newOrderCount > 0 && <span className={`ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-2xs font-semibold ring-1 ${isActive ? 'bg-primary-foreground/20 text-primary-foreground ring-primary-foreground/25' : 'bg-primary/10 text-primary ring-primary/25'}`}>{newOrderCount}</span>}</FilterChip>]
@@ -59,7 +61,6 @@ export const OrdersTableFilters: FC<OrdersTableFiltersProps> = ({ viewModel }) =
             return chips
           })}
         </ChipRow>
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-surface-card via-surface-card/90 to-transparent md:hidden" />
       </div>
     </div>
   )

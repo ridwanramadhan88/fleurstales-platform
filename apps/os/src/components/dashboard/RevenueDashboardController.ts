@@ -367,7 +367,7 @@ export const useRevenueDashboardController = ({
     if (compareMode === 'single') {
       return trendPeriod === 'custom' && !hasValidCustomRange
         ? 'Select a start and end date'
-        : `${trendMetric === 'revenue' ? 'Revenue (confirmed)' : 'Expense'}, by day`
+        : trendMetric === 'revenue' ? 'Confirmed revenue per day' : 'Expenses per day'
     }
     if (compareMode === 'period_vs_period') {
       if (trendPeriod === 'custom' && !hasValidCustomRange) return 'Select a start and end date'
@@ -376,7 +376,7 @@ export const useRevenueDashboardController = ({
     if (compareMode === 'income_expense') {
       return trendPeriod === 'custom' && !hasValidCustomRange
         ? 'Select a start and end date'
-        : 'Revenue (confirmed) vs. expense, by day'
+        : 'Confirmed revenue and expenses per day'
     }
     if (compareMode === 'branch_vs_branch') {
       if (trendPeriod === 'custom' && !hasValidCustomRange) return 'Select a start and end date'

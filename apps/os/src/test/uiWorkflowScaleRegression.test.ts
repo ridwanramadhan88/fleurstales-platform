@@ -105,7 +105,7 @@ describe('mobile workflow UI scale regressions', () => {
     expect(people).not.toContain('peopleSearchPlaceholder')
     expect(scheduling).not.toContain('placeholder="Search employee"')
     expect(scheduling).toContain("mobileMode === 'week' ? 'block' : 'hidden'")
-    expect(scheduling).toContain("mobileMode==='day'?'Grid':'Day'")
+    expect(scheduling).toContain("mobileMode==='day'?'Week':'Day'")
   })
 
   it('keeps desktop search singular and Catalog filter utilities compact', () => {
@@ -140,7 +140,8 @@ describe('mobile workflow UI scale regressions', () => {
     expect(warningReview).not.toContain('space-y-4 rounded-xl bg-card p-4')
     expect(attendance).toContain('min-h-[68px]')
     expect(attendance).toContain('h-11 rounded-full bg-foreground px-[18px] text-sm font-medium text-background">Add record')
-    expect(dashboardHeader).toContain('w-fit items-center')
+    // The home header has no button: the priority list owns "View all orders".
+    expect(dashboardHeader).not.toContain('View orders')
     expect(dashboardHeader).not.toContain('w-full items-center justify-center')
     expect(settings).toContain('Read-only</span>')
     expect(settings).toContain('mb-4 flex flex-col gap-2 border-b')

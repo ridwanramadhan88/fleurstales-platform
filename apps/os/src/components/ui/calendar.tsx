@@ -3,9 +3,11 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { DayPicker } from "react-day-picker"
+import { id as indonesian } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { useUiLanguage } from "@/i18n/uiLanguage"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
@@ -26,8 +28,12 @@ function Calendar({
     return d
   }, [])
 
+  // Month and weekday names follow the app language ("Oktober", "Sen").
+  const language = useUiLanguage((state) => state.language)
+
   return (
     <DayPicker
+      locale={language === "id" ? indonesian : undefined}
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{

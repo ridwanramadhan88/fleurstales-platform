@@ -48,7 +48,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
   const tabs: { id: OrdersSubTabId; label: string }[] = [
     { id: 'today', label: 'Today' },
     { id: 'future', label: 'Future' },
-    { id: 'custom', label: 'Custom' },
+    { id: 'custom', label: 'Pick a date' },
   ]
 
   const [isCustomPopoverOpen, setIsCustomPopoverOpen] = useState(false)
@@ -113,7 +113,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
                             ? ` - ${format(dateRange.to, 'dd MMM', { locale: dateLocale })}`
                             : ''}
                         </>
-                      ) : 'Custom'}
+                      ) : 'Pick a date'}
                     </span>
                     <CalendarIcon className="ml-1 size-3.5 opacity-60" />
                   </button>

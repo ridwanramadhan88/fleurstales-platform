@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Users,
   UserRoundCog,
+  Settings,
 } from 'lucide-react'
 import {
   getAccessibleNavigationDestinationIds,
@@ -34,9 +35,10 @@ const TAB_ICON: Record<BottomTabId, BottomTabItem['icon']> = {
   catalog: BookOpen,
   stock: Boxes,
   customers: Users,
+  settings: Settings,
 }
 
-type DirectBottomTabId = BottomTabId
+type DirectBottomTabId = Exclude<BottomTabId, 'settings'>
 
 const isBottomTabId = (id: NavigationDestinationId): id is DirectBottomTabId =>
   id !== 'settings'
@@ -51,7 +53,9 @@ export const getVisibleBottomNavigationDestinationIds = (
 
 export interface BottomTabBarViewModel extends BottomTabBarProps {
   visibleTabs: BottomTabItem[]
-  activeBottomTab: BottomTabId
+  /** Pages that do not fit in the bar; listed under "More". */
+  moreTabs: BottomTabItem[]
+  activeBottomTab: BottomTabId | 'more'
 }
 
 
@@ -85,12 +89,22 @@ export const useBottomTabBarController = (
       icon: TAB_ICON[id],
     }))
 
-  const activeTab = getBottomNavigationActiveTab(props.activeTab, visibleTabs)
+  const visibleIds = new Set<NavigationDestinationId>(visibleTabs.map((tab) => tab.id))
+  const moreTabs = accessibleIds
+    .filter((id) => !visibleIds.has(id))
+    .map((id) => ({
+      id: id as BottomTabId,
+      label: getNavigationDestinationLabel(id, userRole, 'mobile-bottom'),
+      icon: TAB_ICON[id as BottomTabId],
+    }))
+  const isMoreActive = moreTabs.some((tab) => tab.id === props.activeTab)
+  const activeTab = isMoreActive ? props.activeTab : getBottomNavigationActiveTab(props.activeTab, visibleTabs)
 
   return {
     ...props,
     activeTab,
-    activeBottomTab: activeTab as BottomTabId,
+    activeBottomTab: isMoreActive ? 'more' : activeTab as BottomTabId,
     visibleTabs,
+    moreTabs,
   }
 }
