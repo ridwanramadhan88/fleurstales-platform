@@ -409,6 +409,9 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Same as the preset': 'Sama dengan bawaan',
   'Restore preset': 'Kembalikan ke bawaan',
   'Changes from the preset': 'Perubahan dari bawaan',
+  // UX audit: one meaning per number.
+  'Order value today': 'Nilai pesanan hari ini',
+  'Confirmed revenue, last 7 days': 'Pendapatan terkonfirmasi 7 hari terakhir',
   // Pre-release sweep: calendar and tooltip labels.
   'Go to previous month': 'Bulan sebelumnya',
   'Go to next month': 'Bulan berikutnya',

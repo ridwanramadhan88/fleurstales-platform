@@ -5,7 +5,6 @@ import {
   ORDER_CARD_BG,
   PAYMENT_DOT_TONE,
   PAYMENT_STATUS_LABELS,
-  STATUS_GROUP_FROM_STATUS,
   STATUS_ICONS,
   STATUS_LABELS,
   URGENCY_CHIP,
@@ -88,7 +87,8 @@ export const OrdersDesktopTable: FC<OrdersDesktopTableProps> = ({
             const urgency = getOrderUrgency(order)
             const StatusIcon = STATUS_ICONS[order.status]
             const isFutureCustomOrder = activeScope === 'custom' && isFutureOrder(order)
-            const isNewOrder = STATUS_GROUP_FROM_STATUS[order.status] === 'new'
+            // "New" means it still needs confirming; a confirmed order is no longer new.
+            const isNewOrder = order.status === 'pending_verification'
             const highlightPayment = shouldHighlightReadyPayment(order)
             const showFutureDivider = activeScope === 'future' && (index === 0 || slotKey(displayOrders[index - 1]) !== slotKey(order))
 

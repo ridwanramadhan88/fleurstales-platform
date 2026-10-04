@@ -35,8 +35,11 @@ export const MyDayStrip: FC = () => {
       ? 'Attendance complete'
       : status.attendance === 'checked_in'
         ? `Checked in ${clock(status.checkInTime)}`
-        : 'Not checked in'
-  const shiftLabel = status.shift ? `Shift ${status.shift.startTime}–${status.shift.endTime} · ${status.shift.branchId}` : status.attendance === 'off' ? '' : 'No shift today'
+        : status.shift
+          ? 'Not checked in'
+          // No shift and no check-in: nothing is missing, so don't warn.
+          : 'No shift today'
+  const shiftLabel = status.shift ? `Shift ${status.shift.startTime}–${status.shift.endTime} · ${status.shift.branchId}` : ''
 
   return (
     <section aria-label="My day" className="space-y-3">
