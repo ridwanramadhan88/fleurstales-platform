@@ -141,7 +141,7 @@ const summarizeOpeningHours = (branch: BranchSettings): string => {
   const sameHours = openDays.every((day) =>
     hours[day].opensAt === first.opensAt && hours[day].closesAt === first.closesAt,
   )
-  if (openDays.length === 7 && sameHours) return `Daily · ${first.opensAt}–${first.closesAt}`
+  if (openDays.length === 7 && sameHours) return `Every day · ${first.opensAt}–${first.closesAt}`
   if (sameHours) return `${openDays.length} open days · ${first.opensAt}–${first.closesAt}`
   return `${openDays.length} open days · Custom hours`
 }

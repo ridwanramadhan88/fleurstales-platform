@@ -8,7 +8,6 @@ import type { BranchFilter } from '../../types/orders'
 import type { UserRole } from '../../store/userStore'
 import { toAppTab, toOrders, type AppNavigationRequest } from '../../config/appNavigation'
 import { DashboardHeader } from './DashboardHeader'
-import { ModuleShortcuts } from './ModuleShortcuts'
 import { AdminTodayQueue } from './AdminTodayQueue'
 import { OverviewCardsContainer } from './OverviewCardsContainer'
 import { OwnerAttentionQueue } from './OwnerAttentionQueue'
@@ -49,7 +48,6 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         formattedDate={formattedDate}
         greeting={greeting}
         userRole={userRole}
-        onOpenOrders={onGoToOrders}
       />
 
       {/* Each role sees its own work first. */}
@@ -65,7 +63,6 @@ export const DashboardTab: FC<DashboardTabProps> = ({
             />
             <RevenueTrendCard activeBranch={activeBranch} onOpenRevenue={() => onNavigate(toAppTab('revenue'))} />
           </div>
-          <ModuleShortcuts userRole={userRole} onNavigate={onNavigate} />
         </>
       )}
 
@@ -78,7 +75,6 @@ export const DashboardTab: FC<DashboardTabProps> = ({
             onOpenOrder={(orderNumber) => onNavigate(toOrders({ orderNumber }))}
           />
           <AdminFinishedMetrics activeBranch={activeBranch} onOpenFinishedOrders={onGoToFinishedOrders} />
-          <ModuleShortcuts userRole={userRole} onNavigate={onNavigate} />
         </>
       )}
 

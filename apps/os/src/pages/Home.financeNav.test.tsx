@@ -8,7 +8,7 @@ const originalRole = useUserStore.getState().role
 describe('Finance menu', () => {
   afterEach(() => useUserStore.getState().setRole(originalRole))
 
-  it('"Reconcile" opens the reconciliation module, and Balances stays a tab', () => {
+  it('"Finance" opens on reconciliation, and Balances stays a tab', () => {
     useUserStore.getState().setRole('finance')
     render(<HomePage initialBranch="All" />)
 
@@ -19,7 +19,7 @@ describe('Finance menu', () => {
     expect(within(modules()).getByRole('button', { name: 'Balances' })).toHaveAttribute('aria-current', 'page')
 
     // The menu item brings the user back to reconciliation.
-    const menuItems = screen.getAllByRole('button', { name: /Order Reconciliation|Reconcile/ })
+    const menuItems = screen.getAllByRole('button', { name: /^Finance$/ })
     fireEvent.click(menuItems[0])
 
     expect(within(modules()).getByRole('button', { name: 'Reconciliation' })).toHaveAttribute('aria-current', 'page')

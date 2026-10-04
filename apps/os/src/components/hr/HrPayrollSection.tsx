@@ -359,7 +359,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold leading-6">Monthly payroll proposal</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{`${formatHumanDateRange(period.periodStart, period.periodEnd)} · ${generatedDrafts.length || eligibleEmployees.length} staff · ${manualDrafts.length} manual`}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{`${formatHumanDateRange(period.periodStart, period.periodEnd)} · ${generatedDrafts.length || eligibleEmployees.length} staff${manualDrafts.length ? ` · ${manualDrafts.length} added by hand` : ''}`}</p>
           </div>
           {proposal && <PayrollStatusBadge status={proposal.status} label={proposalLabel[proposal.status]} />}
         </div>

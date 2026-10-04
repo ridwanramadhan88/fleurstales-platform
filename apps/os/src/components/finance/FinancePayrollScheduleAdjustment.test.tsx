@@ -17,7 +17,7 @@ describe('FinancePayrollScheduleAdjustment', () => {
   it('shows direct Edit schedule without History or approval actions', () => {
     render(<FinancePayrollScheduleAdjustment />)
     expect(screen.getByRole('button', { name:'Edit schedule' })).toBeInTheDocument()
-    expect(screen.getByText('28 Aug 2026')).toBeInTheDocument()
+    expect(screen.getByText(/^28 (Aug|Agu) 2026$/)).toBeInTheDocument()
     expect(screen.queryByText(/History/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/Owner approval/i)).not.toBeInTheDocument()
   })

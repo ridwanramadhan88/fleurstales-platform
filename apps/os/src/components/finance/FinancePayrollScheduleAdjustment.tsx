@@ -7,8 +7,10 @@ import { useUserStore } from '../../store/userStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { hasActionPermission } from '../../config/actionPermissions'
 import type { PayrollScheduleSnapshot } from '../../domain/payrollScheduleDomain'
+import { formatHumanDate } from '../../lib/humanDates'
 
-const formatDate = (value:string) => new Intl.DateTimeFormat('en-GB', { day:'numeric', month:'short', year:'numeric', timeZone:'Asia/Jakarta' }).format(new Date(`${value}T12:00:00+07:00`))
+// Same readable dates as the rest of the app ("24 Okt 2026").
+const formatDate = (value: string) => formatHumanDate(value)
 const fields:Array<{ key:keyof PayrollScheduleSnapshot; label:string }> = [
   { key:'periodStart', label:'Period start' }, { key:'periodEnd', label:'Period end' }, { key:'hrSubmissionDeadline', label:'HR submission' }, { key:'financeReviewDeadline', label:'Finance review' }, { key:'paymentDate', label:'Payment date' },
 ]

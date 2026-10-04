@@ -14,7 +14,7 @@ export const StaffReviewHistory: FC<StaffReviewHistoryProps> = ({
   orderId,
   customerId,
   title = 'Customer reviews',
-  emptyLabel = 'No customer review submitted yet.',
+  emptyLabel = 'No customer reviews yet.',
   className = '',
 }) => {
   const [reviews, setReviews] = useState<StaffReview[]>([])

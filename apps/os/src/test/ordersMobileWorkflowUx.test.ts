@@ -13,12 +13,13 @@ describe('Orders mobile workflow UX', () => {
     expect(header).toContain('grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3')
   })
 
-  it('makes status filters touch-safe and visually indicates horizontal overflow', () => {
+  it('makes status filters touch-safe and keeps every status visible on phones', () => {
     const filters = read('src/components/orders/OrdersTableFilters.tsx')
 
     expect(filters).toContain('className="h-11 shrink-0 md:h-9"')
-    expect(filters).toContain('bg-gradient-to-l')
-    expect(filters).toContain('md:hidden')
+    // Chips wrap to a second line instead of hiding past the screen edge.
+    expect(filters).toContain('className="flex-wrap overflow-visible"')
+    expect(filters).not.toContain('bg-gradient-to-l')
   })
 
   it('allows mobile order metadata and schedule labels to wrap instead of clipping', () => {

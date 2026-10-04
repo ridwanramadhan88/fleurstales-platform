@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import HomePage from '../../pages/Home'
 import { useUserStore, type UserRole } from '../../store/userStore'
@@ -19,8 +19,8 @@ describe('one menu (UX plan PR 8)', () => {
       useUserStore.getState().setRole(role)
       render(<HomePage initialBranch="All" />)
       const desktop = menuLabels('Primary')
-      const phone = menuLabels('Primary navigation')
-      // The phone bar holds four items; the rest are on the home screen.
+      const phone = menuLabels('Primary navigation').filter((label) => label !== 'More')
+      // The phone bar holds four pages; every other page is under "More".
       expect(phone.length).toBeLessThanOrEqual(4)
       expect(desktop).toEqual(expect.arrayContaining(phone))
       expect(desktop).toContain(phone[0])
@@ -40,5 +40,17 @@ describe('one menu (UX plan PR 8)', () => {
     useUserStore.getState().setRole('finance')
     render(<HomePage initialBranch="All" />)
     expect(menuLabels('Primary')[0]).toBe('Overview')
+  })
+
+  it('phone: every page the bar cannot hold is under "More" (UX audit)', () => {
+    useUserStore.getState().setRole('owner')
+    render(<HomePage initialBranch="All" />)
+    const bar = screen.getByRole('navigation', { name: 'Primary navigation' })
+    fireEvent.click(within(bar).getByRole('button', { name: 'More' }))
+    const sheet = screen.getByRole('dialog')
+    const labels = within(sheet).getAllByRole('button').map((button) => button.textContent?.trim()).filter(Boolean)
+    expect(labels).toEqual(expect.arrayContaining(['Catalog', 'Revenue', 'Settings']))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Settings' }))
+    expect(within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-current', 'page')
   })
 })

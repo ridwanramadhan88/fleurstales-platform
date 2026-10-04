@@ -87,13 +87,13 @@ export const getNavigationDestination = (
 
 /**
  * One name per destination: the phone bar and the desktop sidebar always use
- * the same words, so staff never have to learn two menus. Only the home
- * workspace cards ("workspace") may use a broader name for Finance.
+ * the same words, so staff never have to learn two menus. The surface is
+ * kept in the signature so callers can say where the label is shown.
  */
 export const getNavigationDestinationLabel = (
   id: NavigationDestinationId,
   role: UserRole,
-  surface: NavigationSurface,
+  _surface: NavigationSurface,
 ): string => {
   if (id === 'dashboard') {
     if (role === 'florist') return 'My Work'
@@ -101,7 +101,8 @@ export const getNavigationDestinationLabel = (
     return 'Overview'
   }
 
-  if (id === 'finance') return surface === 'workspace' ? 'Finance' : 'Reconcile'
+  // One name for the whole Finance workspace; reconciliation is a tab inside it.
+  if (id === 'finance') return 'Finance'
 
   return getNavigationDestination(id).label
 }

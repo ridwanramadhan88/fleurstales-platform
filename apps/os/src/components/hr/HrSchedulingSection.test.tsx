@@ -85,7 +85,23 @@ describe('HR Scheduling UI', () => {
 
     expect(screen.queryByRole('heading', { name:'Coverage warnings' })).not.toBeInTheDocument()
     expect(screen.queryByText(/Minimum coverage is met/)).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name:'Assignment suggestions' })).toBeInTheDocument()
+    // Nothing to fix: no staffing card at all.
+    expect(screen.queryByRole('heading', { name:'Staff shortage this week' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name:'Assignment suggestions' })).not.toBeInTheDocument()
+  })
+
+  it('says a repeated shortage once instead of once per day (UX audit)', () => {
+    useSettingsStore.setState((state) => ({
+      scheduling: { ...state.scheduling, minimumCoverage: { admin: 9, florist: 9 } },
+      schedulingConfigRevisions: [],
+    }))
+    useUserStore.setState({ employeeId:'emp-star', username:'hr', role:'hr', name:'Star' })
+    render(<HrTabContentContainer activeBranch="Kedamaian" />)
+    openScheduling()
+
+    const card = screen.getByRole('region', { name: 'Staff shortage' })
+    expect(card.textContent).toMatch(/Every day this week|Admin \d+\/9/)
+    expect(screen.queryByRole('heading', { name:'Assignment suggestions' })).not.toBeInTheDocument()
   })
 
   it('allows an Admin with view access to see schedules without publish controls', () => {
@@ -106,7 +122,7 @@ describe('HR Scheduling UI', () => {
     fireEvent.click(screen.getByRole('button', { name:'More scheduling actions' }))
     expect(screen.getByRole('button', { name:'Export PDF' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name:'Generate deterministic pattern' })).toBeInTheDocument()
-    expect(container.querySelector('[aria-label="Show weekly grid"]')).toHaveTextContent('Grid')
+    expect(container.querySelector('[aria-label="Show the whole week"]')).toHaveTextContent('Week')
   })
 
 })

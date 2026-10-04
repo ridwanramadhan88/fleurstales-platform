@@ -1,9 +1,12 @@
 /**
  * @file BottomTabBar.tsx
- * @description Compact role-aware mobile bottom navigation with at most four direct tabs.
+ * @description Compact role-aware mobile bottom navigation with at most four direct tabs,
+ * plus "More" for every other page the role can open.
  */
 
-import type { FC } from 'react'
+import { useState, type FC } from 'react'
+import { LayoutGrid } from 'lucide-react'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet'
 import type { AppTabId } from '../../config/appNavigation'
 import type { BottomTabBarViewModel, BottomTabItem } from './BottomTabBarController'
 
@@ -16,6 +19,7 @@ export type BottomTabId =
   | 'catalog'
   | 'stock'
   | 'customers'
+  | 'settings'
 
 export interface BottomTabBarProps {
   activeTab: AppTabId
@@ -25,10 +29,13 @@ export interface BottomTabBarProps {
 }
 
 export const BottomTabBar: FC<BottomTabBarViewModel> = ({
+  activeTab,
   activeBottomTab,
   onTabChange,
   visibleTabs,
+  moreTabs,
 }) => {
+  const [moreOpen, setMoreOpen] = useState(false)
   const renderTab = (tab: BottomTabItem) => {
     const Icon = tab.icon
     const isActive = activeBottomTab === tab.id
@@ -61,10 +68,49 @@ export const BottomTabBar: FC<BottomTabBarViewModel> = ({
     >
       <div
         className="mx-auto grid w-full max-w-md gap-1 px-3 py-2"
-        style={{ gridTemplateColumns: `repeat(${Math.max(visibleTabs.length, 1)}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${Math.max(visibleTabs.length + (moreTabs.length ? 1 : 0), 1)}, minmax(0, 1fr))` }}
       >
         {visibleTabs.map(renderTab)}
+        {moreTabs.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={moreOpen}
+            aria-current={activeBottomTab === 'more' ? 'page' : undefined}
+            className={`tap-scale flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-full px-1.5 py-1.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
+              activeBottomTab === 'more' ? 'text-primary' : 'text-muted-foreground hover:text-foreground active:bg-muted/60'
+            }`}
+          >
+            <LayoutGrid className="size-[22px]" strokeWidth={activeBottomTab === 'more' ? 2.35 : 2} />
+            <span className="w-full truncate text-xs font-semibold leading-none">More</span>
+          </button>
+        )}
       </div>
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl pb-[max(env(safe-area-inset-bottom),1rem)]">
+          <SheetHeader>
+            <SheetTitle>More</SheetTitle>
+          </SheetHeader>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {moreTabs.map((tab) => {
+              const Icon = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => { setMoreOpen(false); onTabChange(tab.id) }}
+                  aria-current={activeBottomTab === 'more' && tab.id === activeTab ? 'page' : undefined}
+                  className="tap-scale flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-panel px-2 py-3 text-center text-xs font-semibold text-foreground ring-1 ring-border/60"
+                >
+                  <Icon className="size-5 text-primary" />
+                  <span className="w-full truncate">{tab.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
     </nav>
   )
 }

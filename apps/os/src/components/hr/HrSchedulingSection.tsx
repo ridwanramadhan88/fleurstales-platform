@@ -119,6 +119,12 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
 
   const coverage = useMemo(()=>summarizeWeeklyCoverage({ employees, dates:weekDates, defaults:[], overrides, settingsForDate, branchIds:activeBranch==='All'?branches.map((b)=>b.id):[activeBranch] }),[employees,weekDates,overrides,activeBranch,branches,getSchedulingSettingsForDate,allBranches])
   const coverageWarnings = coverage.filter((item)=>item.hasShortage)
+  const shortageSummary = useMemo(() => {
+    if (coverageWarnings.length < 2) return null
+    const [first] = coverageWarnings
+    const same = coverageWarnings.every((item) => item.branchId === first.branchId && item.adminScheduled === first.adminScheduled && item.adminRequired === first.adminRequired && item.floristScheduled === first.floristScheduled && item.floristRequired === first.floristRequired)
+    return same ? `Every day this week · ${first.branchName}: Admin ${first.adminScheduled}/${first.adminRequired} · Florist ${first.floristScheduled}/${first.floristRequired}` : null
+  }, [coverageWarnings])
   const totalOff = employeeSummaries.filter((item)=>item.employee.systemRole!=='hr').reduce((sum,item)=>sum+item.offDays,0)
   const totalUnassigned = employeeSummaries.filter((item)=>item.employee.systemRole!=='hr').reduce((sum,item)=>sum+item.unassigned,0)
   const invalidRest = employeeSummaries.filter((item)=>item.employee.systemRole!=='hr' && item.offDays!==1)
@@ -323,11 +329,11 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
         <button
           type="button"
           onClick={()=>setMobileMode((current)=>current==='day'?'week':'day')}
-          aria-label={mobileMode==='day'?'Show weekly grid':'Show day view'}
+          aria-label={mobileMode==='day'?'Show the whole week':'Show one day'}
           className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-card px-3 text-xs font-semibold text-foreground ring-1 ring-border/70 hover:bg-accent"
         >
           {mobileMode==='day'?<Table2 className="size-4"/>:<LayoutList className="size-4"/>}
-          {mobileMode==='day'?'Grid':'Day'}
+          {mobileMode==='day'?'Week':'Day'}
         </button>
       </div>
       {mobileMode==='day'&&<div className="space-y-2">{staff.map((employee)=>{const explicit=overrides.find((item)=>item.employeeId===employee.id&&item.date===selectedDate);const effective=getEffectiveScheduleForDate({employee,date:selectedDate,defaults:[],overrides,settings:settingsForDate(selectedDate)});const shift=effective.shift;const wfh=isWfhAssignment(employee,explicit);return <button key={employee.id} type="button" disabled={!canEdit} onClick={()=>openEditor(employee,selectedDate)} className="flex min-h-20 w-full items-center justify-between gap-3 rounded-xl bg-card px-4 py-3 text-left ring-1 ring-border/60"><div className="min-w-0"><p className="truncate text-sm font-semibold">{employee.name}</p><p className="text-xs text-muted-foreground">{roleLabel(employee.systemRole)}</p></div><div className={`shrink-0 rounded-lg px-3 py-2 text-right ring-1 ${!explicit?'bg-muted/45 text-muted-foreground ring-border/50':shift.isWorking?branchTone(shift.branchId):wfh?'bg-accent/70 text-accent-foreground ring-border/60':'bg-secondary/80 text-secondary-foreground ring-border/60'}`}>{!explicit?<><p className="text-xs font-semibold">Not assigned</p></>:shift.isWorking?<><p className="text-xs font-semibold">{shift.branchId}</p><p className="text-[11px]">{shift.startTime}–{shift.endTime}</p></>:<p className="text-xs font-semibold">{wfh?'WFH':'OFF'}</p>}</div></button>})}</div>}
@@ -347,10 +353,36 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
       </div>
     </div>
 
-    <section className={`grid gap-3 ${coverageWarnings.length ? 'lg:grid-cols-2' : ''}`}>
-      {coverageWarnings.length > 0 && <div className="rounded-xl bg-card p-4 ring-1 ring-border/60"><h3 className="text-sm font-semibold leading-5">Coverage warnings</h3><div className="mt-2 space-y-1.5">{coverageWarnings.slice(0,10).map((item)=><div key={`${item.date}-${item.branchId}`} className="flex items-start gap-2 rounded-lg bg-warning/10 p-2 text-xs text-warning"><AlertTriangle className="mt-0.5 size-4 shrink-0"/><div><strong>{`${formatDay(item.date)} · ${item.branchName}`}</strong><p>{`Admin ${item.adminScheduled}/${item.adminRequired} · Florist ${item.floristScheduled}/${item.floristRequired}`}</p></div></div>)}</div></div>}
-      <div className="rounded-xl bg-card p-4 ring-1 ring-border/60"><h3 className="text-sm font-semibold leading-5">Assignment suggestions</h3><div className="mt-2 space-y-2">{suggestions.length===0?<p className="text-xs text-muted-foreground">Generated roster currently meets minimum staffing.</p>:suggestions.map(({warning,roleNeeded,candidates})=><div key={`${warning.date}-${warning.branchId}-${roleNeeded}`} className="rounded-lg bg-muted/35 p-2 text-xs"><p className="font-semibold">{`${warning.branchName} needs another ${roleLabel(roleNeeded)} on ${formatDay(warning.date)}`}</p><p className="mt-0.5 text-muted-foreground">{candidates.length?`Suggested: ${candidates.map((item)=>`${item.employee.name} (${item.workdays} days)`).join(', ')}`:'No conflict-free candidate'}</p></div>)}</div></div>
-    </section>
+    {/* One card for staffing: a single line when every day has the same
+        gap, otherwise one row per day. A suggestion shows only when there is
+        a real candidate, so nothing is said twice. */}
+    {coverageWarnings.length > 0 ? (
+      <section aria-label="Staff shortage" className="rounded-xl bg-card p-4 ring-1 ring-border/60">
+        <h3 className="text-sm font-semibold leading-5">Staff shortage this week</h3>
+        {shortageSummary ? (
+          <p className="mt-2 flex items-start gap-2 rounded-lg bg-warning/10 p-2 text-xs text-warning">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            {shortageSummary}
+          </p>
+        ) : (
+          <div className="mt-2 space-y-1.5">
+            {coverageWarnings.slice(0, 10).map((item) => {
+              const candidates = suggestions.filter((entry) => entry.warning.date === item.date && entry.warning.branchId === item.branchId).flatMap((entry) => entry.candidates)
+              return (
+                <div key={`${item.date}-${item.branchId}`} className="flex items-start gap-2 rounded-lg bg-warning/10 p-2 text-xs text-warning">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <div>
+                    <strong>{`${formatDay(item.date)} · ${item.branchName}`}</strong>
+                    <p>{`Admin ${item.adminScheduled}/${item.adminRequired} · Florist ${item.floristScheduled}/${item.floristRequired}`}</p>
+                    {candidates.length > 0 && <p className="mt-0.5 text-muted-foreground">{`Suggested: ${candidates.map((entry) => `${entry.employee.name} (${entry.workdays} days)`).join(', ')}`}</p>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
+    ) : null}
 
     {revisions.length>0&&<section className="rounded-xl bg-card p-4 ring-1 ring-border/60"><h3 className="text-sm font-semibold leading-5">Schedule revision history</h3><div className="mt-2 space-y-1.5">{revisions.slice(0,8).map((revision)=>{const employee=employees.find((item)=>item.id===revision.employeeId);return <div key={revision.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/35 px-3 py-2 text-xs"><div><p className="font-semibold">{employee?.name ?? 'Employee'} · {formatDay(revision.date)}</p><p className="text-muted-foreground">{revision.nextShift?.isWorking?`${revision.nextShift.branchId} · ${revision.nextShift.startTime}-${revision.nextShift.endTime}`:(employee?.systemRole==='hr'&&revision.nextWorkMode==='wfh'?'WFH':'OFF')} · {revision.reason}</p></div><p className="text-2xs text-muted-foreground">{revision.changedBy}</p></div>})}</div></section>}
 

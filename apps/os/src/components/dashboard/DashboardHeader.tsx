@@ -4,7 +4,6 @@
  */
 
 import type { FC } from 'react'
-import { ArrowRight } from 'lucide-react'
 import type { UserRole } from '../../store/userStore'
 
 const ROLE_COPY: Record<UserRole, { title: string; description: string }> = {
@@ -35,7 +34,6 @@ export interface DashboardHeaderProps {
   formattedDate: string
   greeting: string
   userRole: UserRole
-  onOpenOrders: () => void
 }
 
 export const DashboardHeader: FC<DashboardHeaderProps> = ({
@@ -43,13 +41,12 @@ export const DashboardHeader: FC<DashboardHeaderProps> = ({
   formattedDate,
   greeting,
   userRole,
-  onOpenOrders,
 }) => {
   const copy = ROLE_COPY[userRole]
-  const showOrdersAction = userRole === 'owner' || userRole === 'admin'
 
   return (
-    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    // No orders button here: the priority list below already links to all orders.
+    <header>
       <div className="min-w-0">
         <p className="text-xs font-medium text-muted-foreground">
           {greeting} · {activeBranch} · {formattedDate}
@@ -59,17 +56,6 @@ export const DashboardHeader: FC<DashboardHeaderProps> = ({
         </h1>
         <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">{copy.description}</p>
       </div>
-
-      {showOrdersAction && (
-        <button
-          type="button"
-          onClick={onOpenOrders}
-          className="tap-scale inline-flex h-11 w-fit items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-        >
-          <span>View orders</span>
-          <ArrowRight className="size-3.5" aria-hidden="true" />
-        </button>
-      )}
     </header>
   )
 }
