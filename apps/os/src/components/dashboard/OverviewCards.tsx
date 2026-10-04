@@ -45,7 +45,7 @@ export const OverviewCards: FC<OverviewCardsViewModel> = ({
           tone={ordersTone}
         />
         <OverviewStatCard
-          label="Revenue today"
+          label="Order value today"
           value={revenueToday}
           valueClassName="text-xl font-semibold leading-tight text-foreground sm:text-2xl"
           helper={revenueHelper}

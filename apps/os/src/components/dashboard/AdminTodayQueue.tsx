@@ -8,9 +8,13 @@ import { getLocalDateString, nowInJakarta } from '../../domain/orderTimingDomain
 import { getOrderNextActionLabel } from '../orders/orderNextActionLabels'
 import { getDisplayScheduleLabel } from '../orders/orderTableFormatters'
 
+// "Work from the top" means the earliest due time first: date and time,
+// not date alone (an 11:00 order must come before a 14:00 one).
 const toDateValue = (order: OrderTableRow) => {
   if (!order.scheduleDate) return Number.POSITIVE_INFINITY
-  const parsed = Date.parse(`${order.scheduleDate}T00:00:00`)
+  const match = /^(\d{1,2}):(\d{2})/.exec(order.scheduleTime ?? '')
+  const time = match ? `${match[1].padStart(2, '0')}:${match[2]}` : '23:59'
+  const parsed = Date.parse(`${order.scheduleDate}T${time}:00`)
   return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
 }
 

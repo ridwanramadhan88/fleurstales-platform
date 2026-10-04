@@ -6,7 +6,6 @@
 
 import type { AttendanceRecord, AttendanceReviewCase, Employee, ScheduleOverride } from '../store/hrStoreTypes'
 import type { PayrollProposal } from '../store/payrollStore'
-import type { OrderTableRow } from '../types/orders'
 
 /** One line for staff: attendance today and their shift. */
 export interface MyDayStatus {
@@ -65,28 +64,4 @@ export const getHrHomeWork = ({
     .length
   const latest = [...payrollProposals].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
   return { attendanceToReview, unscheduledStaff, payrollStatus: latest?.status ?? null }
-}
-
-/** Revenue from finished orders for each of the last `days` days (oldest first). */
-export const getDailyRevenue = ({
-  orders,
-  today,
-  days = 7,
-}: {
-  orders: Pick<OrderTableRow, 'status' | 'scheduleDate' | 'totalIdr'>[]
-  today: string
-  days?: number
-}): Array<{ date: string; totalIdr: number }> => {
-  const [year, month, day] = today.split('-').map(Number)
-  const dates = Array.from({ length: days }, (_, index) => {
-    const date = new Date(Date.UTC(year, month - 1, day - (days - 1 - index)))
-    return date.toISOString().slice(0, 10)
-  })
-  const finished = new Set<OrderTableRow['status']>(['delivered', 'picked_up'])
-  return dates.map((date) => ({
-    date,
-    totalIdr: orders
-      .filter((order) => finished.has(order.status) && order.scheduleDate === date)
-      .reduce((sum, order) => sum + (order.totalIdr ?? 0), 0),
-  }))
 }

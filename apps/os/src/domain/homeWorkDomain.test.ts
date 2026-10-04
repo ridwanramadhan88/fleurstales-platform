@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getDailyRevenue, getHrHomeWork, getMyDayStatus } from './homeWorkDomain'
+import { getHrHomeWork, getMyDayStatus } from './homeWorkDomain'
 
 const shift = (isWorking: boolean) => ({ isWorking, branchId: 'Kedamaian', startTime: '08:00', endTime: '16:00' }) as never
 
@@ -37,22 +37,5 @@ describe('HR home work', () => {
   })
   it('says payroll is not created when there is no proposal', () => {
     expect(getHrHomeWork({ reviewCases: [], employees: [], overrides: [], weekDates: [], payrollProposals: [] }).payrollStatus).toBeNull()
-  })
-})
-
-describe('daily revenue', () => {
-  it('sums finished orders per day for the last 7 days, oldest first', () => {
-    const days = getDailyRevenue({
-      today: '2026-10-03',
-      orders: [
-        { status: 'delivered', scheduleDate: '2026-10-03', totalIdr: 100 },
-        { status: 'picked_up', scheduleDate: '2026-09-27', totalIdr: 50 },
-        { status: 'processing', scheduleDate: '2026-10-03', totalIdr: 999 },
-        { status: 'delivered', scheduleDate: '2026-09-26', totalIdr: 999 },
-      ] as never,
-    })
-    expect(days).toHaveLength(7)
-    expect(days[0]).toEqual({ date: '2026-09-27', totalIdr: 50 })
-    expect(days[6]).toEqual({ date: '2026-10-03', totalIdr: 100 })
   })
 })
