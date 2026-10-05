@@ -15,6 +15,9 @@ export const OrderDetailsDeliverySection: FC<OrderDetailsDeliverySectionProps> =
   viewModel,
 }) => {
   const { order, isEditing, draft, onDraftChange } = viewModel
+  const savedPhone = order.customerSnapshot?.whatsappNumber ?? order.customerSnapshot?.phone ?? ''
+  const savedEmail = order.customerSnapshot?.email ?? ''
+  const hasSavedContact = Boolean(savedPhone || savedEmail)
   const crmCustomer = useCustomerStore((state) =>
     order.customerId
       ? state.customers.find((customer) => customer.id === order.customerId) ?? null
@@ -94,15 +97,17 @@ export const OrderDetailsDeliverySection: FC<OrderDetailsDeliverySectionProps> =
         </div>
       )}
 
-      <section className="space-y-3">
+      {/* Phone already shows at the top of the panel; this block only adds
+          what is saved, and hides when there is nothing to add. */}
+      {(isEditing || hasSavedContact) && <section className="space-y-3">
         <div>
           <p className="text-sm font-semibold leading-5 text-foreground">Customer contact</p>
           <p className="text-2xs text-muted-foreground">Saved snapshot for this Order.</p>
         </div>
         {!isEditing ? (
           <div className="grid gap-2 sm:grid-cols-[repeat(2,minmax(0,1fr))]">
-            <ContactCell icon={MessageCircle} value={order.customerSnapshot?.whatsappNumber ?? order.customerSnapshot?.phone ?? 'Not set'} />
-            <ContactCell icon={Mail} value={order.customerSnapshot?.email || 'Not set'} />
+            {savedPhone && <ContactCell icon={MessageCircle} value={savedPhone} />}
+            {savedEmail && <ContactCell icon={Mail} value={savedEmail} />}
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-[repeat(2,minmax(0,1fr))]">
@@ -125,7 +130,7 @@ export const OrderDetailsDeliverySection: FC<OrderDetailsDeliverySectionProps> =
             </label>
           </div>
         )}
-      </section>
+      </section>}
 
       {order.fulfillment === 'delivery' || draft.fulfillment === 'delivery' ? (
         <section className="space-y-3">

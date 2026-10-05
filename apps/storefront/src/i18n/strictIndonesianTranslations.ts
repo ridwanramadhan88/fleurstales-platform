@@ -238,7 +238,7 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Current occupation': 'Status Pekerjaan Anda saat ini',
   'Select occupation': 'Pilih pekerjaan',
   'Student / university student': 'Pelajar / Mahasiswa',
-  'Employee': 'Pegawai',
+  'Employee': 'Karyawan',
   'Private-sector employee': 'Karyawan Swasta',
   'Entrepreneur': 'Wiraswasta',
   'Other occupation': 'Pekerjaan lainnya',

@@ -133,7 +133,9 @@ export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
       )}
     </header>
 
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+    {/* Branch-wide counts. Hidden on phones, where the status chips already
+        show the counts and the first order should be near the top. */}
+    <div className="hidden gap-2 sm:grid sm:grid-cols-4 sm:gap-3">
       <SummaryCard label="Active orders" value={orderCounts.active} tone="info" icon={Workflow} />
       <SummaryCard label="Completed" value={orderCounts.completed} tone="success" icon={CheckCircle2} />
       <SummaryCard label="Drafts" value={draftCount} tone="neutral" icon={FilePenLine} />

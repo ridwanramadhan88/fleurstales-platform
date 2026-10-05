@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string): string => readFileSync(path, 'utf8')
 
 describe('Orders mobile workflow UX', () => {
-  it('keeps the mobile overview compact without shrinking readable labels', () => {
+  it('keeps the overview readable, and off phones where the chips carry the counts', () => {
     const header = read('src/components/orders/OrdersTabHeader.tsx')
 
     expect(header).toContain('rounded-xl p-3')
     expect(header).toContain('sm:rounded-2xl sm:p-4')
     expect(header).toContain('text-xs font-semibold leading-4')
-    expect(header).toContain('grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3')
+    expect(header).toContain('hidden gap-2 sm:grid sm:grid-cols-4 sm:gap-3')
   })
 
   it('makes status filters touch-safe and keeps every status visible on phones', () => {

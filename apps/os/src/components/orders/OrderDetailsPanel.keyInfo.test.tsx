@@ -86,4 +86,17 @@ describe('schedule time from the database', () => {
     const { formatOrderScheduleLabel } = await import('./orderTableFormatters')
     expect(formatOrderScheduleLabel('pickup', '2020-01-01', '08:30:00')).toMatch(/· 08:30$/)
   })
+
+  it('says each fact once: order number, total and contact (UX audit)', () => {
+    const noEmail = { ...deliveryOrder, customerSnapshot: { name: 'Dita Anjani' } } as typeof deliveryOrder
+    useOrdersStore.setState({ orders: [noEmail] })
+    render(<OrderDetailsPanelController order={noEmail} onClose={vi.fn()} formatter={formatter} />)
+    // Order number only in the header.
+    expect(screen.getAllByText('KDM-2026-0101')).toHaveLength(1)
+    expect(screen.queryByText('Order number')).toBeNull()
+    // Total only once (the "Total" line), not also next to "Order summary".
+    expect(screen.getAllByText(`Rp ${formatter.format(190000)}`).length).toBeLessThanOrEqual(2)
+    // Nothing saved to contact: no "Customer contact" block of "Not set" cells.
+    expect(screen.queryByText('Customer contact')).toBeNull()
+  })
 })

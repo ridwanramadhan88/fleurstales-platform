@@ -91,7 +91,8 @@ export const PeopleTabs = ({
                 className: 'h-10 scroll-mx-1 gap-2 px-0.5 text-[13px] sm:text-sm',
               })}
             >
-              <Icon className="size-4 shrink-0" strokeWidth={1.9} />
+              {/* Icons only from sm up, so all four names fit on a phone. */}
+              <Icon className="hidden size-4 shrink-0 sm:block" strokeWidth={1.9} />
               <span>{meta.label}{badges?.[section] ? ` · ${badges[section]}` : ''}</span>
             </button>
           )
