@@ -115,7 +115,7 @@ export const TopBar: FC<TopBarViewModel> = ({
               type="button"
               onClick={onToggleBranchMenu}
               disabled={!canSwitchBranch}
-              className={`mt-0.5 flex min-h-11 max-w-[11rem] items-center gap-1 rounded-lg pr-2 text-left text-xs text-muted-foreground transition ${
+              className={`relative flex min-h-6 max-w-[11rem] items-center gap-1 rounded-lg pr-2 text-left text-xs text-muted-foreground transition after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-[''] ${
                 canSwitchBranch ? "hover:text-foreground" : "cursor-default"
               }`}
               aria-haspopup="listbox"

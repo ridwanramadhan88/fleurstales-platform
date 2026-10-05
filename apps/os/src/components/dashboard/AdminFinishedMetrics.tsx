@@ -38,7 +38,7 @@ export function AdminFinishedMetrics({
     <section aria-label="Today's finished orders" className="space-y-2.5">
       <div>
         <h2 className="text-base font-semibold">Today&apos;s finished orders</h2>
-        <p className="text-xs text-muted-foreground">Completed orders for the selected branch. Open either metric to review the Finished list.</p>
+        <p className="text-xs text-muted-foreground">Completed orders for the selected branch. Open either number to see the list.</p>
       </div>
       <OverviewStatGrid className="sm:grid-cols-2">
         <OverviewStatCard

@@ -61,6 +61,9 @@ export const BottomTabBar: FC<BottomTabBarViewModel> = ({
     )
   }
 
+  // One page only (florist): a bar with a single button does nothing.
+  if (visibleTabs.length + moreTabs.length <= 1) return null
+
   return (
     <nav
       aria-label="Primary navigation"

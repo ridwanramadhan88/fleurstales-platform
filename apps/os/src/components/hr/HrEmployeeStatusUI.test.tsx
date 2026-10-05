@@ -22,7 +22,7 @@ describe('employee details UI', () => {
     useHrStore.setState({ employees:[owner], attendance:[] })
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
     expect(screen.queryByRole('button', { name:'Details' })).not.toBeInTheDocument()
-    expect(screen.getByText('No employees match the selected filters.')).toBeInTheDocument()
+    expect(screen.getByText('No employees yet.')).toBeInTheDocument()
   })
   it('lets owner edit role and keeps position equal to role', async () => {
     useUserStore.setState({ employeeId:'owner-1', username:'owner', role:'owner', name:'Titi' })

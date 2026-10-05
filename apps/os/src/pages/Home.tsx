@@ -453,7 +453,7 @@ const HomePage: FC<HomePageProps> = ({
         : activeTab === 'finance' && financeModule === 'order_verification'
           ? {
               show: true,
-              placeholder: 'Search collect orders, customer, or ID...',
+              placeholder: 'Search order, customer, account, transaction code...',
             }
         : activeTab === 'hr'
           ? {

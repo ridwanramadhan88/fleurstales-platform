@@ -27,11 +27,11 @@ export const RevenueTrendCard: FC<{ activeBranch: BranchFilter; onOpenRevenue: (
   return (
     <section aria-label="Revenue last 7 days" className={`${surfaceCardClass('standard')} p-4`}>
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-sm font-semibold text-foreground">Confirmed revenue, last 7 days</h2>
           <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{`Rp ${idr.format(total)}`}</p>
         </div>
-        <button type="button" onClick={onOpenRevenue} className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-xs font-semibold text-primary hover:bg-primary/10">
+        <button type="button" onClick={onOpenRevenue} className="inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-xs font-semibold text-primary hover:bg-primary/10">
           Open revenue <ArrowRight className="size-3.5" />
         </button>
       </div>
