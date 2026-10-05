@@ -55,6 +55,11 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({
   const refunded = row.order.paymentStatus === 'refunded' || Boolean(row.order.refundCompletedAt)
   const reconciliation = reconciliationMeta(row.reconciliationStatus)
   const ReconciliationIcon = reconciliation.icon
+  // The decision (reconcile or send back) lives in the review sheet; the
+  // button says so while there is still something to decide.
+  const needsDecision = row.reconciliationStatus !== 'reconciled'
+  const orderTotalIdr = row.order.totalIdr ?? 0
+  const remainingIdr = Math.max(0, orderTotalIdr - row.paymentAmountIdr)
 
   return (
     <article className="rounded-xl bg-surface-card px-4 py-3.5 shadow-ios-sm ring-1 ring-border/60">
@@ -112,20 +117,25 @@ export const OrderVerificationQueueRow: FC<OrderVerificationQueueRowProps> = ({
           <p className="mt-1 text-base font-semibold text-foreground">
             {formatIdrCurrency(row.paymentAmountIdr)}
           </p>
-          <div className="mt-3 flex flex-wrap gap-2 sm:justify-end">
-            <button
-              type="button"
-              onClick={onOpenOrder}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-foreground transition hover:bg-muted"
-            >
-              Open order <ExternalLink className="size-3.5" />
-            </button>
+          {remainingIdr > 0 && (
+            <p className="mt-1 text-2xs font-medium text-warning">
+              {`Received ${formatIdrCurrency(row.paymentAmountIdr)} of ${formatIdrCurrency(orderTotalIdr)} · Remaining ${formatIdrCurrency(remainingIdr)}`}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center gap-2 sm:justify-end">
             <button
               type="button"
               onClick={onOpenLedger}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
+              className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
-              Ledger entry <ReceiptText className="size-3.5" />
+              <ReceiptText className="size-3.5" /> View in Transactions
+            </button>
+            <button
+              type="button"
+              onClick={onOpenOrder}
+              className={`inline-flex h-11 items-center gap-1.5 rounded-full px-4 text-xs font-semibold transition ${needsDecision ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border border-border text-foreground hover:bg-muted'}`}
+            >
+              {needsDecision ? 'Review payment' : 'View review'} <ExternalLink className="size-3.5" />
             </button>
           </div>
         </div>

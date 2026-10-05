@@ -35,8 +35,9 @@ describe('Finance v3.3 reconciliation polish', () => {
 
     expect(queue).toContain('it never posts the money a second time')
     expect(queue).toContain('FinanceTransactionDetailSheet')
-    expect(row).toContain('Open order')
-    expect(row).toContain('Ledger entry')
+    // The main button names the job (review the payment); the ledger is a quiet link.
+    expect(row).toContain('Review payment')
+    expect(row).toContain('View in Transactions')
     expect(row).toContain('Transaction code')
     expect(row).toContain('Reference')
     expect(filters).toContain('Accounting month')

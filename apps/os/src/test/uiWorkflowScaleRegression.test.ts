@@ -77,7 +77,7 @@ describe('mobile workflow UI scale regressions', () => {
     expect(peopleTabs).toContain('settingsTabButtonClass')
     expect(peopleTabs).toContain("level: 'primary'")
     expect(peopleTabs).toContain('PEOPLE_SECTION_META')
-    expect(peopleTabs).toContain('Icon className="size-4 shrink-0"')
+    expect(peopleTabs).toContain('Icon className="hidden size-4 shrink-0 sm:block"')
     expect(revenue).toContain('text-base font-semibold leading-6 text-foreground')
     expect(revenue).toContain('<ChipRow')
     expect(revenue).toContain('<FilterChip')
@@ -156,7 +156,7 @@ describe('mobile workflow UI scale regressions', () => {
     const scheduling = read('src/components/hr/HrSchedulingSection.tsx')
 
     expect(people).toContain('PEOPLE_SECTION_META')
-    expect(people).toContain('Icon className="size-4 shrink-0"')
+    expect(people).toContain('Icon className="hidden size-4 shrink-0 sm:block"')
     expect(people).toContain('flex size-10 shrink-0')
     expect(periods).toContain('max-w-[520px]')
     expect(points).toContain('aria-label="Point sections"')

@@ -43,7 +43,7 @@ export const OrderDetailsMetaSection: FC<OrderDetailsMetaSectionProps> = ({
 
   if (!isEditing) {
     const leftRows: Array<[string, string]> = [
-      ['Order number', order.orderNumber],
+      // The order number is already in the panel header.
       ['Source', SOURCE_LABELS[order.source]],
       ['Time made', formatOrderCreatedAtLabel(order.createdAtLabel)],
     ]

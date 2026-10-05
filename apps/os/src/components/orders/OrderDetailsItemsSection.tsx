@@ -109,10 +109,8 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
 
       <section className="space-y-5">
         <div className="flex items-center justify-between gap-3">
+          {/* The amount is shown once, as "Total" below the items. */}
           <p className="text-sm font-semibold leading-5 text-foreground">Order summary</p>
-          {!isEditing && (
-            <p className="text-sm font-semibold leading-5 text-foreground">Rp {formatter.format(order.totalIdr)}</p>
-          )}
         </div>
 
         <div className="divide-y divide-border/60">
@@ -237,7 +235,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
           <div className="flex min-w-0 items-center justify-between gap-3 sm:border-l sm:border-border/50 sm:pl-6">
             <div className="min-w-0 text-left">
               <p className="text-2xs font-medium text-muted-foreground/80">Assigned florist</p>
-              <p className={`mt-0.5 truncate text-sm font-medium ${order.florist ? 'text-foreground' : 'text-muted-foreground'}`}>
+              <p className={`mt-0.5 break-words text-sm font-medium ${order.florist ? 'text-foreground' : 'text-muted-foreground'}`}>
                 {order.florist ?? 'No florist assigned yet'}
               </p>
             </div>
