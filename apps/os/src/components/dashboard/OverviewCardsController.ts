@@ -19,7 +19,7 @@ export interface OverviewCardsViewModel {
   ordersTone: 'success' | 'danger'
   revenueToday: string
   revenueHelper: string
-  revenueTone: 'success' | 'danger'
+  revenueTone: 'success' | 'danger' | 'default'
   atRiskCount: string
   atRiskHelper: string
   atRiskTone: 'success' | 'danger'
@@ -54,10 +54,11 @@ export const useOverviewCardsController = (): OverviewCardsViewModel => {
       revenueGrowthPercent === null
         ? 'No data for yesterday'
         : formatSignedPercent(revenueGrowthPercent),
+    // No comparison is not good news: keep it neutral grey.
     revenueTone:
-      revenueGrowthPercent === null || revenueGrowthPercent >= 0
-        ? 'success'
-        : 'danger',
+      revenueGrowthPercent === null
+        ? 'default'
+        : revenueGrowthPercent >= 0 ? 'success' : 'danger',
     atRiskCount: String(atRiskCount),
     atRiskHelper: atRiskCount > 0 ? 'Needs attention' : 'All on track',
     atRiskTone: atRiskCount > 0 ? 'danger' : 'success',

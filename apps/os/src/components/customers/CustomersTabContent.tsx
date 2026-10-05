@@ -37,7 +37,6 @@ type CustomerWorkspaceTab = 'customers' | 'reviews'
 
 export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
   searchQuery,
-  onSearchQueryChange,
   segmentFilter,
   sortOption,
   displayed,
@@ -146,8 +145,8 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
             onSegmentFilterChange={onSegmentFilterChange}
             sortOption={sortOption}
             onSortOptionChange={onSortOptionChange}
+            // Search lives in the top bar only (same query), not a second box here.
             searchQuery={searchQuery}
-            onSearchQueryChange={onSearchQueryChange}
           />
 
           <section aria-label="Customer list" className="space-y-3">

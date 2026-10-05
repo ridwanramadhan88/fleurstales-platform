@@ -36,7 +36,6 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
   actorName,
   userRole,
   searchQuery,
-  onSearchQueryChange,
   showHeading,
   reviewingOrder,
   ledgerTransaction,
@@ -114,8 +113,8 @@ export const OrderVerificationQueue: FC<OrderVerificationQueueViewModel> = ({
           statusFilter={statusFilter}
           onStatusFilterChange={onStatusFilterChange}
           statusCounts={statusCounts}
+          // Search lives in the top bar only (same query), not a second box here.
           searchQuery={searchQuery}
-          onSearchQueryChange={onSearchQueryChange}
         />
 
         {queueRows.length === 0 ? (

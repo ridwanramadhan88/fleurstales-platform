@@ -12,7 +12,7 @@ import {
   Boxes,
   Users2,
   Receipt,
-  Clock3,
+  UserRoundCog,
   BarChart3,
   Store,
   ChevronDown,
@@ -64,7 +64,7 @@ const getSidebarDestinationItem = (destination: NavigationDestinationId) => {
     stock: <Boxes className="size-4" aria-hidden="true" />,
     finance: <Receipt className="size-4" aria-hidden="true" />,
     revenue: <BarChart3 className="size-4" aria-hidden="true" />,
-    hr: <Clock3 className="size-4" aria-hidden="true" />,
+    hr: <UserRoundCog className="size-4" aria-hidden="true" />,
     settings: <Settings className="size-4" aria-hidden="true" />,
   }
 
@@ -200,9 +200,12 @@ export const DesktopSidebar: FC<DesktopSidebarViewModel> = ({
       >
         {getNavigationGroupsForDestinations(visibleDestinationIds).map((group) => (
           <section key={group.id}>
-            <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">
-              {group.label}
-            </p>
+            {/* A heading over a single item only repeats it. */}
+            {group.destinations.length > 1 && (
+              <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/65">
+                {group.label}
+              </p>
+            )}
             <div className="space-y-0.5">
               {group.destinations.map((destination) => {
                 const item = getSidebarDestinationItem(destination)

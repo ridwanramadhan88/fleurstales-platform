@@ -88,7 +88,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       <section aria-label="Employees" className="space-y-3 pb-4">
         <header><h3 className="text-sm font-semibold leading-5 text-foreground">{signedInRole === 'owner' ? 'Staff account management' : 'Employee directory'}</h3></header>
 
-        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">No employees match the selected filters.</p> : employeeRows.map(({ employee, readiness }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); const performance = getEmployeeOrderPerformance(employee.id, orders); return <PeopleListCard key={employee.id} density="dense">
+        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">{employeeSearch.trim() || employeeRoleFilter !== 'all' || statusFilter !== 'all' ? 'No employees match the selected filters.' : 'No employees yet.'}</p> : employeeRows.map(({ employee, readiness }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); const performance = getEmployeeOrderPerformance(employee.id, orders); return <PeopleListCard key={employee.id} density="dense">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{employee.name}</p><p className="mt-0.5 text-xs font-medium text-muted-foreground">{roleLabel(employee.systemRole)}</p></div>
             <div className="flex shrink-0 flex-wrap justify-end gap-1.5">

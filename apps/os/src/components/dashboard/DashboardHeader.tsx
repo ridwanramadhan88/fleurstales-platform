@@ -49,7 +49,9 @@ export const DashboardHeader: FC<DashboardHeaderProps> = ({
     <header>
       <div className="min-w-0">
         <p className="text-xs font-medium text-muted-foreground">
-          {greeting} · {activeBranch} · {formattedDate}
+          {greeting} · {activeBranch}
+          {/* Desktop already shows the date in the top bar. */}
+          <span className="md:hidden"> · {formattedDate}</span>
         </p>
         <h1 className="mt-1 font-display text-2xl font-semibold leading-tight text-foreground">
           {copy.title}
