@@ -67,8 +67,8 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
     return next
   }
 
+  // No "Today" shortcut: "Today" is already the first tab.
   const presetOptions: { label: string; range: DateRange }[] = [
-    { label: 'Today', range: { from: today, to: today } },
     { label: 'Tomorrow', range: { from: addDays(today, 1), to: addDays(today, 1) } },
     { label: 'Yesterday', range: { from: addDays(today, -1), to: addDays(today, -1) } },
     { label: 'Next week', range: { from: addDays(today, 1), to: addDays(today, 7) } },

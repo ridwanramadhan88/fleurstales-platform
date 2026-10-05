@@ -117,7 +117,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 font-medium transition cursor-pointer ${
                 values.orderType === 'admin_created'
                   ? 'bg-primary text-primary-foreground shadow-ios-sm'
-                  : 'text-muted-foreground hover:text-foreground/90'
+                  : 'text-foreground hover:bg-card'
               }`}
             >
               WhatsApp
@@ -129,7 +129,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 font-medium transition cursor-pointer ${
                 values.orderType === 'walk_in'
                   ? 'bg-primary text-primary-foreground shadow-ios-sm'
-                  : 'text-muted-foreground hover:text-foreground/90'
+                  : 'text-foreground hover:bg-card'
               }`}
             >
               Walk-in
@@ -165,7 +165,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 font-medium transition cursor-pointer ${
                 values.fulfillmentType === 'pickup'
                   ? 'bg-primary text-primary-foreground shadow-ios-sm'
-                  : 'text-muted-foreground hover:text-foreground/90'
+                  : 'text-foreground hover:bg-card'
               }`}
             >
               Pickup
@@ -177,7 +177,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full px-4 font-medium transition cursor-pointer ${
                 values.fulfillmentType === 'delivery'
                   ? 'bg-primary text-primary-foreground shadow-ios-sm'
-                  : 'text-muted-foreground hover:text-foreground/90'
+                  : 'text-foreground hover:bg-card'
               }`}
             >
               Delivery

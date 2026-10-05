@@ -112,12 +112,13 @@ describe('HR Scheduling UI', () => {
     expect(screen.getByRole('heading', { name:'Schedule' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name:'Publish' })).not.toBeInTheDocument()
   })
-  it('keeps mobile summaries in one horizontal row and secondary actions inside More', () => {
+  it('shows mobile summaries in a two-column grid (no sideways scroll) and secondary actions inside More', () => {
     useUserStore.setState({ employeeId:'emp-star', username:'hr', role:'hr', name:'Star' })
     const { container } = render(<HrTabContentContainer activeBranch="All" />)
     openScheduling()
     const staffCard = screen.getByText('Staff').closest('article')
-    expect(staffCard).toHaveClass('w-[112px]', 'min-w-[112px]', 'snap-start')
+    expect(staffCard).not.toHaveClass('snap-start')
+    expect(staffCard?.parentElement).toHaveClass('grid', 'grid-cols-2')
     expect(screen.queryByRole('button', { name:'Export PDF' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name:'More scheduling actions' }))
     expect(screen.getByRole('button', { name:'Export PDF' })).toBeInTheDocument()

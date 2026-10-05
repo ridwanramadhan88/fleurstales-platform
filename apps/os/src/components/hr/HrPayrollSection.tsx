@@ -184,8 +184,13 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const readyToSubmit = blockers.length === 0 && !locked
 
   // Only what still needs doing is listed; passed checks fold into the count.
-  const openReadinessItems = readinessItems.filter((item) => !item.complete)
-  const passedCount = readinessItems.length - openReadinessItems.length
+  // Before payroll is generated, "coverage" and "calculations" only mean
+  // "not generated yet", so they are not shown as problems.
+  const notGeneratedYet = activeDrafts.length === 0
+  const generationChecks = new Set(['Employee coverage', 'Calculations valid'])
+  const openReadinessItems = readinessItems.filter((item) => !item.complete && !(notGeneratedYet && generationChecks.has(item.label)))
+  const passedCount = readinessItems.length - readinessItems.filter((item) => !item.complete).length
+  const realBlockers = openReadinessItems.filter((item) => item.severity === 'blocker')
 
   const handleGenerate = () => {
     if (!period) return
@@ -371,13 +376,14 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
           <PeopleSummaryCard className="min-h-[84px]" label="Proposal total" value={formatIdr(total)} valueClassName="truncate text-lg font-semibold leading-none text-foreground" />
         </PeopleSummaryGrid>
 
-        <div className={`rounded-xl border p-3.5 ${blockers.length ? 'border-destructive/25 bg-destructive/5' : warnings.length ? 'border-warning/25 bg-warning/5' : 'border-success/20 bg-success/5'}`}>
+        <div className={`rounded-xl border p-3.5 ${realBlockers.length ? 'border-destructive/25 bg-destructive/5' : notGeneratedYet ? 'border-border/70 bg-muted/30' : warnings.length ? 'border-warning/25 bg-warning/5' : 'border-success/20 bg-success/5'}`}>
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-sm font-semibold">Payroll readiness</h3>
-            <p className="text-xs font-medium text-muted-foreground">{`${passedCount} of ${readinessItems.length} ready`}</p>
+            {!notGeneratedYet && <p className="text-xs font-medium text-muted-foreground">{`${passedCount} of ${readinessItems.length} ready`}</p>}
           </div>
+          {notGeneratedYet && <p className="mt-1 text-xs text-muted-foreground">Start with Generate staff payroll.</p>}
           {openReadinessItems.length === 0 ? (
-            <p className="mt-1 text-xs text-muted-foreground">Ready to send to Finance</p>
+            !notGeneratedYet && <p className="mt-1 text-xs text-muted-foreground">Ready to send to Finance</p>
           ) : (
             <div className="mt-2 grid gap-1 sm:grid-cols-2">
               {openReadinessItems.map((item) => <ReadinessRow key={item.label} item={item} />)}

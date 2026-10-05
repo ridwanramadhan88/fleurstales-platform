@@ -153,8 +153,18 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
           <section aria-label="Customer list" className="space-y-3">
             {displayed.length === 0 ? (
               <div className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-card px-6 py-8 text-center shadow-ios-sm ring-1 ring-border/60">
-                <p className="text-sm font-semibold leading-5 text-foreground">No customers found</p>
-                <p className="text-xs text-muted-foreground">Try adjusting the search or segment filters.</p>
+                {/* Only suggest changing the search when a search or filter is on. */}
+                {searchQuery.trim() || segmentFilter !== 'all' ? (
+                  <>
+                    <p className="text-sm font-semibold leading-5 text-foreground">No matching customers</p>
+                    <p className="text-xs text-muted-foreground">Try another name or segment.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold leading-5 text-foreground">No customers yet</p>
+                    <p className="text-xs text-muted-foreground">Customers are saved automatically from orders.</p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="space-y-3">

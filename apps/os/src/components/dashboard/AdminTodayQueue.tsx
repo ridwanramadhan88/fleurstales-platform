@@ -18,11 +18,12 @@ const toDateValue = (order: OrderTableRow) => {
   return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
 }
 
+// A badge only when it adds something: the schedule line below already says
+// "Today · 14:00", so on-time orders need no "Due today" badge.
 const getPriorityLabel = (order: OrderTableRow, today: string) => {
   if (!order.scheduleDate) return { label: 'No schedule', tone: 'bg-muted text-muted-foreground' }
   if (order.scheduleDate < today) return { label: 'Late', tone: 'bg-destructive/10 text-destructive' }
-  if (order.scheduleDate === today) return { label: 'Due today', tone: 'bg-warning/10 text-warning' }
-  return { label: 'Upcoming', tone: 'bg-info/10 text-info' }
+  return null
 }
 
 export function AdminTodayQueue({
@@ -95,13 +96,15 @@ export function AdminTodayQueue({
                   <div className="flex flex-wrap items-center gap-2">
                     {index === 0 && (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                        <AlertTriangle className="size-3.5" /> Next
+                        <AlertTriangle className="size-3.5" /> Do this first
                       </span>
                     )}
                     <span className="text-sm font-semibold leading-5">{order.orderNumber}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${priority.tone}`}>
-                      {priority.label}
-                    </span>
+                    {priority && (
+                      <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${priority.tone}`}>
+                        {priority.label}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 truncate text-sm">{order.customerName} · {order.productName ?? order.items?.[0]?.productName ?? 'Custom order'}</p>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
@@ -111,17 +114,11 @@ export function AdminTodayQueue({
                 </div>
 
                 <div className="space-y-2">
-                  {order.floristAssignedEmployeeId ? (
-                    <div className="flex min-h-9 items-center gap-2 rounded-lg bg-muted px-3 text-xs">
-                      <UserRound className="size-3.5 text-muted-foreground" />
-                      <span className="truncate font-medium">{order.florist ?? 'Assigned florist'}</span>
-                    </div>
-                  ) : (
-                    <div className="flex min-h-9 items-center gap-2 rounded-lg bg-muted px-3 text-xs text-muted-foreground">
-                      <UserRound className="size-3.5" />
-                      <span className="truncate font-medium">Not assigned</span>
-                    </div>
-                  )}
+                  {/* Plain text, so it does not look like a disabled button. */}
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <UserRound className="size-3.5 shrink-0" />
+                    <span className="truncate">{order.floristAssignedEmployeeId ? `Florist: ${order.florist ?? 'assigned'}` : 'Florist: not assigned yet'}</span>
+                  </p>
                   <button
                     type="button"
                     onClick={() => onOpenOrder(order.orderNumber)}

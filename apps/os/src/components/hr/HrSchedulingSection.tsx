@@ -263,12 +263,13 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
     />
 
     <div className="flex flex-col gap-5 md:gap-4">
-      <div className="order-1 no-scrollbar -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 lg:grid-cols-5 md:order-2">
-        <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Staff" value={staff.length} />
-        <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="OFF" value={totalOff} />
-        <PeopleSummaryCard className="w-[112px] min-w-[112px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Unassigned" value={totalUnassigned} tone={totalUnassigned ? 'warning' : 'default'} />
-        <PeopleSummaryCard className="w-[148px] min-w-[148px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Coverage" value={coverageWarnings.length} tone={coverageWarnings.length ? 'warning' : 'default'} />
-        <PeopleSummaryCard className="w-[140px] min-w-[140px] snap-start sm:w-auto sm:min-w-0 md:min-h-[76px]" label="Rest issues" value={invalidRest.length} tone={invalidRest.length ? 'warning' : 'default'} />
+      {/* Two columns on phones, so no card hides past the screen edge. */}
+      <div className="order-1 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5 md:order-2">
+        <PeopleSummaryCard className="md:min-h-[76px]" label="Staff" value={staff.length} />
+        <PeopleSummaryCard className="md:min-h-[76px]" label="OFF" value={totalOff} />
+        <PeopleSummaryCard className="md:min-h-[76px]" label="Unassigned" value={totalUnassigned} tone={totalUnassigned ? 'warning' : 'default'} />
+        <PeopleSummaryCard className="md:min-h-[76px]" label="Days short of staff" value={coverageWarnings.length} tone={coverageWarnings.length ? 'warning' : 'default'} />
+        <PeopleSummaryCard className="md:min-h-[76px]" label="Too little rest" value={invalidRest.length} tone={invalidRest.length ? 'warning' : 'default'} />
       </div>
 
       <div className="order-2 space-y-2 md:order-3">
