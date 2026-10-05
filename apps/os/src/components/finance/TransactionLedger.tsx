@@ -26,6 +26,8 @@ import {
 type SourceTab = 'all' | 'orders' | 'payroll' | 'refunds' | 'manual' | 'cashflow'
 type PeriodFilter = 'all' | 'today' | '30d'
 
+const METHOD_LABELS: Record<string, string> = { cash: 'Cash', transfer: 'Bank transfer', card: 'Card', other: 'Other' }
+
 export interface TransactionLedgerProps {
   transactions: FinanceTransaction[]
   canEditManual: boolean
@@ -125,8 +127,8 @@ const TransactionRow: FC<{
               <p className="mt-0.5 break-all font-mono font-semibold text-foreground">{transaction.transactionCode?.trim() || '-'}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Type / Source</p>
-              <p className="mt-0.5 font-medium text-foreground">{directionLabel(transaction)} · {sourceLabel(transaction)}</p>
+              <p className="text-muted-foreground">Type</p>
+              <p className="mt-0.5 font-medium text-foreground">{`${directionLabel(transaction)} · ${sourceLabel(transaction)}`}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Account</p>
@@ -137,12 +139,12 @@ const TransactionRow: FC<{
               <p className="mt-0.5 font-medium text-foreground">{getFinanceCategoryLabel(transaction.category, customCategories, categoryOverrides)}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Scope</p>
+              <p className="text-muted-foreground">Branch</p>
               <p className="mt-0.5 font-medium text-foreground">{scope === 'company' ? 'Company-wide' : transaction.branch}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Method</p>
-              <p className="mt-0.5 font-medium capitalize text-foreground">{transaction.method}</p>
+              <p className="text-muted-foreground">Payment method</p>
+              <p className="mt-0.5 font-medium text-foreground">{METHOD_LABELS[transaction.method] ?? transaction.method}</p>
             </div>
             <div className="sm:col-span-2">
               <p className="text-muted-foreground">Transaction date</p>
@@ -322,7 +324,7 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
             {(['all','income','expense'] as const).map((value) => <button key={value} type="button" onClick={() => { setDirection(value); setCategory('all') }} className={`h-9 rounded-full px-3.5 text-sm ${direction === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>{value === 'all' ? 'All' : value === 'income' ? 'In' : 'Out'}</button>)}
           </div>
           <div className="inline-flex rounded-full bg-surface-track p-1 ring-1 ring-border/60">
-            {([['all','All'],['today','Today'],['30d','30D']] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setPeriod(value)} className={`h-9 rounded-full px-3.5 text-sm ${period === value ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>{label}</button>)}
+            {([['all','All'],['today','Today'],['30d','Last 30 days']] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setPeriod(value)} className={`h-9 rounded-full px-3.5 text-sm ${period === value ? 'bg-card shadow-sm' : 'text-muted-foreground'}`}>{label}</button>)}
           </div>
         </div>
 

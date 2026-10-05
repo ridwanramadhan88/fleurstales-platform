@@ -28,13 +28,15 @@ describe('HR payroll as one flow (UX plan PR 6)', () => {
     expect(screen.getByRole('menuitem', { name: 'Add manual payee' })).toBeInTheDocument()
   })
 
-  it('lists only the checks that still need doing', () => {
+  it('before payroll exists, readiness is a calm next step, not a red error list', () => {
     useUserStore.getState().setRole('hr')
     render(<HrPayrollSection />)
-    const summary = screen.getByText(/^\d+ of 6 ready$/)
-    const readiness = summary.closest('div')!.parentElement!
-    // Nothing generated yet: coverage and calculations are open; passed checks are not listed.
-    expect(within(readiness).getByText('Employee coverage')).toBeInTheDocument()
-    expect(within(readiness).queryByText('No staff joined or left during this payroll period.')).not.toBeInTheDocument()
+    const heading = screen.getByText('Payroll readiness')
+    const readiness = heading.closest('div')!.parentElement!
+    expect(within(readiness).getByText('Start with Generate staff payroll.')).toBeInTheDocument()
+    // "Not generated yet" is not reported as a coverage or calculation problem.
+    expect(within(readiness).queryByText('Employee coverage')).not.toBeInTheDocument()
+    expect(within(readiness).queryByText('Calculations valid')).not.toBeInTheDocument()
+    expect(readiness.className).not.toContain('destructive')
   })
 })

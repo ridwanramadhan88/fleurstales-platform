@@ -127,7 +127,8 @@ export const useCustomersTabContentController = ({
     displayed,
     overview,
     formatter: new Intl.NumberFormat('id-ID'),
-    avgOrdersPerCustomerLabel: overview.avgOrdersPerCustomer.toFixed(1),
+    // Indonesian decimals use a comma ("1,5").
+    avgOrdersPerCustomerLabel: overview.avgOrdersPerCustomer.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
     selectedEnriched,
     selectedCustomerOrders,
     voucherDialogOpen,

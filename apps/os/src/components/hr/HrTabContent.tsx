@@ -118,6 +118,8 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       <section aria-label="Employee attendance" className="space-y-3">
         <header className="flex items-center gap-1.5"><h3 className="text-sm font-semibold leading-5 text-foreground">Employee attendance</h3><InfoHint label="About employee attendance">Create today&apos;s record or review previous entries.</InfoHint></header>
         {attendanceActionError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{attendanceActionError}</p>}
+        {/* Never a heading with nothing under it. */}
+        {!employeeRows.some(({ readiness }) => readiness.state === 'active') && <p className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">No active employees yet. Add them in the Employees tab.</p>}
         <div className="grid gap-3 lg:grid-cols-2">{employeeRows.filter(({ readiness }) => readiness.state === 'active').map(({ employee, todayRecord }) => {
           const reviewCases = attendanceReviewCases.filter((item) => item.employeeId === employee.id && item.date === (todayRecord?.date ?? vm.today) && ['pending', 'problem'].includes(item.status))
           const needsReview = reviewCases.length > 0
