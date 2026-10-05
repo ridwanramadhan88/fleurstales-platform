@@ -1,49 +1,43 @@
-import React from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { FinanceQueueRow } from './OrderVerificationQueueController'
 import { OrderVerificationQueueRow } from './OrderVerificationQueueRow'
+import { makeOrder } from '../../test/factories/order'
+import type { FinanceQueueRow } from './OrderVerificationQueueController'
 
-const buildRow = (): FinanceQueueRow => ({
-  order: {
-    orderNumber: 'FT-TEST-001',
-    customerName: 'Test Customer',
-    branch: 'Pahoman',
-    paymentStatus: 'paid',
-    status: 'processing',
-  } as FinanceQueueRow['order'],
+const row = (overrides: Partial<FinanceQueueRow> = {}): FinanceQueueRow => ({
+  order: makeOrder({ orderNumber: 'KDM-1', customerName: 'Maya', totalIdr: 525_000, paymentStatus: 'partial' } as never),
   status: 'in_progress',
   reconciliationStatus: 'awaiting_review',
-  paymentAmountIdr: 450_000,
+  paymentAmountIdr: 250_000,
   paymentMethod: 'transfer',
-  accountId: 'legacy:unassigned',
-  paymentConfirmedAt: '2026-09-05T08:00:00.000Z',
-  transactionId: 'txn-test-order-payment',
+  accountId: 'cash:main',
+  paymentConfirmedAt: '2026-10-03T10:00:00Z',
+  transactionId: 'tx-1',
   transactionStatus: 'verified',
-  transactionCode: 'FIN-TEST-001',
-  reference: 'BANK-REF-001',
-})
+  ...overrides,
+} as FinanceQueueRow)
 
-describe('OrderVerificationQueueRow', () => {
-  it('links the reconciliation row to its order and exact ledger entry', () => {
+describe('reconciliation card (UX audit)', () => {
+  it('the main button opens the payment review; the ledger is a quiet link', () => {
     const onOpenOrder = vi.fn()
     const onOpenLedger = vi.fn()
-    render(
-      <OrderVerificationQueueRow
-        row={buildRow()}
-        onOpenOrder={onOpenOrder}
-        onOpenLedger={onOpenLedger}
-      />,
-    )
+    render(<OrderVerificationQueueRow row={row()} onOpenOrder={onOpenOrder} onOpenLedger={onOpenLedger} />)
+    const review = screen.getByRole('button', { name: /Review payment/ })
+    expect(review.className).toContain('bg-primary')
+    fireEvent.click(review)
+    expect(onOpenOrder).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /View in Transactions/ }))
+    expect(onOpenLedger).toHaveBeenCalled()
+  })
 
-    expect(screen.getByText('Awaiting review')).toBeInTheDocument()
-    expect(screen.getByText('FIN-TEST-001')).toBeInTheDocument()
-    expect(screen.getByText('BANK-REF-001')).toBeInTheDocument()
+  it('a part-paid order says how much is still open', () => {
+    render(<OrderVerificationQueueRow row={row()} onOpenOrder={vi.fn()} onOpenLedger={vi.fn()} />)
+    expect(screen.getByText('Received Rp 250.000 of Rp 525.000 · Remaining Rp 275.000')).toBeInTheDocument()
+  })
 
-    fireEvent.click(screen.getByRole('button', { name: /open order/i }))
-    fireEvent.click(screen.getByRole('button', { name: /ledger entry/i }))
-
-    expect(onOpenOrder).toHaveBeenCalledTimes(1)
-    expect(onOpenLedger).toHaveBeenCalledTimes(1)
+  it('a reconciled payment offers to view, not review', () => {
+    render(<OrderVerificationQueueRow row={row({ reconciliationStatus: 'reconciled', paymentAmountIdr: 525_000 })} onOpenOrder={vi.fn()} onOpenLedger={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /View review/ }).className).not.toContain('bg-primary')
+    expect(screen.queryByText(/Remaining/)).not.toBeInTheDocument()
   })
 })

@@ -422,6 +422,10 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Pick a date': 'Pilih tanggal',
   'Staff shortage this week': 'Kekurangan staf minggu ini',
   'Staff shortage': 'Kekurangan staf',
+  // UX audit: reconciliation card.
+  'Review payment': 'Tinjau pembayaran',
+  'View review': 'Lihat tinjauan',
+  'View in Transactions': 'Lihat di Transaksi',
   // Pre-release sweep: calendar and tooltip labels.
   'Go to previous month': 'Bulan sebelumnya',
   'Go to next month': 'Bulan berikutnya',
@@ -739,6 +743,7 @@ export const ID_STRICT_PATTERN_TRANSLATIONS: Array<
   [/^(.+) · (\d+) staff · (\d+) added by hand$/, (_full, period, staff, manual) => `${period} · ${staff} staf · ${manual} ditambah manual`],
   [/^Every day · (\d{1,2}[:.]\d{2})–(\d{1,2}[:.]\d{2})$/, (_full, opens, closes) => `Setiap hari · ${opens}–${closes}`],
   [/^(.+) · (\d+) staff · (\d+) manual$/, (_full, period, staff, manual) => `${period} · ${staff} staf · ${manual} manual`],
+  [/^Received (Rp\s?[\d.,]+) of (Rp\s?[\d.,]+) · Remaining (Rp\s?[\d.,]+)$/, (_full, received, total, remaining) => `Diterima ${received} dari ${total} · Sisa ${remaining}`],
   [/^Every day this week · (.+): Admin (\d+)\/(\d+) · Florist (\d+)\/(\d+)$/, (_full, branch, a, ar, f, fr) => `Setiap hari minggu ini · ${branch}: Admin ${a}/${ar} · Perangkai ${f}/${fr}`],
   [/^Admin (\d+)\/(\d+) · Florist (\d+)\/(\d+)$/, (_full, a, ar, f, fr) => `Admin ${a}/${ar} · Perangkai ${f}/${fr}`],
   [/^(.+): Admin (\d+)\/(\d+), Florist (\d+)\/(\d+)$/, (_full, where, a, ar, f, fr) => `${where}: Admin ${a}/${ar}, Perangkai ${f}/${fr}`],
