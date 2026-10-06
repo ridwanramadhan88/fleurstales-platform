@@ -9,17 +9,24 @@ const { entrypoints, storage } = require("uxp");
 const lfs = storage.localFileSystem;
 
 let fs = null;
+let os = null;
 try { fs = require("fs"); } catch (_) { /* older UXP: fall back to storage API */ }
+try { os = require("os"); } catch (_) {}
 
 const STORE_PRESET = "ate.presetPath";
 const STORE_FOLDER = "ate.outputFolder";
 const STORE_TEMPLATE = "ate.nameTemplate";
 const DEFAULT_TEMPLATE = "Track {n}_{sequence}";
+const WATCH_INTERVAL_MS = 1500;
 
 const $ = (id) => document.getElementById(id);
 let running = false;
 let stopRequested = false;
+let refreshing = false;
 let trackRows = []; // { index, name, clipCount, muted, checkbox }
+let currentSignature = "";
+let currentSeqKey = "";
+let presetPath = null;
 
 // ---------- helpers ----------
 
@@ -42,9 +49,18 @@ function sanitize(name) {
   return String(name).replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/[. ]+$/, "").trim() || "Sequence";
 }
 
+function sepOf(p) {
+  return p.includes("\\") && !p.includes("/") ? "\\" : "/";
+}
+
 function joinPath(folder, file) {
-  const sep = folder.includes("\\") && !folder.includes("/") ? "\\" : "/";
+  const sep = sepOf(folder);
   return folder.endsWith(sep) ? folder + file : folder + sep + file;
+}
+
+function dirname(p) {
+  const i = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
+  return i > 0 ? p.slice(0, i) : p;
 }
 
 function buildFileName(template, trackNumber, sequenceName) {
@@ -54,22 +70,67 @@ function buildFileName(template, trackNumber, sequenceName) {
   return sanitize(base) + ".wav";
 }
 
-async function getFileSize(path) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---------- file system (fs module first, storage API fallback) ----------
+
+async function stat(path) {
   if (fs) {
     for (const p of [path, "file:" + path]) {
       try {
         const st = await fs.lstat(p);
-        return st.size;
+        return { size: st.size, isDir: st.isDirectory() };
       } catch (_) {}
     }
   }
   try {
     const entry = await lfs.getEntryWithUrl("file:" + path);
+    if (entry.isFolder) return { size: 0, isDir: true };
     const meta = await entry.getMetadata();
-    return meta.size;
+    return { size: meta.size, isDir: false };
   } catch (_) {
-    return -1; // does not exist / not accessible
+    return null;
   }
+}
+
+async function getFileSize(path) {
+  const st = await stat(path);
+  return st && !st.isDir ? st.size : -1;
+}
+
+async function listDir(path) {
+  if (fs) {
+    for (const p of [path, "file:" + path]) {
+      try {
+        const names = await fs.readdir(p);
+        const out = [];
+        for (const name of names) {
+          const full = joinPath(path, name);
+          const st = await stat(full);
+          if (st) out.push({ name, path: full, isDir: st.isDir });
+        }
+        return out;
+      } catch (_) {}
+    }
+  }
+  try {
+    const folder = await lfs.getEntryWithUrl("file:" + path);
+    const entries = await folder.getEntries();
+    return entries.map((e) => ({ name: e.name, path: e.nativePath, isDir: e.isFolder }));
+  } catch (_) {
+    return [];
+  }
+}
+
+async function ensureFolder(path) {
+  const st = await stat(path);
+  if (st && st.isDir) return true;
+  if (fs) {
+    for (const p of [path, "file:" + path]) {
+      try { await fs.mkdir(p, { recursive: true }); return true; } catch (_) {}
+    }
+  }
+  return false;
 }
 
 async function uniquePath(folder, fileName) {
@@ -80,8 +141,6 @@ async function uniquePath(folder, fileName) {
   }
   return candidate;
 }
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Resolves when the render finished. Uses EncoderManager render events when
@@ -132,21 +191,73 @@ function createRenderWaiter(encoder, outputPath) {
   };
 }
 
-// ---------- sequence / tracks ----------
+// ---------- sequence / tracks (auto-follows the open timeline) ----------
+
+async function getActiveProject() {
+  return ppro.Project.getActiveProject();
+}
 
 async function getActiveSequence() {
-  const project = await ppro.Project.getActiveProject();
+  const project = await getActiveProject();
   if (!project) throw new Error("No project is open.");
   const sequence = await project.getActiveSequence();
   if (!sequence) throw new Error("No active sequence. Open a sequence in the Timeline.");
   return sequence;
 }
 
-async function refresh() {
-  try {
-    const sequence = await getActiveSequence();
-    $("seqName").textContent = sequence.name;
+function seqKey(sequence) {
+  try { return sequence.guid.toString(); } catch (_) { return sequence.name; }
+}
 
+async function readTracks(sequence) {
+  const count = await sequence.getAudioTrackCount();
+  const tracks = [];
+  for (let i = 0; i < count; i++) {
+    const track = await sequence.getAudioTrack(i);
+    const items = await track.getTrackItems(ppro.Constants.TrackItemType.CLIP, false);
+    tracks.push({
+      index: i,
+      name: track.name,
+      clipCount: items ? items.length : 0,
+      muted: await track.isMuted(),
+    });
+  }
+  return tracks;
+}
+
+function showNoSequence(message) {
+  currentSeqKey = "";
+  currentSignature = "";
+  trackRows = [];
+  $("seqName").textContent = "No active sequence";
+  $("seqInfo").textContent = "";
+  $("trackList").innerHTML = `<span class="meta">${message}</span>`;
+}
+
+/** Re-reads the active timeline; rebuilds the track list only if something changed. */
+async function refresh(force) {
+  if (running || refreshing) return;
+  refreshing = true;
+  try {
+    let sequence;
+    try {
+      sequence = await getActiveSequence();
+    } catch (e) {
+      if (currentSeqKey || force || !$("trackList").textContent) showNoSequence(e.message);
+      return;
+    }
+
+    const key = seqKey(sequence);
+    const tracks = await readTracks(sequence);
+    const signature = key + "|" + sequence.name + "|" + tracks.map((t) => `${t.clipCount}:${t.muted ? 1 : 0}:${t.name}`).join(",");
+    if (!force && signature === currentSignature) return;
+
+    const sameSequence = key === currentSeqKey;
+    const previousChecks = new Map(trackRows.map((r) => [r.index, r.checkbox.checked]));
+    currentSeqKey = key;
+    currentSignature = signature;
+
+    $("seqName").textContent = sequence.name;
     try {
       const settings = await sequence.getSettings();
       const rate = await settings.getAudioSampleRate();
@@ -156,69 +267,220 @@ async function refresh() {
       $("seqInfo").textContent = "";
     }
 
-    const count = await sequence.getAudioTrackCount();
-    trackRows = [];
     const list = $("trackList");
     list.innerHTML = "";
-    if (!count) {
+    trackRows = [];
+    if (!tracks.length) {
       list.innerHTML = '<span class="meta">This sequence has no audio tracks.</span>';
-      return;
     }
-    for (let i = 0; i < count; i++) {
-      const track = await sequence.getAudioTrack(i);
-      const items = await track.getTrackItems(ppro.Constants.TrackItemType.CLIP, false);
-      const clipCount = items ? items.length : 0;
-      const muted = await track.isMuted();
-
+    for (const t of tracks) {
       const row = document.createElement("div");
       row.className = "track";
       const cb = document.createElement("sp-checkbox");
-      cb.textContent = `Track ${i + 1}${track.name ? ` — ${track.name}` : ""}`;
-      if (clipCount > 0 || !$("skipEmpty").checked) cb.checked = true;
+      cb.textContent = `Track ${t.index + 1}${t.name ? ` — ${t.name}` : ""}`;
+      const defaultChecked = t.clipCount > 0 || !$("skipEmpty").checked;
+      cb.checked = sameSequence && previousChecks.has(t.index) ? previousChecks.get(t.index) : defaultChecked;
       const meta = document.createElement("span");
       meta.className = "meta";
-      meta.textContent = `${clipCount} clip${clipCount === 1 ? "" : "s"}${muted ? " · muted" : ""}`;
+      meta.textContent = `${t.clipCount} clip${t.clipCount === 1 ? "" : "s"}${t.muted ? " · muted" : ""}`;
       row.appendChild(cb);
       row.appendChild(meta);
       list.appendChild(row);
-      trackRows.push({ index: i, name: track.name, clipCount, muted, checkbox: cb });
+      trackRows.push({ ...t, checkbox: cb });
+    }
+
+    if (!sameSequence) {
+      await fillDefaultFolder();
+      if (!presetPath) await detectPreset(false);
     }
   } catch (e) {
-    $("seqName").textContent = "No active sequence";
-    $("seqInfo").textContent = "";
-    $("trackList").innerHTML = `<span class="meta">${e.message}</span>`;
+    console.error(e);
+  } finally {
+    refreshing = false;
   }
 }
 
-// ---------- pickers ----------
-
-async function pickPreset() {
-  const file = await lfs.getFileForOpening({ types: ["epr"] });
-  if (!file || !file.nativePath) return;
-  store(STORE_PRESET, file.nativePath);
-  $("presetPath").textContent = file.nativePath;
-  await validatePreset(file.nativePath);
+function watchTimeline() {
+  const onChange = () => setTimeout(() => refresh(false), 200);
+  const C = ppro.Constants;
+  const events = [
+    C.SequenceEvent && C.SequenceEvent.ACTIVATED,
+    C.SequenceEvent && C.SequenceEvent.CLOSED,
+    C.ProjectEvent && C.ProjectEvent.ACTIVATED,
+    C.ProjectEvent && C.ProjectEvent.OPENED,
+    C.ProjectEvent && C.ProjectEvent.CLOSED,
+  ];
+  for (const evt of events) {
+    if (evt === undefined) continue;
+    try { ppro.EventManager.addGlobalEventListener(evt, onChange); } catch (_) {}
+  }
+  // Safety net: catches timeline switches, added/removed tracks and clips.
+  setInterval(() => refresh(false), WATCH_INTERVAL_MS);
 }
 
-async function validatePreset(presetPath) {
+// ---------- output folder ----------
+
+async function fillDefaultFolder() {
+  if ($("folderPath").value) return;
   try {
-    const sequence = await getActiveSequence();
-    const ext = String(await ppro.EncoderManager.getExportFileExtension(sequence, presetPath) || "")
-      .replace(/^\./, "").toLowerCase();
-    if (ext && ext !== "wav") {
-      log(`Preset produces ".${ext}" files, not WAV. Pick a Waveform Audio preset.`, "err");
-      return false;
-    }
-    if (ext === "wav") log("Preset OK: Waveform Audio (.wav).", "ok");
-  } catch (_) { /* no sequence yet — validated again at export time */ }
-  return true;
+    const project = await getActiveProject();
+    if (project && project.path) $("folderPath").value = dirname(project.path);
+  } catch (_) {}
 }
 
 async function pickFolder() {
   const folder = await lfs.getFolder();
   if (!folder || !folder.nativePath) return;
+  $("folderPath").value = folder.nativePath;
   store(STORE_FOLDER, folder.nativePath);
-  $("folderPath").textContent = folder.nativePath;
+}
+
+// ---------- WAV preset (.epr) ----------
+
+function showPreset(path, note) {
+  presetPath = path;
+  if (path) store(STORE_PRESET, path);
+  const name = path ? path.split(/[\\/]/).pop().replace(/\.epr$/i, "") : "";
+  $("presetPath").textContent = path ? `${name}${note ? ` (${note})` : ""}\n${path}` : note;
+  $("presetPath").className = path ? "path" : "path err";
+}
+
+async function isWavPreset(sequence, path) {
+  try {
+    const ext = String(await ppro.EncoderManager.getExportFileExtension(sequence, path) || "");
+    return ext.replace(/^\./, "").toLowerCase() === "wav";
+  } catch (_) {
+    return false;
+  }
+}
+
+function homeDir(projectPath) {
+  try { if (os && os.homedir) return os.homedir(); } catch (_) {}
+  const m = projectPath && projectPath.match(/^(\/Users\/[^/]+|[A-Za-z]:\\Users\\[^\\]+)/);
+  return m ? m[1] : null;
+}
+
+function isWindows() {
+  try { if (os && os.platform) return os.platform() === "win32"; } catch (_) {}
+  return navigator.platform ? /win/i.test(navigator.platform) : false;
+}
+
+async function findEprFiles(root, depth, out, max) {
+  if (depth < 0 || out.length >= max) return;
+  for (const e of await listDir(root)) {
+    if (out.length >= max) return;
+    if (e.isDir) await findEprFiles(e.path, depth - 1, out, max);
+    else if (/\.epr$/i.test(e.name)) out.push(e.path);
+  }
+}
+
+/** Folders that may hold WAV presets, best source first. */
+async function presetRoots(project) {
+  const roots = [];
+  try {
+    const pf = await lfs.getPluginFolder();
+    roots.push({ path: joinPath(pf.nativePath, "presets"), source: "bundled", all: true });
+  } catch (_) {}
+
+  const home = homeDir(project && project.path);
+  if (home) {
+    const amePresets = joinPath(joinPath(joinPath(home, "Documents"), "Adobe"), "Adobe Media Encoder");
+    for (const v of await listDir(amePresets)) {
+      if (v.isDir) roots.push({ path: joinPath(v.path, "Presets"), source: "your presets", all: true });
+    }
+  }
+
+  const appParents = isWindows()
+    ? ["C:\\Program Files\\Adobe"]
+    : ["/Applications"];
+  for (const parent of appParents) {
+    for (const app of await listDir(parent)) {
+      if (!app.isDir || !/^Adobe (Premiere Pro|Media Encoder)/i.test(app.name)) continue;
+      if (isWindows()) {
+        roots.push({ path: joinPath(joinPath(app.path, "MediaIO"), "systempresets"), source: "Adobe built-in" });
+      } else {
+        for (const bundle of await listDir(app.path)) {
+          if (/\.app$/i.test(bundle.name)) {
+            roots.push({
+              path: [bundle.path, "Contents", "MediaIO", "systempresets"].join("/"),
+              source: "Adobe built-in",
+            });
+          }
+        }
+      }
+    }
+  }
+  return roots;
+}
+
+function qualityScore(path) {
+  const s = path.toLowerCase();
+  let score = 0;
+  if (/32[\s_-]?bit|32f|float/.test(s)) score += 30;
+  else if (/24[\s_-]?bit/.test(s)) score += 20;
+  else if (/16[\s_-]?bit/.test(s)) score += 10;
+  if (/96\s?k/.test(s)) score += 3;
+  else if (/48\s?k/.test(s)) score += 2;
+  return score;
+}
+
+/** Finds the best WAV preset on this computer. */
+async function detectPreset(verbose) {
+  let sequence;
+  try { sequence = await getActiveSequence(); } catch (_) {
+    if (!presetPath) showPreset(null, "Open a sequence to auto-detect a WAV preset.");
+    return;
+  }
+
+  const saved = load(STORE_PRESET);
+  if (!verbose && saved && (await getFileSize(saved)) > 0 && (await isWavPreset(sequence, saved))) {
+    showPreset(saved, "saved");
+    return;
+  }
+
+  $("presetPath").textContent = "Searching for WAV presets…";
+  const project = await getActiveProject();
+  const roots = await presetRoots(project);
+  let best = null;
+
+  for (let r = 0; r < roots.length; r++) {
+    const root = roots[r];
+    const files = [];
+    await findEprFiles(root.path, 6, files, 2000);
+    // System folders hold hundreds of presets; only test the ones named like WAV.
+    const candidates = root.all ? files : files.filter((f) => /wav|waveform/i.test(f));
+    for (const f of candidates) {
+      if (!(await isWavPreset(sequence, f))) continue;
+      // Earlier roots win (bundled > yours > built-in); within a root, higher quality wins.
+      const score = (roots.length - r) * 1000 + qualityScore(f);
+      if (!best || score > best.score) best = { path: f, score, source: root.source };
+    }
+    if (best && root.source !== "Adobe built-in") break;
+  }
+
+  if (best) {
+    showPreset(best.path, best.source);
+    if (verbose) log(`Using WAV preset: ${best.path}`, "ok");
+    if (best.source === "Adobe built-in" && qualityScore(best.path) < 30) {
+      log("Using Adobe's built-in WAV preset. For 32-bit float, save your own preset (see README) and pick it with “Choose .epr…”.", "warn");
+    }
+  } else {
+    showPreset(null, "No WAV preset found. Click “Choose .epr…” or save one from Premiere's Export settings (Format: Waveform Audio).");
+  }
+}
+
+async function pickPreset() {
+  const file = await lfs.getFileForOpening({ types: ["epr"] });
+  if (!file || !file.nativePath) return;
+  try {
+    const sequence = await getActiveSequence();
+    if (!(await isWavPreset(sequence, file.nativePath))) {
+      log("That preset doesn't export .wav files. Pick a Waveform Audio preset.", "err");
+      return;
+    }
+  } catch (_) { /* no sequence open: checked again at export */ }
+  showPreset(file.nativePath, "chosen");
+  log("Preset set.", "ok");
 }
 
 // ---------- export ----------
@@ -232,18 +494,22 @@ async function setMuteStates(sequence, states) {
 
 async function exportTracks() {
   if (running) return;
-  const presetPath = load(STORE_PRESET);
-  const folder = load(STORE_FOLDER);
-  if (!presetPath) return log("Choose a WAV export preset (.epr) first.", "err");
-  if (!folder) return log("Choose an output folder first.", "err");
 
   let sequence;
   try { sequence = await getActiveSequence(); } catch (e) { return log(e.message, "err"); }
 
-  if (!trackRows.length) await refresh();
+  await refresh(true);
+  if (!presetPath) await detectPreset(true);
+  if (!presetPath) return log("No WAV preset available — click “Choose .epr…”.", "err");
+  if (!(await isWavPreset(sequence, presetPath))) return log("The selected preset doesn't export WAV.", "err");
+
+  const folder = ($("folderPath").value || "").trim();
+  if (!folder) return log("Choose an output folder first.", "err");
+  if (!(await ensureFolder(folder))) return log(`Output folder doesn't exist and couldn't be created: ${folder}`, "err");
+  store(STORE_FOLDER, folder);
+
   const selected = trackRows.filter((r) => r.checkbox.checked);
   if (!selected.length) return log("No tracks selected.", "err");
-  if (!(await validatePreset(presetPath))) return;
 
   const template = $("nameTemplate").value || DEFAULT_TEMPLATE;
   store(STORE_TEMPLATE, template);
@@ -304,35 +570,40 @@ async function exportTracks() {
     $("exportBtn").disabled = false;
     $("cancelBtn").disabled = true;
     log(`Finished: ${ok}/${selected.length} track(s) exported.`, ok === selected.length ? "ok" : "err");
+    refresh(true);
   }
 }
 
 // ---------- init ----------
 
 function init() {
-  const preset = load(STORE_PRESET);
   const folder = load(STORE_FOLDER);
   const template = load(STORE_TEMPLATE);
-  if (preset) $("presetPath").textContent = preset;
-  if (folder) $("folderPath").textContent = folder;
+  if (folder) $("folderPath").value = folder;
   if (template) $("nameTemplate").value = template;
 
-  $("pickPreset").addEventListener("click", pickPreset);
   $("pickFolder").addEventListener("click", pickFolder);
-  $("refresh").addEventListener("click", refresh);
-  $("skipEmpty").addEventListener("change", refresh);
+  $("folderPath").addEventListener("change", () => store(STORE_FOLDER, ($("folderPath").value || "").trim()));
+  $("findPreset").addEventListener("click", () => detectPreset(true));
+  $("pickPreset").addEventListener("click", pickPreset);
+  $("skipEmpty").addEventListener("change", () => {
+    currentSeqKey = ""; // re-apply default selection
+    refresh(true);
+  });
   $("exportBtn").addEventListener("click", exportTracks);
   $("cancelBtn").addEventListener("click", () => {
     stopRequested = true;
     log("Stopping after the current track…");
   });
-  refresh();
+
+  watchTimeline();
+  refresh(true).then(() => { if (!presetPath) detectPreset(false); });
 }
 
 entrypoints.setup({
   panels: {
     audioTrackExporterPanel: {
-      show() { if (!running) refresh(); },
+      show() { refresh(false); },
     },
   },
 });

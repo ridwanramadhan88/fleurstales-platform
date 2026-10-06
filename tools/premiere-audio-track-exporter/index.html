@@ -4,12 +4,12 @@
   <meta charset="utf-8" />
   <style>
     body { color: var(--uxp-host-text-color, #ddd); font-size: 12px; padding: 10px; margin: 0; }
-    h2 { font-size: 13px; margin: 0 0 8px; }
+    h2 { font-size: 13px; margin: 0 0 2px; }
     .section { margin-bottom: 12px; }
     .label { display: block; color: var(--uxp-host-text-color-secondary, #aaa); margin-bottom: 4px; }
     .row { display: flex; align-items: center; gap: 6px; }
     .row sp-textfield { flex: 1; }
-    .path { word-break: break-all; font-size: 11px; color: var(--uxp-host-text-color-secondary, #aaa); }
+    .path { white-space: pre-wrap; word-break: break-all; font-size: 11px; color: var(--uxp-host-text-color-secondary, #aaa); margin-top: 3px; }
     #trackList { max-height: 220px; overflow-y: auto; border: 1px solid #444; border-radius: 4px; padding: 4px 6px; }
     .track { display: flex; align-items: center; justify-content: space-between; }
     .meta { font-size: 10px; color: #999; }
@@ -17,6 +17,7 @@
            border: 1px solid #444; border-radius: 4px; padding: 4px 6px; }
     .err { color: #ff7b72; }
     .ok { color: #7ee787; }
+    .warn { color: #e3b341; }
     .buttons { display: flex; gap: 6px; flex-wrap: wrap; }
   </style>
 </head>
@@ -27,19 +28,11 @@
   </div>
 
   <div class="section">
-    <span class="label">WAV export preset (.epr)</span>
-    <div class="row">
-      <sp-button id="pickPreset" variant="secondary" size="s">Choose preset…</sp-button>
-    </div>
-    <div class="path" id="presetPath">Not set</div>
-  </div>
-
-  <div class="section">
     <span class="label">Output folder</span>
     <div class="row">
-      <sp-button id="pickFolder" variant="secondary" size="s">Choose folder…</sp-button>
+      <sp-textfield id="folderPath" size="s" placeholder="Folder for the WAV files"></sp-textfield>
+      <sp-button id="pickFolder" variant="secondary" size="s">Browse…</sp-button>
     </div>
-    <div class="path" id="folderPath">Not set</div>
   </div>
 
   <div class="section">
@@ -51,17 +44,23 @@
   </div>
 
   <div class="section">
+    <span class="label">WAV quality preset</span>
+    <div class="row">
+      <sp-button id="findPreset" variant="secondary" size="s">Auto-detect</sp-button>
+      <sp-button id="pickPreset" variant="secondary" size="s">Choose .epr…</sp-button>
+    </div>
+    <div class="path" id="presetPath">Detecting…</div>
+  </div>
+
+  <div class="section">
     <sp-checkbox id="skipEmpty" checked>Skip tracks with no clips</sp-checkbox><br />
     <sp-checkbox id="useInOut">Only export In/Out range</sp-checkbox><br />
     <sp-checkbox id="overwrite" checked>Overwrite existing files</sp-checkbox>
   </div>
 
   <div class="section">
-    <div class="row" style="justify-content: space-between;">
-      <span class="label">Audio tracks</span>
-      <sp-action-button id="refresh" quiet size="s">Refresh</sp-action-button>
-    </div>
-    <div id="trackList"><span class="meta">Open a sequence and press Refresh.</span></div>
+    <span class="label">Audio tracks (follows the timeline you have open)</span>
+    <div id="trackList"><span class="meta">Open a sequence in the Timeline.</span></div>
   </div>
 
   <div class="section buttons">

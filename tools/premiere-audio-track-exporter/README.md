@@ -16,28 +16,28 @@ clip and track effects, volume and panning, and the master track's effects.
 
 Requires Premiere Pro **25.1 or later**, which has the UXP plugin API.
 
-## 1. Create the best-quality WAV preset (one time)
+## 1. The WAV preset (`.epr`)
 
-Premiere needs an export preset (`.epr`) to know the format. Make one like this:
+An `.epr` file is a saved Premiere/Media Encoder **export preset**: it tells
+Premiere the format and quality (Waveform Audio, sample rate, bit depth). The
+UXP API can only export with one, so the panel **finds one automatically**, in
+this order:
 
-1. Open any sequence, then go to **File → Export → Media** (or the **Export** tab).
-2. Set **Format** to **Waveform Audio**.
-3. In the **Audio** section:
-   - **Audio Codec:** Uncompressed
-   - **Sample Rate:** the same as your sequence (usually **48000 Hz**). Pick
-     96000 Hz only if your source audio is 96 kHz. Raising the rate adds no
-     quality.
-   - **Sample Size:** **32-bit float** gives the highest quality, with no
-     clipping and no quantization. If your DAW or client needs integer files,
-     use **24-bit** instead.
-   - **Channels:** Stereo, or match your sequence or tracks.
-4. Click the **⋯ / Preset** menu, choose **Save Preset…**, and name it
-   `WAV 48k 32-bit float`, for example.
-5. Find the saved `.epr` file:
-   - macOS: `~/Documents/Adobe/Adobe Media Encoder/<version>/Presets/`
-   - Windows: `Documents\Adobe\Adobe Media Encoder\<version>\Presets\`
+1. `presets/` inside this plugin folder (drop your own `.epr` here)
+2. Your saved presets (`Documents/Adobe/Adobe Media Encoder/<version>/Presets`)
+3. Adobe's built-in WAV presets that ship with Premiere / Media Encoder
 
-   You can also use **Preset → Export Preset…** to save it anywhere.
+It checks every candidate really produces `.wav` and prefers the highest bit
+depth. Adobe's built-in WAV preset may be 16-bit. For **best quality** save
+your own once:
+
+1. **File → Export → Media**, **Format:** Waveform Audio.
+2. **Audio Codec:** Uncompressed · **Sample Rate:** same as the sequence
+   (usually 48000 Hz) · **Sample Size:** **32-bit float** (24-bit if your
+   client needs integer files) · **Channels:** Stereo.
+3. Preset menu → **Save Preset…**, name it e.g. `WAV 48k 32-bit float`.
+4. In the panel click **Auto-detect** (or **Choose .epr…**), or copy the `.epr`
+   into `presets/`.
 
 ## 2. Install the plugin
 
@@ -53,10 +53,12 @@ file that installs when you double-click it.
 
 ## 3. Use it
 
-1. Open the sequence you want to split in the Timeline.
-2. In the panel, click **Choose preset…** and select your WAV `.epr`. The panel
-   checks that the preset really produces `.wav` files.
-3. Click **Choose folder…** and select an output folder.
+1. Open the sequence you want to split in the Timeline. The panel follows
+   whichever timeline you have open, and updates when you add or remove tracks
+   or clips.
+2. **Output folder:** type a path or click **Browse…**. It defaults to the
+   project's folder and is created if it doesn't exist.
+3. Check the preset line shows a WAV preset (see above).
 4. Optional settings:
    - **File name:** the default is `Track {n}_{sequence}`. `{n}` is the audio
      track number (A1 = 1), and `{sequence}` is the sequence name.
