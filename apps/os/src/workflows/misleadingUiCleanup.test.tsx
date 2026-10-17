@@ -77,4 +77,16 @@ describe('misleading UI cleanup', () => {
     expect(screen.getByText('ORD-4')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument()
   })
+
+  it('lets a florist upload a finish photo for processing orders only', () => {
+    useUserStore.setState({ employeeId: 'florist-1', role: 'florist', name: 'Florist' })
+    useOrdersStore.setState({
+      orders: [
+        { ...baseOrder, id: 'o-1', orderNumber: 'ORD-P', floristAssignedEmployeeId: 'florist-1', status: 'processing' },
+        { ...baseOrder, id: 'o-2', orderNumber: 'ORD-R', floristAssignedEmployeeId: 'florist-1', status: 'ready' },
+      ] as OrderTableRow[],
+    })
+    render(<FloristAssignedOrders onGoToOrders={() => undefined} />)
+    expect(screen.getAllByRole('button', { name: /upload finish photo/i })).toHaveLength(1)
+  })
 })

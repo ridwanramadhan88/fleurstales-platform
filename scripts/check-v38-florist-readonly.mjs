@@ -32,4 +32,15 @@ for (const [name, authz] of [['OS', osAuthz], ['Storefront mirror', storefrontAu
 
 assert(smoke.includes('FLORIST_ORDER_READ_ONLY') && smoke.includes('has_function_privilege'), 'V3.8 live smoke does not verify the public/internal RPC boundary.')
 
+const finishPhoto = await read('supabase/migrations/20261018110000_florist_finish_photo_upload.sql')
+for (const token of [
+  "private.current_staff_role() = 'florist'",
+  "o.status = 'processing'",
+  'florist_assigned_employee_id = private.current_staff_employee_id()',
+  "bucket_id = 'order-finish-photos'",
+]) assert(finishPhoto.includes(token), `Florist finish-photo migration missing ${token}`)
+// Florist may attach finish photos only; payment-proof writes and status changes stay Owner/Admin.
+assert(!finishPhoto.includes("bucket_id = 'order-payment-proofs'"), 'Florist finish-photo migration must not touch payment proof policies.')
+assert(!/update public\.orders\s+set status/i.test(finishPhoto), 'Florist finish-photo migration must not change order status.')
+
 console.log('V3.8 Florist Order read-only contract PASS')
