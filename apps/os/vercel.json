@@ -46,5 +46,6 @@
         }
       ]
     }
-  ]
+  ],
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ../../package.json ../../package-lock.json"
 }
