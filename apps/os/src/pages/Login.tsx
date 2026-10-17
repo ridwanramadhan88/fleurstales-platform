@@ -36,7 +36,7 @@ const LOGIN_COPY = {
     resetPassword: 'Atur ulang kata sandi',
     createPassword: 'Buat kata sandi',
     signInHelp: 'Gunakan nama pengguna atau email staf dan kata sandi.',
-    resetHelp: 'Kami akan mengirim tautan aman untuk mengatur ulang kata sandi.',
+    resetHelp: 'Masukkan nama pengguna atau email Anda. Kami akan mengirim tautan aman ke email pemulihan akun.',
     passwordHelp: 'Gunakan minimal 6 karakter dengan kombinasi huruf dan angka.',
     usernameOrEmail: 'Nama pengguna atau email',
     username: 'Nama pengguna',
@@ -53,7 +53,7 @@ const LOGIN_COPY = {
     savePassword: 'Simpan kata sandi',
     forgotPassword: 'Lupa kata sandi?',
     backToSignIn: 'Kembali ke halaman masuk',
-    resetSent: 'Periksa email Anda untuk tautan aman pengaturan ulang kata sandi.',
+    resetSent: 'Jika akun ditemukan, tautan pengaturan ulang telah dikirim ke email pemulihannya. Periksa kotak masuk Anda.',
     inactiveAccount: 'Akun ini tidak memiliki akses aktif ke Fleurstales OS.',
     accountLoadFailed: 'Akun staf ini tidak dapat dimuat.',
     invalidLogin: 'Nama pengguna atau kata sandi salah, atau akun ini tidak aktif.',
@@ -71,7 +71,7 @@ const LOGIN_COPY = {
     resetPassword: 'Reset password',
     createPassword: 'Create password',
     signInHelp: 'Use your staff username or email and password.',
-    resetHelp: 'We’ll email you a secure reset link.',
+    resetHelp: 'Enter your username or email. We’ll send a secure link to the account’s recovery email.',
     passwordHelp: STAFF_PASSWORD_HELP,
     usernameOrEmail: 'Username or email',
     username: 'Username',
@@ -88,7 +88,7 @@ const LOGIN_COPY = {
     savePassword: 'Save password',
     forgotPassword: 'Forgot password?',
     backToSignIn: 'Back to sign in',
-    resetSent: 'Check your email for a secure password reset link.',
+    resetSent: 'If the account exists, a reset link was sent to its recovery email. Check your inbox.',
     inactiveAccount: 'This account does not have active Fleurstales OS access.',
     accountLoadFailed: 'Unable to load this staff account.',
     invalidLogin: 'Invalid username or password, or this account is inactive.',
@@ -114,6 +114,12 @@ const userFacingLoginError = (
   }
   if (message.startsWith('Fleurstales startup hydration failed:')) {
     return copy.workspaceLoadFailed
+  }
+  if (message.startsWith('RATE_LIMITED:')) {
+    const minutes = Math.max(1, Math.ceil(Number(message.slice('RATE_LIMITED:'.length)) / 60))
+    return language === 'id'
+      ? `Terlalu banyak percobaan masuk. Coba lagi dalam ${minutes} menit.`
+      : `Too many sign-in attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`
   }
   if (message === 'Incorrect username or password.') return copy.incorrectLogin
   if (message === 'Unable to reach the staff sign-in service. Please try again.') return copy.serviceUnavailable
@@ -275,8 +281,8 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           </div>
 
           {usesSupabase && mode === 'forgot' ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">Email</span>
-            <input aria-label="Email" autoComplete="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="h-11 w-full rounded-xl border border-border/70 bg-card px-3.5 text-sm outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25" />
+            <span className="text-xs font-medium">{copy.usernameOrEmail}</span>
+            <input aria-label={copy.usernameOrEmail} autoComplete="username" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={copy.usernameOrEmailPlaceholder} className="h-11 w-full rounded-xl border border-border/70 bg-card px-3.5 text-sm outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25" />
           </label> : null}
           {mode === 'signin' ? <label className="block space-y-1.5">
             <span className="text-xs font-medium">{usesSupabase ? copy.usernameOrEmail : copy.username}</span>

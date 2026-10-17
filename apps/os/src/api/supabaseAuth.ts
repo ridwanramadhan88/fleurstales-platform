@@ -109,11 +109,29 @@ export const signInSupabaseWithUsername = async (identifier: string, credential:
   return restored.session
 }
 
-export const sendSupabasePasswordReset = async (email: string): Promise<void> => {
+export const sendSupabasePasswordReset = async (identifier: string): Promise<void> => {
   const authClient = getSupabaseAuthClient()
   if (!authClient) throw new Error('Supabase Auth is not configured.')
+  const value = identifier.trim()
+  if (!value.includes('@')) {
+    // Username: the Edge Function looks up the recovery email and always
+    // answers with a generic success (no username/email disclosure).
+    const { error } = await authClient.functions.invoke('staff-password-reset', {
+      body: { username: value.toLowerCase() },
+    })
+    if (error) {
+      const context = 'context' in error ? error.context : null
+      if (context instanceof Response && context.status === 429) {
+        const failure = await context.clone().json().catch(() => ({})) as { retryAfterSeconds?: number }
+        const seconds = Number(failure.retryAfterSeconds)
+        throw new Error(`RATE_LIMITED:${Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 900}`)
+      }
+      throw new Error('Unable to reach the staff sign-in service. Please try again.')
+    }
+    return
+  }
   const redirectTo = typeof window === 'undefined' ? undefined : window.location.origin
-  const { error } = await authClient.auth.resetPasswordForEmail(email.trim(), { redirectTo })
+  const { error } = await authClient.auth.resetPasswordForEmail(value, { redirectTo })
   if (error) throw error
 }
 
