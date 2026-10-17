@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react'
-import { ArrowRight, CalendarClock, PackageCheck } from 'lucide-react'
+import { ArrowRight, Camera, CalendarClock, CheckCircle2, PackageCheck } from 'lucide-react'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useUserStore } from '../../store/userStore'
 import { surfaceCardClass } from '../ui/card'
+import { OrderFinishPhotoDialog } from '../orders/OrderFinishPhotoDialog'
+import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
+import type { OrderTableRow } from '../../types/orders'
 
 const ACTIVE_STATUSES = new Set(['processing', 'ready'])
 
@@ -10,7 +13,9 @@ const statusLabel = (status: string) => status === 'ready' ? 'Ready' : 'Processi
 
 export function FloristAssignedOrders({ onGoToOrders: _onGoToOrders }: { onGoToOrders: () => void }) {
   const [expanded, setExpanded] = useState(false)
+  const [photoOrder, setPhotoOrder] = useState<OrderTableRow | null>(null)
   const employeeId = useUserStore((state) => state.employeeId)
+  const actorName = useUserStore((state) => state.name)
   const orders = useOrdersStore((state) => state.orders)
 
   const assignedOrders = useMemo(
@@ -52,11 +57,33 @@ export function FloristAssignedOrders({ onGoToOrders: _onGoToOrders }: { onGoToO
                 <p className="mt-1 truncate text-sm">{order.customerName} · {order.productName ?? order.items?.[0]?.productName ?? 'Custom order'}</p>
                 <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><CalendarClock className="size-3.5" />{order.scheduleLabel ?? order.scheduleDate ?? 'Schedule not set'}</p>
               </div>
-              <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+              {order.status === 'processing' ? (
+                <button
+                  type="button"
+                  onClick={() => setPhotoOrder(order)}
+                  className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full border border-border px-4 text-sm font-medium hover:bg-accent"
+                >
+                  {order.finishPhotoUrl ? <CheckCircle2 className="size-4 text-success" /> : <Camera className="size-4" />}
+                  {order.finishPhotoUrl ? 'Replace finish photo' : 'Upload finish photo'}
+                </button>
+              ) : order.finishPhotoUrl ? (
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"><CheckCircle2 className="size-4 text-success" />Finish photo uploaded</span>
+              ) : null}
             </div>
           ))}
         </div>
       )}
+      {photoOrder ? (
+        <OrderFinishPhotoDialog
+          open
+          orderId={photoOrder.id ?? ''}
+          onCancel={() => setPhotoOrder(null)}
+          onUploaded={async (finishPhotoUrl) => {
+            await attachOrderFinishPhoto(photoOrder, finishPhotoUrl, actorName)
+            setPhotoOrder(null)
+          }}
+        />
+      ) : null}
     </section>
   )
 }
