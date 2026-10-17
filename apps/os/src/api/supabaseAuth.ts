@@ -88,12 +88,16 @@ export const signInSupabaseWithUsername = async (identifier: string, credential:
     const context = 'context' in error ? error.context : null
     if (context instanceof Response) {
       try {
-        const failure = await context.clone().json() as { error?: string }
+        const failure = await context.clone().json() as { error?: string; retryAfterSeconds?: number }
+        if (failure.error === 'RATE_LIMITED') {
+          const seconds = Number(failure.retryAfterSeconds)
+          throw new Error(`RATE_LIMITED:${Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 900}`)
+        }
         if (failure.error === 'INVALID_LOGIN') {
           throw new Error('Incorrect username or password.')
         }
       } catch (cause) {
-        if (cause instanceof Error && cause.message === 'Incorrect username or password.') throw cause
+        if (cause instanceof Error && (cause.message === 'Incorrect username or password.' || cause.message.startsWith('RATE_LIMITED:'))) throw cause
       }
     }
     throw new Error('Unable to reach the staff sign-in service. Please try again.')

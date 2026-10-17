@@ -43,6 +43,25 @@ end $$;
 
 do $$
 declare
+  v_ip_a text:=encode(extensions.digest('smoke-ip-a','sha256'::text),'hex');
+  v_ip_b text:=encode(extensions.digest('smoke-ip-b','sha256'::text),'hex');
+  v_result jsonb;
+  i integer;
+begin
+  for i in 1..5 loop
+    v_result:=public.service_consume_staff_login_attempt('smoke.lockout',v_ip_a);
+  end loop;
+  if (v_result->>'allowed')::boolean is not true then raise exception 'Pair lock must allow the first 5 attempts'; end if;
+  v_result:=public.service_consume_staff_login_attempt('smoke.lockout',v_ip_a);
+  if (v_result->>'allowed')::boolean is not false then raise exception 'Pair lock must block the 6th attempt from the same IP'; end if;
+  v_result:=public.service_consume_staff_login_attempt('smoke.lockout',v_ip_b);
+  if (v_result->>'allowed')::boolean is not true then raise exception 'Another IP must not be locked out by a different IP''s failures'; end if;
+  perform public.service_clear_staff_login_attempts('smoke.lockout',v_ip_a);
+  perform public.service_clear_staff_login_attempts('smoke.lockout',v_ip_b);
+end $$;
+
+do $$
+declare
   v_source text;
 begin
   if exists(select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='attendance_selfies_delete') then
