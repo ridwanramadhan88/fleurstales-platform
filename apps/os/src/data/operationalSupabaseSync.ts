@@ -30,6 +30,10 @@ interface OperationalDomainResponse {
   updatedAt: string | null
 }
 
+const OPERATIONAL_DOMAINS: readonly OperationalDomain[] = ['hr', 'payroll', 'finance', 'stock', 'vouchers', 'order_drafts']
+const isOperationalDomain = (value: string): value is OperationalDomain =>
+  (OPERATIONAL_DOMAINS as readonly string[]).includes(value)
+
 const dataOnly = (state: Record<string, unknown>): Slice =>
   Object.fromEntries(Object.entries(state).filter(([, value]) => typeof value !== 'function'))
 
@@ -314,7 +318,7 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
       const snapshot = snapshotForDomain(domain)
       const fingerprint = snapshotFingerprint(snapshot)
       if (syncedSnapshots.get(domain) === fingerprint) continue
-      updateHealth({ status: 'saving', message: undefined })
+      updateHealth({ status: 'saving', message: undefined, domain: undefined, reason: undefined })
 
       try {
         const response = domain === 'hr'
@@ -340,6 +344,8 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
           lastSavedAt: response.updatedAt ?? new Date().toISOString(),
           revision: response.revision,
           message: undefined,
+          domain: undefined,
+          reason: undefined,
         })
       } catch (error) {
         if (isRevisionConflict(error)) {
@@ -357,15 +363,24 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
           const locked = circuitOpen.has(domain)
           updateHealth({
             status: 'conflict',
+            domain,
+            reason: locked ? 'conflict_locked' : 'conflict',
             revision: remote?.revision ?? expectedRevision,
             message: locked
-              ? `${domain} kept conflicting and auto-recovery has been paused to protect the database. Use "Reload ${domain}" to fetch the latest version before editing again.`
+              ? `${domain} kept conflicting and auto-recovery has been paused to protect the database. Reload ${domain} to fetch the latest version before editing again.`
               : `${domain} changed in another session. Your local changes were not overwritten; reload before saving this section again.`,
           })
           return
         }
+        const rawError = error instanceof Error ? error.message : ''
         updateHealth({
           status: 'error',
+          domain,
+          reason: domain === 'finance' && rawError.includes('SERVER_OWNED_FINANCE_ENTRY')
+            ? 'finance_server_owned'
+            : domain === 'finance' && rawError.includes('FINANCE_ENTRY_DELETE_NOT_ALLOWED')
+              ? 'finance_delete_blocked'
+              : 'save_failed',
           message: operationalSaveErrorMessage(domain, error),
         })
         return
@@ -464,8 +479,34 @@ export const reloadConflictedDomain = async (domain: OperationalDomain): Promise
   if (!response) return false
   clearConflictStreak(domain)
   conflicted.delete(domain)
-  updateHealth({ status: 'saved', revision: response.revision, lastSavedAt: response.updatedAt ?? new Date().toISOString(), message: undefined })
+  updateHealth({ status: 'saved', revision: response.revision, lastSavedAt: response.updatedAt ?? new Date().toISOString(), message: undefined, domain: undefined, reason: undefined })
   return true
+}
+
+const UNSAVED_BACKUP_PREFIX = 'fleurstales.unsaved-backup.'
+
+/**
+ * User-initiated recovery: keep a copy of the local (unsaved) section in the
+ * browser, then fetch the latest server version. Returns false when the
+ * latest data could not be loaded (the local copy stays in place).
+ */
+export const backupAndReloadDomain = async (domain: string): Promise<boolean> => {
+  if (!isOperationalDomain(domain)) return false
+  try {
+    window.localStorage.setItem(
+      `${UNSAVED_BACKUP_PREFIX}${domain}`,
+      JSON.stringify({ savedAt: new Date().toISOString(), snapshot: snapshotForDomain(domain) }),
+    )
+  } catch { /* backup is best-effort */ }
+  return reloadConflictedDomain(domain)
+}
+
+/** Retry saving a section after a transient failure. */
+export const retryDomainSave = async (domain: string): Promise<void> => {
+  if (!isOperationalDomain(domain)) return
+  // Force a re-send even if the fingerprint was recorded before the failure.
+  syncedSnapshots.delete(domain)
+  await persistDomain(domain)
 }
 
 export const startOperationalSupabaseSync = (): void => {
