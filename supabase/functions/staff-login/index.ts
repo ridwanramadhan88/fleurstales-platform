@@ -37,9 +37,12 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 const invalidLogin = async (request: Request, stage: string, status = 401, retryAfterSeconds?: number): Promise<Response> => {
   console.warn('staff-login rejected', { stage })
   await sleep(REJECTION_DELAY_MS)
+  const rateLimited = status === 429
   return json(
     request,
-    { error: 'INVALID_LOGIN' },
+    rateLimited
+      ? { error: 'RATE_LIMITED', retryAfterSeconds: Math.max(1, Math.ceil(retryAfterSeconds ?? 900)) }
+      : { error: 'INVALID_LOGIN' },
     status,
     retryAfterSeconds ? { 'retry-after': String(Math.max(1, Math.ceil(retryAfterSeconds))) } : {},
   )

@@ -115,6 +115,12 @@ const userFacingLoginError = (
   if (message.startsWith('Fleurstales startup hydration failed:')) {
     return copy.workspaceLoadFailed
   }
+  if (message.startsWith('RATE_LIMITED:')) {
+    const minutes = Math.max(1, Math.ceil(Number(message.slice('RATE_LIMITED:'.length)) / 60))
+    return language === 'id'
+      ? `Terlalu banyak percobaan masuk. Coba lagi dalam ${minutes} menit.`
+      : `Too many sign-in attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`
+  }
   if (message === 'Incorrect username or password.') return copy.incorrectLogin
   if (message === 'Unable to reach the staff sign-in service. Please try again.') return copy.serviceUnavailable
   return message

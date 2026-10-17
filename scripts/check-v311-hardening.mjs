@@ -28,6 +28,8 @@ requireText('supabase/functions/staff-login/index.ts', ['service_consume_staff_l
 requireText('supabase/functions/staff-admin/index.ts', ['service_create_staff_access_profile', 'service_update_staff_access_email', 'isStrongPassword'])
 forbidText('supabase/functions/staff-admin/index.ts', [".from('staff_access_profiles').update(", ".from('staff_access_profiles').upsert(", ".from('staff_access_profiles').insert(", ".from('staff_access_profiles').delete("])
 
+requireText('supabase/migrations/20261018100000_staff_login_pair_lockout.sql', ["consume_staff_login_scope('pair'", "consume_staff_login_scope('username',v_username_key,30)"])
+requireText('supabase/functions/staff-login/index.ts', ['RATE_LIMITED', 'retryAfterSeconds'])
 const migration = requireText('supabase/migrations/20260726090000_v311_production_hardening.sql', [
   'revoke insert, update, delete on table public.staff_access_profiles from authenticated',
   'drop policy if exists attendance_selfies_delete',
