@@ -2,7 +2,17 @@ import { create } from 'zustand'
 
 export type PersistenceHealthStatus = 'idle' | 'saved' | 'saving' | 'error' | 'conflict'
 
+export type PersistenceHealthReason =
+  | 'conflict'
+  | 'conflict_locked'
+  | 'finance_server_owned'
+  | 'finance_delete_blocked'
+  | 'save_failed'
+
 export interface PersistenceHealthState {
+  /** Operational data section the current problem belongs to (hr, finance, stock, ...). */
+  domain?: string
+  reason?: PersistenceHealthReason
   status: PersistenceHealthStatus
   lastSavedAt?: string
   schemaVersion: number
