@@ -77,6 +77,7 @@ import {
   type AppTabId,
 } from '../config/appNavigation'
 import { PersistenceHealthNotice } from '../components/system/PersistenceHealthNotice'
+import { SessionExpiryNotice } from '../components/system/SessionExpiryNotice'
 
 export type { AppTabId } from '../config/appNavigation'
 
@@ -690,6 +691,7 @@ const HomePage: FC<HomePageProps> = ({
           />
         </div>
         <PersistenceHealthNotice />
+        <SessionExpiryNotice />
       </div>
 
       {/* New Order sheet overlay, opened from the main button or bottom tab bar */}
