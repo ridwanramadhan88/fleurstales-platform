@@ -13,14 +13,7 @@ const menuLabels = (name: string) =>
 describe('one menu (UX plan PR 8)', () => {
   afterEach(() => useUserStore.getState().setRole(originalRole))
 
-  it('florist has one page, so the phone shows no bottom bar', () => {
-    useUserStore.getState().setRole('florist')
-    render(<HomePage initialBranch="All" />)
-    expect(menuLabels('Primary')).toHaveLength(1)
-    expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
-  })
-
-  it.each<UserRole>(['owner', 'admin', 'finance', 'hr'])(
+  it.each<UserRole>(['owner', 'admin', 'finance', 'hr', 'florist'])(
     '%s sees the same menu items, with the same names, on phone and desktop',
     (role) => {
       useUserStore.getState().setRole(role)
