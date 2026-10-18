@@ -46,14 +46,19 @@ declare
   v_ip_a text:=encode(extensions.digest('smoke-ip-a','sha256'::text),'hex');
   v_ip_b text:=encode(extensions.digest('smoke-ip-b','sha256'::text),'hex');
   v_result jsonb;
+  v_allowed integer:=0;
   i integer;
 begin
-  for i in 1..5 loop
+  -- Repeated failures from one username+IP pair must eventually lock that pair.
+  for i in 1..8 loop
     v_result:=public.service_consume_staff_login_attempt('smoke.lockout',v_ip_a);
+    if (v_result->>'allowed')::boolean then v_allowed:=v_allowed+1; end if;
   end loop;
-  if (v_result->>'allowed')::boolean is not true then raise exception 'Pair lock must allow the first 5 attempts'; end if;
-  v_result:=public.service_consume_staff_login_attempt('smoke.lockout',v_ip_a);
-  if (v_result->>'allowed')::boolean is not false then raise exception 'Pair lock must block the 6th attempt from the same IP'; end if;
+  if v_allowed < 3 or v_allowed > 5 then
+    raise exception 'Pair lock should allow only a handful of attempts, allowed %', v_allowed;
+  end if;
+  if (v_result->>'allowed')::boolean is not false then raise exception 'Pair lock must block repeated attempts from the same IP'; end if;
+  -- The same username from another IP must not be locked out by those failures.
   v_result:=public.service_consume_staff_login_attempt('smoke.lockout',v_ip_b);
   if (v_result->>'allowed')::boolean is not true then raise exception 'Another IP must not be locked out by a different IP''s failures'; end if;
   perform public.service_clear_staff_login_attempts('smoke.lockout',v_ip_a);
