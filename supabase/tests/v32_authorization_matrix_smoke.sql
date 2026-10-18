@@ -40,6 +40,9 @@ begin
   if private.section_access_for_role('florist','orders') <> 'none' then
     raise exception 'Florist must not receive the full Orders workspace by default';
   end if;
+  if private.section_access_for_role('florist','customers') <> 'view' then
+    raise exception 'Florist Customers access must be read-only view';
+  end if;
 
   if not private.has_action_permission_for_role('owner','orders.read_all') then
     raise exception 'Owner orders.read_all missing';
