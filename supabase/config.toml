@@ -422,3 +422,8 @@ entrypoint = "./functions/staff-admin/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/staff-login/index.ts"
+
+[functions.staff-password-reset]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/staff-password-reset/index.ts"

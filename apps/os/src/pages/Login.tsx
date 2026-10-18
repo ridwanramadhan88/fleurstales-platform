@@ -36,8 +36,15 @@ const LOGIN_COPY = {
     resetPassword: 'Atur ulang kata sandi',
     createPassword: 'Buat kata sandi',
     signInHelp: 'Gunakan nama pengguna atau email staf dan kata sandi.',
-    resetHelp: 'Kami akan mengirim tautan aman untuk mengatur ulang kata sandi.',
-    passwordHelp: 'Gunakan minimal 6 karakter dengan kombinasi huruf dan angka.',
+    resetHelp: 'Masukkan nama pengguna atau email Anda. Kami akan mengirim tautan aman ke email pemulihan akun.',
+    passwordHelp: 'Gunakan minimal 6 karakter.',
+    newPasswordPlaceholder: 'minimal 6 karakter',
+    emailPlaceholder: 'nama@contoh.com',
+    tooManyRequests: 'Terlalu banyak percobaan. Silakan coba lagi beberapa saat lagi.',
+    emailRateLimited: 'Terlalu banyak permintaan email. Silakan coba lagi nanti.',
+    weakPassword: 'Kata sandi terlalu lemah. Gunakan minimal 6 karakter.',
+    samePassword: 'Kata sandi baru harus berbeda dari kata sandi lama.',
+    linkExpired: 'Tautan sudah kedaluwarsa atau tidak valid. Minta tautan baru.',
     usernameOrEmail: 'Nama pengguna atau email',
     username: 'Nama pengguna',
     usernameOrEmailPlaceholder: 'nama pengguna atau email',
@@ -53,7 +60,7 @@ const LOGIN_COPY = {
     savePassword: 'Simpan kata sandi',
     forgotPassword: 'Lupa kata sandi?',
     backToSignIn: 'Kembali ke halaman masuk',
-    resetSent: 'Periksa email Anda untuk tautan aman pengaturan ulang kata sandi.',
+    resetSent: 'Jika akun ditemukan, tautan pengaturan ulang telah dikirim ke email pemulihannya. Periksa kotak masuk Anda.',
     inactiveAccount: 'Akun ini tidak memiliki akses aktif ke Fleurstales OS.',
     accountLoadFailed: 'Akun staf ini tidak dapat dimuat.',
     invalidLogin: 'Nama pengguna atau kata sandi salah, atau akun ini tidak aktif.',
@@ -71,8 +78,15 @@ const LOGIN_COPY = {
     resetPassword: 'Reset password',
     createPassword: 'Create password',
     signInHelp: 'Use your staff username or email and password.',
-    resetHelp: 'We’ll email you a secure reset link.',
+    resetHelp: 'Enter your username or email. We’ll send a secure link to the account’s recovery email.',
     passwordHelp: STAFF_PASSWORD_HELP,
+    newPasswordPlaceholder: '6+ characters',
+    emailPlaceholder: 'name@example.com',
+    tooManyRequests: 'Too many attempts. Please try again shortly.',
+    emailRateLimited: 'Too many email requests. Please try again later.',
+    weakPassword: 'Password is too weak. Use at least 6 characters.',
+    samePassword: 'The new password must differ from the old one.',
+    linkExpired: 'The link has expired or is invalid. Request a new one.',
     usernameOrEmail: 'Username or email',
     username: 'Username',
     usernameOrEmailPlaceholder: 'username or email',
@@ -88,7 +102,7 @@ const LOGIN_COPY = {
     savePassword: 'Save password',
     forgotPassword: 'Forgot password?',
     backToSignIn: 'Back to sign in',
-    resetSent: 'Check your email for a secure password reset link.',
+    resetSent: 'If the account exists, a reset link was sent to its recovery email. Check your inbox.',
     inactiveAccount: 'This account does not have active Fleurstales OS access.',
     accountLoadFailed: 'Unable to load this staff account.',
     invalidLogin: 'Invalid username or password, or this account is inactive.',
@@ -115,8 +129,21 @@ const userFacingLoginError = (
   if (message.startsWith('Fleurstales startup hydration failed:')) {
     return copy.workspaceLoadFailed
   }
+  if (message.startsWith('RATE_LIMITED:')) {
+    const minutes = Math.max(1, Math.ceil(Number(message.slice('RATE_LIMITED:'.length)) / 60))
+    return language === 'id'
+      ? `Terlalu banyak percobaan masuk. Coba lagi dalam ${minutes} menit.`
+      : `Too many sign-in attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`
+  }
   if (message === 'Incorrect username or password.') return copy.incorrectLogin
   if (message === 'Unable to reach the staff sign-in service. Please try again.') return copy.serviceUnavailable
+  const lower = message.toLowerCase()
+  if (lower.includes('email rate limit') || lower.includes('over_email_send_rate_limit')) return copy.emailRateLimited
+  if (lower.includes('rate limit') || lower.includes('too many')) return copy.tooManyRequests
+  if (lower.includes('weak') || lower.includes('at least 6')) return copy.weakPassword
+  if (lower.includes('different from the old password') || lower.includes('same_password')) return copy.samePassword
+  if (lower.includes('expired') || lower.includes('otp') || lower.includes('invalid token')) return copy.linkExpired
+  if (lower.includes('failed to fetch') || lower.includes('network')) return copy.serviceUnavailable
   return message
 }
 
@@ -275,8 +302,8 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           </div>
 
           {usesSupabase && mode === 'forgot' ? <label className="block space-y-1.5">
-            <span className="text-xs font-medium">Email</span>
-            <input aria-label="Email" autoComplete="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="h-11 w-full rounded-xl border border-border/70 bg-card px-3.5 text-sm outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25" />
+            <span className="text-xs font-medium">{copy.usernameOrEmail}</span>
+            <input aria-label={copy.usernameOrEmail} autoComplete="username" type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={copy.usernameOrEmailPlaceholder} className="h-11 w-full rounded-xl border border-border/70 bg-card px-3.5 text-sm outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25" />
           </label> : null}
           {mode === 'signin' ? <label className="block space-y-1.5">
             <span className="text-xs font-medium">{usesSupabase ? copy.usernameOrEmail : copy.username}</span>
@@ -290,7 +317,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === 'set-password' ? '6+ characters' : copy.password}
+              placeholder={mode === 'set-password' ? copy.newPasswordPlaceholder : copy.password}
               className="h-11 w-full rounded-xl border border-border/70 bg-card px-3.5 text-sm outline-none transition placeholder:text-muted-foreground hover:border-border focus:border-primary/40 focus:ring-2 focus:ring-primary/25"
             />
           </label> : null}
@@ -300,7 +327,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onSignIn, theme = 'light', onTog
           </label> : null}
           {error && <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive ring-1 ring-destructive/30">{error}</p>}
           {notice && <p role="status" className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground ring-1 ring-primary/25">{notice}</p>}
-          <button type="submit" disabled={isSigningIn || (usesSupabase ? (mode === 'forgot' ? !email : mode === 'set-password' ? !password || !confirmPassword : !username || !password) : !username || !password)} className="tap-scale flex w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 disabled:bg-primary/45 disabled:text-primary-foreground/90 disabled:opacity-100 px-[18px] whitespace-nowrap h-11 gap-2">
+          <button type="submit" disabled={isSigningIn || (usesSupabase ? (mode === 'forgot' ? !email : mode === 'set-password' ? !password || !confirmPassword : !username || !password) : !username || !password)} className="tap-scale flex w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90 disabled:bg-primary/60 disabled:text-primary-foreground/90 disabled:opacity-100 px-[18px] whitespace-nowrap h-11 gap-2">
             {mode === 'forgot' ? <Mail className="size-4" /> : mode === 'set-password' ? <KeyRound className="size-4" /> : <LogIn className="size-4" />}
             {isSigningIn ? copy.pleaseWait : mode === 'forgot' ? copy.sendReset : mode === 'set-password' ? copy.savePassword : copy.signIn}
           </button>

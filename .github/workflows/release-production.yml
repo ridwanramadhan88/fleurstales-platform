@@ -204,6 +204,7 @@ jobs:
         run: |
           npx -y supabase@2.109.1 functions deploy staff-admin --use-api --project-ref "$SUPABASE_PROJECT_ID"
           npx -y supabase@2.109.1 functions deploy staff-login --use-api --project-ref "$SUPABASE_PROJECT_ID"
+          npx -y supabase@2.109.1 functions deploy staff-password-reset --use-api --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Promote exact Business OS deployment
         env:
