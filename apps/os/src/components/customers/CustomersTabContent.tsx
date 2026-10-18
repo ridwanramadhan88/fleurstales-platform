@@ -26,6 +26,7 @@ import { CustomerVoucherDialogContainer } from './CustomerVoucherDialogContainer
 import { CustomerSegmentRulesSettingsContainer } from './CustomerSegmentRulesSettingsContainer'
 import { ReviewPromoSettings } from './ReviewPromoSettings'
 import { StaffReviewHistory } from './StaffReviewHistory'
+import { useCanReadStaffReviews } from './useCanReadStaffReviews'
 import type { CustomersTabContentViewModel } from './CustomersTabContentController'
 
 export interface CustomersTabContentProps {
@@ -62,7 +63,9 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
   onCancelRemoveCustomer,
   onConfirmRemoveCustomer,
 }) => {
-  const [workspaceTab, setWorkspaceTab] = useState<CustomerWorkspaceTab>('customers')
+  const [requestedTab, setWorkspaceTab] = useState<CustomerWorkspaceTab>('customers')
+  const canReadReviews = useCanReadStaffReviews()
+  const workspaceTab: CustomerWorkspaceTab = canReadReviews ? requestedTab : 'customers'
 
   return (
     <section className="space-y-6">
@@ -103,7 +106,7 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
         >
           Customer
         </button>
-        <button
+        {canReadReviews && <button
           type="button"
           aria-current={workspaceTab === 'reviews' ? 'page' : undefined}
           onClick={() => setWorkspaceTab('reviews')}
@@ -114,7 +117,7 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
           }`}
         >
           Customer Review
-        </button>
+        </button>}
       </nav>
 
       {workspaceTab === 'customers' ? (
