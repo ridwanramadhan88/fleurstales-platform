@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -77,5 +77,23 @@ describe('StaffReviewHistory synchronization', () => {
     expect(screen.getByText('WhatsApp response time')).toBeInTheDocument()
     expect(screen.getByText('Tingkatkan lagi')).toBeInTheDocument()
     expect(screen.queryByText(/Reward 10% off/)).not.toBeInTheDocument()
+  })
+})
+
+describe('StaffReviewHistory permission gate', () => {
+  it('renders nothing and never calls the review RPC for roles without orders.read_all', async () => {
+    const { useUserStore } = await import('../../store/userStore')
+    cleanup()
+    const previous = useUserStore.getState().role
+    mocks.getStaffReviews.mockReset()
+    useUserStore.setState({ role: 'florist' })
+    try {
+      const { container, unmount } = render(<StaffReviewHistory title="Customer reviews" />)
+      expect(container).toBeEmptyDOMElement()
+      expect(mocks.getStaffReviews).not.toHaveBeenCalled()
+      unmount()
+    } finally {
+      useUserStore.setState({ role: previous })
+    }
   })
 })

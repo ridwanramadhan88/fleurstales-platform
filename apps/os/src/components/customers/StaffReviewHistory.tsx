@@ -1,6 +1,7 @@
 import { useEffect, useState, type FC } from 'react'
 import { ChevronDown, Star } from 'lucide-react'
 import { getStaffReviews, type StaffReview } from '../../data/staffReviews'
+import { useCanReadStaffReviews } from './useCanReadStaffReviews'
 
 export interface StaffReviewHistoryProps {
   orderId?: string
@@ -17,12 +18,14 @@ export const StaffReviewHistory: FC<StaffReviewHistoryProps> = ({
   emptyLabel = 'No customer reviews yet.',
   className = '',
 }) => {
+  const canRead = useCanReadStaffReviews()
   const [reviews, setReviews] = useState<StaffReview[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!canRead) return undefined
     let active = true
     let inFlight = false
 
@@ -65,7 +68,9 @@ export const StaffReviewHistory: FC<StaffReviewHistoryProps> = ({
       window.removeEventListener('focus', refreshReviews)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [orderId, customerId])
+  }, [orderId, customerId, canRead])
+
+  if (!canRead) return null
 
   return (
     <section className={`space-y-2 ${className}`.trim()} aria-label={title || 'Customer reviews'}>
