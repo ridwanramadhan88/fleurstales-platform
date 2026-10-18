@@ -1,4 +1,5 @@
 import type { SupabaseAuthTokenProvider } from './supabaseHttpClient'
+import { clearSessionOrigin, recordSessionOrigin } from './sessionLifetime'
 
 const ACCESS_TOKEN_KEY = 'fleurstales.supabase-access-token'
 const SESSION_META_KEY = 'fleurstales.supabase-session-meta'
@@ -50,9 +51,11 @@ export const setSupabaseBrowserSession = (session?: SupabaseBrowserSession | nul
   if (!session?.accessToken) {
     window.sessionStorage.removeItem(ACCESS_TOKEN_KEY)
     window.sessionStorage.removeItem(SESSION_META_KEY)
+    clearSessionOrigin()
     notify()
     return
   }
+  recordSessionOrigin(session.accessToken)
   window.sessionStorage.setItem(ACCESS_TOKEN_KEY, session.accessToken)
   window.sessionStorage.setItem(SESSION_META_KEY, JSON.stringify({ userId: session.userId, expiresAt: session.expiresAt }))
   notify()
