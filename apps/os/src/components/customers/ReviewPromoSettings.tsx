@@ -169,7 +169,7 @@ export const ReviewPromoSettings: FC = () => {
                   <label className="block space-y-1.5 text-xs font-medium">
                     Minimum order (IDR)
                     <input type="number" min={0} step={1000} value={config.reward.minOrderIdr} onChange={(event) => setConfig((current) => current ? { ...current, reward: { ...current.reward, minOrderIdr: Math.max(0, Number(event.target.value)) } } : current)} className={inputClass} />
-                    <span className="block text-2xs font-normal text-muted-foreground">Current minimum: Rp {moneyFormatter.format(config.reward.minOrderIdr)}</span>
+                    <span className="block text-2xs font-normal text-muted-foreground">{`Current minimum: Rp ${moneyFormatter.format(config.reward.minOrderIdr)}`}</span>
                   </label>
                 </div>
 

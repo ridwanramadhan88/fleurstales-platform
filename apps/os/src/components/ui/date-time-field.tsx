@@ -372,7 +372,7 @@ export const TimeSelectField: React.FC<TimeSelectFieldProps> = ({
         <TimeScrollWheel highlighted={draftValue || selected} onHighlight={setDraftValue} onCommit={handleCommit} slots={slots} />
         <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
           <button type="button" className="inline-flex h-9 shrink-0 items-center rounded-full px-3 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground" onClick={() => setOpen(false)}>Cancel</button>
-          <button type="button" className="inline-flex h-9 min-w-0 flex-1 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90" onClick={() => handleCommit(draftValue || selected)}>Use {draftValue || selected}</button>
+          <button type="button" className="inline-flex h-9 min-w-0 flex-1 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-ios-sm transition hover:bg-primary/90" onClick={() => handleCommit(draftValue || selected)}>{`Use ${draftValue || selected}`}</button>
         </div>
       </PopoverContent>
     </Popover>

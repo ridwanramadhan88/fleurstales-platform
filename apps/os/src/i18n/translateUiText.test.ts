@@ -300,3 +300,21 @@ describe('natural Indonesian UI copy', () => {
     )
   })
 })
+
+describe('admin audit copy (2026-10-18)', () => {
+  it.each([
+    ['Review & next-order promo', 'Ulasan & promo pesanan berikutnya'],
+    ['Discount (%)', 'Diskon (%)'],
+    ['Minimum order (IDR)', 'Minimum pesanan (Rp)'],
+    ['Save settings', 'Simpan pengaturan'],
+    ['Current minimum: Rp 300.000', 'Minimum saat ini: Rp 300.000'],
+    ['Use 07:00', 'Pakai 07:00'],
+    ['No payment has been recorded yet.', 'Belum ada pembayaran yang tercatat.'],
+    ['Your Fleurstales access settings were updated.', 'Pengaturan akses Fleurstales Anda telah diperbarui.'],
+    ['Access settings updated', 'Pengaturan akses diperbarui'],
+    ['2 completed orders', '2 pesanan selesai'],
+    ['Week of 2026-09-07 · View your assignment', 'Minggu 2026-09-07 · Lihat tugas Anda'],
+  ])('translates %s', (source, expected) => {
+    expect(translateUiText(source, 'id')).toBe(expected)
+  })
+})

@@ -1,4 +1,21 @@
 export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
+  // Admin audit 2026-10-18: strings that previously fell through to word-by-word output.
+  'Review & next-order promo': 'Ulasan & promo pesanan berikutnya',
+  'Review & promo': 'Ulasan & promo',
+  'Review promo': 'Promo ulasan',
+  'Review questions': 'Pertanyaan ulasan',
+  'Review question': 'Pertanyaan ulasan',
+  'Discount (%)': 'Diskon (%)',
+  'Minimum order (IDR)': 'Minimum pesanan (Rp)',
+  'Customers score each active question from 1–5. Kritik & saran stays optional.': 'Pelanggan menilai tiap pertanyaan aktif dari 1–5. Kritik & saran tetap opsional.',
+  'Save settings': 'Simpan pengaturan',
+  'Review questions and next-order promo saved.': 'Pertanyaan ulasan dan promo pesanan berikutnya tersimpan.',
+  'Review reward must be between 1% and 100%.': 'Promo ulasan harus antara 1% dan 100%.',
+  'Minimum order cannot be negative.': 'Minimum pesanan tidak boleh negatif.',
+  'Confirm the full payment when you Process Order before production starts.': 'Konfirmasi pembayaran penuh saat memproses pesanan, sebelum produksi dimulai.',
+  'No payment has been recorded yet.': 'Belum ada pembayaran yang tercatat.',
+  'Access settings updated': 'Pengaturan akses diperbarui',
+  'Your Fleurstales access settings were updated.': 'Pengaturan akses Fleurstales Anda telah diperbarui.',
   // Business OS terminology: Indonesian is the product language.
   'Dashboard': 'Ringkasan',
   'Orders': 'Pesanan',
@@ -791,4 +808,9 @@ export const ID_STRICT_PATTERN_TRANSLATIONS: Array<
   [/^Shop (.+) collection$/i, (_full, collection) => `Belanja koleksi ${collection}`],
   [/^Promo (\d+(?:[.,]\d+)?)% untuk order berikutnya sudah aktif\.$/i, (_full, percent) => `Promo ${percent}% untuk pesanan berikutnya sudah aktif.`],
   [/^Promo (\d+(?:[.,]\d+)?)% untuk order berikutnya sudah aktif\. Minimum order (.+)\.$/i, (_full, percent, minimum) => `Promo ${percent}% untuk pesanan berikutnya sudah aktif. Minimum pesanan ${minimum}.`],
+  [/^Current minimum: Rp (.+)$/i, (_full, amount) => `Minimum saat ini: Rp ${amount}`],
+  [/^Remove question (\d+)$/i, (_full, index) => `Hapus pertanyaan ${index}`],
+  [/^Use (\d{1,2}[:.]\d{2})$/, (_full, time) => `Pakai ${time}`],
+  [/^Week of (.+?) · View your assignment$/i, (_full, week) => `Minggu ${week} · Lihat tugas Anda`],
+  [/^(\d+) completed orders?$/i, (_full, count) => `${count} pesanan selesai`],
 ]
