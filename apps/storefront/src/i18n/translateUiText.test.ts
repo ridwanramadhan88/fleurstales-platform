@@ -313,6 +313,7 @@ describe('admin audit copy (2026-10-18)', () => {
     ['Your Fleurstales access settings were updated.', 'Pengaturan akses Fleurstales Anda telah diperbarui.'],
     ['Access settings updated', 'Pengaturan akses diperbarui'],
     ['2 completed orders', '2 pesanan selesai'],
+    ['SESSION_REQUIRED', 'Sesi Anda sudah berakhir. Muat ulang halaman lalu masuk kembali.'],
     ['Week of 2026-09-07 · View your assignment', 'Minggu 2026-09-07 · Lihat tugas Anda'],
   ])('translates %s', (source, expected) => {
     expect(translateUiText(source, 'id')).toBe(expected)

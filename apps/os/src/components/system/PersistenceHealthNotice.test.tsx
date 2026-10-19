@@ -44,6 +44,14 @@ describe('PersistenceHealthNotice', () => {
     expect(screen.getByRole('button', { name: 'Muat ulang halaman' })).toBeVisible()
   })
 
+  it('explains an expired session instead of showing the raw SESSION_REQUIRED code', () => {
+    usePersistenceHealthStore.setState({ status: 'error', domain: undefined, reason: undefined, message: 'SESSION_REQUIRED' })
+    render(<PersistenceHealthNotice />)
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('Sesi Anda sudah berakhir')
+    expect(alert).not.toHaveTextContent('SESSION_REQUIRED')
+  })
+
   it('does not add persistent UI for healthy idle state', () => {
     render(<PersistenceHealthNotice />)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()

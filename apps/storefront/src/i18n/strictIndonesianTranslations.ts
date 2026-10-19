@@ -1,4 +1,5 @@
 export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
+  'SESSION_REQUIRED': 'Sesi Anda sudah berakhir. Muat ulang halaman lalu masuk kembali.',
   // Admin audit 2026-10-18: strings that previously fell through to word-by-word output.
   'Review & next-order promo': 'Ulasan & promo pesanan berikutnya',
   'Review & promo': 'Ulasan & promo',
