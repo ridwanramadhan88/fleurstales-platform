@@ -75,6 +75,11 @@ const reasonMessage = (
         ? `${label} belum tersimpan. Periksa koneksi, lalu coba simpan lagi.`
         : `${label} was not saved. Check your connection, then try again.`
     default:
+      if (fallback && /SESSION_REQUIRED/.test(fallback)) {
+        return id
+          ? 'Sesi Anda sudah berakhir. Muat ulang halaman lalu masuk kembali.'
+          : 'Your session has ended. Reload the page and sign in again.'
+      }
       return fallback ?? (id ? COPY.id.genericError : COPY.en.genericError)
   }
 }

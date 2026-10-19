@@ -20,6 +20,8 @@ export interface PersistenceHealthState {
   message?: string
   storageBytes: number
   setHealth: (partial: PersistenceHealthPatch) => void
+  /** Clears any problem notice, e.g. when the staff session changes. */
+  resetHealth: () => void
 }
 
 export type PersistenceHealthPatch = Partial<Omit<PersistenceHealthState, 'setHealth'>>
@@ -30,4 +32,5 @@ export const usePersistenceHealthStore = create<PersistenceHealthState>((set) =>
   revision: 0,
   storageBytes: 0,
   setHealth: (partial) => set(partial),
+  resetHealth: () => set({ status: 'idle', domain: undefined, reason: undefined, message: undefined }),
 }))

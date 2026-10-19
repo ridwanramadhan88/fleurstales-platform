@@ -43,9 +43,15 @@ export const getSupabaseAuthClient = (): SupabaseClient | null => {
   return client
 }
 
+// A sign-out that is still in flight must finish before any screen tries to
+// restore a session, otherwise the login page "restores" the very session that
+// is being closed and the hydration fails with SESSION_REQUIRED.
+let signOutInFlight: Promise<void> | null = null
+
 export const initializeSupabaseAuth = async (): Promise<Session | null> => {
   const authClient = getSupabaseAuthClient()
   if (!authClient) return null
+  if (signOutInFlight) await signOutInFlight.catch(() => undefined)
   const { data, error } = await authClient.auth.getSession()
   if (error) throw error
   syncBrowserSession(data.session)
@@ -152,7 +158,15 @@ export const signOutSupabase = async (): Promise<void> => {
     syncBrowserSession(null)
     return
   }
-  const { error } = await authClient.auth.signOut()
-  syncBrowserSession(null)
-  if (error) throw error
+  const run = (async () => {
+    const { error } = await authClient.auth.signOut()
+    syncBrowserSession(null)
+    if (error) throw error
+  })()
+  signOutInFlight = run
+  try {
+    await run
+  } finally {
+    if (signOutInFlight === run) signOutInFlight = null
+  }
 }

@@ -78,6 +78,7 @@ export default function App() {
       setSelectedBranch('All')
       setView('login')
       await Promise.allSettled([signOutSupabase(), signOutSharedBackend()])
+      usePersistenceHealthStore.getState().resetHealth()
     } finally {
       resettingSessionRef.current = false
     }
@@ -97,6 +98,8 @@ export default function App() {
   }, [resetSession, view])
 
   const handleSignIn = useCallback(async (employee: Employee) => {
+    // Problems recorded by an earlier or aborted session must not leak into this one.
+    usePersistenceHealthStore.getState().resetHealth()
     try {
       const sharedSession = getSharedSession()
       const role = resolveAuthoritativeStaffRole(employee.systemRole, sharedSession)
