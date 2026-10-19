@@ -5,6 +5,7 @@
  * the customerDomain. This component only renders domain outputs.
  */
 
+import { formatOrderCreatedAtLabel } from '../orders/orderTableScheduleLabels'
 import type { FC } from 'react'
 import { MessageCircle, MoreVertical, Ticket, Trash2, User } from 'lucide-react'
 import type { CustomerProfile } from '../../store/customerStoreTypes'
@@ -115,12 +116,12 @@ export const CustomerListItem: FC<CustomerListItemProps> = ({
             )}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{`${metrics.orderCount} orders`}</span>
+            <span className="font-medium text-foreground">{`${metrics.orderCount} completed orders`}</span>
             <span>{`Rp ${formatter.format(metrics.lifetimeSpend)} lifetime`}</span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 text-2xs text-muted-foreground">
             <span className={activityClass}>{activityLabel}</span>
-            {metrics.lastOrderDateLabel && <span>{`· Last ${metrics.lastOrderDateLabel}`}</span>}
+            {metrics.lastOrderDateLabel && <span>{`· Last ${formatOrderCreatedAtLabel(metrics.lastOrderDateLabel)}`}</span>}
             <span>{`· Score ${valueScore}`}</span>
           </div>
         </div>

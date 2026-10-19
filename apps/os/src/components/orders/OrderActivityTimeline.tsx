@@ -7,6 +7,7 @@ import type { FC } from 'react'
 import type { OrderFulfillment, OrderStatus, OrderTableRow } from '../../types/orders'
 import type { OrderActivityEvent } from '../../store/orderRuntimeStore'
 import { isTerminalIssueOrder, isWorkflowHappyPathStatus } from '../../domain/orderBusinessRules'
+import { formatOrderCreatedAtLabel } from './orderTableScheduleLabels'
 import { STATUS_LABELS, STATUS_STAGE_STYLE, getOrderStatusOptionsForFulfillment } from './orderTableLabels'
 
 export interface OrderActivityTimelineProps {
@@ -54,7 +55,7 @@ export const OrderActivityTimeline: FC<OrderActivityTimelineProps> = ({
       let timeLabel: string | null = null
       let actorLabel: string | null = null
       if (index === 0 && !matchedActivity) {
-        timeLabel = order.createdAtLabel
+        timeLabel = formatOrderCreatedAtLabel(order.createdAtLabel)
         actorLabel = 'System'
       } else if (matchedActivity) {
         timeLabel = formatActivityTime(matchedActivity)
