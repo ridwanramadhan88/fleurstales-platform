@@ -314,6 +314,15 @@ describe('admin audit copy (2026-10-18)', () => {
     ['Access settings updated', 'Pengaturan akses diperbarui'],
     ['2 completed orders', '2 pesanan selesai'],
     ['SESSION_REQUIRED', 'Sesi Anda sudah berakhir. Muat ulang halaman lalu masuk kembali.'],
+    ['No payments to reconcile yet', 'Belum ada pembayaran untuk direkonsiliasi'],
+    ['3 unassigned', '3 belum ditugaskan'],
+    ['2 visits', '2 kunjungan'],
+    ['4 work · 3 OFF', '4 masuk · 3 OFF'],
+    ['Missing: Email pemulihan', 'Belum lengkap: Email pemulihan'],
+    ['Inactive · separation date not recorded (legacy)', 'Nonaktif · tanggal berhenti belum tercatat (data lama)'],
+    ['Remove permanently', 'Hapus permanen'],
+    ['Review one employee area at a time.', 'Tinjau satu bagian karyawan dalam satu waktu.'],
+    ['Zizi joined or left during this period. Confirm salary treatment before Finance review.', 'Zizi masuk atau keluar pada periode ini. Konfirmasi perlakuan gaji sebelum ditinjau Keuangan.'],
     ['Week of 2026-09-07 · View your assignment', 'Minggu 2026-09-07 · Lihat tugas Anda'],
   ])('translates %s', (source, expected) => {
     expect(translateUiText(source, 'id')).toBe(expected)

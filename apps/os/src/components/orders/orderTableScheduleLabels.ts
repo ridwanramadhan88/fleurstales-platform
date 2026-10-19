@@ -13,6 +13,7 @@
 import type { OrderTableRow } from '../../types/orders'
 import type { CatalogProduct } from '../../store/catalogStoreTypes'
 import { resolveOrderProductDisplay } from '../../domain/catalogDomain'
+import { getDateLocale } from '../../i18n/uiLanguage'
 
 /**
  * @description Attempts to parse a createdAtLabel (e.g. "12 Apr 2026 · 10:15")
@@ -29,7 +30,7 @@ export const formatOrderCreatedAtLabel = (label: string): string => {
   const timestamp = getCreatedAtTimestamp(label)
   if (!timestamp) return label
 
-  const parts = new Intl.DateTimeFormat('en-GB', {
+  const parts = new Intl.DateTimeFormat(getDateLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

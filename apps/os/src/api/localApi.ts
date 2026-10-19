@@ -49,7 +49,13 @@ export const setItem = async (key: string, value: string): Promise<void> => {
     return
   }
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(namespacedKey(key), value)
+  try {
+    window.localStorage.setItem(namespacedKey(key), value)
+  } catch (error) {
+    // A full browser cache must not break saving: the local copy is only a cache.
+    if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) return
+    throw error
+  }
   getChannel()?.postMessage({ key } satisfies SyncMessage)
 }
 
