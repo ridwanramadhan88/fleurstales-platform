@@ -41,6 +41,9 @@ interface AuditLogState {
 
 const AUDIT_PERSIST_NAME = 'audit-log'
 const MAX_LOCAL_AUDIT_EVENTS = 5000
+// Browser storage is ~5 MB and shared by every store, so only the newest events
+// are cached locally. The full history lives in the database.
+const MAX_PERSISTED_AUDIT_EVENTS = 200
 
 export const useAuditLogStore = create<AuditLogState>()(
   persist(
@@ -62,7 +65,7 @@ export const useAuditLogStore = create<AuditLogState>()(
     {
       name: AUDIT_PERSIST_NAME,
       storage: createJSONStorage(() => apiStorage),
-      partialize: (state) => ({ events: state.events }) as AuditLogState,
+      partialize: (state) => ({ events: state.events.slice(0, MAX_PERSISTED_AUDIT_EVENTS) }) as AuditLogState,
     },
   ),
 )
