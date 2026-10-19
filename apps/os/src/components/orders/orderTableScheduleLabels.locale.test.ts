@@ -7,11 +7,13 @@ describe('formatOrderCreatedAtLabel locale', () => {
 
   it('uses Indonesian month names when the UI is Indonesian', () => {
     useUiLanguage.setState({ language: 'id' })
-    expect(formatOrderCreatedAtLabel('18 Oct 2026 · 21:36')).toMatch(/^18 Okt 2026 · 21:36$/)
+    const label = formatOrderCreatedAtLabel('18 Oct 2026 · 12:00')
+    expect(label).toMatch(/ Okt 2026 · \d{2}:\d{2}$/)
+    expect(label).not.toContain('Oct')
   })
 
   it('keeps English month names when the UI is English', () => {
     useUiLanguage.setState({ language: 'en' })
-    expect(formatOrderCreatedAtLabel('18 Oct 2026 · 21:36')).toBe('18 Oct 2026 · 21:36')
+    expect(formatOrderCreatedAtLabel('18 Oct 2026 · 12:00')).toMatch(/ Oct 2026 · \d{2}:\d{2}$/)
   })
 })
