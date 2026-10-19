@@ -1,4 +1,16 @@
 export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
+  'No payments to reconcile yet': 'Belum ada pembayaran untuk direkonsiliasi',
+  'No reconciliation items match these filters': 'Tidak ada item rekonsiliasi yang cocok dengan filter ini',
+  'Inactive · separation date not recorded (legacy)': 'Nonaktif · tanggal berhenti belum tercatat (data lama)',
+  'Review one employee area at a time.': 'Tinjau satu bagian karyawan dalam satu waktu.',
+  'Remove account / employee': 'Hapus akun / karyawan',
+  'Remove permanently': 'Hapus permanen',
+  'Force resolve linked records': 'Paksa selesaikan data terkait',
+  'Force resolve & remove': 'Paksa selesaikan & hapus',
+  'Needs 3 visits': 'Perlu 3 kunjungan',
+  'Linked operational records must be resolved first, or enable Force resolve below.': 'Data operasional terkait harus diselesaikan dulu, atau aktifkan Paksa selesaikan di bawah.',
+  'Permanent removal deletes the staff login and employee profile. If linked operational history exists, review it first or use Force resolve.': 'Penghapusan permanen menghapus login staf dan profil karyawan. Jika ada riwayat operasional terkait, tinjau dulu atau gunakan Paksa selesaikan.',
+  'Remove the linked attendance, review, points, schedule and payroll records, and detach this employee from existing orders before deleting the account.': 'Hapus data absensi, ulasan, poin, jadwal, dan penggajian terkait, serta lepaskan karyawan ini dari pesanan yang ada sebelum akun dihapus.',
   'SESSION_REQUIRED': 'Sesi Anda sudah berakhir. Muat ulang halaman lalu masuk kembali.',
   // Admin audit 2026-10-18: strings that previously fell through to word-by-word output.
   'Review & next-order promo': 'Ulasan & promo pesanan berikutnya',
@@ -728,6 +740,12 @@ const translateFloristReason = (reason: string): string =>
 export const ID_STRICT_PATTERN_TRANSLATIONS: Array<
   [RegExp, (...matches: string[]) => string]
 > = [
+  [/^(\d+) unassigned$/, (_full, count) => `${count} belum ditugaskan`],
+  [/^(\d+) visits?$/, (_full, count) => `${count} kunjungan`],
+  [/^(\d+) work · (\d+) OFF$/, (_full, work, off) => `${work} masuk · ${off} OFF`],
+  [/^Missing: (.+)$/, (_full, list) => `Belum lengkap: ${list}`],
+  [/^Employment ended (.+)$/, (_full, date) => `Masa kerja berakhir ${date}`],
+  [/^(.+) joined or left during this period\. Confirm salary treatment before Finance review\.$/, (_full, names) => `${names} masuk atau keluar pada periode ini. Konfirmasi perlakuan gaji sebelum ditinjau Keuangan.`],
   [/^Rate (\d+) out of 5$/i, (_full, score) => `Beri nilai ${score} dari 5`],
   [new RegExp(String.raw`^${SCHEDULE_DATE_LABEL}(?: · (\d{1,2}[:.]\d{2}))?$`), (_full, date, time) => translateScheduleLabel(date, time)],
   [new RegExp(String.raw`^(Delivery|Pickup) · ${SCHEDULE_DATE_LABEL}(?: · (\d{1,2}[:.]\d{2}))?$`), (_full, kind, date, time) => `${kind === 'Delivery' ? 'Pengiriman' : 'Pengambilan'} · ${translateScheduleLabel(date, time)}`],
