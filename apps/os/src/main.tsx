@@ -6,6 +6,7 @@ import { UiLanguageBridge } from './i18n/UiLanguageBridge'
 import { initializeBusinessOsCatalogBridge } from './data/shared/catalogBridge'
 import { initializeBusinessOsStoreBridge } from './data/shared/storeBridge'
 import { isSharedBackendConfigured } from './api/remoteSession'
+import { bootstrapSharedData } from './data/shared/bootstrap'
 
 const root = createRoot(document.getElementById('app')!)
 
@@ -35,8 +36,11 @@ const start = async () => {
   // browser backup before production data bridges hydrate the application.
   removeLocalOperationalBackup()
   if (!isSharedBackendConfigured()) {
-    await initializeBusinessOsStoreBridge()
-    await initializeBusinessOsCatalogBridge()
+    // With Supabase the real load happens after sign-in (App.handleSignIn), once
+    // the staff role is known. Boot only attaches the focus-refresh listeners.
+    const skipInitialRefresh = bootstrapSharedData().enabled
+    await initializeBusinessOsStoreBridge({ skipInitialRefresh })
+    await initializeBusinessOsCatalogBridge({ skipInitialRefresh })
   }
   root.render(<>
     <UiLanguageBridge />

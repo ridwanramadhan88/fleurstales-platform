@@ -359,8 +359,14 @@ export const initializeStorefrontStoreBridge = async (): Promise<void> => {
   }
 }
 
-export const initializeBusinessOsStoreBridge = async (): Promise<void> => {
-  await refreshBusinessOsStoreFromRemote()
+/**
+ * @param options.skipInitialRefresh Skip the first remote load. Used in
+ * production boot: no staff role is known yet (the store still holds the demo
+ * `admin` default), so an eager load would run the admin-only queries and be
+ * rejected for roles without access. The sign-in flow performs the real load.
+ */
+export const initializeBusinessOsStoreBridge = async (options?: { skipInitialRefresh?: boolean }): Promise<void> => {
+  if (!options?.skipInitialRefresh) await refreshBusinessOsStoreFromRemote()
   if (!businessFocusAttached && typeof window !== 'undefined') {
     businessFocusAttached = true
     window.addEventListener('focus', () => {
