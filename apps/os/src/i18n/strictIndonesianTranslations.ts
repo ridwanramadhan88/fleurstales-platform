@@ -11,6 +11,7 @@ export const ID_STRICT_TRANSLATIONS: Record<string, string> = {
   'Linked operational records must be resolved first, or enable Force resolve below.': 'Data operasional terkait harus diselesaikan dulu, atau aktifkan Paksa selesaikan di bawah.',
   'Permanent removal deletes the staff login and employee profile. If linked operational history exists, review it first or use Force resolve.': 'Penghapusan permanen menghapus login staf dan profil karyawan. Jika ada riwayat operasional terkait, tinjau dulu atau gunakan Paksa selesaikan.',
   'Remove the linked attendance, review, points, schedule and payroll records, and detach this employee from existing orders before deleting the account.': 'Hapus data absensi, ulasan, poin, jadwal, dan penggajian terkait, serta lepaskan karyawan ini dari pesanan yang ada sebelum akun dihapus.',
+  'Choose a different photo': 'Pilih foto lain',
   'SESSION_REQUIRED': 'Sesi Anda sudah berakhir. Muat ulang halaman lalu masuk kembali.',
   // Admin audit 2026-10-18: strings that previously fell through to word-by-word output.
   'Review & next-order promo': 'Ulasan & promo pesanan berikutnya',
