@@ -196,3 +196,34 @@ begin
     raise exception 'Retired combined wrapper lost its post-proof revision safety';
   end if;
 end $$;
+
+-- Regression: orders created by staff in the OS carry an `internal:` idempotency
+-- key and must be allowed to confirm cash payments. Only customer-app orders
+-- stay transfer-only.
+do $$
+declare
+  v_function text;
+  v_source text;
+begin
+  foreach v_function in array array[
+    'confirm_order_payment_for_processing',
+    'confirm_order_payment_with_proof',
+    'process_order_for_production'
+  ] loop
+    select pg_get_functiondef(p.oid) into v_source
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = v_function;
+
+    if v_source is null then
+      raise exception 'Missing payment function public.%', v_function;
+    end if;
+    if position('storefront_idempotency_key is not null or v_order.source' in v_source) > 0 then
+      raise exception 'public.% still blocks cash payments for internal orders', v_function;
+    end if;
+    if position('storefront_idempotency_key not like ''internal:%''' in v_source) = 0
+       or position('v_order.source=''customer_app''' in v_source) = 0 then
+      raise exception 'public.% must keep customer-app orders transfer-only and allow internal cash orders', v_function;
+    end if;
+  end loop;
+end
+$$;
