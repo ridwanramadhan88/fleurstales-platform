@@ -313,6 +313,7 @@ describe('admin audit copy (2026-10-18)', () => {
     ['Your Fleurstales access settings were updated.', 'Pengaturan akses Fleurstales Anda telah diperbarui.'],
     ['Access settings updated', 'Pengaturan akses diperbarui'],
     ['2 completed orders', '2 pesanan selesai'],
+    ['Choose a different photo', 'Pilih foto lain'],
     ['SESSION_REQUIRED', 'Sesi Anda sudah berakhir. Muat ulang halaman lalu masuk kembali.'],
     ['No payments to reconcile yet', 'Belum ada pembayaran untuk direkonsiliasi'],
     ['3 unassigned', '3 belum ditugaskan'],

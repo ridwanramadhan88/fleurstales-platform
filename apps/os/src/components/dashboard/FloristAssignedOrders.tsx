@@ -6,6 +6,7 @@ import { surfaceCardClass } from '../ui/card'
 import { OrderFinishPhotoDialog } from '../orders/OrderFinishPhotoDialog'
 import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
 import type { OrderTableRow } from '../../types/orders'
+import { formatOrderCreatedAtLabel } from '../orders/orderTableScheduleLabels'
 
 const ACTIVE_STATUSES = new Set(['processing', 'ready'])
 
@@ -55,7 +56,7 @@ export function FloristAssignedOrders({ onGoToOrders: _onGoToOrders }: { onGoToO
                   <span className="rounded-full bg-surface-neutral px-2 py-0.5 text-2xs font-semibold text-foreground ring-1 ring-border/80">{statusLabel(order.status)}</span>
                 </div>
                 <p className="mt-1 truncate text-sm">{order.customerName} · {order.productName ?? order.items?.[0]?.productName ?? 'Custom order'}</p>
-                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><CalendarClock className="size-3.5" />{order.scheduleLabel ?? order.scheduleDate ?? 'Schedule not set'}</p>
+                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><CalendarClock className="size-3.5" />{order.scheduleLabel ? formatOrderCreatedAtLabel(order.scheduleLabel) : order.scheduleDate ?? 'Schedule not set'}</p>
               </div>
               {order.status === 'processing' ? (
                 <button
