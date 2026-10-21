@@ -19,9 +19,11 @@ Requirements: Docker, Node 22, `psql`. Install the browser once with
 | `roles.spec.ts` | Switching accounts in the same tab leaves no stale "changes not saved / SESSION_REQUIRED" notice (#142). |
 | `roles.spec.ts` | Reloading as HR never calls admin-only catalog RPCs (#144). |
 | `order-flow.spec.ts` | Admin creates a cash pickup order, confirms it paid (#145), assigns the florist and starts production; the florist sees it and uploads the finish photo. |
+| `refund-flow.spec.ts` | Finance and Owner start a refund on a paid order; cancelling a paid order queues its refund; Finance completes each refund from the refund queue with the paying account. Toasts must be visible and Indonesian. |
 
 Every test also fails on any console error or any 4xx/5xx response from
-Supabase (see `fixtures.ts` for the short, documented ignore list).
+Supabase (the server error code is included in the failure; see `fixtures.ts`
+for the short, documented ignore list). Shared order steps live in `orders.ts`.
 
 ## Accounts
 

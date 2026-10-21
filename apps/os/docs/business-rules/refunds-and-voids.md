@@ -15,9 +15,18 @@ Refunds are production workflows, not target-only design. Finance and Owner can 
 
 ## Authorization
 
-- Admin may request permitted order corrections but cannot complete a Finance refund.
-- Finance and Owner may approve or reject refund decisions when action permissions allow it.
+- Finance and Owner may start a refund on any paid order.
+- Admin may start a refund only by cancelling a paid order (the refund is queued automatically).
+- Withdrawing a pending refund back to Paid, and completing a refund, are Finance-only.
+- A cancelled order's pending refund cannot be withdrawn; it must be completed.
 - Rejection, reversal, cancellation, and force-unlock require a reason.
+
+## Paid cancellations
+
+Cancelling a paid order sets `refund_pending` with a `refund_initiated` event in
+the same save (`orderCancellationRefundDomain.ts`). It appears in Finance's
+refund queue; no money moves until Finance completes it with the paying account
+(`gap-log.md` §11).
 
 ## Integrity rules
 

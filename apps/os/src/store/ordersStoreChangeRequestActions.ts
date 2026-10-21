@@ -15,6 +15,8 @@ import {
 import { transitionOrderStatus } from '../domain/orderBusinessRules'
 import { useSettingsStore } from './settingsStore'
 import { finalizeOrderMutation, validateOrderCommand } from './orderCommandSupport'
+import { queueCancellationRefund } from '../domain/orderCancellationRefundDomain'
+import { cancellationRequiresRefund } from '../domain/orderRefundDomain'
 
 type ChangeRequestActions = Pick<
   OrdersStoreState,
@@ -99,12 +101,12 @@ export const createOrderChangeRequestActions = (
       if (!transition.allowed) {
         return { allowed: false, code: 'INVALID_INPUT', reason: transition.reason }
       }
+      const cancelledOrder = { ...transition.order, pendingChangeRequest: undefined }
       const updatedOrder = finalizeOrderMutation({
         before: target!,
-        after: {
-          ...transition.order,
-          pendingChangeRequest: undefined,
-        },
+        after: cancellationRequiresRefund(target!)
+          ? queueCancellationRefund(cancelledOrder, target!, actor, expectedRevision)
+          : cancelledOrder,
         actor,
         action: 'order.change_request.cancel.approve',
         reason: request.reason,

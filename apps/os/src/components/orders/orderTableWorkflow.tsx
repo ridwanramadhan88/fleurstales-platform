@@ -122,6 +122,17 @@ export const advanceOrderStatus = ({
     actor: actor.name,
   })
 
+  if (nextStatus === 'cancelled') {
+    // Cancellation is final on the server, so it never offers Undo.
+    toast({
+      title: `${order.orderNumber} moved to ${STATUS_LABELS[nextStatus]}`,
+      description: transition.order.paymentStatus === 'refund_pending'
+        ? 'The paid amount is waiting in Finance\'s refund queue.'
+        : order.customerName,
+    })
+    return true
+  }
+
   toast({
     title: `${order.orderNumber} moved to ${STATUS_LABELS[nextStatus]}`,
     description: order.customerName,

@@ -3,6 +3,7 @@ import './shadcn.css'
 import App from './App'
 import { removeLocalOperationalBackup } from './data/operationalStateRepository'
 import { UiLanguageBridge } from './i18n/UiLanguageBridge'
+import { Toaster } from './components/ui/toaster'
 import { initializeBusinessOsCatalogBridge } from './data/shared/catalogBridge'
 import { initializeBusinessOsStoreBridge } from './data/shared/storeBridge'
 import { isSharedBackendConfigured } from './api/remoteSession'
@@ -45,6 +46,7 @@ const start = async () => {
   root.render(<>
     <UiLanguageBridge />
     <App />
+    <Toaster />
   </>)
 }
 
