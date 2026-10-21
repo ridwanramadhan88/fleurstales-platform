@@ -741,6 +741,8 @@ const translateFloristReason = (reason: string): string =>
 export const ID_STRICT_PATTERN_TRANSLATIONS: Array<
   [RegExp, (...matches: string[]) => string]
 > = [
+  [/^Order (\S+) details$/, (_full, orderNumber) => `Detail pesanan ${orderNumber}`],
+  [/^Available (\d{1,2}[:.]\d{2})–(\d{1,2}[:.]\d{2})$/, (_full, opens, closes) => `Tersedia ${opens}–${closes}`],
   [/^(\d+) unassigned$/, (_full, count) => `${count} belum ditugaskan`],
   [/^(\d+) visits?$/, (_full, count) => `${count} kunjungan`],
   [/^(\d+) work · (\d+) OFF$/, (_full, work, off) => `${work} masuk · ${off} OFF`],

@@ -14,3 +14,8 @@ backend/uploads/**
 !backend/uploads/.gitkeep
 backend/data/backups/**
 !backend/data/backups/.gitkeep
+
+# Playwright E2E
+/test-results/
+/e2e-report/
+/playwright-report/

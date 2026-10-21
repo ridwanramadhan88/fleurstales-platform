@@ -37,8 +37,37 @@ jobs:
       - name: Replay all migrations and smoke tests on disposable Supabase
         run: ./scripts/run-local-supabase-database-gate.sh
 
+  os-e2e:
+    name: Business OS end-to-end
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: npm ci
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/os
+      - name: Run role-based end-to-end suite on disposable Supabase
+        run: ./scripts/run-os-e2e.sh
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: os-e2e-report
+          path: |
+            apps/os/e2e-report
+            apps/os/test-results
+          retention-days: 7
+
   migrate-and-test-staging:
-    needs: database-preflight
+    needs: [database-preflight, os-e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: staging
