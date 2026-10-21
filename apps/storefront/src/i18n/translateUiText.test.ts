@@ -314,6 +314,8 @@ describe('admin audit copy (2026-10-18)', () => {
     ['Access settings updated', 'Pengaturan akses diperbarui'],
     ['2 completed orders', '2 pesanan selesai'],
     ['Choose a different photo', 'Pilih foto lain'],
+    ['Available 07:00–16:00', 'Tersedia 07:00–16:00'],
+    ['Order KDM-2026-0001 details', 'Detail pesanan KDM-2026-0001'],
     ['SESSION_REQUIRED', 'Sesi Anda sudah berakhir. Muat ulang halaman lalu masuk kembali.'],
     ['No payments to reconcile yet', 'Belum ada pembayaran untuk direkonsiliasi'],
     ['3 unassigned', '3 belum ditugaskan'],

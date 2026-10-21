@@ -142,7 +142,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       <AppSheet
         open={sheetOpen}
         onOpenChange={(nextOpen) => { if (!nextOpen) requestClose() }}
-        title={<span className="sr-only">Order {order.orderNumber} details</span>}
+        title={<span className="sr-only">{`Order ${order.orderNumber} details`}</span>}
         side="bottom"
         size="standard"
         hideCloseButton

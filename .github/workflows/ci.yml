@@ -77,7 +77,7 @@ jobs:
             # Migrations, SQL smoke tests and the gate's own scripts/workflow must
             # replay against a real database before merge, not first at release.
             case "$file" in
-              supabase/*|scripts/run-local-supabase-database-gate.sh|scripts/run-supabase-smoke-tests.sh|.github/workflows/ci.yml)
+              supabase/*|scripts/run-local-supabase-database-gate.sh|scripts/run-supabase-smoke-tests.sh|scripts/run-os-e2e.sh|.github/workflows/ci.yml)
                 supabase=true
                 ;;
             esac
@@ -234,6 +234,39 @@ jobs:
       - name: Replay migrations and run every SQL smoke test
         run: ./scripts/run-local-supabase-database-gate.sh
 
+  os-e2e:
+    name: Business OS end-to-end
+    needs: [mode, app-paths]
+    # app-paths is skipped in full mode, so evaluate even when a need was skipped.
+    if: >-
+      !cancelled() && needs.mode.result == 'success' &&
+      (needs.mode.outputs.full == 'true' || needs.app-paths.outputs.os == 'true' || needs.app-paths.outputs.supabase == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: npm ci
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/os
+      - name: Run role-based end-to-end suite on disposable Supabase
+        run: ./scripts/run-os-e2e.sh
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: os-e2e-report
+          path: |
+            apps/os/e2e-report
+            apps/os/test-results
+          retention-days: 7
+
   ci-gate:
     name: CI gate
     needs:
@@ -246,6 +279,7 @@ jobs:
       - storefront-verify
       - os-verify
       - database-gate
+      - os-e2e
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 2
@@ -263,6 +297,7 @@ jobs:
       STOREFRONT_VERIFY_RESULT: ${{ needs.storefront-verify.result }}
       OS_VERIFY_RESULT: ${{ needs.os-verify.result }}
       DATABASE_RESULT: ${{ needs.database-gate.result }}
+      E2E_RESULT: ${{ needs.os-e2e.result }}
     steps:
       - name: Require every relevant CI job to pass
         shell: bash
@@ -298,6 +333,7 @@ jobs:
             require_success "Storefront full verification" "$STOREFRONT_VERIFY_RESULT"
             require_success "Business OS full verification" "$OS_VERIFY_RESULT"
             require_success "Supabase database gate" "$DATABASE_RESULT"
+            require_success "Business OS end-to-end" "$E2E_RESULT"
             echo "Full CI passed."
           else
             require_success "Path detection" "$APP_PATHS_RESULT"
@@ -305,5 +341,8 @@ jobs:
             require_app_result "Storefront fast checks" "$STOREFRONT_NEEDED" "$STOREFRONT_RESULT"
             require_app_result "Business OS fast checks" "$OS_NEEDED" "$OS_RESULT"
             require_app_result "Supabase database gate" "$SUPABASE_NEEDED" "$DATABASE_RESULT"
+            E2E_NEEDED=false
+            if [[ "$OS_NEEDED" == "true" || "$SUPABASE_NEEDED" == "true" ]]; then E2E_NEEDED=true; fi
+            require_app_result "Business OS end-to-end" "$E2E_NEEDED" "$E2E_RESULT"
             echo "Fast CI passed."
           fi
