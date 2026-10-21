@@ -307,7 +307,9 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         open={viewModel.cancelConfirmOpen}
         onOpenChange={viewModel.onCancelConfirmChange}
         title="Cancel this order?"
-        description={`Cancel order for ${order.customerName}? This can be undone from the toast immediately after.`}
+        description={order.paymentStatus === 'paid' && (order.paidAmountIdr ?? 0) > 0
+          ? `Cancel order for ${order.customerName}? The paid amount moves to Finance's refund queue; Finance returns the money and records it.`
+          : `Cancel order for ${order.customerName}? A cancelled order cannot be reopened.`}
         confirmLabel="Cancel order"
         destructive
         onConfirm={viewModel.confirmCancelOrder}

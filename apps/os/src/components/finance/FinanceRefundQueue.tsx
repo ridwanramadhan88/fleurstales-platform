@@ -14,6 +14,7 @@ import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
+import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 
 type RefundQueueTab = 'pending' | 'completed' | 'all'
 
@@ -108,7 +109,9 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
     setActionBusy(true)
     setActionError(null)
     try {
-      if (isSharedBackendConfigured()) {
+      // Supabase (production) and the legacy shared API both own refund completion
+      // server-side; only the offline prototype completes it in the local store.
+      if (isSupabaseConfigured() || isSharedBackendConfigured()) {
         if (!confirmOrder.id) throw new Error('Order id is missing.')
         await completeOrderRefundWithAccount({
           orderId: confirmOrder.id,
@@ -238,7 +241,7 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
                   {pending && canManageRefunds && (
                     <div className="mt-4 flex min-w-[9.5rem] flex-col items-stretch gap-2 sm:mt-0">
                       <button type="button" onClick={() => beginCompleteRefund(order)} className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-foreground/90">Complete Refund</button>
-                      <details className="relative"><summary className="flex h-9 cursor-pointer list-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3.5 text-xs font-semibold text-muted-foreground">More actions</summary><div className="absolute right-0 z-20 mt-1 w-40 rounded-xl bg-surface-popover p-2 shadow-lg ring-1 ring-border"><button type="button" onClick={() => { setActionError(null); setCancelReason(''); setPendingAction({ type: 'cancel', orderNumber: order.orderNumber }) }} className="flex h-11 w-full items-center justify-center rounded-full px-[18px] text-sm font-semibold text-destructive hover:bg-destructive/10">Cancel Refund</button></div></details>
+                      {order.status !== 'cancelled' && <details className="relative"><summary className="flex h-9 cursor-pointer list-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border px-3.5 text-xs font-semibold text-muted-foreground">More actions</summary><div className="absolute right-0 z-20 mt-1 w-40 rounded-xl bg-surface-popover p-2 shadow-lg ring-1 ring-border"><button type="button" onClick={() => { setActionError(null); setCancelReason(''); setPendingAction({ type: 'cancel', orderNumber: order.orderNumber }) }} className="flex h-11 w-full items-center justify-center rounded-full px-[18px] text-sm font-semibold text-destructive hover:bg-destructive/10">Cancel Refund</button></div></details>}
                     </div>
                   )}
                 </div>

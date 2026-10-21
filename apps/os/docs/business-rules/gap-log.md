@@ -36,7 +36,7 @@ remain documentation-only.
 | §8 | Finance-verification eligibility | Resolved |
 | §9 | Finance resubmission tests | Resolved |
 | §10 | Duplicate change-request denial | Resolved |
-| §11 | Documentation-only product policy | Open |
+| §11 | Paid cancellation queues a refund (owner decision 2026-10-22) | Resolved |
 | §12 | Unified correction workflow tests | Resolved |
 | §13 | Payment-event ledger posting and verification | Resolved |
 | §14–§18 | Authorization and scope suites | Partial / resolved |
@@ -161,14 +161,33 @@ remains unchanged.
 
 **Evidence:** change-request domain/store tests and §10 pairing test.
 
-## §11 — Cancellation/void and refund are separate business decisions
+## §11 — Paid cancellations queue a refund
 
-**Status: Open product policy, explicit current behavior.**
+**Status: Resolved (owner decision, 2026-10-22).**
 
-Cancelling or failing an order does not silently refund money. Refunds are
-separate Finance/Owner commands with their own reason, amount, audit data, and
-ledger event. The business must keep deciding case-by-case whether a cancelled
-paid order requires a refund; the system must not infer it without policy.
+Cancelling an order that has been paid in full starts its refund in the same
+save: the order becomes `cancelled` with `payment_status = refund_pending`, a
+`refund_initiated` payment event, and the reason "Order cancelled after
+payment." No money moves at cancellation; Finance completes the refund from the
+refund queue, choosing the account the money leaves from, which posts the
+`order_refund` ledger transaction. A cancelled order's pending refund cannot be
+withdrawn back to Paid.
+
+Refund authority: Finance and Owner may start a refund on any paid order; Admin
+may start one only as part of cancelling a paid order; withdrawing or completing
+a refund is Finance-only. The server enforces this in
+`save_order_operational_state_v34_internal`, `save_order_operational_state_v31_internal`
+(`PAID_ORDER_CANCELLATION_REQUIRES_REFUND`, `CANCELLED_ORDER_REFUND_REQUIRED`) and
+`complete_order_refund_with_account` (migration
+`20261022100000_refund_flow_authority`).
+
+Before this decision a paid order could be cancelled while still recorded as
+paid income, and the refund could not be started on an active order by any role
+in the app (Finance was rejected with `FINANCE_GENERAL_ORDERS_READ_ONLY` and the
+v34 layer required `finance.approve_refund`, which Owner does not hold).
+
+**Evidence:** §11 pairing test, `orderCancellationRefundDomain.test.ts`, and the
+`refund-flow.spec.ts` end-to-end suite.
 
 ## §12 — Finance exposed overlapping Reject and Review actions
 
@@ -341,7 +360,6 @@ The gaps still requiring a production decision or boundary are:
 
 1. **§5** server-derived authenticated identity.
 2. **§7** fully server-authoritative immutable audit records/timestamps.
-3. **§11** explicit business policy linking paid cancellations to refunds.
 4. **§14** API/database authorization enforcement.
 5. **§16–§17** production permission persistence, session invalidation, and
    recovery policy.

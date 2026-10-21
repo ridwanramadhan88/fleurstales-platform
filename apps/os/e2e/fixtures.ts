@@ -36,10 +36,12 @@ const watch = (page: Page): PageProblems => {
     problems.consoleErrors.push(text)
   })
   page.on('pageerror', (error) => problems.consoleErrors.push(`pageerror: ${error.message}`))
-  page.on('response', (response) => {
+  page.on('response', async (response) => {
     const url = response.url()
-    if (!url.startsWith('http://127.0.0.1:54321')) return
-    if (response.status() >= 400) problems.failedResponses.push(`${response.status()} ${response.request().method()} ${url.replace('http://127.0.0.1:54321', '')}`)
+    if (!url.startsWith('http://127.0.0.1:54321') || response.status() < 400) return
+    const body = await response.text().catch(() => '')
+    const code = /"message":"([^"]+)"/.exec(body)?.[1]
+    problems.failedResponses.push(`${response.status()} ${response.request().method()} ${url.replace('http://127.0.0.1:54321', '').split('?')[0]}${code ? ` ${code}` : ''}`)
   })
   return problems
 }
@@ -68,6 +70,9 @@ export const signIn = async (page: Page, role: StaffRole) => {
 }
 
 export const signOut = async (page: Page) => {
+  // A reload closes any open dialog while keeping the session.
+  await page.reload()
+  await expect(page.getByRole('navigation').first()).toBeVisible()
   await page.locator('header button[aria-haspopup="menu"]').first().click()
   await page.getByRole('button', { name: /keluar|sign out/i }).click()
   await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 30_000 })
@@ -114,7 +119,8 @@ const DATA_ALLOWLIST = [/^E2E /, /@fleurstales\.test$/]
 
 /** Returns visible UI lines that still contain English. */
 export const englishLines = async (page: Page): Promise<string[]> => {
-  const text = await page.locator('main, [role="dialog"]').evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).innerText).join('\n'))
+  // Toasts render outside <main>; include them so untranslated feedback is caught.
+  const text = await page.locator('main, [role="dialog"], [role="region"] ol > li').evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).innerText).join('\n'))
   return [...new Set(text.split('\n').map((line) => line.trim()).filter(Boolean))]
     .filter((line) => !DATA_ALLOWLIST.some((pattern) => pattern.test(line)))
     .filter((line) => ENGLISH_UI.test(line) || MONTHS_EN.test(line))

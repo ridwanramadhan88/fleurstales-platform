@@ -227,3 +227,37 @@ begin
   end loop;
 end
 $$;
+
+-- Regression (2026-10-22): Finance/Owner can start refunds on any order, a paid
+-- order is only cancelled together with its refund, and completing a refund is
+-- Finance-only.
+do $$
+declare
+  v_save text;
+  v_complete text;
+begin
+  select pg_get_functiondef(p.oid) into v_save
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.proname = 'save_order_operational_state_v31_internal';
+  select pg_get_functiondef(p.oid) into v_complete
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.proname = 'complete_order_refund_with_account';
+
+  if position('Pure refund changes' in v_save) = 0 then
+    raise exception 'Refund-only changes must bypass the operational-edit gate for Finance/Owner';
+  end if;
+  if position('PAID_ORDER_CANCELLATION_REQUIRES_REFUND' in v_save) = 0
+    or position('CANCELLED_ORDER_REFUND_REQUIRED' in v_save) = 0 then
+    raise exception 'Paid cancellations must start a refund that cannot be withdrawn';
+  end if;
+  if position('Owner may start refunds; Admin may queue one only while cancelling' in (
+    select pg_get_functiondef(p.oid) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'save_order_operational_state_v34_internal'
+  )) = 0 then
+    raise exception 'v34 order save layer must let Owner start refunds and Admin queue them on paid cancellation';
+  end if;
+  if position('current_staff_role() is distinct from ''finance''' in v_complete) = 0 then
+    raise exception 'Refund completion must be Finance-only';
+  end if;
+end
+$$;

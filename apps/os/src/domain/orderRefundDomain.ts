@@ -9,15 +9,53 @@ export type RefundResult =
   | { allowed: true; order: OrderTableRow }
   | { allowed: false; reason: string }
 
-/** One capability owns the full refund lifecycle: initiate, complete, or cancel. */
+/**
+ * Finance (via `finance.approve_refund`) and Owner may start a refund.
+ * Withdrawing or completing it — money leaving an account — stays with Finance;
+ * the server enforces completion in `complete_order_refund_with_account`.
+ */
 export const canInitiateOrderRefund = (role: UserRole): boolean =>
-  isActionAuthorized(role, 'finance.approve_refund')
+  role === 'owner' || isActionAuthorized(role, 'finance.approve_refund')
 
 export const canCompleteOrderRefund = (role: UserRole): boolean =>
-  isActionAuthorized(role, 'finance.approve_refund')
+  role !== 'owner' && isActionAuthorized(role, 'finance.approve_refund')
 
+/** Withdrawing a pending refund back to Paid stays with Finance. */
 export const canCancelOrderRefund = (role: UserRole): boolean =>
-  isActionAuthorized(role, 'finance.approve_refund')
+  role !== 'owner' && isActionAuthorized(role, 'finance.approve_refund')
+
+/** A paid order that is cancelled must have its refund started in the same save. */
+export const cancellationRequiresRefund = (order: Pick<OrderTableRow, 'paymentStatus' | 'paidAmountIdr'>): boolean =>
+  order.paymentStatus === 'paid' && (order.paidAmountIdr ?? 0) > 0
+
+/**
+ * Marks a paid order that is being cancelled as `refund_pending`. Permission is
+ * the cancellation's (Owner/Admin/Finance); the server only accepts this shape
+ * together with the status change to `cancelled`.
+ */
+export const queueRefundForCancellation = ({
+  order,
+  actor,
+  reason,
+  initiatedAt,
+}: {
+  order: OrderTableRow
+  actor: RefundActor
+  reason: string
+  initiatedAt: string
+}): OrderTableRow => ({
+  ...order,
+  paymentStatus: 'refund_pending',
+  refundAmountIdr: order.paidAmountIdr ?? order.totalIdr,
+  refundReason: reason.trim(),
+  refundInitiatedBy: actor.name,
+  refundInitiatedAt: initiatedAt,
+  refundCompletedBy: undefined,
+  refundCompletedAt: undefined,
+  refundCancelledBy: undefined,
+  refundCancelledAt: undefined,
+  refundCancellationReason: undefined,
+})
 
 const refundPermissionMessage = 'You do not have permission to manage refunds.'
 
@@ -96,6 +134,7 @@ export const cancelOrderRefund = ({
   if (!order) return { allowed: false, reason: 'Order not found.' }
   if (!canCancelOrderRefund(actor.role)) return { allowed: false, reason: refundPermissionMessage }
   if (order.paymentStatus !== 'refund_pending') return { allowed: false, reason: 'Only a pending refund can be cancelled.' }
+  if (order.status === 'cancelled') return { allowed: false, reason: 'A cancelled order must be refunded.' }
   if (!reason.trim()) return { allowed: false, reason: 'A cancellation reason is required.' }
   return {
     allowed: true,
