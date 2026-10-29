@@ -44,7 +44,7 @@ const generator = generatorStart >= 0 && generatorEnd > generatorStart ? hrStore
 assert(generator.length > 0, 'Schedule generator could not be inspected.')
 assert(!generator.includes('Math.random'), 'Generated schedules remain random.')
 assert(generator.includes('follow_branch_hours'), 'Generated schedules do not use configured branch hours.')
-assert(generator.includes('isSupabaseConfigured() || isSharedBackendConfigured()'), 'Production Supabase staff would be excluded from schedule generation.')
+assert(generator.includes('productionAuth:isServerAuthoritative()'), 'Production Supabase staff would be excluded from schedule generation.')
 assert(scheduleUi.includes('Copy previous') && scheduleUi.includes('Generate deterministic pattern'), 'Copy-previous is not the primary schedule action.')
 assert(scheduleUi.includes('Shortage reason · Required'), 'Coverage-shortage publication has no required reason.')
 assert(staffLifecycle.includes('removeStaffEmployeeSupabase'), 'The client cannot invoke trusted staff removal.')

@@ -8,13 +8,12 @@ import { useOrderRuntimeStore } from '../../store/orderRuntimeStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { hasActionPermission } from '../../config/actionPermissions'
 import { toast } from '../../hooks/use-toast'
-import { isSharedBackendConfigured } from '../../api/remoteSession'
 import { completeOrderRefundWithAccount } from '../../data/orderRefundCompletion'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
-import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
+import { isServerAuthoritative } from '../../data/serverAuthority'
 
 type RefundQueueTab = 'pending' | 'completed' | 'all'
 
@@ -32,9 +31,10 @@ const formatTimestamp = (value?: string): string => {
   const date = new Date(value)
   return Number.isNaN(date.getTime())
     ? value
-    : date.toLocaleString('en-US', {
+    : date.toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        day: '2-digit',
         month: 'short',
-        day: 'numeric',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
@@ -111,7 +111,7 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
     try {
       // Supabase (production) and the legacy shared API both own refund completion
       // server-side; only the offline prototype completes it in the local store.
-      if (isSupabaseConfigured() || isSharedBackendConfigured()) {
+      if (isServerAuthoritative()) {
         if (!confirmOrder.id) throw new Error('Order id is missing.')
         await completeOrderRefundWithAccount({
           orderId: confirmOrder.id,
@@ -266,7 +266,7 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
           pendingAction
             ? pendingAction.type === 'cancel'
               ? `This stops the pending Refund for ${pendingAction.orderNumber} and returns the payment status to Paid. No money moves.`
-              : `This records ${formatIdr(confirmOrder?.refundAmountIdr ?? 0)} for ${pendingAction.orderNumber} as returned and removes it from the selected account.`
+              : `${formatIdr(confirmOrder?.refundAmountIdr ?? 0)} untuk ${pendingAction.orderNumber} akan dicatat sudah dikembalikan dan dikeluarkan dari akun yang dipilih.`
             : ''
         }
         confirmLabel={actionBusy ? 'Saving…' : pendingAction?.type === 'cancel' ? 'Cancel Refund' : 'Complete Refund'}
