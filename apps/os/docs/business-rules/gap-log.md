@@ -354,6 +354,25 @@ write is a no-op and cannot move quantity or add an audit event.
 
 ---
 
+## §29 — Production build ran money, ledger and point writes on the local path
+
+**Status: Resolved (2026-10-29).**
+
+Gates for server-owned writes used `isSharedBackendConfigured()`, which only
+detects the retired legacy API URL and is false in the Supabase build. In
+production, Finance reconciliation skipped `save_order_finance_reference` and
+`decide_order_finance_reconciliation` (reference code lost, no audit activity),
+and the client could post its own ledger rows and contribution points next to
+the server's. All such gates now use `isServerAuthoritative()`
+(`src/data/serverAuthority.ts`); legacy-login plumbing keeps the old check.
+Migration `20261029120000_order_ledger_transaction_code` also restores the
+order ledger row's `transactionCode`/`proofPath`, dropped by `20260914170000`.
+
+**Evidence:** `src/data/serverAuthority.test.ts`,
+`e2e/finance-reconciliation.spec.ts`.
+
+---
+
 ## Current open work
 
 The gaps still requiring a production decision or boundary are:
