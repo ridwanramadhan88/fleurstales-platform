@@ -15,6 +15,13 @@ afterEach(() => {
 })
 
 const today = getLocalDateString(nowInJakarta())
+// resolveCashRange() uses the runtime's local calendar day (WIB in production
+// browsers). Use the same day here so the test does not fail on CI between
+// 17:00 and 24:00 UTC, when the UTC and Jakarta dates differ.
+const runtimeLocalToday = (() => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+})()
 
 describe('UX audit: numbers and order agree across screens', () => {
   it('"work from the top": the priority list is ordered by due time, not just by day', () => {
@@ -34,7 +41,7 @@ describe('UX audit: numbers and order agree across screens', () => {
       makeOrder({ id: 'x', orderNumber: 'BIG', status: 'delivered', branch: 'Kedamaian', scheduleDate: today, totalIdr: 2_000_000 } as never),
     ] })
     useFinanceStore.setState({ transactions: [
-      { id: 't1', status: 'verified', source: 'order_payment', type: 'income', category: 'order_payment', branch: 'Kedamaian', amount: 250_000, orderNumber: 'PAID', transactionDate: today, createdAt: new Date().toISOString(), method: 'Transfer', description: 'PAID' } as never,
+      { id: 't1', status: 'verified', source: 'order_payment', type: 'income', category: 'order_payment', branch: 'Kedamaian', amount: 250_000, orderNumber: 'PAID', transactionDate: runtimeLocalToday, createdAt: new Date().toISOString(), method: 'Transfer', description: 'PAID' } as never,
     ] })
     render(<RevenueTrendCard activeBranch="Kedamaian" onOpenRevenue={vi.fn()} />)
     const card = screen.getByRole('region', { name: 'Revenue last 7 days' })

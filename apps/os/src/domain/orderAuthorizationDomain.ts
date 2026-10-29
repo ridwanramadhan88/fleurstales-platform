@@ -98,7 +98,10 @@ export const authorizeOrderMutation = ({
     : kind === 'change_request_resolution' ? 'orders.resolve_change_request'
     : kind === 'refund' ? 'finance.approve_refund'
     : 'orders.edit'
-  if (!hasActionPermission(actor.role, capability, actionPermissions, permissions)) {
+  // Owner may start/withdraw refunds without the Finance capability; refund
+  // completion is still blocked for Owner by canCompleteOrderRefund.
+  const ownerRefund = kind === 'refund' && actor.role === 'owner'
+  if (!ownerRefund && !hasActionPermission(actor.role, capability, actionPermissions, permissions)) {
     return { allowed: false, reason: 'This action is disabled for your role.' }
   }
 

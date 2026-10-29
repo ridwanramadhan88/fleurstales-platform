@@ -277,8 +277,8 @@ receive validated records, not submit whole trusted collections.
    server session (`gap-log.md` §5).
 2. Complete New Order input validation still needs a store/API boundary rather
    than relying on form validation (`gap-log.md` §19).
-3. Cancellation and refund are intentionally separate commands, but the business
-   policy for paid cancellations remains a product decision (`gap-log.md` §11).
+3. Cancelling a paid order also starts its refund in the same save; Finance
+   completes the refund separately (`gap-log.md` §11).
 4. Client-side authorization and audit behavior must be reproduced at the
    production API/database boundary (`gap-log.md` §7 and §14).
 

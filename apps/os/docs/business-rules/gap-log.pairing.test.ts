@@ -196,8 +196,8 @@ describe('§10 — submitting a change request no longer overwrites an existing 
   })
 })
 
-describe('§11 — cancellation and refund remain separate decisions', () => {
-  it('cancelling a paid order does not silently create a refund', () => {
+describe('§11 — cancelling a paid order queues its refund', () => {
+  it('moves the paid amount to refund_pending with a refund_initiated event and posts nothing yet', () => {
     useOrdersStore.setState({
       orders: [makeOrder({ orderNumber: 'A', status: 'processing', paymentStatus: 'paid', paidAmountIdr: 200_000, totalIdr: 200_000 })],
     })
@@ -211,12 +211,32 @@ describe('§11 — cancellation and refund remain separate decisions', () => {
     })
 
     expect(result.allowed).toBe(true)
-    expect(useOrdersStore.getState().orders[0]).toMatchObject({
+    const order = useOrdersStore.getState().orders[0]
+    expect(order).toMatchObject({
       status: 'cancelled',
-      paymentStatus: 'paid',
+      paymentStatus: 'refund_pending',
       paidAmountIdr: 200_000,
+      refundAmountIdr: 200_000,
+      refundInitiatedBy: 'Admin A',
     })
+    expect(order.paymentHistory?.at(-1)).toMatchObject({ type: 'refund_initiated', amountIdr: 200_000 })
+    // Money only moves when Finance completes the refund with an account.
     expect(useFinanceStore.getState().transactions).toHaveLength(0)
+  })
+
+  it('cancels an unpaid order without any refund', () => {
+    useOrdersStore.setState({
+      orders: [makeOrder({ orderNumber: 'B', status: 'confirmed', paymentStatus: 'unpaid', paidAmountIdr: 0, totalIdr: 200_000 })],
+    })
+    const result = useOrdersStore.getState().updateOrderStatus({
+      orderNumber: 'B',
+      expectedRevision: 1,
+      status: 'cancelled',
+      actor: { name: 'Admin A', role: 'admin', branchId: 'Kedamaian' },
+      source: 'workflow',
+    })
+    expect(result.allowed).toBe(true)
+    expect(useOrdersStore.getState().orders[0]).toMatchObject({ status: 'cancelled', paymentStatus: 'unpaid' })
   })
 })
 

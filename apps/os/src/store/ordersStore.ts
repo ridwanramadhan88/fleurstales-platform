@@ -31,6 +31,7 @@ import {
   completeOrderRefund,
   getAdminHandlerEmployeeId,
   initiateOrderRefund,
+  cancellationRequiresRefund,
   transitionOrderStatus
 } from '../domain/orderBusinessRules'
 import { useSettingsStore } from './settingsStore'
@@ -57,6 +58,7 @@ import {
 import { useAuditLogStore } from './auditLogStore'
 import { useFinanceStore } from './financeStore'
 import { appendPaymentEvent, buildOrderPaymentEvent } from '../domain/orderPaymentDomain'
+import { queueCancellationRefund } from '../domain/orderCancellationRefundDomain'
 import { getFloristAssignmentOptionById, resolveFloristAssignmentMoment } from '../domain/floristAssignmentDomain'
 import { isSharedBackendConfigured } from '../api/remoteSession'
 
@@ -116,6 +118,7 @@ const postPaymentEventToLedger = ({
   if (!result.allowed) return { allowed: false, reason: result.reason ?? 'Transaction posting failed.' }
   return { allowed: true, event: { ...event, ledgerTransactionId: result.transactionId } }
 }
+
 
 export const useOrdersStore = create<OrdersStoreState>()(
   persist(
@@ -581,11 +584,16 @@ export const useOrdersStore = create<OrdersStoreState>()(
           return transition
         }
 
-        const transitionedOrder = transition.nextStatus === 'picked_up'
+        const statusOrder = transition.nextStatus === 'picked_up'
           ? { ...transition.order, actualPickedUpAt: new Date().toISOString() }
           : transition.previousStatus === 'picked_up'
             ? { ...transition.order, actualPickedUpAt: undefined }
             : transition.order
+        // Cancelling a paid order queues its refund in the same save so the money
+        // never stays recorded as received on a cancelled order.
+        const transitionedOrder = transition.nextStatus === 'cancelled' && cancellationRequiresRefund(target!)
+          ? queueCancellationRefund(statusOrder, target!, input.actor, input.expectedRevision)
+          : statusOrder
         const nextOrder = finalizeOrderMutation({
           before: target!,
           after: transitionedOrder,

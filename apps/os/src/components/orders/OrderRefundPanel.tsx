@@ -54,7 +54,7 @@ export const OrderRefundPanel: FC<OrderRefundPanelProps> = ({ viewModel }) => {
             </dl>
           </div>
         </div>
-        {isPending && (canCompleteRefund || canCancelRefund) && <div className="flex flex-wrap gap-2 sm:flex-nowrap">{canCancelRefund && <button type="button" onClick={onOpenCancelRefund} className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-border text-xs font-semibold rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Cancel Refund</button>}{canCompleteRefund && <button type="button" onClick={onOpenCompleteRefund} className="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-secondary text-xs font-semibold text-secondary-foreground shadow-ios-sm rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Complete Refund</button>}</div>}
+        {isPending && (canCompleteRefund || canCancelRefund) && <div className="flex flex-wrap gap-2 sm:flex-nowrap">{canCancelRefund && order.status !== 'cancelled' && <button type="button" onClick={onOpenCancelRefund} className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-border text-xs font-semibold rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Cancel Refund</button>}{canCompleteRefund && <button type="button" onClick={onOpenCompleteRefund} className="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-secondary text-xs font-semibold text-secondary-foreground shadow-ios-sm rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Complete Refund</button>}</div>}
       </div>
     </section>
   )
