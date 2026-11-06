@@ -57,7 +57,7 @@ export const SummaryStep: FC<CartDrawerViewModel> = ({
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#00813f] text-white">{paymentChannel === 'qris' ? <QrCode className="size-[1.05rem]" strokeWidth={1.8} /> : <Building2 className="size-[1.05rem]" strokeWidth={1.8} />}</span>
             <div className="min-w-0 flex-1">
               <h4 className="sf-type-4 font-medium leading-[0.98]">{paymentChannel === 'qris' ? 'QRIS' : 'Bank transfer'}</h4>
-              <p className="mt-1.5 sf-type-2 leading-6 text-black/56">{paymentChannel === 'qris' ? 'Scan QRIS di bawah dan bayar jumlah penuh, lalu unggah bukti bayar. Produksi dimulai setelah Admin memverifikasi pembayaran.' : 'Transfer jumlah penuh ke rekening di bawah ini. Produksi dimulai setelah Admin memverifikasi pembayaran.'}</p>
+              <p className="mt-1.5 sf-type-2 leading-6 text-black/56">{paymentChannel === 'qris' ? 'Scan QRIS di bawah dan bayar jumlah penuh. Produksi dimulai setelah Admin memverifikasi pembayaran.' : 'Transfer jumlah penuh ke rekening di bawah ini. Produksi dimulai setelah Admin memverifikasi pembayaran.'}</p>
             </div>
           </div>
 
