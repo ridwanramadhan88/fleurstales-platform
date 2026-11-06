@@ -268,7 +268,7 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                         <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl bg-white/65 p-4 text-center">
                           <p className="sf-type-2 font-semibold">QRIS</p>
                           <QrisImage path={details.paymentAccountSnapshot.qrisImagePath} />
-                          <p className="sf-type-1 leading-5 text-black/55">Scan dengan aplikasi bank atau e-wallet dan bayar jumlah penuh, lalu unggah bukti bayar.</p>
+                          <p className="sf-type-1 leading-5 text-black/55">Scan dengan aplikasi bank atau e-wallet dan bayar jumlah penuh.</p>
                         </div>
                       ) : details.paymentAccountSnapshot ? (
                         <div className="mt-4 rounded-2xl bg-white/65 p-4">
