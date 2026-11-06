@@ -366,6 +366,8 @@ const HomePage: FC<HomePageProps> = ({
             ? navigate(toHrSection('payroll', item.targetId))
           : item.target === 'my_schedule'
             ? navigate(toAppTab('dashboard'))
+          : item.target === 'customers'
+            ? navigate(toAppTab('customers'))
             : false
 
     if (didNavigate) setIsNotificationCenterOpen(false)

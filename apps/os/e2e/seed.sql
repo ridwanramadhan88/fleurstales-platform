@@ -95,4 +95,15 @@ insert into private.operational_domain_state(domain, revision, snapshot, updated
   ('order_drafts', 1, '[]'::jsonb, now())
 on conflict (domain) do nothing;
 
+-- A customer whose birthday is today (Jakarta), then the daily job, so the
+-- Admin sees the birthday notification (customer-birthday.spec.ts). Born in a
+-- leap year so 29 Feb is also a valid date.
+insert into public.customers(id, name, whatsapp_number, normalized_whatsapp_number, birthday)
+values (
+  'e2e-customer-birthday', 'E2E Ulang Tahun', '081277770001', '6281277770001',
+  make_date(1988, extract(month from timezone('Asia/Jakarta', now()))::int, extract(day from timezone('Asia/Jakarta', now()))::int)
+)
+on conflict (id) do update set birthday = excluded.birthday;
+select private.notify_customer_birthdays();
+
 commit;
