@@ -324,6 +324,8 @@ describe('admin audit copy (2026-10-18)', () => {
     ["Cancel order for Dita? The paid amount moves to Finance's refund queue; Finance returns the money and records it.", 'Batalkan pesanan Dita? Nominal yang sudah dibayar masuk ke antrean pengembalian dana Keuangan; Keuangan mengembalikan uangnya dan mencatatnya.'],
     ['Order cancelled after payment.', 'Pesanan dibatalkan setelah dibayar.'],
     ['No orders match this filter yet.', 'Belum ada pesanan yang cocok dengan filter ini.'],
+    ['Order payment', 'Pembayaran pesanan'],
+    ['Order refund', 'Pengembalian dana pesanan'],
     ['Full payment verified before production start', 'Pembayaran penuh dikonfirmasi sebelum produksi dimulai'],
     ['Request or resend the completed-order review link.', 'Minta atau kirim ulang tautan ulasan pesanan selesai.'],
     ['No review submitted for this order.', 'Belum ada ulasan untuk pesanan ini.'],

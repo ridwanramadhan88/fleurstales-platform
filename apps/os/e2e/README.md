@@ -20,6 +20,8 @@ Requirements: Docker, Node 22, `psql`. Install the browser once with
 | `roles.spec.ts` | Reloading as HR never calls admin-only catalog RPCs (#144). |
 | `order-flow.spec.ts` | Admin creates a cash pickup order, confirms it paid (#145), assigns the florist and starts production; the florist sees it and uploads the finish photo. |
 | `refund-flow.spec.ts` | Finance and Owner start a refund on a paid order; cancelling a paid order queues its refund; Finance completes each refund from the refund queue with the paying account. Toasts must be visible and Indonesian. |
+| `finance-reconciliation.spec.ts` | Order goes ready (finish photo) and picked up; Finance reconciles it with a code through the server RPCs and the code survives a reload. |
+| `payment-proof.spec.ts` | Admin attaches a transfer proof while confirming payment; Admin and Owner open it from the order details ("Lihat bukti transfer"); Finance sees it in the review (signed preview + full view) and from the ledger row; a Florist cannot get a signed link even by calling Storage directly. |
 
 Every test also fails on any console error or any 4xx/5xx response from
 Supabase (the server error code is included in the failure; see `fixtures.ts`

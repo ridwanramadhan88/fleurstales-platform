@@ -1295,6 +1295,8 @@ export const ID_NATURAL_TRANSLATIONS: Record<string, string> = {
   'Open full payment proof': 'Buka bukti pembayaran lengkap',
   'Send review request': 'Kirim permintaan ulasan',
   'Initial order payment': 'Pembayaran awal pesanan',
+  'Order payment': 'Pembayaran pesanan',
+  'Order refund': 'Pengembalian dana pesanan',
   'No orders match this filter yet.': 'Belum ada pesanan yang cocok dengan filter ini.',
   'Full payment verified before production start': 'Pembayaran penuh dikonfirmasi sebelum produksi dimulai',
   'Customer storefront': 'Storefront pelanggan',

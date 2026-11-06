@@ -7,7 +7,7 @@ export const expectNoEnglish = async (page: Page, where: string) => {
 /** Unique enough per run so earlier runs never collide. */
 export const uniqueSuffix = () => Date.now().toString().slice(-8)
 
-export const createCashPickupOrder = async (page: Page, customerName: string, whatsapp: string) => {
+export const createCashPickupOrder = async (page: Page, customerName: string, whatsapp: string, paymentMethod: 'Tunai' | 'Transfer Bank' = 'Tunai') => {
   await page.getByRole('navigation').first().getByText('Pesanan', { exact: true }).click()
   await page.getByRole('button', { name: /Pesanan baru/ }).first().click()
   const form = page.getByRole('dialog', { name: 'Pesanan baru' })
@@ -25,7 +25,7 @@ export const createCashPickupOrder = async (page: Page, customerName: string, wh
   await form.getByRole('button', { name: 'Waktu pengambilan' }).click()
   await page.getByRole('listbox', { name: 'Waktu' }).getByRole('option').first().click()
   await form.getByRole('combobox', { name: 'Metode pembayaran' }).click()
-  await page.getByRole('option', { name: 'Tunai' }).click()
+  await page.getByRole('option', { name: paymentMethod }).click()
   await expectNoEnglish(page, 'new order form')
   await form.getByRole('button', { name: /Tinjau Pesanan/ }).click()
   await expect(form.getByRole('heading', { name: 'Tinjau Pesanan' })).toBeVisible()
