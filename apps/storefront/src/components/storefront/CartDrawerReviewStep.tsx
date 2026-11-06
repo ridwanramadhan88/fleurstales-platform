@@ -1,5 +1,5 @@
 import type { FC, ReactNode } from 'react'
-import { Building2, Check, MapPin } from 'lucide-react'
+import { Building2, Check, MapPin, QrCode } from 'lucide-react'
 import type { CartDrawerViewModel } from './CartDrawerController'
 import { useCatalogStore } from '../../store/catalogStore'
 import { getStorefrontCartLineImage } from './storefrontProductImages'
@@ -46,6 +46,9 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
   eligibleVouchers,
   matchedCustomer,
   bankAccounts,
+  branchQris,
+  paymentChannel,
+  setPaymentChannel,
   detailsError,
   setVoucherCode,
   setVoucherMessage,
@@ -185,15 +188,37 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
           {voucherMessage && !appliedVoucherCode && <p className={`mt-2 sf-type-1 ${automaticPromoLabel ? 'text-[#00813f]' : 'text-red-700'}`}>{voucherMessage}</p>}
         </ReviewSection>
 
-        <ReviewSection eyebrow="Payment" title="Bank transfer">
-          <div className="flex min-h-[4.75rem] w-full items-center gap-3 rounded-[var(--sf-radius-field)] border border-[#00813f] bg-[#00813f]/[0.055] px-4 py-4">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#00813f] text-white"><Building2 className="size-[1.05rem]" strokeWidth={1.8} /></span>
-            <span className="min-w-0 flex-1 sf-type-3 font-medium text-black">Bank transfer</span>
-            <span className="size-4 shrink-0 rounded-full border-[5px] border-[#00813f]" aria-hidden="true" />
+        <ReviewSection eyebrow="Payment" title={paymentChannel === 'qris' ? 'QRIS' : 'Bank transfer'}>
+          <div className="space-y-2" role="radiogroup" aria-label="Payment method">
+            {([
+              { value: 'bank_transfer' as const, label: 'Bank transfer', icon: <Building2 className="size-[1.05rem]" strokeWidth={1.8} /> },
+              ...(branchQris ? [{ value: 'qris' as const, label: 'QRIS', icon: <QrCode className="size-[1.05rem]" strokeWidth={1.8} /> }] : []),
+            ]).map((option) => {
+              const selected = paymentChannel === option.value
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setPaymentChannel(option.value)}
+                  className={`flex min-h-[4.75rem] w-full items-center gap-3 rounded-[var(--sf-radius-field)] border px-4 py-4 text-left transition ${selected ? 'border-[#00813f] bg-[#00813f]/[0.055]' : 'border-black/12 bg-white/55'}`}
+                >
+                  <span className={`grid size-10 shrink-0 place-items-center rounded-full ${selected ? 'bg-[#00813f] text-white' : 'bg-black/[0.06] text-black/70'}`}>{option.icon}</span>
+                  <span className="min-w-0 flex-1 sf-type-3 font-medium text-black">{option.label}</span>
+                  <span className={`size-4 shrink-0 rounded-full ${selected ? 'border-[5px] border-[#00813f]' : 'border border-black/30'}`} aria-hidden="true" />
+                </button>
+              )
+            })}
           </div>
 
           <div className="mt-3 overflow-hidden rounded-[var(--sf-radius-field)] bg-[#f0e6dd]">
-            {paymentAccount ? (
+            {paymentChannel === 'qris' && branchQris ? (
+              <div className="flex flex-col items-center gap-3 px-4 py-4 text-center">
+                <img src={branchQris.imageUrl} alt="QRIS" className="aspect-square w-full max-w-[16rem] rounded-[var(--sf-radius-field)] bg-white object-contain" />
+                <p className="sf-type-1 leading-5 text-black/56">Scan QRIS ini dengan aplikasi bank atau e-wallet setelah pesanan dibuat, lalu unggah bukti bayar.</p>
+              </div>
+            ) : paymentAccount ? (
               <div className="space-y-3 px-4 py-4">
                 <div>
                   <p className="sf-type-2 font-medium">{paymentAccount.bankName || 'Bank'}</p>

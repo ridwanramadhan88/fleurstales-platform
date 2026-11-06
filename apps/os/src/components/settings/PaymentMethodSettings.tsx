@@ -5,6 +5,7 @@ import type { SettingsValidationErrors } from '../../domain/settings/settingsVal
 import { SettingsSectionHeader } from './SettingsPrimitives'
 import { Switch } from '../ui/switch'
 import { FinanceCategorySettingsPanel } from './FinanceCategorySettingsPanel'
+import { BranchQrisSettings } from './BranchQrisSettings'
 
 interface Props {
   isEditing: boolean
@@ -126,6 +127,12 @@ export const PaymentMethodSettings: FC<Props> = ({
         {validationErrors['paymentMethods.paymentInstructions'] && <p className={ERROR_CLASS}>{validationErrors['paymentMethods.paymentInstructions']}</p>}
       </div>
     </div>
+
+    {!isEditing && (
+      <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+        <BranchQrisSettings branches={branches} bankAccounts={settings.bankAccounts} />
+      </div>
+    )}
 
     {!isEditing && (
       <div className="border-t border-border/70 pt-7">

@@ -804,7 +804,7 @@ export const createStorefrontCheckoutRepository = (client: SupabaseHttpClient): 
       p_order_note: input.orderNote ?? null,
       p_greeting_message: input.greetingMessage ?? null,
       p_greeting_card_name: input.greetingCardName ?? null,
-      p_payment_method: input.paymentMethod ?? 'transfer',
+      p_payment_method: input.paymentChannel === 'qris' ? 'qris' : input.paymentMethod ?? 'transfer',
       p_promo_code: input.promoCode ?? null,
     }
     return client.rpc<StorefrontCheckoutQuoteResult>('quote_storefront_checkout', args as unknown as Record<string, Json>)
@@ -824,9 +824,54 @@ export const createStorefrontCheckoutRepository = (client: SupabaseHttpClient): 
       p_order_note: input.orderNote ?? null,
       p_greeting_message: input.greetingMessage ?? null,
       p_greeting_card_name: input.greetingCardName ?? null,
-      p_payment_method: input.paymentMethod ?? 'transfer',
+      p_payment_method: input.paymentChannel === 'qris' ? 'qris' : input.paymentMethod ?? 'transfer',
       p_promo_code: input.promoCode ?? null,
     }
     return client.rpc<CreateStorefrontOrderResult>('create_storefront_order', args as unknown as Record<string, Json>)
+  },
+})
+
+export interface BranchQris {
+  branchId: string
+  imagePath: string
+  imageUrl: string
+  linkedAccountId: string
+  isActive: boolean
+}
+
+/**
+ * Static QRIS per branch. Read: public (active rows; Owner also sees inactive).
+ * Write: Owner only, through save_branch_qris / delete_branch_qris. Images
+ * live in the public store-assets bucket under qris/.
+ */
+export const createBranchQrisRepository = (client: SupabaseHttpClient) => ({
+  async list(): Promise<BranchQris[]> {
+    const rows = await client.select('branch_qris_codes', {
+      select: 'branch_id,image_path,linked_account_id,is_active,updated_at',
+    })
+    return rows.map((row) => ({
+      branchId: row.branch_id,
+      imagePath: row.image_path,
+      imageUrl: `${client.storagePublicUrl('store-assets', row.image_path)}?v=${encodeURIComponent(row.updated_at)}`,
+      linkedAccountId: row.linked_account_id,
+      isActive: row.is_active,
+    }))
+  },
+  async uploadImage(branchId: string, image: Blob): Promise<string> {
+    const safeBranch = branchId.replace(/[^A-Za-z0-9_-]/g, '-')
+    const path = `qris/${safeBranch}-${Date.now()}.png`
+    await client.uploadStorageObject('store-assets', path, image, { upsert: false, cacheControl: '3600' })
+    return path
+  },
+  async save(input: { branchId: string; imagePath: string; linkedAccountId: string; isActive: boolean }): Promise<void> {
+    await client.rpc('save_branch_qris', {
+      p_branch_id: input.branchId,
+      p_image_path: input.imagePath,
+      p_linked_account_id: input.linkedAccountId,
+      p_is_active: input.isActive,
+    })
+  },
+  async remove(branchId: string): Promise<void> {
+    await client.rpc('delete_branch_qris', { p_branch_id: branchId })
   },
 })

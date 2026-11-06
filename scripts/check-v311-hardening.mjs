@@ -28,6 +28,12 @@ requireText('supabase/functions/staff-password-reset/index.ts', ['service_consum
 requireText('supabase/migrations/20261018130000_staff_password_reset_throttle.sql', ["'reset:'", 'grant execute on function public.service_consume_staff_reset_attempt(text,text) to service_role'])
 requireText('supabase/functions/staff-login/index.ts', ['service_consume_staff_login_attempt', 'MIN_PRODUCTION_PASSWORD_LENGTH = 6', 'MAX_BODY_BYTES = 4096'])
 requireText('supabase/functions/staff-admin/index.ts', ['provision_staff_employee', 'update_staff_employee', 'isStrongPassword'])
+requireText('supabase/migrations/20261107020000_branch_qris.sql', [
+  'branch_id text primary key references public.branches(id)',
+  "revoke all on public.branch_qris_codes from anon, authenticated",
+  "private.current_staff_role() is distinct from 'owner'",
+  "raise exception 'STOREFRONT_QRIS_UNAVAILABLE'",
+])
 requireText('supabase/functions/staff-admin/index.ts', ["rpc('authorize_staff_password_reset'", 'resetPasswordForEmail'])
 requireText('supabase/migrations/20261106150000_staff_password_reset_link.sql', [
   "grant execute on function public.authorize_staff_password_reset(text) to authenticated",

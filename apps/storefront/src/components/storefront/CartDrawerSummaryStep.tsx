@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import { Building2, Check } from 'lucide-react'
+import { Building2, Check, QrCode } from 'lucide-react'
 import type { CartDrawerViewModel } from './CartDrawerController'
 import { formatDisplayDate } from '../ui/date-time-field'
 import { StorefrontCopyButton } from './StorefrontCopyButton'
@@ -17,6 +17,8 @@ export const SummaryStep: FC<CartDrawerViewModel> = ({
   grandTotalIdr,
   appliedVoucherCode,
   bankAccounts,
+  branchQris,
+  paymentChannel,
   paymentInstructions,
   handleClose,
 }) => {
@@ -52,15 +54,19 @@ export const SummaryStep: FC<CartDrawerViewModel> = ({
         <section className="mt-9">
           <p className="sf-label text-[#00813f]">Payment</p>
           <div className="mt-3 flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#00813f] text-white"><Building2 className="size-[1.05rem]" strokeWidth={1.8} /></span>
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#00813f] text-white">{paymentChannel === 'qris' ? <QrCode className="size-[1.05rem]" strokeWidth={1.8} /> : <Building2 className="size-[1.05rem]" strokeWidth={1.8} />}</span>
             <div className="min-w-0 flex-1">
-              <h4 className="sf-type-4 font-medium leading-[0.98]">Bank transfer</h4>
-              <p className="mt-1.5 sf-type-2 leading-6 text-black/56">Transfer jumlah penuh ke rekening di bawah ini. Produksi dimulai setelah Admin memverifikasi pembayaran.</p>
+              <h4 className="sf-type-4 font-medium leading-[0.98]">{paymentChannel === 'qris' ? 'QRIS' : 'Bank transfer'}</h4>
+              <p className="mt-1.5 sf-type-2 leading-6 text-black/56">{paymentChannel === 'qris' ? 'Scan QRIS di bawah dan bayar jumlah penuh, lalu unggah bukti bayar. Produksi dimulai setelah Admin memverifikasi pembayaran.' : 'Transfer jumlah penuh ke rekening di bawah ini. Produksi dimulai setelah Admin memverifikasi pembayaran.'}</p>
             </div>
           </div>
 
           <div className="mt-4 overflow-hidden rounded-[var(--sf-radius-field)] border border-black/12 bg-white/55">
-            {paymentAccount ? (
+            {paymentChannel === 'qris' && branchQris ? (
+              <div className="flex justify-center px-4 py-4">
+                <img src={branchQris.imageUrl} alt="QRIS" className="aspect-square w-full max-w-[18rem] rounded-[var(--sf-radius-field)] bg-white object-contain" />
+              </div>
+            ) : paymentAccount ? (
               <div className="space-y-3 px-4 py-4">
                 <div>
                   <p className="sf-type-2 font-medium">{paymentAccount.bankName || 'Bank'}</p>

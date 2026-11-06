@@ -16,6 +16,7 @@ import type { CartDrawerProps } from './CartDrawer'
 import { generateId } from '../../lib/id'
 import type { CreateStorefrontOrderInput, StorefrontCheckoutQuoteResult } from '../../data/shared/contracts'
 import { bootstrapSharedData } from '../../data/shared/bootstrap'
+import { createBranchQrisRepository, type BranchQris } from '../../data/shared/repositories'
 import { resolveStorefrontOrderPricing } from '../../data/shared/orderDomain'
 import { resolvedPricingToOrderLineItems } from '../../data/shared/orderLocalAdapter'
 import { normalizeWhatsappNumber } from '../../lib/formatters'
@@ -66,6 +67,10 @@ export interface CartDrawerViewModel extends CartDrawerProps {
   paymentMethod: PaymentMethod
   placedOrderNumber: string | null
   bankAccounts: BankAccountDetail[]
+  /** Active QRIS of the selected branch, if the Owner set one. */
+  branchQris: BranchQris | null
+  paymentChannel: 'bank_transfer' | 'qris'
+  setPaymentChannel: (value: 'bank_transfer' | 'qris') => void
   paymentInstructions: string
   itemsTotalIdr: number
   itemCount: number
@@ -123,6 +128,8 @@ export const useCartDrawerController = (
   const [voucherMessage, setVoucherMessage] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
   const [placedOrderNumber, setPlacedOrderNumber] = useState<string | null>(null)
+  const [paymentChannel, setPaymentChannel] = useState<'bank_transfer' | 'qris'>('bank_transfer')
+  const [branchQrisList, setBranchQrisList] = useState<BranchQris[]>([])
   const sharedData = useMemo(() => bootstrapSharedData(), [])
   const remoteCheckoutEnabled = sharedData.enabled
   const [remoteQuote, setRemoteQuote] = useState<StorefrontCheckoutQuoteWithAutoPromo | null>(null)
@@ -168,6 +175,17 @@ export const useCartDrawerController = (
   const cartIssueMessage = firstStorefrontCartIssueMessage(cartIssues)
   const selectedBranch = activeBranches.find((item) => item.id === branch) ?? null
   const bankAccounts = getCustomerVisiblePaymentAccounts(paymentMethodSettings, selectedBranch?.id)
+  useEffect(() => {
+    if (!sharedData.enabled) return
+    let cancelled = false
+    createBranchQrisRepository(sharedData.repositories.client).list()
+      .then((items) => { if (!cancelled) setBranchQrisList(items.filter((item) => item.isActive)) })
+      .catch(() => undefined)
+    return () => { cancelled = true }
+  }, [sharedData])
+  const branchQris = branchQrisList.find((item) => item.branchId === selectedBranch?.id) ?? null
+  // QRIS only when the selected branch has one; otherwise bank transfer.
+  const effectivePaymentChannel: 'bank_transfer' | 'qris' = paymentChannel === 'qris' && branchQris ? 'qris' : 'bank_transfer'
   const availableTimeSlots = getStorefrontAvailableTimeSlots(selectedBranch, deliveryDate)
   const branchHoursLabel = deliveryDate ? describeBranchHoursForDate(selectedBranch, deliveryDate) : 'Select a date to see branch hours.'
   const isDateUnavailable = (date: Date) => isStorefrontDateUnavailable(selectedBranch, date)
@@ -316,7 +334,7 @@ export const useCartDrawerController = (
     }),
     deliveryAddress: fulfillment === 'delivery' ? deliveryAddress.trim() || undefined : undefined,
     orderNote: orderNote.trim() || undefined, greetingMessage: greetingMessage.trim() || undefined,
-    greetingCardName: greetingCardName.trim() || undefined, paymentMethod, promoCode,
+    greetingCardName: greetingCardName.trim() || undefined, paymentMethod, paymentChannel: effectivePaymentChannel, promoCode,
   })
 
   const applyVoucherCode = async (code: string) => {
@@ -448,6 +466,7 @@ export const useCartDrawerController = (
       greetingMessage: greetingMessage.trim() || undefined,
       greetingCardName: greetingCardName.trim() || undefined,
       paymentMethod,
+      paymentChannel: effectivePaymentChannel,
       promoCode: appliedVoucherCode ?? undefined,
     }
 
@@ -609,6 +628,9 @@ export const useCartDrawerController = (
     paymentMethod,
     placedOrderNumber,
     bankAccounts,
+    branchQris,
+    paymentChannel: effectivePaymentChannel,
+    setPaymentChannel,
     paymentInstructions,
     itemsTotalIdr: placedOrderTotals?.itemsTotalIdr ?? (remoteCheckoutEnabled ? remoteQuote?.itemsSubtotalIdr ?? itemsTotalIdr : itemsTotalIdr),
     itemCount,

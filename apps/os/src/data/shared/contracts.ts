@@ -410,6 +410,8 @@ export interface CreateStorefrontOrderInput {
   greetingMessage?: string
   greetingCardName?: string
   paymentMethod?: PaymentMethod
+  /** Storefront transfer channel: bank account (default) or the branch QRIS. */
+  paymentChannel?: 'bank_transfer' | 'qris'
   /** Stored as an order snapshot. Discount remains server/internal-domain derived. */
   promoCode?: string
 }
