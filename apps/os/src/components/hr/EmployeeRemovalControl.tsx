@@ -45,6 +45,7 @@ export const EmployeeRemovalControl = ({
   const [nameConfirmation, setNameConfirmation] = useState('')
   const [forceResolve, setForceResolve] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const blockers = useMemo(() => getEmployeeRemovalBlockers({
     employeeId:employee.id,
     attendance,
@@ -110,26 +111,31 @@ export const EmployeeRemovalControl = ({
       setError(`Type ${employee.name} exactly to confirm permanent removal.`)
       return
     }
+    if (busy) return
+    setBusy(true)
     try {
+      // Production: the server removes the login and the HR records and the
+      // stores adopt its copy (no local delete, so no HR conflict afterwards).
       await removeStaffEmployeeSupabase(employee.id, reason.trim(), forceResolve)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to remove the employee account.')
       return
+    } finally {
+      setBusy(false)
     }
-
-    if (forceResolve) {
-      // Supabase is authoritative in production. Realtime will hydrate the
-      // resolved snapshot; local-only/test mode needs the same cleanup here.
-      if (!isSupabaseConfigured()) forceResolveLocalState()
-    } else {
-      const result = removeUnusedEmployee({
-        employeeId:employee.id,
-        reason:reason.trim(),
-        actor:{ name:actorName, role },
-      })
-      if (!result.ok) {
-        setError(result.reason)
-        return
+    if (!isSupabaseConfigured()) {
+      if (forceResolve) {
+        forceResolveLocalState()
+      } else {
+        const result = removeUnusedEmployee({
+          employeeId:employee.id,
+          reason:reason.trim(),
+          actor:{ name:actorName, role },
+        })
+        if (!result.ok) {
+          setError(result.reason)
+          return
+        }
       }
     }
     close()
@@ -157,7 +163,7 @@ export const EmployeeRemovalControl = ({
         <label className="space-y-1.5"><span className="text-xs font-medium">Removal reason</span><input value={reason} onChange={(event)=>setReason(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" /></label>
         <label className="space-y-1.5"><span className="text-xs font-medium">Type {employee.name} to confirm</span><input value={nameConfirmation} onChange={(event)=>setNameConfirmation(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" /></label>
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction disabled={!ready} onClick={(event)=>{ event.preventDefault(); void confirm() }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{forceResolve ? 'Force resolve & remove' : 'Remove permanently'}</AlertDialogAction></AlertDialogFooter>
+        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction disabled={!ready || busy} onClick={(event)=>{ event.preventDefault(); void confirm() }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{forceResolve ? 'Force resolve & remove' : 'Remove permanently'}</AlertDialogAction></AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   </>

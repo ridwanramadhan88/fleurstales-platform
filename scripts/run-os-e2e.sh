@@ -12,8 +12,10 @@ SUPABASE="npx -y supabase@${SUPABASE_CLI_VERSION}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Services the OS never calls in the browser suite.
-EXCLUDED="edge-runtime,studio,imgproxy,vector,logflare,supavisor,mailpit,postgres-meta"
+# Services the OS never calls in the browser suite. edge-runtime stays ON: the
+# staff account flows (staff-accounts.spec.ts) go through the staff-admin and
+# staff-login Edge Functions, served from supabase/functions by `supabase start`.
+EXCLUDED="${E2E_EXCLUDED_SERVICES:-studio,imgproxy,vector,logflare,supavisor,mailpit,postgres-meta}"
 
 cleanup() {
   if [[ "${E2E_KEEP_SUPABASE:-}" != "1" ]]; then

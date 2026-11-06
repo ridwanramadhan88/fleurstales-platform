@@ -1,6 +1,6 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import { useHrStore, todayIsoDate, type HrEmployeeCommandResult } from '../../store/hrStore'
+import { getEmployeeRoleLabel, useHrStore, todayIsoDate, type HrEmployeeCommandResult } from '../../store/hrStore'
 import type { AttendanceRecord, AttendanceStatus, Employee } from '../../store/hrStoreTypes'
 import type { UserRole } from '../../store/userStore'
 import { useUserStore } from '../../store/userStore'
@@ -13,7 +13,7 @@ import { canSetEmployeeActiveState } from '../../domain/hrStatusDomain'
 import { canViewScheduling, getEffectiveScheduleForDate } from '../../domain/hrSchedulingDomain'
 import { isHrManagedEmployee } from '../../domain/hrManagedEmployeeDomain'
 import { canCreateStaffAccount, getCreatableAccountRoles } from '../../domain/staffAccountDomain'
-import { provisionStaffAccountSupabase, syncStaffAccessProfileSupabase } from '../../data/staffLifecycleSupabase'
+import { applyLocalEmploymentStatusMetadata, provisionStaffAccountSupabase, updateStaffEmployeeSupabase, type StaffEmployeePatch } from '../../data/staffLifecycleSupabase'
 import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from '../../domain/staffCredentialDomain'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
@@ -59,6 +59,8 @@ export interface HrTabContentViewModel {
   canEdit: boolean
   canCreateEmployee: boolean
   canManageEmployeeStatus: boolean
+  /** True while a staff account command is running; buttons are disabled to prevent duplicate submits. */
+  isStaffActionBusy: boolean
   canManageEmployeeDetails: boolean
   canEditCredentials: boolean
   canCreateAccounts: boolean
@@ -172,7 +174,10 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   const [statusActionError, setStatusActionError] = useState<string | null>(null)
   const [attendanceEditor, setAttendanceEditor] = useState<AttendanceEditorState | null>(null)
   const [attendanceActionError, setAttendanceActionError] = useState<string | null>(null)
-  const [detailsEmployee, setDetailsEmployee] = useState<Employee | null>(null)
+  // The details sheet always reads the live store record (never a copy taken
+  // when it opened), so a save can never resend stale status or role values.
+  const [detailsEmployeeId, setDetailsEmployeeId] = useState<string | null>(null)
+  const [busyAction, setBusyAction] = useState<'create' | 'profile' | 'access' | 'status' | null>(null)
   const [detailsForm, setDetailsForm] = useState<EmployeeDetailsFormState | null>(null)
   const [profileErrors, setProfileErrors] = useState<EmployeeFieldErrors>({})
   const [accessErrors, setAccessErrors] = useState<EmployeeFieldErrors>({})
@@ -204,6 +209,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   }, [availableSections.join('|')])
 
   const employees = useHrStore((state) => state.employees)
+  const detailsEmployee = useMemo(() => (detailsEmployeeId ? employees.find((item) => item.id === detailsEmployeeId) ?? null : null), [detailsEmployeeId, employees])
   const attendance = useHrStore((state) => state.attendance)
   const employeeDefaultSchedules = useHrStore((state) => state.employeeDefaultSchedules)
   const scheduleOverrides = useHrStore((state) => state.scheduleOverrides)
@@ -214,6 +220,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   const recordAttendance = useHrStore((state) => state.recordAttendance)
   const activateEmployee = useHrStore((state) => state.activateEmployee)
   const deactivateEmployee = useHrStore((state) => state.deactivateEmployee)
+  const applyDeactivationScheduleEffects = useHrStore((state) => state.applyDeactivationScheduleEffects)
   const today = todayIsoDate()
 
   const branchEmployees = useMemo(() => getBranchEmployees(employees, activeBranch).filter((employee) => role === 'owner' ? true : isHrManagedEmployee(employee, 'employees', hrManagedRoles)), [employees, activeBranch, role, hrManagedRoles])
@@ -303,14 +310,33 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
         setFormErrors({ [lower.includes('email') ? 'email' : lower.includes('username') ? 'username' : (lower.includes('pin') || lower.includes('password')) ? 'pin' : 'systemRole']: eligibility.reason })
         return
       }
-      const employeeId = `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      if (busyAction) return
+      const employee: Employee = {
+        id: `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: form.name.trim(),
+        position: getEmployeeRoleLabel(form.systemRole),
+        branch: '',
+        systemRole: form.systemRole,
+        status: 'active',
+        phone: form.phone.trim(),
+        hireDate,
+        email: form.email.trim().toLowerCase(),
+        username: form.username.trim().toLowerCase(),
+        ...(baseSalaryIdr ? { baseSalaryIdr } : {}),
+      }
+      setBusyAction('create')
       try {
-        await provisionStaffAccountSupabase({ employeeId, email: form.email, username: form.username, password: form.pin, displayName: form.name, role: form.systemRole as Exclude<UserRole, 'owner'> })
+        // The server creates the login and the HR employee together and the
+        // store adopts that record; nothing is written locally afterwards.
+        await provisionStaffAccountSupabase({ employee, password: form.pin })
       } catch (cause) {
         setDetailsError(cause instanceof Error ? cause.message : 'Unable to create the staff login invitation.')
         return
+      } finally {
+        setBusyAction(null)
       }
-      result = createStaffAccount({ ...common, employeeId, email: form.email, username: form.username, pin: form.pin, productionAuth: true, baseSalaryIdr })
+      setForm(createEmptyHrForm(staffRoles.defaultRole)); setFormErrors({}); setIsAddOpen(false); setDetailsError(null)
+      return
     } else {
       result = canCreateAccounts
         ? createStaffAccount({ ...common, email: form.email, username: form.username, pin: form.pin, baseSalaryIdr })
@@ -321,7 +347,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   }
 
   return {
-    activeBranch, onOpenOrder, activeSection, availableSections, canEdit, canCreateEmployee, canManageEmployeeStatus, canManageEmployeeDetails, canEditCredentials, canCreateAccounts, usesProductionPassword,
+    activeBranch, onOpenOrder, activeSection, availableSections, canEdit, canCreateEmployee, canManageEmployeeStatus, isStaffActionBusy: busyAction !== null, canManageEmployeeDetails, canEditCredentials, canCreateAccounts, usesProductionPassword,
     pendingStatusEmployee, statusActionError, attendanceEditor, attendanceActionError, attendanceHistory,
     statusFilter, employeeSearch, employeeRoleFilter, isAddOpen, form, formErrors, detailsEmployee, detailsForm, profileErrors, accessErrors, detailsError, detailsMessage, pendingAccessConfirmation, pendingDetailsCloseConfirmation, pendingAddCloseConfirmation, hasUnsavedEmployeeDetails, hasUnsavedNewEmployee, today, summary,
     branchEmployees, employeeRows, assignableRoles, branches,
@@ -382,14 +408,14 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       setAttendanceEditor(null)
     },
     onOpenEmployeeDetails: (employee) => {
-      setDetailsEmployee(employee); setProfileErrors({}); setAccessErrors({}); setDetailsError(null); setDetailsMessage(null); setPendingAccessConfirmation(null); setPendingDetailsCloseConfirmation(false)
+      setDetailsEmployeeId(employee.id); setProfileErrors({}); setAccessErrors({}); setDetailsError(null); setDetailsMessage(null); setPendingAccessConfirmation(null); setPendingDetailsCloseConfirmation(false)
       setDetailsForm({ name: employee.name, systemRole: employee.systemRole, phone: employee.phone, hireDate: employee.hireDate, email: employee.email ?? '', username: employee.username ?? '', pin: '' })
     },
     onCloseEmployeeDetails: () => {
       if (hasUnsavedEmployeeDetails) { setPendingDetailsCloseConfirmation(true); return }
-      setDetailsEmployee(null); setDetailsForm(null); setProfileErrors({}); setAccessErrors({}); setDetailsError(null); setDetailsMessage(null); setPendingAccessConfirmation(null)
+      setDetailsEmployeeId(null); setDetailsForm(null); setProfileErrors({}); setAccessErrors({}); setDetailsError(null); setDetailsMessage(null); setPendingAccessConfirmation(null)
     },
-    onDiscardEmployeeDetailsChanges: () => { setPendingDetailsCloseConfirmation(false); setDetailsEmployee(null); setDetailsForm(null); setProfileErrors({}); setAccessErrors({}); setDetailsError(null); setDetailsMessage(null); setPendingAccessConfirmation(null) },
+    onDiscardEmployeeDetailsChanges: () => { setPendingDetailsCloseConfirmation(false); setDetailsEmployeeId(null); setDetailsForm(null); setProfileErrors({}); setAccessErrors({}); setDetailsError(null); setDetailsMessage(null); setPendingAccessConfirmation(null) },
     onKeepEditingEmployeeDetails: () => setPendingDetailsCloseConfirmation(false),
     onDetailsFieldChange: (field, value) => {
       setDetailsForm((current) => current ? { ...current, [field]: value } : current)
@@ -406,17 +432,23 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       else if (detailsForm.hireDate > today) errors.hireDate = 'Hire date cannot be in the future.'
       setProfileErrors(errors)
       if (Object.keys(errors).length) return
-      try {
-        await syncStaffAccessProfileSupabase({ ...detailsEmployee, name: detailsForm.name.trim(), phone: detailsForm.phone.trim(), hireDate: detailsForm.hireDate })
-      } catch (cause) {
-        setDetailsError(cause instanceof Error ? cause.message : 'Unable to synchronize staff login profile.')
+      if (isSupabaseConfigured()) {
+        if (busyAction) return
+        setBusyAction('profile')
+        try {
+          await updateStaffEmployeeSupabase(detailsEmployee.id, { name: detailsForm.name.trim(), phone: detailsForm.phone.trim(), hireDate: detailsForm.hireDate })
+        } catch (cause) {
+          setDetailsError(cause instanceof Error ? cause.message : 'Unable to save the employee profile.')
+          return
+        } finally {
+          setBusyAction(null)
+        }
+        setDetailsError(null); setDetailsMessage('Profile updated.')
         return
       }
       const result = updateEmployeeProfile({ employeeId: detailsEmployee.id, name: detailsForm.name, phone: detailsForm.phone, hireDate: detailsForm.hireDate, actor: { name: actorName, role } })
       if (!result.ok) { applyEmployeeCommandError(result, 'profile'); return }
-      const updated = useHrStore.getState().employees.find((item) => item.id === detailsEmployee.id) ?? null
-      setDetailsEmployee(updated); setDetailsError(null); setDetailsMessage('Profile updated.')
-      if (updated) setDetailsForm((current) => current ? { ...current, name: updated.name, phone: updated.phone, hireDate: updated.hireDate } : current)
+      setDetailsError(null); setDetailsMessage('Profile updated.')
     },
     onRequestSaveEmployeeAccess: () => {
       if (!detailsEmployee || !detailsForm) return
@@ -442,20 +474,32 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     },
     onConfirmEmployeeAccessChange: async () => {
       if (!detailsEmployee || !detailsForm) return
-      try {
-        await syncStaffAccessProfileSupabase(
-          { ...detailsEmployee, email: detailsForm.email.trim().toLowerCase(), username: detailsForm.username.trim(), systemRole: detailsForm.systemRole, position: detailsForm.systemRole },
-          detailsForm.pin || undefined,
-        )
-      } catch (cause) {
-        setDetailsError(cause instanceof Error ? cause.message : 'Unable to synchronize the staff role with Supabase Auth.')
-        setPendingAccessConfirmation(null)
+      if (isSupabaseConfigured()) {
+        if (busyAction) return
+        const patch: StaffEmployeePatch = {}
+        const nextEmail = detailsForm.email.trim().toLowerCase()
+        const nextUsername = detailsForm.username.trim().toLowerCase()
+        if (detailsForm.systemRole !== detailsEmployee.systemRole) patch.systemRole = detailsForm.systemRole
+        if (nextEmail && nextEmail !== (detailsEmployee.email ?? '').toLowerCase()) patch.email = nextEmail
+        if (nextUsername && nextUsername !== (detailsEmployee.username ?? '')) patch.username = nextUsername
+        setBusyAction('access')
+        try {
+          await updateStaffEmployeeSupabase(detailsEmployee.id, patch, detailsForm.pin || undefined)
+        } catch (cause) {
+          setDetailsError(cause instanceof Error ? cause.message : 'Unable to save the staff login changes.')
+          setPendingAccessConfirmation(null)
+          return
+        } finally {
+          setBusyAction(null)
+        }
+        setPendingAccessConfirmation(null); setDetailsError(null); setDetailsMessage('Access changes saved.')
+        setDetailsForm((current) => current ? { ...current, pin: '' } : current)
         return
       }
       const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, email: detailsForm.email, username: detailsForm.username, pin: detailsForm.pin, productionAuth: usesProductionPassword, actor: { name: actorName, role } })
       if (!result.ok) { applyEmployeeCommandError(result, 'access'); setPendingAccessConfirmation(null); return }
       const updated = useHrStore.getState().employees.find((item) => item.id === detailsEmployee.id) ?? null
-      setDetailsEmployee(updated); setPendingAccessConfirmation(null); setDetailsError(null); setDetailsMessage('Role change confirmed.')
+      setPendingAccessConfirmation(null); setDetailsError(null); setDetailsMessage('Role change confirmed.')
       if (updated) setDetailsForm((current) => current ? { ...current, systemRole: updated.systemRole, email: updated.email ?? '', username: updated.username ?? '', pin: '' } : current)
     },
     onCancelEmployeeAccessChange: () => setPendingAccessConfirmation(null),
@@ -466,14 +510,27 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       const actor = { name: actorName, role }; const active = pendingStatusEmployee.status === 'inactive'
       const eligibility = canSetEmployeeActiveState({ employees: useHrStore.getState().employees, employeeId: pendingStatusEmployee.id, active, actor })
       if (!eligibility.ok) { setStatusActionError(eligibility.reason); return }
-      try {
-        await syncStaffAccessProfileSupabase({ ...pendingStatusEmployee, status: active ? 'active' : 'inactive' })
-      } catch (cause) {
-        setStatusActionError(cause instanceof Error ? cause.message : 'Unable to synchronize staff login status.')
+      if (isSupabaseConfigured()) {
+        if (busyAction) return
+        setBusyAction('status')
+        try {
+          // Server sets status, end-of-employment data and the login flag together.
+          await updateStaffEmployeeSupabase(pendingStatusEmployee.id, { status: active ? 'active' : 'inactive' })
+        } catch (cause) {
+          setStatusActionError(cause instanceof Error ? cause.message : 'Unable to change the employee status.')
+          return
+        } finally {
+          setBusyAction(null)
+        }
+        // Future shifts are HR schedule data, saved by the normal HR writer
+        // against the revision adopted above.
+        if (!active) applyDeactivationScheduleEffects(pendingStatusEmployee.id, actor)
+        setPendingStatusEmployee(null); setStatusActionError(null)
         return
       }
       const changed = active ? activateEmployee(pendingStatusEmployee.id, actor) : deactivateEmployee(pendingStatusEmployee.id, actor)
       if (!changed) { setStatusActionError('Employee status could not be changed. Refresh and try again.'); return }
+      applyLocalEmploymentStatusMetadata(pendingStatusEmployee.id, active ? 'active' : 'inactive')
       setPendingStatusEmployee(null); setStatusActionError(null)
     },
   }

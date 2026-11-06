@@ -129,6 +129,8 @@ interface HrStoreState {
   }) => HrEmployeeCommandResult
   activateEmployee: (employeeId: string, actor: HrActor) => boolean
   deactivateEmployee: (employeeId: string, actor: HrActor) => boolean
+  /** Schedule side effects of deactivation (future shifts removed, affected published weeks flagged). Status itself is server-owned in production. */
+  applyDeactivationScheduleEffects: (employeeId: string, actor: HrActor) => boolean
   removeUnusedEmployee: (params: { employeeId:string; reason:string; actor:HrActor }) => HrEmployeeRemovalResult
   /**
    * @description Sets or overwrites today's (or a given date's) attendance
@@ -266,6 +268,21 @@ const INITIAL_SCHEDULE_OVERRIDES: ScheduleOverride[] = [
 ].filter(() => TEST_RUNTIME)
 
 const INITIAL_SCHEDULE_PUBLICATIONS: WeeklySchedulePublication[] = []
+
+const deactivationScheduleEffects = (state: Pick<HrStoreState, 'scheduleOverrides' | 'weeklySchedulePublications'>, employeeId: string): Pick<HrStoreState, 'scheduleOverrides' | 'weeklySchedulePublications'> => {
+  const today = todayIsoDate()
+  const removedDates = state.scheduleOverrides.filter((item)=>item.employeeId===employeeId && item.date>today).map((item)=>item.date)
+  if (!removedDates.length) return { scheduleOverrides: state.scheduleOverrides, weeklySchedulePublications: state.weeklySchedulePublications }
+  return {
+    scheduleOverrides: state.scheduleOverrides.filter((item)=>item.employeeId!==employeeId || item.date<=today),
+    weeklySchedulePublications: state.weeklySchedulePublications.map((publication)=>{
+      const end = new Date(`${publication.weekStart}T00:00:00Z`)
+      end.setUTCDate(end.getUTCDate()+6)
+      const affected = removedDates.some((date)=>date>=publication.weekStart && date<=end.toISOString().slice(0,10))
+      return affected ? { ...publication, status:'changed_after_publish' as const, updatedAt:nowIso() } : publication
+    }),
+  }
+}
 
 /**
  * @description Shared HR store for employees and attendance.
@@ -417,18 +434,21 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     set((state) => {
       if (!canSetEmployeeActiveState({ employees: state.employees, employeeId, active: false, actor }).ok) return state
       changed = true
-      const today = todayIsoDate()
-      const removedDates = state.scheduleOverrides.filter((item)=>item.employeeId===employeeId && item.date>today).map((item)=>item.date)
       return {
         employees: state.employees.map((employee) => employee.id === employeeId ? { ...employee, status: 'inactive' as const } : employee),
-        scheduleOverrides: state.scheduleOverrides.filter((item)=>item.employeeId!==employeeId || item.date<=today),
-        weeklySchedulePublications: state.weeklySchedulePublications.map((publication)=>{
-          const end = new Date(`${publication.weekStart}T00:00:00Z`)
-          end.setUTCDate(end.getUTCDate()+6)
-          const affected = removedDates.some((date)=>date>=publication.weekStart && date<=end.toISOString().slice(0,10))
-          return affected ? { ...publication, status:'changed_after_publish' as const, updatedAt:nowIso() } : publication
-        }),
+        ...deactivationScheduleEffects(state, employeeId),
       }
+    })
+    return changed
+  },
+
+  applyDeactivationScheduleEffects: (employeeId, actor) => {
+    if (!isActionAuthorized(actor.role, 'hr.edit_employee')) return false
+    let changed = false
+    set((state) => {
+      if (!state.employees.some((employee) => employee.id === employeeId)) return state
+      changed = true
+      return deactivationScheduleEffects(state, employeeId)
     })
     return changed
   },

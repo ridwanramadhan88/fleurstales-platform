@@ -65,7 +65,17 @@ select 'hr', 1, jsonb_build_object(
       'username', s.username
     ) order by s.username)
     from e2e_staff s
-  ),
+  ) || jsonb_build_array(jsonb_build_object(
+    -- An employee without a login (older "profile only" records exist in production).
+    'id', 'e2e-emp-nologin',
+    'name', 'E2E Tanpa Login',
+    'position', 'Florist',
+    'branch', 'Kedamaian',
+    'systemRole', 'florist',
+    'status', 'active',
+    'phone', '08120000009',
+    'hireDate', '2026-01-01'
+  )),
   'attendance', '[]'::jsonb,
   'pointRules', '[]'::jsonb,
   'scheduleOverrides', '[]'::jsonb,

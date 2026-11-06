@@ -445,6 +445,91 @@ export const endHrPointMutation = (): void => {
   if (hrPointMutationDepth === 0 && dirty.has('hr')) schedule('hr')
 }
 
+type HrSnapshotKey = 'employees' | 'attendance' | 'attendanceReviewCases' | 'employeePointEntries'
+  | 'employeeDefaultSchedules' | 'scheduleOverrides' | 'scheduleRevisions' | 'weeklySchedulePublications'
+
+const recordId = (value: unknown): string | undefined =>
+  isRecord(value) && typeof value.id === 'string' ? value.id : undefined
+
+/**
+ * Employees: the server copy wins for every employee the server changed;
+ * employees the server did not touch keep any unsaved local edit (e.g. a base
+ * salary typed in Settings), so adopting never throws away unrelated work.
+ */
+const mergeServerEmployees = (remote: unknown[], baseline: unknown[], local: unknown[]): unknown[] => {
+  const baselineById = new Map(baseline.map((item) => [recordId(item), item]))
+  const localById = new Map(local.map((item) => [recordId(item), item]))
+  return remote.map((item) => {
+    const id = recordId(item)
+    const localItem = localById.get(id)
+    if (!isRecord(item) || !isRecord(localItem)) return item
+    const serverChanged = snapshotFingerprint(item as Json) !== snapshotFingerprint((baselineById.get(id) ?? null) as Json)
+    const { pin, ...localWithoutPin } = localItem
+    const merged = serverChanged ? item : localWithoutPin
+    return pin === undefined ? merged : { ...merged, pin }
+  })
+}
+
+/**
+ * Runs a server-side HR command (staff-admin create / update / remove) and
+ * then adopts the authoritative HR revision for the keys that command wrote.
+ *
+ * The generic HR writer is paused for the whole call, so it can neither race
+ * the command (stale revision -> conflict banner) nor re-save a stale copy of
+ * the employee afterwards. Unsaved local edits to other keys stay dirty and are
+ * saved against the new revision once the command finishes.
+ */
+export const runHrServerMutation = async <T>(
+  command: () => Promise<T>,
+  keys: readonly HrSnapshotKey[] = ['employees'],
+): Promise<T> => {
+  await beginHrPointMutation()
+  try {
+    const result = await command()
+    await adoptServerHrKeys(keys).catch((error) => {
+      console.error('Unable to refresh HR after a server-side staff command.', error)
+    })
+    return result
+  } finally {
+    endHrPointMutation()
+  }
+}
+
+const adoptServerHrKeys = async (keys: readonly HrSnapshotKey[]): Promise<void> => {
+  const boot = client()
+  if (!boot.enabled || !getSupabaseBrowserSession() || !canRead('hr')) return
+  const response = await boot.repositories.client.rpc<OperationalDomainResponse>(
+    'get_operational_domain_state',
+    { p_domain: 'hr' },
+  )
+  const remote = isRecord(response.snapshot) ? response.snapshot : {}
+  const baseline = syncedSnapshotValues.get('hr')
+  const nextBaseline: Slice = isRecord(baseline) ? { ...baseline } : {}
+  const local = useHrStore.getState() as unknown as Record<string, unknown>
+  const patch: Slice = {}
+  for (const key of keys) {
+    const remoteValue = Array.isArray(remote[key]) ? remote[key] as unknown[] : []
+    nextBaseline[key] = remoteValue
+    patch[key] = key === 'employees'
+      ? mergeServerEmployees(
+          remoteValue,
+          Array.isArray(baseline && isRecord(baseline) ? baseline.employees : undefined) ? (baseline as Slice).employees as unknown[] : [],
+          Array.isArray(local.employees) ? local.employees as unknown[] : [],
+        )
+      : remoteValue
+  }
+  revisions.set('hr', response.revision)
+  syncedSnapshotValues.set('hr', nextBaseline as Json)
+  syncedSnapshots.set('hr', snapshotFingerprint(nextBaseline as Json))
+  useHrStore.setState(patch as never, false)
+}
+
+/** Reloads one read-only domain (e.g. payroll after a force removal). */
+export const reloadOperationalDomain = async (domain: string): Promise<void> => {
+  if (!isOperationalDomain(domain) || canWrite(domain)) return
+  await loadDomain(domain, true)
+}
+
 const hydrateOperationalState = async (): Promise<boolean> => {
   if (!getSupabaseBrowserSession()) return false
   const boot = client()
