@@ -317,6 +317,8 @@ export interface SharedOrder {
   deliveryFeeIdr: number
   paymentStatus: PaymentStatus
   paymentMethod?: PaymentMethod
+  /** Set when a storefront transfer was paid through the branch QRIS. */
+  paymentChannel?: 'qris'
   paidAmountIdr: number
   paymentHistory?: SharedOrderPaymentEvent[]
   refundAmountIdr?: number

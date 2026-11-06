@@ -13,7 +13,7 @@ interface OrderPaymentProofSummaryProps {
 export const OrderPaymentProofSummary: FC<OrderPaymentProofSummaryProps> = ({ order }) => {
   const [showProof, setShowProof] = useState(false)
   const finance = getFinancePresentation(order)
-  const method = order.paymentMethod === 'transfer' ? 'Transfer' : order.paymentMethod === 'cash' ? 'Cash' : 'Payment method not set'
+  const method = order.paymentChannel === 'qris' ? 'QRIS' : order.paymentMethod === 'transfer' ? 'Transfer' : order.paymentMethod === 'cash' ? 'Cash' : 'Payment method not set'
 
   if (finance.state === 'attention') {
     return (

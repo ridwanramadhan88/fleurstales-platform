@@ -640,6 +640,9 @@ const mapFlowerRecipeSnapshot = (
   return items.length > 0 ? items : undefined
 }
 
+export const paymentChannelFromSnapshot = (snapshot: OrderRow['payment_account_snapshot']): 'qris' | undefined =>
+  snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) && snapshot.channel === 'qris' ? 'qris' : undefined
+
 const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   id: row.id,
   orderNumber: row.order_number,
@@ -660,6 +663,7 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   deliveryFeeIdr: row.delivery_fee_idr,
   paymentStatus: row.payment_status,
   paymentMethod: optional(row.payment_method),
+  paymentChannel: paymentChannelFromSnapshot(row.payment_account_snapshot),
   paidAmountIdr: row.paid_amount_idr,
   paymentHistory: [...(row.order_payment_events ?? [])]
     .sort((a, b) => a.occurred_at.localeCompare(b.occurred_at) || a.id.localeCompare(b.id))

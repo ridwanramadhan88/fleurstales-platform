@@ -231,7 +231,7 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
             <div className="min-w-0">
               <p className="text-2xs font-medium text-muted-foreground/80">Payment method</p>
               <p className="mt-0.5 text-sm font-medium text-foreground">
-                {order.paymentMethod ? PAYMENT_METHOD_LABELS[order.paymentMethod] : 'Not set'}
+                {order.paymentChannel === 'qris' ? 'QRIS' : order.paymentMethod ? PAYMENT_METHOD_LABELS[order.paymentMethod] : 'Not set'}
               </p>
             </div>
             {!isEditing && order.paymentProofUrl && canViewPaymentProof(currentUserRole, order) && (
