@@ -25,9 +25,17 @@ revoke all on public.branch_qris_codes from anon, authenticated;
 grant select on public.branch_qris_codes to anon, authenticated;
 grant select, insert, update, delete on public.branch_qris_codes to service_role;
 
+-- Customers (anon) only see active QRIS. The anon policy must not call
+-- private.has_staff_role: anon has no EXECUTE on it, so the whole select
+-- would fail with "permission denied" and checkout would never offer QRIS.
 drop policy if exists branch_qris_codes_read on public.branch_qris_codes;
-create policy branch_qris_codes_read on public.branch_qris_codes
-for select to anon, authenticated
+drop policy if exists branch_qris_codes_public_read on public.branch_qris_codes;
+drop policy if exists branch_qris_codes_authenticated_read on public.branch_qris_codes;
+create policy branch_qris_codes_public_read on public.branch_qris_codes
+for select to anon
+using (is_active = true);
+create policy branch_qris_codes_authenticated_read on public.branch_qris_codes
+for select to authenticated
 using (is_active = true or private.has_staff_role(array['owner']));
 
 -- Snapshot used by checkout: the linked bank account + QRIS marker.
