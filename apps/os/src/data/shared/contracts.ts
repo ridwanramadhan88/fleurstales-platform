@@ -161,6 +161,9 @@ export interface BranchDayHours {
   isOpen: boolean
   opensAt?: string
   closesAt?: string
+  /** Pickup & delivery window (optional; falls back to opensAt/closesAt). */
+  fulfillmentStartsAt?: string
+  fulfillmentEndsAt?: string
 }
 
 export type BranchOpeningHours = Record<string, BranchDayHours>

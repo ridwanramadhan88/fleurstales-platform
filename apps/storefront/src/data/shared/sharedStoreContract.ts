@@ -17,6 +17,11 @@ const validateDayHours = (branchId: string, day: string, hours: BranchDayHours |
     return [`Branch ${branchId} has invalid ${day} opening hours.`]
   }
   if (hours.opensAt >= hours.closesAt) return [`Branch ${branchId} has invalid ${day} opening hours.`]
+  if (hours.fulfillmentStartsAt !== undefined || hours.fulfillmentEndsAt !== undefined) {
+    if (!isClockTime(hours.fulfillmentStartsAt) || !isClockTime(hours.fulfillmentEndsAt) || hours.fulfillmentStartsAt >= hours.fulfillmentEndsAt) {
+      return [`Branch ${branchId} has invalid ${day} pickup & delivery hours.`]
+    }
+  }
   return []
 }
 

@@ -46,6 +46,13 @@ export interface DayOpeningHours {
   isOpen: boolean
   opensAt: string
   closesAt: string
+  /**
+   * Pickup & delivery window for this day (same for both). Optional: when
+   * absent the opening hours are used. Opening hours keep driving attendance
+   * and staff scheduling.
+   */
+  fulfillmentStartsAt?: string
+  fulfillmentEndsAt?: string
 }
 
 export type BranchOpeningHours = Record<WeekdayKey, DayOpeningHours>

@@ -414,7 +414,11 @@ const parseOpeningHours = (value: Json): SharedBranch['openingHours'] => {
     const isOpen = raw.isOpen === true
     const opensAt = typeof raw.opensAt === 'string' ? raw.opensAt : undefined
     const closesAt = typeof raw.closesAt === 'string' ? raw.closesAt : undefined
-    result[day] = { isOpen, opensAt, closesAt }
+    const fulfillmentStartsAt = typeof raw.fulfillmentStartsAt === 'string' ? raw.fulfillmentStartsAt : undefined
+    const fulfillmentEndsAt = typeof raw.fulfillmentEndsAt === 'string' ? raw.fulfillmentEndsAt : undefined
+    result[day] = fulfillmentStartsAt && fulfillmentEndsAt
+      ? { isOpen, opensAt, closesAt, fulfillmentStartsAt, fulfillmentEndsAt }
+      : { isOpen, opensAt, closesAt }
   }
   return result
 }
