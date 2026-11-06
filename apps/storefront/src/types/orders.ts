@@ -227,6 +227,8 @@ export interface OrderTableRow {
   paymentStatus: PaymentStatus
   /** Payment channel selected at intake. Optional for legacy seeded orders. */
   paymentMethod?: PaymentMethod
+  /** Set when a storefront transfer was paid through the branch QRIS (still `paymentMethod: 'transfer'`). */
+  paymentChannel?: 'qris'
   /** Amount already received in IDR, used to calculate a partial-payment balance. */
   paidAmountIdr?: number
   /** Append-only payment history. Aggregate payment fields above are derived operational state. */

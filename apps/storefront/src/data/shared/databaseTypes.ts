@@ -331,6 +331,8 @@ export interface OrderRow {
   delivery_fee_idr: number
   payment_status: PaymentStatus
   payment_method: PaymentMethod | null
+  /** Account the customer paid into; `channel: 'qris'` marks a branch-QRIS payment. */
+  payment_account_snapshot?: Json | null
   paid_amount_idr: number
   refund_amount_idr: number | null
   refund_reason: string | null
