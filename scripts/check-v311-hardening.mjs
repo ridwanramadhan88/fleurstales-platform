@@ -27,7 +27,13 @@ requireText('supabase/functions/staff-admin/index.ts', ['MIN_STAFF_PASSWORD_LENG
 requireText('supabase/functions/staff-password-reset/index.ts', ['service_consume_staff_reset_attempt', 'RATE_LIMITED', 'MAX_BODY_BYTES'])
 requireText('supabase/migrations/20261018130000_staff_password_reset_throttle.sql', ["'reset:'", 'grant execute on function public.service_consume_staff_reset_attempt(text,text) to service_role'])
 requireText('supabase/functions/staff-login/index.ts', ['service_consume_staff_login_attempt', 'MIN_PRODUCTION_PASSWORD_LENGTH = 6', 'MAX_BODY_BYTES = 4096'])
-requireText('supabase/functions/staff-admin/index.ts', ['service_create_staff_access_profile', 'service_update_staff_access_email', 'isStrongPassword'])
+requireText('supabase/functions/staff-admin/index.ts', ['provision_staff_employee', 'update_staff_employee', 'isStrongPassword'])
+requireText('supabase/migrations/20261106120000_staff_employee_server_authority.sql', [
+  'perform public.service_create_staff_access_profile(',
+  "grant execute on function public.update_staff_employee(text, jsonb, boolean) to authenticated",
+  "revoke execute on function private.write_hr_employee_entry(jsonb, boolean) from public, anon, authenticated",
+  "delete from auth.sessions where user_id = v_profile.user_id",
+])
 forbidText('supabase/functions/staff-admin/index.ts', [".from('staff_access_profiles').update(", ".from('staff_access_profiles').upsert(", ".from('staff_access_profiles').insert(", ".from('staff_access_profiles').delete("])
 
 requireText('supabase/migrations/20261018100000_staff_login_pair_lockout.sql', ["consume_staff_login_scope('pair'", "consume_staff_login_scope('username',v_username_key,30)"])

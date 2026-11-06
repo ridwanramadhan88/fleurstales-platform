@@ -21,6 +21,7 @@ Requirements: Docker, Node 22, `psql`. Install the browser once with
 | `order-flow.spec.ts` | Admin creates a cash pickup order, confirms it paid (#145), assigns the florist and starts production; the florist sees it and uploads the finish photo. |
 | `refund-flow.spec.ts` | Finance and Owner start a refund on a paid order; cancelling a paid order queues its refund; Finance completes each refund from the refund queue with the paying account. Toasts must be visible and Indonesian. |
 | `finance-reconciliation.spec.ts` | Order goes ready (finish photo) and picked up; Finance reconciles it with a code through the server RPCs and the code survives a reload. |
+| `staff-accounts.spec.ts` | Owner creates a staff account (login + HR employee in one server call), deactivates it and saves the profile (the login must stay disabled — production bug 6 Nov 2026), reactivates it, changes the username, and removes it permanently without an HR conflict; HR edits an employee that has no login. Needs the `staff-admin` Edge Function (edge-runtime is started by `run-os-e2e.sh`). |
 | `payment-proof.spec.ts` | Admin attaches a transfer proof while confirming payment; Admin and Owner open it from the order details ("Lihat bukti transfer"); Finance sees it in the review (signed preview + full view) and from the ledger row; a Florist cannot get a signed link even by calling Storage directly. |
 
 Every test also fails on any console error or any 4xx/5xx response from

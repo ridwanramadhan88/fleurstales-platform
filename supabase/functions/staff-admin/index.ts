@@ -1,39 +1,55 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.8'
 
+// Staff account lifecycle (Owner / HR). Every action changes the Supabase Auth
+// user, the login profile and the HR employee record together:
+//   invite  - create Auth user, then provision_staff_employee (profile + HR row)
+//   update  - update_staff_employee patch (profile + HR row), then Auth email /
+//             password; the patch is reverted if the Auth change fails
+//   remove  - prepare_staff_removal, delete Auth user, finalize_unused_staff_removal
+// Responses carry the new HR revision so the OS adopts the server copy instead
+// of saving its own (which is how logins and HR records used to drift apart).
+
 type StaffRole = 'admin' | 'finance' | 'hr' | 'florist'
+type EmployeePatchKey = 'name' | 'phone' | 'hireDate' | 'systemRole' | 'username' | 'email' | 'status'
+type EmployeePatch = Partial<Record<EmployeePatchKey, string>>
 
 type InviteRequest = {
   action?: 'invite'
-  employeeId: string
-  email: string
-  username: string
+  employee?: Record<string, unknown>
   password: string
-  displayName: string
-  role: StaffRole
   branchId?: string | null
   redirectTo?: string
+  // Legacy (OS <= 2.8.17) flat shape.
+  employeeId?: string
+  email?: string
+  username?: string
+  displayName?: string
+  role?: StaffRole
 }
 
 type UpdateRequest = {
   action: 'update'
   employeeId: string
-  email?: string
-  username: string
+  patch?: EmployeePatch
   password?: string
-  displayName: string
-  role: StaffRole
-  branchId?: string | null
-  isActive: boolean
+  // Legacy (OS <= 2.8.17) full-profile shape.
+  email?: string
+  username?: string
+  displayName?: string
+  role?: StaffRole
+  isActive?: boolean
 }
 
 type RemoveRequest = {
-  action:'remove'
-  employeeId:string
-  reason:string
-  forceResolve?:boolean
+  action: 'remove'
+  employeeId: string
+  reason: string
+  forceResolve?: boolean
 }
 
 type StaffRequest = InviteRequest | UpdateRequest | RemoveRequest
+
+type RpcError = { message?: string; code?: string } | null
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -88,6 +104,36 @@ const validRoles = new Set<StaffRole>(['admin', 'finance', 'hr', 'florist'])
 const usernamePattern = /^[a-z][a-z0-9._-]*$/
 const MIN_STAFF_PASSWORD_LENGTH = 6
 const isStrongPassword = (value: string): boolean => value.length >= MIN_STAFF_PASSWORD_LENGTH
+const PATCH_KEYS: readonly EmployeePatchKey[] = ['name', 'phone', 'hireDate', 'systemRole', 'username', 'email', 'status']
+
+// Database errors are raised as `CODE` or `CODE:detail`; pass the code through.
+const rpcErrorCode = (error: RpcError, fallback: string): string => {
+  const head = (error?.message ?? '').split(':')[0]?.trim() ?? ''
+  return /^[A-Z][A-Z0-9_]+$/.test(head) ? head : fallback
+}
+const rpcFailure = (error: RpcError, fallback: string, status = 400) =>
+  json({ error: rpcErrorCode(error, fallback), message: error?.message ?? fallback }, status)
+
+const jakartaToday = (): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
+
+const toPatch = (body: UpdateRequest): EmployeePatch => {
+  if (body.patch && typeof body.patch === 'object') {
+    const patch: EmployeePatch = {}
+    for (const key of PATCH_KEYS) {
+      const value = body.patch[key]
+      if (typeof value === 'string') patch[key] = value
+    }
+    return patch
+  }
+  // Legacy clients always sent the whole profile.
+  const patch: EmployeePatch = {}
+  if (typeof body.displayName === 'string') patch.name = body.displayName
+  if (typeof body.role === 'string') patch.systemRole = body.role
+  if (typeof body.username === 'string' && body.username.trim()) patch.username = body.username
+  if (typeof body.email === 'string' && body.email.trim()) patch.email = body.email
+  if (typeof body.isActive === 'boolean') patch.status = body.isActive ? 'active' : 'inactive'
+  return patch
+}
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return json({ ok: true })
@@ -117,121 +163,115 @@ Deno.serve(async (request) => {
     const body = await request.json() as StaffRequest
     const action = body.action ?? 'invite'
     if (action !== 'invite' && action !== 'update' && action !== 'remove') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
-    const employeeId = body.employeeId?.trim()
+
+    // ---------------------------------------------------------------- remove
     if (action === 'remove') {
-      const removal=body as RemoveRequest
-      if (!employeeId || removal.reason?.trim().length<3) return json({error:'INVALID_STAFF_REMOVAL'},400)
-      if (!['owner','hr'].includes(actorProfile.role)) return json({error:'HR_OR_OWNER_REQUIRED'},403)
-      const { data:prepared, error:prepareError }=await userClient.rpc('prepare_staff_removal',{
-        p_employee_id:employeeId,
-        p_reason:removal.reason.trim(),
-        p_force:Boolean(removal.forceResolve),
+      const removal = body as RemoveRequest
+      const employeeId = removal.employeeId?.trim()
+      if (!employeeId || (removal.reason?.trim().length ?? 0) < 3) return json({ error: 'INVALID_STAFF_REMOVAL' }, 400)
+      if (!['owner','hr'].includes(actorProfile.role)) return json({ error: 'HR_OR_OWNER_REQUIRED' }, 403)
+      const { data: prepared, error: prepareError } = await userClient.rpc('prepare_staff_removal', {
+        p_employee_id: employeeId,
+        p_reason: removal.reason.trim(),
+        p_force: Boolean(removal.forceResolve),
       })
-      if (prepareError) return json({error:'STAFF_REMOVAL_PREPARE_FAILED',message:prepareError.message},400)
-      if (!prepared?.allowed) return json({error:'EMPLOYEE_REMOVAL_BLOCKED',blockers:prepared?.blockers ?? {}},409)
-      const targetUserId=prepared.targetUserId as string|undefined
+      if (prepareError) return json({ error: 'STAFF_REMOVAL_PREPARE_FAILED', code: rpcErrorCode(prepareError, 'STAFF_REMOVAL_PREPARE_FAILED'), message: prepareError.message }, 400)
+      if (!prepared?.allowed) return json({ error: 'EMPLOYEE_REMOVAL_BLOCKED', blockers: prepared?.blockers ?? {} }, 409)
+      const targetUserId = prepared.targetUserId as string | undefined
       if (targetUserId) {
-        const { data:targetAuth }=await admin.auth.admin.getUserById(targetUserId)
+        const { data: targetAuth } = await admin.auth.admin.getUserById(targetUserId)
         if (targetAuth?.user) {
-          const { error:deleteError }=await admin.auth.admin.deleteUser(targetUserId)
-          if (deleteError) return json({error:'STAFF_AUTH_REMOVAL_FAILED',message:deleteError.message},400)
+          const { error: deleteError } = await admin.auth.admin.deleteUser(targetUserId)
+          if (deleteError) return json({ error: 'STAFF_AUTH_REMOVAL_FAILED', message: deleteError.message }, 400)
         }
       }
-      const { data:finalized, error:finalizeError }=await userClient.rpc('finalize_unused_staff_removal',{
-        p_request_id:prepared.requestId,
+      const { data: finalized, error: finalizeError } = await userClient.rpc('finalize_unused_staff_removal', {
+        p_request_id: prepared.requestId,
       })
-      if (finalizeError || !finalized?.removed) return json({error:'STAFF_REMOVAL_FINALIZE_FAILED',message:finalizeError?.message ?? 'Removal was not finalized.'},400)
-      return json({ok:true,employeeId,removed:true,forceResolved:Boolean(prepared.forceResolved)})
-    }
-    const accessBody = body as InviteRequest | UpdateRequest
-    const username = accessBody.username?.trim().toLowerCase()
-    const password = accessBody.password
-    const email = accessBody.email?.trim().toLowerCase()
-    const displayName = accessBody.displayName?.trim()
-    const role = accessBody.role
-    if (!employeeId || !displayName || !username || !usernamePattern.test(username) || !validRoles.has(role)) {
-      return json({ error: action === 'update' ? 'INVALID_STAFF_UPDATE' : 'INVALID_STAFF_INVITE' }, 400)
+      if (finalizeError || !finalized?.removed) return json({ error: 'STAFF_REMOVAL_FINALIZE_FAILED', message: finalizeError?.message ?? 'Removal was not finalized.' }, 400)
+      return json({ ok: true, employeeId, removed: true, forceResolved: Boolean(prepared.forceResolved) })
     }
 
+    // ---------------------------------------------------------------- update
     if (action === 'update') {
       const update = body as UpdateRequest
-      if (email && !isEmail(email)) return json({ error: 'INVALID_STAFF_EMAIL' }, 400)
+      const employeeId = update.employeeId?.trim()
+      if (!employeeId) return json({ error: 'INVALID_STAFF_UPDATE' }, 400)
+      const patch = toPatch(update)
+      const password = update.password || undefined
+      if (patch.email !== undefined) {
+        patch.email = patch.email.trim().toLowerCase()
+        if (!isEmail(patch.email)) return json({ error: 'INVALID_STAFF_EMAIL' }, 400)
+      }
+      if (patch.username !== undefined) {
+        patch.username = patch.username.trim().toLowerCase()
+        if (!usernamePattern.test(patch.username)) return json({ error: 'INVALID_STAFF_USERNAME' }, 400)
+      }
+      if (patch.systemRole !== undefined && !validRoles.has(patch.systemRole as StaffRole)) return json({ error: 'INVALID_STAFF_ROLE' }, 400)
       if (password && !isStrongPassword(password)) return json({ error: 'WEAK_STAFF_PASSWORD' }, 400)
-      const { data: target, error: targetError } = await admin
-        .from('staff_access_profiles')
-        .select('user_id,employee_id,display_name,role,username,email,branch_id,is_active')
-        .eq('employee_id', employeeId)
-        .maybeSingle()
-      if (targetError) throw targetError
-      if (!target) return json({ error: 'STAFF_LOGIN_NOT_FOUND' }, 404)
-      if (email && email !== target.email) {
-        const { data: existingEmail, error: existingEmailError } = await admin
-          .from('staff_access_profiles')
-          .select('user_id')
-          .ilike('email', email)
-          .neq('user_id', target.user_id)
-          .maybeSingle()
-        if (existingEmailError) throw existingEmailError
-        if (existingEmail) return json({ error: 'EMAIL_ALREADY_IN_USE' }, 409)
-      }
 
-      const syncInput = {
+      // The RPC is also the authority check: it runs before any Auth change.
+      const { data: result, error: updateError } = await userClient.rpc('update_staff_employee', {
         p_employee_id: employeeId,
-        p_display_name: displayName,
-        p_role: role,
-        p_username: username,
-        p_is_active: update.isActive,
-        p_branch_id: update.branchId ?? null,
-      }
-      const { data: synced, error: syncError } = await userClient.rpc('sync_staff_access_profile', syncInput)
-      if (syncError) return json({ error: 'STAFF_ACCESS_UPDATE_REJECTED', message: syncError.message }, 400)
-      if (!synced) return json({ error: 'STAFF_LOGIN_NOT_FOUND' }, 404)
+        p_patch: patch,
+        p_require_login: Boolean(password),
+      })
+      if (updateError) return rpcFailure(updateError, 'STAFF_ACCESS_UPDATE_REJECTED')
 
-      if (email && email !== target.email) {
-        const { error: profileEmailError } = await admin.rpc('service_update_staff_access_email', {
-          p_user_id: target.user_id,
-          p_email: email,
-        })
-        if (profileEmailError) {
-          await userClient.rpc('sync_staff_access_profile', {
-            p_employee_id: target.employee_id,
-            p_display_name: target.display_name,
-            p_role: target.role,
-            p_username: target.username,
-            p_is_active: target.is_active,
-            p_branch_id: target.branch_id,
-          })
-          return json({ error: profileEmailError.code === '23505' ? 'EMAIL_ALREADY_IN_USE' : 'STAFF_ACCESS_UPDATE_REJECTED', message: profileEmailError.message }, 400)
-        }
-      }
-
-      if (password || (email && email !== target.email)) {
+      const changed = new Set<string>(Array.isArray(result?.changed) ? result.changed : [])
+      const login = result?.login as { userId: string; email: string } | null
+      const emailChanged = Boolean(login && changed.has('email'))
+      if (login && (password || emailChanged)) {
         const credentials = {
           ...(password ? { password } : {}),
-          ...(email && email !== target.email ? { email, email_confirm: true } : {}),
+          ...(emailChanged ? { email: login.email, email_confirm: true } : {}),
         }
-        const { error: credentialError } = await admin.auth.admin.updateUserById(target.user_id, credentials)
+        const { error: credentialError } = await admin.auth.admin.updateUserById(login.userId, credentials)
         if (credentialError) {
-          if (email && email !== target.email) {
-            await admin.rpc('service_update_staff_access_email', { p_user_id: target.user_id, p_email: target.email })
+          // Put the employee + profile back exactly as they were.
+          const previous = (result?.previous ?? {}) as Record<string, unknown>
+          const revert: EmployeePatch = {}
+          for (const key of PATCH_KEYS) {
+            if (key in patch && changed.has(key) && typeof previous[key] === 'string') revert[key] = previous[key] as string
           }
-          await userClient.rpc('sync_staff_access_profile', {
-            p_employee_id: target.employee_id,
-            p_display_name: target.display_name,
-            p_role: target.role,
-            p_username: target.username,
-            p_is_active: target.is_active,
-            p_branch_id: target.branch_id,
-          })
+          if (Object.keys(revert).length) {
+            await userClient.rpc('update_staff_employee', { p_employee_id: employeeId, p_patch: revert, p_require_login: false })
+          }
           const duplicateEmail = /already|registered|exists/i.test(credentialError.message)
           return json({ error: duplicateEmail ? 'EMAIL_ALREADY_IN_USE' : 'STAFF_CREDENTIAL_UPDATE_FAILED', message: credentialError.message }, 400)
         }
       }
 
-      return json({ ok: true, userId: target.user_id, employeeId, email: email ?? target.email, username, role, isActive: update.isActive })
+      return json({
+        ok: true,
+        employeeId,
+        revision: result?.revision,
+        employee: result?.employee,
+        login,
+        changed: [...changed],
+      })
     }
 
+    // ---------------------------------------------------------------- invite
     const invite = body as InviteRequest
+    const source = invite.employee && typeof invite.employee === 'object' ? invite.employee : {
+      id: invite.employeeId,
+      name: invite.displayName,
+      systemRole: invite.role,
+      email: invite.email,
+      username: invite.username,
+      phone: '',
+      hireDate: jakartaToday(),
+    }
+    const employeeId = String(source.id ?? '').trim()
+    const email = String(source.email ?? '').trim().toLowerCase()
+    const username = String(source.username ?? '').trim().toLowerCase()
+    const displayName = String(source.name ?? '').trim()
+    const role = String(source.systemRole ?? '') as StaffRole
+    const password = invite.password
+    if (!employeeId || !displayName || !username || !usernamePattern.test(username) || !validRoles.has(role)) {
+      return json({ error: 'INVALID_STAFF_INVITE' }, 400)
+    }
     if (!email || !isEmail(email)) return json({ error: 'INVALID_STAFF_EMAIL' }, 400)
     if (!password || !isStrongPassword(password)) return json({ error: 'WEAK_STAFF_PASSWORD' }, 400)
     const { data: mayInvite, error: invitePermissionError } = await userClient.rpc('can_invite_staff_role', { p_role: role })
@@ -276,33 +316,35 @@ Deno.serve(async (request) => {
       email,
       password,
       email_confirm: true,
+      app_metadata: { fleurstales_employee_id: employeeId },
       user_metadata: { fleurstales_employee_id: employeeId, fleurstales_display_name: displayName },
     })
-    if (inviteError || !invitedUser.user) return json({ error: 'INVITE_FAILED', message: inviteError?.message ?? 'Supabase did not return the staff user.' }, 400)
-
-    const userId = invitedUser.user.id
-    try {
-      const { error: metadataError } = await admin.auth.admin.updateUserById(userId, {
-        app_metadata: { fleurstales_employee_id: employeeId },
-      })
-      if (metadataError) throw metadataError
-
-      const { error: accessError } = await admin.rpc('service_create_staff_access_profile', {
-        p_user_id: userId,
-        p_employee_id: employeeId,
-        p_email: email,
-        p_username: username,
-        p_display_name: displayName,
-        p_role: role,
-        p_branch_id: invite.branchId ?? null,
-      })
-      if (accessError) throw accessError
-    } catch (cause) {
-      await admin.auth.admin.deleteUser(userId).catch(() => undefined)
-      throw cause
+    if (inviteError || !invitedUser.user) {
+      const duplicateEmail = /already|registered|exists/i.test(inviteError?.message ?? '')
+      return json({ error: duplicateEmail ? 'EMAIL_ALREADY_IN_USE' : 'INVITE_FAILED', message: inviteError?.message ?? 'Supabase did not return the staff user.' }, 400)
     }
 
-    return json({ ok: true, userId, employeeId, email, username, role })
+    const userId = invitedUser.user.id
+    const { data: provisioned, error: provisionError } = await userClient.rpc('provision_staff_employee', {
+      p_user_id: userId,
+      p_employee: { ...source, id: employeeId, name: displayName, systemRole: role, email, username },
+      p_branch_id: invite.branchId ?? null,
+    })
+    if (provisionError) {
+      await admin.auth.admin.deleteUser(userId).catch(() => undefined)
+      return rpcFailure(provisionError, 'STAFF_PROVISION_FAILED')
+    }
+
+    return json({
+      ok: true,
+      userId,
+      employeeId,
+      email,
+      username,
+      role,
+      revision: provisioned?.revision,
+      employee: provisioned?.employee,
+    })
   } catch (cause) {
     console.error('staff-admin failed', cause)
     return json({ error: 'STAFF_ADMIN_FAILED', message: cause instanceof Error ? cause.message : 'Unknown error.' }, 500)

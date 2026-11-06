@@ -20,7 +20,7 @@ import type { UserRole } from '../../store/userStore'
 import type { Employee } from '../../store/hrStoreTypes'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useUserStore } from '../../store/userStore'
-import { useHrStore } from '../../store/hrStore'
+import { getEmployeeRoleLabel, useHrStore } from '../../store/hrStore'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useStockStore } from '../../store/stockStore'
 import { usePayrollStore } from '../../store/payrollStore'
@@ -533,26 +533,37 @@ export const useSettingsCenterController = (): SettingsCenterViewModel => {
           const employeeId = `emp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
           try {
             if (isSupabaseConfigured()) {
+              // Login + HR employee are created together on the server.
+              const name = staffAccountDraft.name.trim()
               await provisionStaffAccountSupabase({
+                employee: {
+                  id: employeeId,
+                  name,
+                  position: getEmployeeRoleLabel(staffAccountDraft.systemRole),
+                  branch: '',
+                  systemRole: staffAccountDraft.systemRole,
+                  status: 'active',
+                  phone: staffAccountDraft.phone.trim(),
+                  hireDate: staffAccountDraft.hireDate,
+                  email: staffAccountDraft.email.trim().toLowerCase(),
+                  username: staffAccountDraft.username.trim().toLowerCase(),
+                  baseSalaryIdr: staffAccountDraft.baseSalaryIdr,
+                },
+                password: staffAccountDraft.pin,
+              })
+            } else {
+              const result = createStaffAccount({
+                ...staffAccountDraft,
                 employeeId,
                 email: staffAccountDraft.email,
                 username: staffAccountDraft.username,
-                password: staffAccountDraft.pin,
-                displayName: staffAccountDraft.name,
-                role: staffAccountDraft.systemRole as Exclude<UserRole, 'owner'>,
+                pin: staffAccountDraft.pin,
+                productionAuth: false,
+                position: staffAccountDraft.systemRole,
+                actor: { name: actorName, role: 'owner' },
               })
+              if (!result.ok) throw new Error(result.reason)
             }
-            const result = createStaffAccount({
-              ...staffAccountDraft,
-              employeeId,
-              email: staffAccountDraft.email,
-              username: staffAccountDraft.username,
-              pin: staffAccountDraft.pin,
-              productionAuth: isSupabaseConfigured(),
-              position: staffAccountDraft.systemRole,
-              actor: { name: actorName, role: 'owner' },
-            })
-            if (!result.ok) throw new Error(result.reason)
           } catch (cause) {
             setSaveFeedback(cause instanceof Error ? cause.message : 'Staff account could not be created.')
             return
