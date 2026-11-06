@@ -14,7 +14,7 @@ import {
 } from '../domain/orderBusinessRules'
 import { finalizeOrderMutation, validateOrderCommand } from './orderCommandSupport'
 import { useFinanceStore } from './financeStore'
-import { isSharedBackendConfigured } from '../api/remoteSession'
+import { isServerAuthoritative } from '../data/serverAuthority'
 
 type FinanceActions = Pick<
   OrdersStoreState,
@@ -98,7 +98,7 @@ export const createOrderFinanceActions = (
         order.orderNumber === orderNumber ? updatedOrder : order,
       ),
     }))
-    if (!isSharedBackendConfigured()) {
+    if (!isServerAuthoritative()) {
       useFinanceStore.getState().verifyOrderTransactions({
         orderNumber,
         actor: { name: actor.name, role: actor.role },

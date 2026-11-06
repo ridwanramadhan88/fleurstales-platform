@@ -31,8 +31,7 @@ import { buildExpectedOrderContributions, DEFAULT_ORDER_CONTRIBUTION_RULES, vali
 import { getPayrollPeriodIdForActivityDate } from '../domain/payrollScheduleDomain'
 import { canActorManageEmployee, isHrManagedEmployee, isHrManagedEmployeeRole, HR_PROTECTED_ROLE_MESSAGE } from '../domain/hrManagedEmployeeDomain'
 import { isActionAuthorized } from '../config/authorization'
-import { isSharedBackendConfigured } from '../api/remoteSession'
-import { isSupabaseConfigured } from '../data/shared/supabaseConfig'
+import { isServerAuthoritative } from '../data/serverAuthority'
 import { getEmployeeRemovalBlockers, isEmployeeOperationallyReady } from '../domain/hrEmployeeLifecycleDomain'
 import type {
   Employee,
@@ -563,7 +562,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
         && isEmployeeOperationallyReady({
           employee,
           roleSalaryIdr:settings.payroll.baseSalaryByRole?.[employee.systemRole] ?? 0,
-          productionAuth:isSupabaseConfigured() || isSharedBackendConfigured(),
+          productionAuth:isServerAuthoritative(),
         }),
       ).sort((a,b)=>a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
       const operational = roster
@@ -1018,7 +1017,8 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
   },
 
   syncOrderContributionPoints: ({ orders, actor }) => {
-    if (isSharedBackendConfigured()) return { ok:true, created:0, reversed:0 }
+    // Supabase recomputes order points in private.sync_order_contribution_points.
+    if (isServerAuthoritative()) return { ok:true, created:0, reversed:0 }
     let result:{ok:true;created:number;reversed:number}|{ok:false;reason:string}={ok:false,reason:'Order contribution points could not be synchronized.'}
     set((state)=>{
       if (!['owner','hr','finance'].includes(actor.role)) { result={ok:false,reason:'Only Owner, HR, or Finance can synchronize order points.'}; return state }

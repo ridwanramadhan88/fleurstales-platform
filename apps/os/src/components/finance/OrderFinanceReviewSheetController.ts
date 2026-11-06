@@ -23,7 +23,7 @@ import { EMPTY_ACTIVITIES } from '../orders/orderTableSharedConstants'
 import { getDisplayScheduleLabel, getOrderUrgency, isFutureOrder } from '../orders/orderTableFormatters'
 import { saveOrderFinanceReference } from '../../data/orderCustomerConfirmation'
 import { decideOrderFinanceReconciliation } from '../../data/orderFinanceReconciliation'
-import { isSharedBackendConfigured } from '../../api/remoteSession'
+import { isServerAuthoritative } from '../../data/serverAuthority'
 
 export interface FinanceReviewTimelineRow {
   id: OrderStatus
@@ -193,7 +193,7 @@ export const useOrderFinanceReviewSheetController = ({
     const normalized = normalizeFinanceReference(rawReference) || '-'
     setFinanceReferenceDraft(normalized)
 
-    if (!isSharedBackendConfigured()) {
+    if (!isServerAuthoritative()) {
       setSavedFinanceReference(normalized)
       return financeReferenceRevision
     }
@@ -245,7 +245,7 @@ export const useOrderFinanceReviewSheetController = ({
         decisionRevision = await persistFinanceReference(reconciliationReference ?? financeReferenceDraft)
       }
 
-      if (isSharedBackendConfigured()) {
+      if (isServerAuthoritative()) {
         await decideOrderFinanceReconciliation(
           { ...order, revision: decisionRevision },
           decision,

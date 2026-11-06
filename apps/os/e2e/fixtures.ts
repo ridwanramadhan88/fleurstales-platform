@@ -115,7 +115,12 @@ const ENGLISH_UI = /\b(the|and|with|your|yet|please|unable|failed|required|canno
 // Only month abbreviations that differ from Indonesian (Jan, Feb, Mar, Apr, Jun, Jul, Sep, Nov are shared).
 const MONTHS_EN = /\b\d{1,2} (May|Aug|Sept|Oct|Dec)\b/
 /** Visible text that is data, not UI copy. */
-const DATA_ALLOWLIST = [/^E2E /, /@fleurstales\.test$/]
+const DATA_ALLOWLIST = [
+  /^E2E /,
+  /@fleurstales\.test$/,
+  // Customer WhatsApp templates are Indonesian copy that carries a tracking URL.
+  /^Hi kak /,
+]
 
 /** Returns visible UI lines that still contain English. */
 export const englishLines = async (page: Page): Promise<string[]> => {

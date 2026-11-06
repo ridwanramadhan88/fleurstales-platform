@@ -60,7 +60,7 @@ import { useFinanceStore } from './financeStore'
 import { appendPaymentEvent, buildOrderPaymentEvent } from '../domain/orderPaymentDomain'
 import { queueCancellationRefund } from '../domain/orderCancellationRefundDomain'
 import { getFloristAssignmentOptionById, resolveFloristAssignmentMoment } from '../domain/floristAssignmentDomain'
-import { isSharedBackendConfigured } from '../api/remoteSession'
+import { isServerAuthoritative } from '../data/serverAuthority'
 
 export type { AddOrderFromDraftInput, CreateOrderInput, OrdersStoreState } from './ordersStoreTypes'
 
@@ -100,7 +100,7 @@ const postPaymentEventToLedger = ({
   order: OrderTableRow
   event: OrderPaymentEvent
 }): { allowed: true; event: OrderPaymentEvent } | { allowed: false; reason: string } => {
-  if (event.amountIdr <= 0 || isSharedBackendConfigured()) return { allowed: true, event }
+  if (event.amountIdr <= 0 || isServerAuthoritative()) return { allowed: true, event }
   const finance = useFinanceStore.getState()
   const result = event.type === 'payment_received'
     ? finance.recordOrderPayment({
@@ -264,21 +264,12 @@ export const useOrdersStore = create<OrdersStoreState>()(
             note: 'Initial order payment',
             idempotencyKey: `${newOrder.id}:initial-payment`,
           })
-          const ledger = useFinanceStore.getState().recordOrderPayment({
-            orderNumber: newOrder.orderNumber,
-            branch: newOrder.branch,
-            amount: paymentEvent.amountIdr,
-            method: paymentEvent.method,
-            sourceEventId: paymentEvent.id,
-            idempotencyKey: paymentEvent.idempotencyKey,
-            actor: auditActor.name,
-            occurredAt: paymentEvent.occurredAt,
-            note: paymentEvent.note,
-          })
+          // Server mode: the order save posts the ledger row server-side.
+          const ledger = postPaymentEventToLedger({ order: newOrder, event: paymentEvent })
           if (!ledger.allowed) {
-            throw new Error(ledger.reason ?? 'Initial payment could not be posted.')
+            throw new Error(ledger.reason || 'Initial payment could not be posted.')
           }
-          newOrder = appendPaymentEvent(newOrder, { ...paymentEvent, ledgerTransactionId: ledger.transactionId })
+          newOrder = appendPaymentEvent(newOrder, ledger.event)
         }
 
         set((state) => ({

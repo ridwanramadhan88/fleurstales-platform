@@ -20,7 +20,7 @@ describe('business-rules documentation integrity', () => {
   it('ships the gap log and all expected numbered sections', () => {
     expect(statSync(gapLogPath).isFile()).toBe(true)
     const sections = sectionNumbers(readFileSync(gapLogPath, 'utf8'))
-    expect([...sections].sort((a, b) => a - b)).toEqual(Array.from({ length: 28 }, (_, index) => index + 1))
+    expect([...sections].sort((a, b) => a - b)).toEqual(Array.from({ length: 29 }, (_, index) => index + 1))
   })
 
   it('does not reference missing business-rule Markdown files', () => {
