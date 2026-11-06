@@ -425,8 +425,10 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
       const weekday = weekdayForDate(input.scheduleDate)
       const hours = branch.openingHours[weekday]
       if (!hours?.isOpen) throw new Error('Selected branch is closed on this date.')
-      if (!hours.opensAt || !hours.closesAt || input.scheduleTime < hours.opensAt || input.scheduleTime > hours.closesAt) {
-        throw new Error('Selected time is outside branch opening hours.')
+      const windowStart = hours.fulfillmentStartsAt ?? hours.opensAt
+      const windowEnd = hours.fulfillmentEndsAt ?? hours.closesAt
+      if (!windowStart || !windowEnd || input.scheduleTime < windowStart || input.scheduleTime > windowEnd) {
+        throw new Error('Selected time is outside branch pickup & delivery hours.')
       }
       if (input.items.length < 1 || input.items.length > 20) throw new Error('Order must contain between 1 and 20 items.')
 

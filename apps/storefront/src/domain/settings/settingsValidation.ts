@@ -43,6 +43,9 @@ export const validateOwnerSettings = (
       if (hours.isOpen && hours.opensAt >= hours.closesAt) {
         errors[`branch.${index}.openingHours.${day}`] =
           'Opening time must be earlier than closing time.'
+      } else if (hours.isOpen && hours.fulfillmentStartsAt && hours.fulfillmentEndsAt && hours.fulfillmentStartsAt >= hours.fulfillmentEndsAt) {
+        errors[`branch.${index}.openingHours.${day}`] =
+          'Pickup & delivery start must be earlier than the end.'
       }
     })
   })

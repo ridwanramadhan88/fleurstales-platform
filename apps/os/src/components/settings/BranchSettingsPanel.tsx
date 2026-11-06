@@ -12,6 +12,7 @@ import { TimeSelectField } from '../ui/date-time-field'
 import type { BranchDependencyImpact } from '../../domain/settings/branchSafetyDomain'
 import { SettingsSectionHeader } from './SettingsPrimitives'
 import { OpenStreetMapPicker } from './OpenStreetMapPicker'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 
 interface Props {
   isEditing: boolean
@@ -156,7 +157,7 @@ const OpeningHoursSummary: FC<{ branch: BranchSettings }> = ({ branch }) => {
         </span>
         <div>
           <p className="text-xs font-semibold text-foreground">Opening hours</p>
-          <p className="text-xs text-muted-foreground">Controls available delivery, pickup, and employee check-out times.</p>
+          <p className="text-xs text-muted-foreground">Controls employee attendance and check-out times, and pickup/delivery unless separate hours are set below.</p>
         </div>
       </div>
       <div className="divide-y divide-border/50 overflow-hidden rounded-lg bg-surface-panel">
@@ -174,10 +175,132 @@ const OpeningHoursSummary: FC<{ branch: BranchSettings }> = ({ branch }) => {
   )
 }
 
+/**
+ * Pickup & delivery hours (same window for both). Stored on each day of the
+ * opening hours as fulfillmentStartsAt / fulfillmentEndsAt; when off, orders
+ * use the opening hours as before.
+ */
+const FulfillmentHoursEditor: FC<{
+  branch: BranchSettings
+  onUpdateBranch: Props['onUpdateBranch']
+}> = ({ branch, onUpdateBranch }) => {
+  const tr = useBilingualCopy()
+  const openingHours = useMemo(
+    () => cloneOpeningHours(branch.openingHours ?? DEFAULT_BRANCH_OPENING_HOURS),
+    [branch.openingHours],
+  )
+  const enabled = WEEKDAY_KEYS.some((day) => openingHours[day].fulfillmentStartsAt && openingHours[day].fulfillmentEndsAt)
+  const varies = WEEKDAY_KEYS.some((day) =>
+    openingHours[day].fulfillmentStartsAt !== openingHours.monday.fulfillmentStartsAt
+    || openingHours[day].fulfillmentEndsAt !== openingHours.monday.fulfillmentEndsAt)
+  const [mode, setMode] = useState<'all' | 'individual'>(() => (varies ? 'individual' : 'all'))
+
+  const write = (next: BranchOpeningHours) => onUpdateBranch(branch.id, { openingHours: next })
+  const setAll = (startsAt: string | undefined, endsAt: string | undefined) => write(Object.fromEntries(WEEKDAY_KEYS.map((day) => {
+    const { fulfillmentStartsAt: _s, fulfillmentEndsAt: _e, ...rest } = openingHours[day]
+    return [day, startsAt && endsAt ? { ...rest, fulfillmentStartsAt: startsAt, fulfillmentEndsAt: endsAt } : rest]
+  })) as unknown as BranchOpeningHours)
+  const setDay = (day: WeekdayKey, patch: Pick<DayOpeningHours, 'fulfillmentStartsAt' | 'fulfillmentEndsAt'>) =>
+    write({ ...openingHours, [day]: { ...openingHours[day], ...patch } })
+
+  const shared = openingHours.monday
+  const sharedStart = shared.fulfillmentStartsAt ?? shared.opensAt
+  const sharedEnd = shared.fulfillmentEndsAt ?? shared.closesAt
+
+  return (
+    <div className="space-y-3 rounded-lg bg-background/80 p-3 ring-1 ring-border/60" data-testid="fulfillment-hours-editor">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-foreground"><Clock3 className="size-4" /></span>
+          <div>
+            <p className="text-xs font-semibold text-foreground">{tr('Pickup & delivery hours', 'Jam ambil & antar')}</p>
+            <p className="text-xs text-muted-foreground">{tr('Times customers and Admin can choose for pickup and delivery. Off = use opening hours.', 'Jam yang bisa dipilih pelanggan dan Admin untuk ambil sendiri dan antar. Mati = ikut jam buka.')}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-label={tr('Use separate pickup & delivery hours', 'Pakai jam ambil & antar sendiri')}
+          aria-checked={enabled}
+          onClick={() => (enabled ? setAll(undefined, undefined) : setAll(shared.opensAt, shared.closesAt))}
+          className={`relative h-6 w-11 shrink-0 rounded-full transition ${enabled ? 'bg-primary' : 'bg-border'}`}
+        >
+          <span className={`absolute left-0 top-0.5 size-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        </button>
+      </div>
+
+      {enabled && (
+        <>
+          <div className="inline-flex w-full rounded-lg bg-muted p-1 sm:w-auto">
+            {(['all', 'individual'] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={mode === value}
+                onClick={() => { if (value === 'all') setAll(sharedStart, sharedEnd); setMode(value) }}
+                className={`flex-1 rounded-md px-3 py-1.5 text-2xs font-semibold transition sm:flex-none ${mode === value ? 'bg-card text-foreground shadow-sm ring-1 ring-border/60' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {value === 'all' ? tr('Same every day', 'Sama setiap hari') : tr('Customize days', 'Atur per hari')}
+              </button>
+            ))}
+          </div>
+          {mode === 'all' ? (
+            <div className="grid grid-cols-2 gap-2 rounded-lg bg-surface-panel p-3">
+              <label className="space-y-1">
+                <span className="text-2xs font-semibold text-muted-foreground">{tr('From', 'Mulai')}</span>
+                <TimeSelectField value={sharedStart} onChange={(value) => setAll(value, sharedEnd)} className="h-10 bg-card text-sm" />
+              </label>
+              <label className="space-y-1">
+                <span className="text-2xs font-semibold text-muted-foreground">{tr('Until', 'Sampai')}</span>
+                <TimeSelectField value={sharedEnd} onChange={(value) => setAll(sharedStart, value)} className="h-10 bg-card text-sm" />
+              </label>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {WEEKDAY_KEYS.map((day) => {
+                const hours = openingHours[day]
+                const start = hours.fulfillmentStartsAt ?? hours.opensAt
+                const end = hours.fulfillmentEndsAt ?? hours.closesAt
+                return (
+                  <div key={day} className="grid gap-2 rounded-lg bg-surface-panel p-2.5 sm:grid-cols-[7rem_1fr] sm:items-center">
+                    <span className="text-xs font-semibold text-foreground">{WEEKDAY_LABELS[day]}</span>
+                    {hours.isOpen ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <TimeSelectField value={start} onChange={(value) => setDay(day, { fulfillmentStartsAt: value, fulfillmentEndsAt: end })} className="h-9 bg-card text-xs" />
+                        <TimeSelectField value={end} onChange={(value) => setDay(day, { fulfillmentStartsAt: start, fulfillmentEndsAt: value })} className="h-9 bg-card text-xs" />
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{tr('Branch closed', 'Cabang tutup')}</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+const FulfillmentHoursSummary: FC<{ branch: BranchSettings }> = ({ branch }) => {
+  const tr = useBilingualCopy()
+  const hours = branch.openingHours ?? DEFAULT_BRANCH_OPENING_HOURS
+  const first = WEEKDAY_KEYS.map((day) => hours[day]).find((day) => day.isOpen && day.fulfillmentStartsAt && day.fulfillmentEndsAt)
+  const same = first && WEEKDAY_KEYS.every((day) => !hours[day].isOpen || (hours[day].fulfillmentStartsAt === first.fulfillmentStartsAt && hours[day].fulfillmentEndsAt === first.fulfillmentEndsAt))
+  const label = !first
+    ? tr('Same as opening hours', 'Sama dengan jam buka')
+    : same ? `${first.fulfillmentStartsAt}–${first.fulfillmentEndsAt}` : tr('Varies by day', 'Berbeda per hari')
+  return (
+    <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{tr('Pickup & delivery hours', 'Jam ambil & antar')}:</span> {label}</p>
+  )
+}
+
 const OpeningHoursEditor: FC<{
   branch: BranchSettings
   onUpdateBranch: Props['onUpdateBranch']
 }> = ({ branch, onUpdateBranch }) => {
+  const tr = useBilingualCopy()
   const openingHours = useMemo(
     () => cloneOpeningHours(branch.openingHours ?? DEFAULT_BRANCH_OPENING_HOURS),
     [branch.openingHours],
@@ -224,7 +347,7 @@ const OpeningHoursEditor: FC<{
           <div>
             <p className="text-xs font-semibold text-foreground">Opening hours</p>
             <p className="text-xs text-muted-foreground">
-              Controls available delivery, pickup, and employee check-out times.
+              {tr('Controls staff attendance and check-out, and pickup/delivery unless separate hours are set below.', 'Mengatur absensi dan check-out staf, juga ambil/antar bila jam ambil & antar di bawah tidak diatur.')}
             </p>
           </div>
         </div>
@@ -439,6 +562,7 @@ export const BranchSettingsPanel: FC<Props> = ({
                     <div className="rounded-xl bg-surface-panel px-3.5 py-3 ring-1 ring-border/40">
                       <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">Hours</p>
                       <p className="mt-0.5 font-medium text-foreground">{summarizeOpeningHours(branch)}</p>
+                      <div className="mt-1"><FulfillmentHoursSummary branch={branch} /></div>
                     </div>
                     <div className="rounded-xl bg-surface-panel px-3.5 py-3 ring-1 ring-border/40">
                       <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">Delivery fee</p>
@@ -512,6 +636,11 @@ export const BranchSettingsPanel: FC<Props> = ({
                       <OpeningHoursEditor branch={branch} onUpdateBranch={onUpdateBranch} />
                     ) : (
                       <OpeningHoursSummary branch={branch} />
+                    )}
+                    {isEditing ? (
+                      <FulfillmentHoursEditor branch={branch} onUpdateBranch={onUpdateBranch} />
+                    ) : (
+                      <FulfillmentHoursSummary branch={branch} />
                     )}
 
                     {impact && (

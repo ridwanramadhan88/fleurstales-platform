@@ -40,6 +40,12 @@ export const normalizeSharedOpeningHours = (
       opensAt: normalizeTime(source?.opensAt, fallback.opensAt),
       closesAt: normalizeTime(source?.closesAt, fallback.closesAt),
     }
+    const startsAt = source?.fulfillmentStartsAt
+    const endsAt = source?.fulfillmentEndsAt
+    if (typeof startsAt === 'string' && typeof endsAt === 'string' && /^\d{2}:\d{2}$/.test(startsAt) && /^\d{2}:\d{2}$/.test(endsAt)) {
+      result[day].fulfillmentStartsAt = startsAt
+      result[day].fulfillmentEndsAt = endsAt
+    }
   }
   return result
 }

@@ -35,6 +35,26 @@ export const getBranchHoursForDate = (
   return (branch?.openingHours ?? DEFAULT_BRANCH_OPENING_HOURS)[weekday]
 }
 
+/**
+ * Pickup & delivery window for a date: the Owner's "pickup & delivery hours"
+ * when set for that day, otherwise the opening hours. Every order-facing
+ * helper below (time slots, validation, labels) uses this window; attendance
+ * and scheduling keep using getBranchHoursForDate (opening hours).
+ */
+export const getFulfillmentHoursForDate = (
+  branch: Pick<BranchSettings, 'openingHours'> | null | undefined,
+  date: string,
+): DayOpeningHours | null => {
+  const hours = getBranchHoursForDate(branch, date)
+  if (!hours) return null
+  const hasWindow = Boolean(hours.fulfillmentStartsAt && hours.fulfillmentEndsAt)
+  return {
+    isOpen: hours.isOpen,
+    opensAt: hasWindow ? hours.fulfillmentStartsAt! : hours.opensAt,
+    closesAt: hasWindow ? hours.fulfillmentEndsAt! : hours.closesAt,
+  }
+}
+
 const toMinutes = (value: string): number => {
   const [hour, minute] = value.split(':').map(Number)
   return hour * 60 + minute
@@ -45,7 +65,7 @@ export const isTimeWithinBranchOpeningHours = (
   date: string,
   time: string,
 ): boolean => {
-  const hours = getBranchHoursForDate(branch, date)
+  const hours = getFulfillmentHoursForDate(branch, date)
   if (!hours?.isOpen || !time) return false
   const value = toMinutes(time)
   return value >= toMinutes(hours.opensAt) && value <= toMinutes(hours.closesAt)
@@ -56,7 +76,7 @@ export const getOpeningHourTimeSlots = (
   date: string,
   minuteStep = 15,
 ): string[] => {
-  const hours = getBranchHoursForDate(branch, date)
+  const hours = getFulfillmentHoursForDate(branch, date)
   if (!hours?.isOpen) return []
   const start = toMinutes(hours.opensAt)
   const end = toMinutes(hours.closesAt)
@@ -73,7 +93,7 @@ export const describeBranchHoursForDate = (
   branch: Pick<BranchSettings, 'openingHours'> | null | undefined,
   date: string,
 ): string => {
-  const hours = getBranchHoursForDate(branch, date)
+  const hours = getFulfillmentHoursForDate(branch, date)
   if (!hours) return 'Select a valid date.'
   if (!hours.isOpen) return 'Branch is closed on this day.'
   return `Available ${hours.opensAt}–${hours.closesAt}`
