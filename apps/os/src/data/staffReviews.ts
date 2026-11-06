@@ -10,7 +10,8 @@ export interface StaffReviewAnswer {
 
 export interface StaffReviewReward {
   id: string
-  percentOff: number
+  percentOff: number | null
+  amountOffIdr?: number | null
   minOrderIdr: number
   status: 'available' | 'redeemed'
   issuedAt: string

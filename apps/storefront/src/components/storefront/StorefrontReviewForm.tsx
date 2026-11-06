@@ -1,4 +1,5 @@
 import { useMemo, useState, type FC, type FormEvent, type ReactNode } from 'react'
+import { formatReviewRewardValue } from '../../data/orderTracking'
 import { Check, Star } from 'lucide-react'
 import {
   submitPublicOrderReview,
@@ -170,6 +171,8 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
   const formComplete = useMemo(
     () =>
       name.trim().length > 0 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+      reviewNote.trim().length > 0 &&
       resolvedDomicile.length > 0 &&
       birthday.length > 0 &&
       Boolean(ageRange) &&
@@ -182,8 +185,10 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
       ageRange,
       allRatingsComplete,
       birthday,
+      email,
       gender,
       name,
+      reviewNote,
       promoPreferences.length,
       resolvedDomicile,
       resolvedOccupation,
@@ -230,7 +235,7 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
       setSubmitted(true)
       setMessage(
         result.reward
-          ? `Terima kasih! Diskon ${Number(result.reward.percentOff)}% untuk pesanan berikutnya sudah aktif.`
+          ? `Terima kasih! Diskon ${formatReviewRewardValue(result.reward)} untuk pesanan berikutnya sudah aktif.`
           : 'Terima kasih untuk review-nya!',
       )
       await onSubmitted()
@@ -276,12 +281,13 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
           ))}
         </div>
         <label className="mt-6 block border-t border-black/[0.07] pt-5">
-          <FieldLabel>Saran atau catatan</FieldLabel>
+          <FieldLabel required>Saran atau catatan</FieldLabel>
           <textarea
             value={reviewNote}
             onChange={(event) => setReviewNote(event.target.value)}
             rows={4}
             maxLength={2000}
+            required
             className={`${fieldClass} min-h-28 resize-none py-3`}
             placeholder="Ceritakan yang kamu suka atau yang bisa kami perbaiki…"
           />
@@ -300,8 +306,8 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
             <input value={name} onChange={(event) => setName(event.target.value)} className={fieldClass} autoComplete="name" maxLength={120} required />
           </label>
           <label>
-            <FieldLabel>Email</FieldLabel>
-            <input value={email} onChange={(event) => setEmail(event.target.value)} className={fieldClass} type="email" autoComplete="email" placeholder="nama@email.com" maxLength={254} />
+            <FieldLabel required>Email</FieldLabel>
+            <input value={email} onChange={(event) => setEmail(event.target.value)} className={fieldClass} type="email" autoComplete="email" placeholder="nama@email.com" maxLength={254} required />
           </label>
           <div className="sm:col-span-2 rounded-[14px] bg-black/[0.035] px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -425,7 +431,7 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
       ) : null}
 
       <div className="border-t border-black/10 pt-5">
-        <p className="mb-3 sf-type-1 text-black/40">Kolom bertanda * wajib diisi sebelum review bisa dikirim.</p>
+        <p className="mb-3 sf-type-1 text-black/40">Semua kolom wajib diisi sebelum review bisa dikirim dan diskon aktif.</p>
         <button
           type="submit"
           disabled={busy || !formComplete}

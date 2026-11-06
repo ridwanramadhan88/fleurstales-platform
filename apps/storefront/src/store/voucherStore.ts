@@ -25,8 +25,12 @@ export interface Voucher {
   id: string
   /** Manually chosen code, stored upper-cased (e.g. "BDAY20"). */
   code: string
-  /** Percent discount applied to the order subtotal, e.g. 20 for 20% off. */
+  /** 'percent' (default, also for older vouchers) or 'amount' (fixed Rupiah). */
+  discountType?: 'percent' | 'amount'
+  /** Percent discount applied to the order subtotal, e.g. 20 for 20% off. 0 for Rupiah vouchers. */
   percentOff: number
+  /** Fixed Rupiah discount (discountType 'amount'), never more than the subtotal. */
+  amountOffIdr?: number
   /** Optional start date (YYYY-MM-DD) — voucher isn't valid before this. */
   startDate?: string
   /** Optional end date (YYYY-MM-DD) — voucher isn't valid after this. */
@@ -68,6 +72,17 @@ const INITIAL_VOUCHERS: Voucher[] = TEST_RUNTIME ? [
 
 const normalizeCode = (code: string) => code.trim().toUpperCase()
 
+const voucherValueError = (voucher: Pick<Voucher, 'discountType' | 'percentOff' | 'amountOffIdr'>): string | null => {
+  if (voucher.discountType === 'amount') {
+    return Number.isFinite(voucher.amountOffIdr) && (voucher.amountOffIdr ?? 0) > 0
+      ? null
+      : 'Rupiah discount must be more than 0.'
+  }
+  return Number.isFinite(voucher.percentOff) && voucher.percentOff > 0 && voucher.percentOff <= 100
+    ? null
+    : 'Percent off must be between 1 and 100.'
+}
+
 export const useVoucherStore = create<VoucherState>((set, get) => ({
   vouchers: INITIAL_VOUCHERS,
 
@@ -78,9 +93,8 @@ export const useVoucherStore = create<VoucherState>((set, get) => ({
     if (get().vouchers.some((voucher) => voucher.code === code)) {
       return { ok: false, reason: `Code "${code}" already exists.` }
     }
-    if (!Number.isFinite(input.percentOff) || input.percentOff <= 0 || input.percentOff > 100) {
-      return { ok: false, reason: 'Percent off must be between 1 and 100.' }
-    }
+    const valueError = voucherValueError(input)
+    if (valueError) return { ok: false, reason: valueError }
     const voucher: Voucher = {
       ...input,
       code,
@@ -101,11 +115,10 @@ export const useVoucherStore = create<VoucherState>((set, get) => ({
       }
       patch = { ...patch, code }
     }
-    if (
-      patch.percentOff !== undefined &&
-      (!Number.isFinite(patch.percentOff) || patch.percentOff <= 0 || patch.percentOff > 100)
-    ) {
-      return { ok: false, reason: 'Percent off must be between 1 and 100.' }
+    const current = get().vouchers.find((voucher) => voucher.id === id)
+    if (current && (patch.percentOff !== undefined || patch.amountOffIdr !== undefined || patch.discountType !== undefined)) {
+      const valueError = voucherValueError({ ...current, ...patch })
+      if (valueError) return { ok: false, reason: valueError }
     }
     set((state) => ({
       vouchers: state.vouchers.map((voucher) =>

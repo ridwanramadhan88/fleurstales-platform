@@ -182,8 +182,8 @@ begin
         jsonb_build_object('questionId', 'smoke-hygiene-q1', 'score', 5),
         jsonb_build_object('questionId', 'smoke-hygiene-q1', 'score', 5)
       ),
-      null,
-      '{}'::jsonb
+      'Bagus.',
+      '{"name":"Hygiene Smoke","email":"hygiene@fleurstales.test","birthday":"1990-01-01","domicile":"Kedaton","ageRange":"35_plus","gender":"female","occupation":"Designer","acquisitionSource":"Instagram","promoPreferences":["discount"]}'::jsonb
     );
   exception when others then
     v_blocked := position('ALL_REVIEW_QUESTIONS_REQUIRED' in sqlerrm) > 0;
@@ -198,8 +198,8 @@ begin
       jsonb_build_object('questionId', 'smoke-hygiene-q1', 'score', 5),
       jsonb_build_object('questionId', 'smoke-hygiene-q2', 'score', 4)
     ),
-    null,
-    '{}'::jsonb
+    'Bagus.',
+    '{"name":"Hygiene Smoke","email":"hygiene@fleurstales.test","birthday":"1990-01-01","domicile":"Kedaton","ageRange":"35_plus","gender":"female","occupation":"Designer","acquisitionSource":"Instagram","promoPreferences":["discount"]}'::jsonb
   );
   if coalesce((v_result->>'reviewSubmitted')::boolean, false) is not true then
     raise exception 'A complete review must still be accepted, got %', v_result;

@@ -123,6 +123,22 @@ export const validateVoucherCode = (
     }
   }
 
-  const discountIdr = Math.round((options.orderSubtotalIdr * voucher.percentOff) / 100)
+  const discountIdr = voucherDiscountIdr(voucher, options.orderSubtotalIdr)
   return { ok: true, voucher, discountIdr }
 }
+
+/** Discount in Rupiah for a voucher (percent or fixed amount), never above the subtotal. Same rule as the server (private.voucher_discount_idr). */
+export const voucherDiscountIdr = (
+  voucher: { discountType?: 'percent' | 'amount'; percentOff: number; amountOffIdr?: number },
+  subtotalIdr: number,
+): number => {
+  const subtotal = Math.max(0, subtotalIdr)
+  if (voucher.discountType === 'amount') return Math.min(subtotal, Math.max(0, voucher.amountOffIdr ?? 0))
+  return Math.round((subtotal * Math.max(0, Math.min(100, voucher.percentOff))) / 100)
+}
+
+/** Short label: "20%" or "Rp20.000". */
+export const formatVoucherValue = (voucher: { discountType?: 'percent' | 'amount'; percentOff: number; amountOffIdr?: number }): string =>
+  voucher.discountType === 'amount'
+    ? `Rp${Math.max(0, voucher.amountOffIdr ?? 0).toLocaleString('id-ID')}`
+    : `${voucher.percentOff}%`

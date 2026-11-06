@@ -7,6 +7,7 @@ import { formatDisplayDate } from '../ui/date-time-field'
 import { DeliveryFillIcon, PickupFillIcon } from './StorefrontFulfilmentIcons'
 import { StorefrontCopyButton } from './StorefrontCopyButton'
 import { formatIdr } from '../../lib/currency'
+import { formatVoucherValue } from '../../domain/voucherDomain'
 
 const voucherInputClass = 'sf-field min-w-0 flex-1 uppercase placeholder:normal-case'
 
@@ -154,7 +155,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
             <div className="mb-3 flex flex-wrap gap-2" aria-label="Available vouchers">
               {eligibleVouchers.map((voucher) => (
                 <button key={voucher.id} type="button" onClick={() => handleApplySuggestedVoucher(voucher.code)} className="min-h-11 rounded-full border border-[#00813f]/28 bg-[#00813f]/[0.055] px-4 sf-type-1 font-medium text-[#00813f] transition hover:bg-[#00813f]/10">
-                  {voucher.code} · {voucher.percentOff}% off
+                  {voucher.code} · {formatVoucherValue(voucher)} off
                 </button>
               ))}
             </div>

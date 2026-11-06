@@ -11,7 +11,10 @@ export interface ReviewQuestionConfig {
 
 export interface ReviewRewardConfig {
   enabled: boolean
+  /** 'amount' = fixed Rupiah (amountOffIdr), 'percent' = percentOff. */
+  rewardType?: 'percent' | 'amount'
   percentOff: number
+  amountOffIdr?: number | null
   minOrderIdr: number
   revision: number
 }
@@ -28,7 +31,7 @@ const DEFAULT_CONFIG: ReviewConfiguration = {
     { id: 'review_service', question: 'Pelayanan', displayOrder: 20, isActive: true },
     { id: 'review_fulfillment', question: 'Pengiriman / Pickup', displayOrder: 30, isActive: true },
   ],
-  reward: { enabled: true, percentOff: 10, minOrderIdr: 300_000, revision: 1 },
+  reward: { enabled: true, rewardType: 'amount', percentOff: 10, amountOffIdr: 20_000, minOrderIdr: 300_000, revision: 1 },
 }
 
 const getClient = () => {
@@ -90,9 +93,12 @@ export const saveReviewRewardSettings = async (
       reward: { ...reward, revision: reward.revision + 1 },
     })
   }
-  return getClient().rpc<ReviewConfiguration>('save_review_reward_settings', {
+  const rewardType = reward.rewardType ?? ((reward.amountOffIdr ?? 0) > 0 ? 'amount' : 'percent')
+  return getClient().rpc<ReviewConfiguration>('save_review_reward_settings_v2_guarded', {
     p_enabled: reward.enabled,
+    p_reward_type: rewardType,
     p_percent_off: reward.percentOff,
+    p_amount_off_idr: rewardType === 'amount' ? Math.round(reward.amountOffIdr ?? 0) : null,
     p_min_order_idr: Math.round(reward.minOrderIdr),
     p_expected_revision: reward.revision,
   })

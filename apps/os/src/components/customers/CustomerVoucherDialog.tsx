@@ -10,6 +10,8 @@
  */
 
 import type { FC } from 'react'
+import { formatVoucherValue } from '../../domain/voucherDomain'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { Plus, Trash2, Pencil, Search, Ticket } from 'lucide-react'
 import {
   Dialog,
@@ -61,6 +63,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
   onToggleSelectedCustomer,
   getEligibilityLabel,
 }) => {
+  const tr = useBilingualCopy()
   return (
     <Dialog
       open={open}
@@ -70,8 +73,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
         <DialogHeader>
           <DialogTitle>Manage vouchers</DialogTitle>
           <DialogDescription>
-            Create promo codes with a percent-off amount, optional date and
-            minimum-order rules, and who can use them.
+            {tr('Create promo codes with a Rupiah or percent discount, optional date and minimum-order rules, and who can use them.', 'Buat kode promo dengan potongan Rupiah atau persen, aturan tanggal dan minimal belanja (opsional), serta siapa yang boleh memakainya.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -95,7 +97,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
                         {voucher.code}
                       </span>
                       <span className="text-xs font-medium text-foreground">
-                        -{voucher.percentOff}% off
+                        -{formatVoucherValue(voucher)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -149,7 +151,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
               className="tap-scale inline-flex items-center justify-center rounded-full bg-primary text-sm font-medium text-white hover:bg-primary/90 rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"
             >
               <Plus className="size-3.5" />
-              New voucher
+              {tr('New voucher', 'Voucher baru')}
             </button>
           </>
         ) : (
@@ -167,21 +169,50 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
             </div>
 
             <div className="space-y-1">
-              <label className={labelClass}>% off</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={form.percentOff}
-                  onChange={(event) =>
-                    onFormFieldChange('percentOff', event.target.value)
-                  }
-                  placeholder="e.g. 20"
-                  className={`${inputClass} max-w-[110px]`}
-                />
-                <span className="text-sm text-muted-foreground">% off order subtotal</span>
+              <label className={labelClass}>{tr('Discount', 'Diskon')}</label>
+              <div className="inline-flex rounded-lg bg-muted p-1" role="group" aria-label={tr('Discount type', 'Jenis diskon')}>
+                {(['amount', 'percent'] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    aria-pressed={form.discountType === type}
+                    onClick={() => onFormFieldChange('discountType', type)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold ${form.discountType === type ? 'bg-card text-foreground shadow-sm ring-1 ring-border/60' : 'text-muted-foreground'}`}
+                  >
+                    {type === 'amount' ? '-Rp' : '%'}
+                  </button>
+                ))}
               </div>
+              {form.discountType === 'amount' ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Rp</span>
+                  <input
+                    inputMode="numeric"
+                    aria-label={tr('Rupiah off', 'Potongan Rupiah')}
+                    value={form.amountOffIdr}
+                    onChange={(event) => onFormFieldChange('amountOffIdr', event.target.value.replace(/\D/g, ''))}
+                    placeholder="20000"
+                    className={`${inputClass} max-w-[160px]`}
+                  />
+                  <span className="text-sm text-muted-foreground">{tr('off order subtotal', 'dari subtotal pesanan')}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    aria-label={tr('Percent off', 'Persen diskon')}
+                    value={form.percentOff}
+                    onChange={(event) =>
+                      onFormFieldChange('percentOff', event.target.value)
+                    }
+                    placeholder="e.g. 20"
+                    className={`${inputClass} max-w-[110px]`}
+                  />
+                  <span className="text-sm text-muted-foreground">% off order subtotal</span>
+                </div>
+              )}
             </div>
 
             {/* Date-offering rule */}

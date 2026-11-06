@@ -76,7 +76,7 @@ describe('hosted review workspace backend routing', () => {
     mocks.rpc.mockImplementation((name: string) => {
       if (name === 'get_review_configuration') return Promise.resolve(config)
       if (name === 'save_review_questions') return Promise.resolve({ ...config, reward: { ...config.reward, revision: 5 } })
-      if (name === 'save_review_reward_settings') return Promise.resolve({ ...config, reward: { ...config.reward, revision: 6 } })
+      if (name === 'save_review_reward_settings_v2_guarded') return Promise.resolve({ ...config, reward: { ...config.reward, revision: 6 } })
       throw new Error(`Unexpected RPC ${name}`)
     })
 
@@ -88,11 +88,18 @@ describe('hosted review workspace backend routing', () => {
     expect(mocks.rpc).toHaveBeenCalledWith('save_review_questions', {
       p_questions: [{ id: 'quality', question: 'Kualitas produk', isActive: true }],
     })
-    expect(mocks.rpc).toHaveBeenCalledWith('save_review_reward_settings', {
+    expect(mocks.rpc).toHaveBeenCalledWith('save_review_reward_settings_v2_guarded', {
       p_enabled: true,
+      p_reward_type: 'percent',
       p_percent_off: 10,
+      p_amount_off_idr: null,
       p_min_order_idr: 300000,
       p_expected_revision: 4,
     })
+    await saveReviewRewardSettings({ ...config.reward, rewardType: 'amount', amountOffIdr: 20000 })
+    expect(mocks.rpc).toHaveBeenCalledWith('save_review_reward_settings_v2_guarded', expect.objectContaining({
+      p_reward_type: 'amount',
+      p_amount_off_idr: 20000,
+    }))
   })
 })
