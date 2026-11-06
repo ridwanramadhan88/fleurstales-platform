@@ -31,7 +31,7 @@ describe('employee details UI', () => {
     fireEvent.click(within(staffRow).getByRole('button', { name:'Details' }))
     fireEvent.change(screen.getByLabelText('Role / position'), { target:{ value:'admin' } })
     fireEvent.click(screen.getByRole('button', { name:'Save access' }))
-    expect(screen.getByText(/Role: florist → admin/)).toBeInTheDocument()
+    expect(screen.getByText(/Peran: florist → admin/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name:'Confirm changes' }))
     await waitFor(() => expect(useHrStore.getState().employees.find((item) => item.id === staff.id)).toMatchObject({ systemRole:'admin', position:'Admin' }))
   })
@@ -41,7 +41,7 @@ describe('employee details UI', () => {
     fireEvent.click(within(staffRow).getByRole('button', { name:'Details' }))
     fireEvent.change(screen.getByLabelText('Name'), { target:{ value:'' } })
     fireEvent.click(screen.getByRole('button', { name:'Save profile' }))
-    expect(screen.getByText('Employee name is required.')).toBeInTheDocument()
+    expect(screen.getByText('Nama karyawan wajib diisi.')).toBeInTheDocument()
   })
   it('protects unsaved employee detail changes before closing', () => {
     render(<HrTabContentContainer activeBranch="Kedamaian" />)

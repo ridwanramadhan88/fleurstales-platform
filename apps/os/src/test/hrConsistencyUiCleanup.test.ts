@@ -68,8 +68,8 @@ describe('HR consistency and warning cleanup', () => {
     expect(people).toContain('Employment ended')
     expect(people).toContain('Separated by:')
     expect(people).toContain("readiness.state === 'active' && readiness.missing.length > 0")
-    expect(people).toContain('final employment day')
-    expect(people).toContain('payroll periods that overlap the final day remain eligible')
+    expect(people).toContain('last day of work')
+    expect(people).toContain('payroll periods that include the last day still count')
   })
 
   it('blocks the legacy local payroll expense path without a paid-from account', () => {

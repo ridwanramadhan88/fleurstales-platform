@@ -28,7 +28,7 @@ describe('HR account administration regressions', () => {
   })
 
   it('offers an explicit force-resolve removal path', () => {
-    expect(removalSource).toContain('Force resolve linked records')
+    expect(removalSource).toContain('Force delete linked records')
     expect(removalSource).toContain("removeStaffEmployeeSupabase(employee.id, reason.trim(), forceResolve)")
     expect(lifecycleSource).toContain('forceResolve=false')
     expect(lifecycleSource).toContain("action:'remove', employeeId, reason, forceResolve,")

@@ -20,6 +20,8 @@ import { InfoHint } from '../ui/info-hint'
 import { getDateLocale } from '../../i18n/uiLanguage'
 import { CreateStaffSheet, PeopleListCard, PeoplePageHeader, PeoplePageShell, PeopleSummaryCard, PeopleSummaryGrid, PeopleTabs } from './PeopleWorkspaceUI'
 import { EmployeeRemovalControl } from './EmployeeRemovalControl'
+import { READINESS_LABELS, useStaffCopy } from '../../i18n/staffAccountCopy'
+import { STAFF_PASSWORD_MIN_LENGTH } from '../../domain/staffCredentialDomain'
 
 export interface HrTabContentProps {
   activeBranch: BranchFilter
@@ -46,6 +48,7 @@ const STATUS_FILTER_LABELS: Record<EmployeeStatusFilter, string> = {
 }
 
 export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
+  const tr = useStaffCopy()
   const signedInRole = useUserStore((state) => state.role)
   const attendanceReviewCases = useHrStore((state) => state.attendanceReviewCases)
   const orders = useOrdersStore((state) => state.orders)
@@ -98,7 +101,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
           </div>
           <p className="mt-3 text-xs text-muted-foreground">{`${employee.phone || 'No WhatsApp'} · Since ${formatBusinessDate(employee.hireDate, { month:'short', year:'numeric' })}`}</p>
           {readiness.state === 'inactive' && <p className="mt-1 text-xs text-muted-foreground">{employee.employmentEndDate ? `Employment ended ${formatBusinessDate(employee.employmentEndDate)}` : 'Inactive · separation date not recorded (legacy)'}</p>}
-          {readiness.state === 'active' && readiness.missing.length > 0 && <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">{`Missing: ${readiness.missing.join(', ')}`}</p>}
+          {readiness.state === 'active' && readiness.missing.length > 0 && <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">{`${tr('Missing', 'Belum lengkap')}: ${readiness.missing.map((item) => tr(...READINESS_LABELS[item])).join(', ')}`}</p>}
           {employee.systemRole === 'florist' && <div className="mt-3 rounded-lg bg-muted/40 p-2.5"><p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All-time order performance</p><div className="grid grid-cols-3 gap-2 text-center"><div><p className="text-sm font-semibold leading-5">{performance.floristAssigned}</p><p className="text-2xs text-muted-foreground">Assigned</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristCompleted}</p><p className="text-2xs text-muted-foreground">Completed</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristProcessing}</p><p className="text-2xs text-muted-foreground">Processing</p></div></div></div>}
           {employee.systemRole === 'admin' && <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs"><span className="mr-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All time</span><span className="font-semibold">{performance.adminStartedProcessing}</span> orders moved to Processing</div>}
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-4">
@@ -141,10 +144,10 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       onOpenChange={(open) => { if (!open) vm.onRequestCloseAddForm() }}
       onSubmit={vm.onCreateEmployee}
       title={canCreateAccounts ? 'Create staff' : 'Create employee'}
-      description="Add employment details and login access in one focused workflow."
+      description={tr('Add employment details and login access in one step.', 'Isi data kepegawaian dan akses login dalam satu langkah.')}
       footer={<>
         <button type="button" onClick={vm.onRequestCloseAddForm} className="h-11 min-w-0 rounded-full border border-border bg-card px-4 text-sm font-medium">Cancel</button>
-        <button type="submit" disabled={vm.isStaffActionBusy} className="h-11 min-w-0 rounded-full disabled:opacity-60 bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90">{canCreateAccounts ? 'Create employee account' : 'Create employee profile'}</button>
+        <button type="submit" disabled={vm.isStaffActionBusy} className="h-11 min-w-0 rounded-full disabled:opacity-60 bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90">{canCreateAccounts ? tr('Create staff account', 'Buat akun staf') : tr('Create employee profile', 'Buat profil karyawan')}</button>
       </>}
     >
       <ValidationSummary errors={[...new Set(Object.values(formErrors).filter((value): value is string => Boolean(value)))]} title="Complete the required staff details" />
@@ -161,7 +164,18 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
         <div className="space-y-1"><h3 className="text-sm font-semibold leading-5">Login access</h3><p className="text-sm leading-5 text-muted-foreground">Email is used for secure password recovery. Staff can sign in with their username or email.</p></div>
         <div className="grid gap-5 sm:grid-cols-2"><Field label="Recovery email" required error={formErrors.email}><input required type="email" autoComplete="email" value={form.email} onChange={vm.onFormFieldChange('email')} className={createStaffFieldInputClass(formErrors.email)} placeholder="name@example.com" /></Field><Field label="Username" required error={formErrors.username}><input required value={form.username} onChange={vm.onFormFieldChange('username')} className={createStaffFieldInputClass(formErrors.username)} placeholder="lowercase" /></Field><Field label="Password" required error={formErrors.pin}><input required type="password" autoComplete="new-password" value={form.pin} onChange={vm.onFormFieldChange('pin')} className={createStaffFieldInputClass(formErrors.pin)} placeholder="6+ characters" /></Field></div>
       </section> : <p className="rounded-xl bg-surface-info p-4 text-sm text-info ring-1 ring-info/30">This creates an employee profile only. No login account will be generated.</p>}
-      {canCreateAccounts && <section className="rounded-xl bg-surface-panel p-4 ring-1 ring-border/70"><h3 className="text-sm font-semibold leading-5">Account setup check</h3><div className="mt-3 grid gap-2 text-sm sm:grid-cols-2"><span className={form.name.trim() ? 'text-success' : 'text-muted-foreground'}>{form.name.trim() ? '✓' : '○'} Name added</span><span className={assignableRoles.includes(form.systemRole) ? 'text-success' : 'text-muted-foreground'}>{assignableRoles.includes(form.systemRole) ? '✓' : '○'} Allowed role selected</span><span className={/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? 'text-success' : 'text-muted-foreground'}>{/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? '✓' : '○'} Recovery email ready</span><span className={/^[a-z][a-z0-9._-]*$/.test(form.username) ? 'text-success' : 'text-muted-foreground'}>{/^[a-z][a-z0-9._-]*$/.test(form.username) ? '✓' : '○'} Username ready</span><span className={(form.pin.length >= 6 && /[a-z]/.test(form.pin) && /[A-Z]/.test(form.pin) && /\d/.test(form.pin)) ? 'text-success' : 'text-muted-foreground'}>{(form.pin.length >= 6 && /[a-z]/.test(form.pin) && /[A-Z]/.test(form.pin) && /\d/.test(form.pin)) ? '✓' : '○'} Strong password ready</span><span className={form.hireDate ? 'text-success' : 'text-muted-foreground'}>{form.hireDate ? '✓' : '○'} Start date added</span></div></section>}
+      {canCreateAccounts && (() => {
+        const checks: Array<[boolean, string]> = [
+          [Boolean(form.name.trim()), tr('Name added', 'Nama terisi')],
+          [assignableRoles.includes(form.systemRole), tr('Allowed role selected', 'Peran yang diizinkan dipilih')],
+          [/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email), tr('Recovery email ready', 'Email pemulihan siap')],
+          [/^[a-z][a-z0-9._-]*$/.test(form.username), tr('Username ready', 'Nama pengguna siap')],
+          // Same rule the server enforces (staffCredentialDomain): length only.
+          [form.pin.length >= STAFF_PASSWORD_MIN_LENGTH, tr(`Password has ${STAFF_PASSWORD_MIN_LENGTH}+ characters`, `Kata sandi minimal ${STAFF_PASSWORD_MIN_LENGTH} karakter`)],
+          [Boolean(form.hireDate), tr('Start date added', 'Tanggal bergabung terisi')],
+        ]
+        return <section className="rounded-xl bg-surface-panel p-4 ring-1 ring-border/70"><h3 className="text-sm font-semibold leading-5">{tr('Account setup check', 'Pemeriksaan akun')}</h3><div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">{checks.map(([done, label]) => <span key={label} className={done ? 'text-success' : 'text-muted-foreground'}>{`${done ? '✓' : '○'} ${label}`}</span>)}</div></section>
+      })()}
       {detailsError && <p role="alert" className="rounded-xl bg-surface-error p-4 text-sm text-destructive ring-1 ring-destructive/30">{detailsError}</p>}
     </CreateStaffSheet>
 
@@ -192,6 +206,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
               <Field label="Recovery email" error={accessErrors.email}><input disabled={!canEditCredentials} type="email" autoComplete="email" value={detailsForm.email} onChange={(e) => vm.onDetailsFieldChange('email', e.target.value.toLowerCase())} className={fieldInputClass(accessErrors.email)} /></Field>
               <><Field label="Username" error={accessErrors.username}><input disabled={!canEditCredentials} value={detailsForm.username} onChange={(e) => vm.onDetailsFieldChange('username', e.target.value.toLowerCase())} className={fieldInputClass(accessErrors.username)} /></Field><Field label="New password" error={accessErrors.pin}><input disabled={!canEditCredentials} type="password" autoComplete="new-password" value={detailsForm.pin} onChange={(e) => vm.onDetailsFieldChange('pin', e.target.value)} placeholder="Leave blank to keep current password" className={fieldInputClass(accessErrors.pin)} /></Field></>
             </div>
+            {selectedAccountEditable && canEditCredentials && vm.canSendPasswordReset && <div className="mt-4 flex flex-col gap-2 rounded-lg bg-card p-3 ring-1 ring-border/60 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs leading-5 text-muted-foreground">{tr('Forgot password? Email a reset link to the recovery email instead of sharing a new password.', 'Lupa sandi? Kirim tautan atur ulang ke email pemulihan, tanpa perlu membagikan sandi baru.')}</p><button type="button" disabled={vm.isStaffActionBusy} onClick={vm.onSendPasswordReset} className="h-10 shrink-0 rounded-full border border-border bg-background px-4 text-sm font-medium disabled:opacity-60">{tr('Send reset link', 'Kirim tautan atur ulang sandi')}</button></div>}
             {selectedAccountEditable && <div className="mt-3 flex justify-end"><button type="button" disabled={vm.isStaffActionBusy} onClick={vm.onRequestSaveEmployeeAccess} className="h-11 rounded-full disabled:opacity-60 border border-foreground bg-foreground px-[18px] text-sm font-semibold text-background">Save access</button></div>}
           </section>
           {hasUnsavedEmployeeDetails && <p className="rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">Unsaved employee changes. Save the affected section or close and discard them.</p>}
@@ -222,7 +237,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       </DialogContent>
     </Dialog>
 
-    <AlertDialog open={Boolean(pendingStatusEmployee)} onOpenChange={(open) => { if (!open) vm.onCancelEmployeeStatusChange() }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{pendingStatusEmployee?.status === 'active' ? 'Deactivate employee?' : 'Activate employee?'}</AlertDialogTitle><AlertDialogDescription>{pendingStatusEmployee?.status === 'active' ? 'Today will be recorded as the final employment day. Login and attendance access stop after deactivation, while payroll periods that overlap the final day remain eligible.' : 'The employee becomes active again and can sign in and record attendance. Future payroll eligibility resumes from the active employment record.'}</AlertDialogDescription></AlertDialogHeader>{statusActionError && <p role="alert" className="text-xs text-destructive">{statusActionError}</p>}<AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction disabled={vm.isStaffActionBusy} onClick={(event) => { event.preventDefault(); vm.onConfirmEmployeeStatusChange() }}>Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <AlertDialog open={Boolean(pendingStatusEmployee)} onOpenChange={(open) => { if (!open) vm.onCancelEmployeeStatusChange() }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{pendingStatusEmployee?.status === 'active' ? tr('Deactivate employee?', 'Nonaktifkan karyawan?') : tr('Activate employee?', 'Aktifkan karyawan?')}</AlertDialogTitle><AlertDialogDescription>{pendingStatusEmployee?.status === 'active' ? tr('Today is recorded as the last day of work. The login is switched off and open sessions end right away; payroll periods that include the last day still count.', 'Hari ini dicatat sebagai hari kerja terakhir. Login langsung dimatikan dan sesi yang sedang terbuka berakhir; periode penggajian yang mencakup hari terakhir tetap dihitung.') : tr('The employee becomes active again and can sign in and record attendance. Payroll counts again from today.', 'Karyawan aktif kembali dan bisa masuk serta mencatat kehadiran. Penggajian dihitung lagi mulai hari ini.')}</AlertDialogDescription></AlertDialogHeader>{statusActionError && <p role="alert" className="text-xs text-destructive">{statusActionError}</p>}<AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction disabled={vm.isStaffActionBusy} onClick={(event) => { event.preventDefault(); vm.onConfirmEmployeeStatusChange() }}>Confirm</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </PeoplePageShell>
 }
 
