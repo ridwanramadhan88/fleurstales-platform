@@ -28,6 +28,12 @@ requireText('supabase/functions/staff-password-reset/index.ts', ['service_consum
 requireText('supabase/migrations/20261018130000_staff_password_reset_throttle.sql', ["'reset:'", 'grant execute on function public.service_consume_staff_reset_attempt(text,text) to service_role'])
 requireText('supabase/functions/staff-login/index.ts', ['service_consume_staff_login_attempt', 'MIN_PRODUCTION_PASSWORD_LENGTH = 6', 'MAX_BODY_BYTES = 4096'])
 requireText('supabase/functions/staff-admin/index.ts', ['provision_staff_employee', 'update_staff_employee', 'isStrongPassword'])
+requireText('supabase/functions/staff-admin/index.ts', ["rpc('authorize_staff_password_reset'", 'resetPasswordForEmail'])
+requireText('supabase/migrations/20261106150000_staff_password_reset_link.sql', [
+  "grant execute on function public.authorize_staff_password_reset(text) to authenticated",
+  "raise exception 'RATE_LIMITED'",
+  "'staff_password_reset_requested'",
+])
 requireText('supabase/migrations/20261106120000_staff_employee_server_authority.sql', [
   'perform public.service_create_staff_access_profile(',
   "grant execute on function public.update_staff_employee(text, jsonb, boolean) to authenticated",

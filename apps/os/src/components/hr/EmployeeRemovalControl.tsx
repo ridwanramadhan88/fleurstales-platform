@@ -9,6 +9,7 @@ import { getEmployeeRemovalBlockers } from '../../domain/hrEmployeeLifecycleDoma
 import { isHrManagedEmployeeRole } from '../../domain/hrManagedEmployeeDomain'
 import { removeStaffEmployeeSupabase } from '../../data/staffLifecycleSupabase'
 import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
+import { useStaffCopy } from '../../i18n/staffAccountCopy'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,7 @@ export const EmployeeRemovalControl = ({
   employee: Employee
   onRemoved: () => void
 }) => {
+  const tr = useStaffCopy()
   const role = useUserStore((state) => state.role)
   const actorName = useUserStore((state) => state.name)
   const hrManagedRoles = useSettingsStore((state) => state.staffRoles.hrManagedRoles)
@@ -100,15 +102,15 @@ export const EmployeeRemovalControl = ({
   const confirm = async () => {
     setError(null)
     if (blockers.length && !forceResolve) {
-      setError('Linked operational records must be resolved first, or enable Force resolve below.')
+      setError(tr('Linked records must be resolved first, or tick "Force delete linked records" below.', 'Data terkait harus diselesaikan dulu, atau centang "Hapus paksa data terkait" di bawah.'))
       return
     }
     if (reason.trim().length < 3) {
-      setError('Add a removal reason.')
+      setError(tr('Add a removal reason (at least 3 characters).', 'Isi alasan penghapusan (minimal 3 karakter).'))
       return
     }
     if (nameConfirmation.trim() !== employee.name) {
-      setError(`Type ${employee.name} exactly to confirm permanent removal.`)
+      setError(tr(`Type ${employee.name} exactly to confirm.`, `Ketik ${employee.name} persis untuk konfirmasi.`))
       return
     }
     if (busy) return
@@ -118,7 +120,7 @@ export const EmployeeRemovalControl = ({
       // stores adopt its copy (no local delete, so no HR conflict afterwards).
       await removeStaffEmployeeSupabase(employee.id, reason.trim(), forceResolve)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to remove the employee account.')
+      setError(cause instanceof Error ? cause.message : tr('Unable to remove the employee account.', 'Akun karyawan tidak bisa dihapus.'))
       return
     } finally {
       setBusy(false)
@@ -147,23 +149,23 @@ export const EmployeeRemovalControl = ({
 
   return <>
     <section className="rounded-xl border border-destructive/25 bg-destructive/5 p-4">
-      <h3 className="text-sm font-semibold text-destructive">Remove account / employee</h3>
-      <p className="mt-1 text-xs leading-5 text-muted-foreground">Permanent removal deletes the staff login and employee profile. If linked operational history exists, review it first or use Force resolve.</p>
-      <button type="button" onClick={()=>setOpen(true)} className="mt-3 h-11 rounded-full border border-destructive/40 px-[18px] text-sm font-semibold text-destructive hover:bg-destructive/10">Remove permanently</button>
+      <h3 className="text-sm font-semibold text-destructive">{tr('Remove account / employee', 'Hapus akun / karyawan')}</h3>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">{tr('Permanent removal deletes the login and the employee record. To keep history (attendance, payroll), deactivate instead.', 'Hapus permanen menghapus login dan data karyawan. Untuk menyimpan riwayat (absensi, gaji), pilih Nonaktifkan.')}</p>
+      <button type="button" onClick={()=>setOpen(true)} className="mt-3 h-11 rounded-full border border-destructive/40 px-[18px] text-sm font-semibold text-destructive hover:bg-destructive/10">{tr('Remove permanently', 'Hapus permanen')}</button>
     </section>
 
     <AlertDialog open={open} onOpenChange={(next)=>{ if (!next) close() }}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Remove {employee.name} permanently?</AlertDialogTitle>
-          <AlertDialogDescription>This deletes the Supabase login, staff access profile, employee profile, and future staff scheduling. The action cannot be undone.</AlertDialogDescription>
+          <AlertDialogTitle>{tr(`Remove ${employee.name} permanently?`, `Hapus ${employee.name} secara permanen?`)}</AlertDialogTitle>
+          <AlertDialogDescription>{tr('This deletes the login, the employee record and future shifts. It cannot be undone.', 'Ini menghapus login, data karyawan, dan jadwal mendatang. Tidak bisa dibatalkan.')}</AlertDialogDescription>
         </AlertDialogHeader>
-        {blocked && <div className="rounded-lg bg-warning/10 p-3 text-sm text-warning"><p className="font-semibold">Linked records found:</p><ul className="mt-1 space-y-1">{blockers.map((blocker)=><li key={blocker.key}>• {blocker.count} {blocker.label}</li>)}</ul></div>}
-        {blocked && <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-destructive/25 bg-destructive/5 p-3"><input type="checkbox" checked={forceResolve} onChange={(event)=>setForceResolve(event.target.checked)} className="mt-0.5 size-4" /><span><span className="block text-sm font-semibold text-destructive">Force resolve linked records</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">Remove the linked attendance, review, points, schedule and payroll records, and detach this employee from existing orders before deleting the account.</span></span></label>}
-        <label className="space-y-1.5"><span className="text-xs font-medium">Removal reason</span><input value={reason} onChange={(event)=>setReason(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" /></label>
-        <label className="space-y-1.5"><span className="text-xs font-medium">Type {employee.name} to confirm</span><input value={nameConfirmation} onChange={(event)=>setNameConfirmation(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" /></label>
+        {blocked && <div className="rounded-lg bg-warning/10 p-3 text-sm text-warning"><p className="font-semibold">{tr('Linked records found:', 'Ditemukan data terkait:')}</p><ul className="mt-1 space-y-1">{blockers.map((blocker)=><li key={blocker.key}>• {blocker.count} {blocker.label}</li>)}</ul></div>}
+        {blocked && <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-destructive/25 bg-destructive/5 p-3"><input type="checkbox" checked={forceResolve} onChange={(event)=>setForceResolve(event.target.checked)} className="mt-0.5 size-4" /><span><span className="block text-sm font-semibold text-destructive">{tr('Force delete linked records', 'Hapus paksa data terkait')}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{tr('Also permanently deletes this employee\'s attendance (including selfies), reviews, points, shifts and payroll history — including paid salaries — and removes them from existing orders.', 'Ikut menghapus permanen absensi (termasuk selfie), review, poin, jadwal, dan riwayat gaji karyawan ini — termasuk gaji yang sudah dibayar — serta melepasnya dari pesanan yang ada.')}</span></span></label>}
+        <label className="space-y-1.5"><span className="text-xs font-medium">{tr('Removal reason', 'Alasan penghapusan')}</span><input value={reason} onChange={(event)=>setReason(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" /></label>
+        <label className="space-y-1.5"><span className="text-xs font-medium">{tr(`Type ${employee.name} to confirm`, `Ketik ${employee.name} untuk konfirmasi`)}</span><input value={nameConfirmation} onChange={(event)=>setNameConfirmation(event.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" /></label>
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction disabled={!ready || busy} onClick={(event)=>{ event.preventDefault(); void confirm() }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{forceResolve ? 'Force resolve & remove' : 'Remove permanently'}</AlertDialogAction></AlertDialogFooter>
+        <AlertDialogFooter><AlertDialogCancel>{tr('Cancel', 'Batal')}</AlertDialogCancel><AlertDialogAction disabled={!ready || busy} onClick={(event)=>{ event.preventDefault(); void confirm() }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{forceResolve ? tr('Force delete & remove', 'Hapus paksa') : tr('Remove permanently', 'Hapus permanen')}</AlertDialogAction></AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   </>

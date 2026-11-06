@@ -6,6 +6,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2.110.8'
 //   update  - update_staff_employee patch (profile + HR row), then Auth email /
 //             password; the patch is reverted if the Auth change fails
 //   remove  - prepare_staff_removal, delete Auth user, finalize_unused_staff_removal
+//   send_reset - authorize_staff_password_reset (scope + throttle + audit), then
+//             Supabase Auth emails a reset link to the staff recovery email
 // Responses carry the new HR revision so the OS adopts the server copy instead
 // of saving its own (which is how logins and HR records used to drift apart).
 
@@ -47,7 +49,12 @@ type RemoveRequest = {
   forceResolve?: boolean
 }
 
-type StaffRequest = InviteRequest | UpdateRequest | RemoveRequest
+type SendResetRequest = {
+  action: 'send_reset'
+  employeeId: string
+}
+
+type StaffRequest = InviteRequest | UpdateRequest | RemoveRequest | SendResetRequest
 
 type RpcError = { message?: string; code?: string } | null
 
@@ -114,6 +121,16 @@ const rpcErrorCode = (error: RpcError, fallback: string): string => {
 const rpcFailure = (error: RpcError, fallback: string, status = 400) =>
   json({ error: rpcErrorCode(error, fallback), message: error?.message ?? fallback }, status)
 
+const allowedOrigins = (): string[] => (Deno.env.get('FLEURSTALES_ALLOWED_ORIGINS') ?? '')
+  .split(',').map((value) => value.trim()).filter(Boolean)
+
+// Shows "ri***@gmail.com" so Owner/HR can confirm where the link went.
+const maskEmail = (email: string): string => {
+  const [local, domain] = email.split('@')
+  if (!local || !domain) return email
+  return `${local.slice(0, Math.min(2, local.length))}***@${domain}`
+}
+
 const jakartaToday = (): string => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date())
 
 const toPatch = (body: UpdateRequest): EmployeePatch => {
@@ -162,7 +179,28 @@ Deno.serve(async (request) => {
 
     const body = await request.json() as StaffRequest
     const action = body.action ?? 'invite'
-    if (action !== 'invite' && action !== 'update' && action !== 'remove') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
+    if (action !== 'invite' && action !== 'update' && action !== 'remove' && action !== 'send_reset') return json({ error: 'UNSUPPORTED_ACTION' }, 400)
+
+    // ------------------------------------------------------------ send_reset
+    if (action === 'send_reset') {
+      const employeeId = (body as SendResetRequest).employeeId?.trim()
+      if (!employeeId) return json({ error: 'INVALID_STAFF_RESET' }, 400)
+      const { data: gate, error: gateError } = await userClient.rpc('authorize_staff_password_reset', { p_employee_id: employeeId })
+      if (gateError) {
+        const code = rpcErrorCode(gateError, 'STAFF_RESET_REJECTED')
+        return json({ error: code, message: gateError.message }, code === 'RATE_LIMITED' ? 429 : 400)
+      }
+      const email = String((gate as { email?: string } | null)?.email ?? '')
+      const origin = request.headers.get('origin')
+      const allowed = allowedOrigins()
+      const redirectTo = origin && (allowed.length === 0 || allowed.includes(origin)) ? origin : allowed[0]
+      const publicClient = createClient(url, parsePublishableKey(), {
+        auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+      })
+      const { error: sendError } = await publicClient.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined)
+      if (sendError) return json({ error: 'STAFF_RESET_SEND_FAILED', message: sendError.message }, 502)
+      return json({ ok: true, employeeId, sentTo: maskEmail(email) })
+    }
 
     // ---------------------------------------------------------------- remove
     if (action === 'remove') {

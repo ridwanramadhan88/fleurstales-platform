@@ -13,11 +13,12 @@ import { canSetEmployeeActiveState } from '../../domain/hrStatusDomain'
 import { canViewScheduling, getEffectiveScheduleForDate } from '../../domain/hrSchedulingDomain'
 import { isHrManagedEmployee } from '../../domain/hrManagedEmployeeDomain'
 import { canCreateStaffAccount, getCreatableAccountRoles } from '../../domain/staffAccountDomain'
-import { applyLocalEmploymentStatusMetadata, provisionStaffAccountSupabase, updateStaffEmployeeSupabase, type StaffEmployeePatch } from '../../data/staffLifecycleSupabase'
+import { applyLocalEmploymentStatusMetadata, provisionStaffAccountSupabase, sendStaffPasswordResetSupabase, updateStaffEmployeeSupabase, type StaffEmployeePatch } from '../../data/staffLifecycleSupabase'
 import { isSupabaseConfigured } from '../../data/shared/supabaseConfig'
 import { isStrongStaffPassword, STAFF_PASSWORD_HELP } from '../../domain/staffCredentialDomain'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
 import { getEmployeeReadiness, type EmployeeReadiness } from '../../domain/hrEmployeeLifecycleDomain'
+import { useStaffCopy } from '../../i18n/staffAccountCopy'
 
 export type HrSection = 'employees' | 'attendance' | 'scheduling' | 'reports' | 'points' | 'payroll'
 
@@ -122,12 +123,16 @@ export interface HrTabContentViewModel {
   onRequestSaveEmployeeAccess: () => void
   onConfirmEmployeeAccessChange: () => void
   onCancelEmployeeAccessChange: () => void
+  /** Owner/HR: email the selected employee a password reset link. */
+  onSendPasswordReset: () => void
+  canSendPasswordReset: boolean
   onRequestEmployeeStatusChange: (employee: Employee) => void
   onCancelEmployeeStatusChange: () => void
   onConfirmEmployeeStatusChange: () => void
 }
 
 export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQuery, onSearchQueryChange, onActiveSectionChange }: HrTabContentProps): HrTabContentViewModel => {
+  const tr = useStaffCopy()
   const role = useUserStore((state) => state.role)
   const actorName = useUserStore((state) => state.name)
   const usesProductionPassword = isSupabaseConfigured()
@@ -177,7 +182,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   // The details sheet always reads the live store record (never a copy taken
   // when it opened), so a save can never resend stale status or role values.
   const [detailsEmployeeId, setDetailsEmployeeId] = useState<string | null>(null)
-  const [busyAction, setBusyAction] = useState<'create' | 'profile' | 'access' | 'status' | null>(null)
+  const [busyAction, setBusyAction] = useState<'create' | 'profile' | 'access' | 'status' | 'reset' | null>(null)
   const [detailsForm, setDetailsForm] = useState<EmployeeDetailsFormState | null>(null)
   const [profileErrors, setProfileErrors] = useState<EmployeeFieldErrors>({})
   const [accessErrors, setAccessErrors] = useState<EmployeeFieldErrors>({})
@@ -292,11 +297,11 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     const actor = { name: actorName, role }
     const hireDate = form.hireDate || today
     const preflightErrors: NewEmployeeFieldErrors = {}
-    if (!form.name.trim()) preflightErrors.name = 'Employee name is required.'
-    if (form.phone.trim() && !/^\+?[0-9][0-9 ()-]{7,19}$/.test(form.phone.trim())) preflightErrors.phone = 'Enter a valid WhatsApp number.'
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(hireDate)) preflightErrors.hireDate = 'Hire date is required.'
-    else if (hireDate > today) preflightErrors.hireDate = 'Hire date cannot be in the future.'
-    if (!assignableRoles.includes(form.systemRole)) preflightErrors.systemRole = 'The selected role is not available for this account.'
+    if (!form.name.trim()) preflightErrors.name = tr('Employee name is required.', 'Nama karyawan wajib diisi.')
+    if (form.phone.trim() && !/^\+?[0-9][0-9 ()-]{7,19}$/.test(form.phone.trim())) preflightErrors.phone = tr('Enter a valid WhatsApp number.', 'Masukkan nomor WhatsApp yang valid.')
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(hireDate)) preflightErrors.hireDate = tr('Hire date is required.', 'Tanggal bergabung wajib diisi.')
+    else if (hireDate > today) preflightErrors.hireDate = tr('Hire date cannot be in the future.', 'Tanggal bergabung tidak boleh di masa depan.')
+    if (!assignableRoles.includes(form.systemRole)) preflightErrors.systemRole = tr('The selected role is not available for this account.', 'Peran yang dipilih tidak tersedia untuk akun ini.')
     if (Object.keys(preflightErrors).length) { setFormErrors(preflightErrors); return }
     const common = { name: form.name, position: form.systemRole, systemRole: form.systemRole, phone: form.phone, hireDate, actor }
     const configuredRoleSalary = form.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[form.systemRole] ?? 0)
@@ -330,7 +335,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
         // store adopts that record; nothing is written locally afterwards.
         await provisionStaffAccountSupabase({ employee, password: form.pin })
       } catch (cause) {
-        setDetailsError(cause instanceof Error ? cause.message : 'Unable to create the staff login invitation.')
+        setDetailsError(cause instanceof Error ? cause.message : tr('Unable to create the staff account.', 'Akun staf tidak bisa dibuat.'))
         return
       } finally {
         setBusyAction(null)
@@ -426,10 +431,10 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     onSaveEmployeeProfile: async () => {
       if (!detailsEmployee || !detailsForm) return
       const errors: EmployeeFieldErrors = {}
-      if (!detailsForm.name.trim()) errors.name = 'Employee name is required.'
-      if (detailsForm.phone.trim() && !/^\+?[0-9][0-9 ()-]{7,19}$/.test(detailsForm.phone.trim())) errors.phone = 'Enter a valid WhatsApp number.'
-      if (!detailsForm.hireDate) errors.hireDate = 'Hire date is required.'
-      else if (detailsForm.hireDate > today) errors.hireDate = 'Hire date cannot be in the future.'
+      if (!detailsForm.name.trim()) errors.name = tr('Employee name is required.', 'Nama karyawan wajib diisi.')
+      if (detailsForm.phone.trim() && !/^\+?[0-9][0-9 ()-]{7,19}$/.test(detailsForm.phone.trim())) errors.phone = tr('Enter a valid WhatsApp number.', 'Masukkan nomor WhatsApp yang valid.')
+      if (!detailsForm.hireDate) errors.hireDate = tr('Hire date is required.', 'Tanggal bergabung wajib diisi.')
+      else if (detailsForm.hireDate > today) errors.hireDate = tr('Hire date cannot be in the future.', 'Tanggal bergabung tidak boleh di masa depan.')
       setProfileErrors(errors)
       if (Object.keys(errors).length) return
       if (isSupabaseConfigured()) {
@@ -438,36 +443,36 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
         try {
           await updateStaffEmployeeSupabase(detailsEmployee.id, { name: detailsForm.name.trim(), phone: detailsForm.phone.trim(), hireDate: detailsForm.hireDate })
         } catch (cause) {
-          setDetailsError(cause instanceof Error ? cause.message : 'Unable to save the employee profile.')
+          setDetailsError(cause instanceof Error ? cause.message : tr('Unable to save the employee profile.', 'Profil karyawan tidak bisa disimpan.'))
           return
         } finally {
           setBusyAction(null)
         }
-        setDetailsError(null); setDetailsMessage('Profile updated.')
+        setDetailsError(null); setDetailsMessage(tr('Profile updated.', 'Profil tersimpan.'))
         return
       }
       const result = updateEmployeeProfile({ employeeId: detailsEmployee.id, name: detailsForm.name, phone: detailsForm.phone, hireDate: detailsForm.hireDate, actor: { name: actorName, role } })
       if (!result.ok) { applyEmployeeCommandError(result, 'profile'); return }
-      setDetailsError(null); setDetailsMessage('Profile updated.')
+      setDetailsError(null); setDetailsMessage(tr('Profile updated.', 'Profil tersimpan.'))
     },
     onRequestSaveEmployeeAccess: () => {
       if (!detailsEmployee || !detailsForm) return
       const errors: EmployeeFieldErrors = {}
-      if (!assignableRoles.includes(detailsForm.systemRole)) errors.systemRole = 'Select an enabled role.'
+      if (!assignableRoles.includes(detailsForm.systemRole)) errors.systemRole = tr('Select an enabled role.', 'Pilih peran yang aktif.')
       if (canEditCredentials) {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(detailsForm.email.trim())) errors.email = 'Enter a valid recovery email address.'
-        if (!/^[a-z][a-z0-9._-]*$/.test(detailsForm.username.trim())) errors.username = 'Use lowercase letters, numbers, dots, underscores, or hyphens.'
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(detailsForm.email.trim())) errors.email = tr('Enter a valid recovery email address.', 'Masukkan email pemulihan yang valid.')
+        if (!/^[a-z][a-z0-9._-]*$/.test(detailsForm.username.trim())) errors.username = tr('Use lowercase letters, numbers, dots, underscores, or hyphens, starting with a letter.', 'Gunakan huruf kecil, angka, titik, garis bawah, atau tanda hubung, diawali huruf.')
         if (detailsForm.pin && !isStrongStaffPassword(detailsForm.pin)) errors.pin = STAFF_PASSWORD_HELP
       }
       setAccessErrors(errors)
       if (Object.keys(errors).length) return
       const changes: string[] = []
-      if (detailsForm.systemRole !== detailsEmployee.systemRole) changes.push(`Role: ${detailsEmployee.systemRole} → ${detailsForm.systemRole}`)
-      if (detailsForm.email.trim().toLowerCase() !== (detailsEmployee.email ?? '').toLowerCase()) changes.push(`Recovery email: ${detailsEmployee.email ?? 'none'} → ${detailsForm.email.trim().toLowerCase()}`)
-      if (detailsForm.username.trim() !== (detailsEmployee.username ?? '')) changes.push(`Username: ${detailsEmployee.username ?? 'none'} → ${detailsForm.username.trim()}`)
-      if (detailsForm.pin) changes.push('Login credential updated')
+      if (detailsForm.systemRole !== detailsEmployee.systemRole) changes.push(`${tr('Role', 'Peran')}: ${detailsEmployee.systemRole} → ${detailsForm.systemRole}`)
+      if (detailsForm.email.trim().toLowerCase() !== (detailsEmployee.email ?? '').toLowerCase()) changes.push(`${tr('Recovery email', 'Email pemulihan')}: ${detailsEmployee.email ?? '-'} → ${detailsForm.email.trim().toLowerCase()}`)
+      if (detailsForm.username.trim() !== (detailsEmployee.username ?? '')) changes.push(`${tr('Username', 'Nama pengguna')}: ${detailsEmployee.username ?? '-'} → ${detailsForm.username.trim()}`)
+      if (detailsForm.pin) changes.push(tr('New password', 'Kata sandi baru'))
       if (changes.length) { setPendingAccessConfirmation({ changes }); return }
-      if (isSupabaseConfigured()) { setDetailsError(null); setDetailsMessage('Access settings already match Supabase Auth.'); return }
+      if (isSupabaseConfigured()) { setDetailsError(null); setDetailsMessage(tr('Nothing to change.', 'Tidak ada yang berubah.')); return }
       const result = updateEmployeeAccess({ employeeId: detailsEmployee.id, systemRole: detailsForm.systemRole, email: detailsForm.email, username: detailsForm.username, pin: detailsForm.pin, productionAuth: usesProductionPassword, actor: { name: actorName, role } })
       if (!result.ok) { applyEmployeeCommandError(result, 'access'); return }
       setDetailsError(null); setDetailsMessage('Access settings updated.')
@@ -486,13 +491,13 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
         try {
           await updateStaffEmployeeSupabase(detailsEmployee.id, patch, detailsForm.pin || undefined)
         } catch (cause) {
-          setDetailsError(cause instanceof Error ? cause.message : 'Unable to save the staff login changes.')
+          setDetailsError(cause instanceof Error ? cause.message : tr('Unable to save the login changes.', 'Perubahan login tidak bisa disimpan.'))
           setPendingAccessConfirmation(null)
           return
         } finally {
           setBusyAction(null)
         }
-        setPendingAccessConfirmation(null); setDetailsError(null); setDetailsMessage('Access changes saved.')
+        setPendingAccessConfirmation(null); setDetailsError(null); setDetailsMessage(tr('Access changes saved.', 'Perubahan akses tersimpan.'))
         setDetailsForm((current) => current ? { ...current, pin: '' } : current)
         return
       }
@@ -503,6 +508,21 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
       if (updated) setDetailsForm((current) => current ? { ...current, systemRole: updated.systemRole, email: updated.email ?? '', username: updated.username ?? '', pin: '' } : current)
     },
     onCancelEmployeeAccessChange: () => setPendingAccessConfirmation(null),
+    canSendPasswordReset: Boolean(usesProductionPassword && detailsEmployee && detailsEmployee.status === 'active' && detailsEmployee.username && detailsEmployee.email),
+    onSendPasswordReset: async () => {
+      if (!detailsEmployee || busyAction) return
+      setBusyAction('reset')
+      try {
+        const sentTo = await sendStaffPasswordResetSupabase(detailsEmployee.id)
+        setDetailsError(null)
+        setDetailsMessage(tr(`Password reset link sent to ${sentTo}.`, `Tautan atur ulang sandi dikirim ke ${sentTo}.`))
+      } catch (cause) {
+        setDetailsMessage(null)
+        setDetailsError(cause instanceof Error ? cause.message : tr('Unable to send the reset link.', 'Tautan atur ulang sandi tidak bisa dikirim.'))
+      } finally {
+        setBusyAction(null)
+      }
+    },
     onRequestEmployeeStatusChange: (employee) => { setStatusActionError(null); setPendingStatusEmployee(employee) },
     onCancelEmployeeStatusChange: () => { setPendingStatusEmployee(null); setStatusActionError(null) },
     onConfirmEmployeeStatusChange: async () => {
@@ -517,7 +537,7 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
           // Server sets status, end-of-employment data and the login flag together.
           await updateStaffEmployeeSupabase(pendingStatusEmployee.id, { status: active ? 'active' : 'inactive' })
         } catch (cause) {
-          setStatusActionError(cause instanceof Error ? cause.message : 'Unable to change the employee status.')
+          setStatusActionError(cause instanceof Error ? cause.message : tr('Unable to change the employee status.', 'Status karyawan tidak bisa diubah.'))
           return
         } finally {
           setBusyAction(null)
