@@ -1,4 +1,5 @@
 import type { ChangeEvent, FC } from 'react'
+import { drawMirroredVideoFrame } from './selfieCapture'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Clock3 } from 'lucide-react'
 import { useHrStore, todayIsoDate } from '../../store/hrStore'
@@ -134,7 +135,9 @@ export const SelfieAttendanceCard: FC = () => {
     }
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
-    canvas.getContext('2d')?.drawImage(video, 0, 0)
+    const context = canvas.getContext('2d')
+    // Saved photo = what the person saw in the (mirrored) live preview.
+    if (context) drawMirroredVideoFrame(context, video, canvas.width)
     const raw = canvas.toDataURL('image/png')
     stopStream(streamRef.current)
     streamRef.current = null
