@@ -198,7 +198,7 @@ export const AssignFloristDialog: FC<{
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">{paymentReady ? 'Payment confirmed' : 'Payment confirmation required'}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {currency.format(order.totalIdr)} · {order.paymentMethod === 'cash' ? 'Cash' : order.paymentMethod === 'transfer' ? 'Transfer' : 'Payment method not set'}
+                      {currency.format(order.totalIdr)} · {order.paymentChannel === 'qris' ? 'QRIS' : order.paymentMethod === 'cash' ? 'Cash' : order.paymentMethod === 'transfer' ? 'Transfer' : 'Payment method not set'}
                     </p>
                     {!paymentReady && <p className="mt-2 text-xs text-warning">Tutup dialog ini dan gunakan Konfirmasi Pembayaran terlebih dahulu.</p>}
                   </div>

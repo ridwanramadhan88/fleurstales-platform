@@ -116,7 +116,7 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><CreditCard className="size-5" /></span>
           <div className="min-w-0">
             <p className="text-sm font-semibold">{order.orderNumber}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Rp {formatter.format(order.totalIdr)} · {order.paymentMethod === 'cash' ? 'Cash' : order.paymentMethod === 'transfer' ? 'Transfer' : 'Payment method not set'}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Rp {formatter.format(order.totalIdr)} · {order.paymentChannel === 'qris' ? 'QRIS' : order.paymentMethod === 'cash' ? 'Cash' : order.paymentMethod === 'transfer' ? 'Transfer' : 'Payment method not set'}</p>
             <p className="mt-1 text-2xs text-muted-foreground">After payment is confirmed, the order can go into production.</p>
           </div>
         </div>
