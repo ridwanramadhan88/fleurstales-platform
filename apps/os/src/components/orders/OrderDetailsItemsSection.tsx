@@ -11,6 +11,7 @@ import {
 import { getOrderStatusOptionsForFulfillment } from './orderTableLabels'
 import { formatIdrText } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
+import { OrderPaymentProofButton, canViewPaymentProof } from './OrderPaymentProofButton'
 
 interface OrderDetailsItemsSectionProps {
   viewModel: OrderDetailsViewModel
@@ -226,11 +227,16 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
         ) : null}
 
         <div className="grid gap-3 border-t border-border/60 pt-3 sm:grid-cols-[repeat(2,minmax(0,1fr))] sm:gap-x-6">
-          <div className="min-w-0">
-            <p className="text-2xs font-medium text-muted-foreground/80">Payment method</p>
-            <p className="mt-0.5 text-sm font-medium text-foreground">
-              {order.paymentMethod ? PAYMENT_METHOD_LABELS[order.paymentMethod] : 'Not set'}
-            </p>
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-2xs font-medium text-muted-foreground/80">Payment method</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                {order.paymentMethod ? PAYMENT_METHOD_LABELS[order.paymentMethod] : 'Not set'}
+              </p>
+            </div>
+            {!isEditing && order.paymentProofUrl && canViewPaymentProof(currentUserRole, order) && (
+              <OrderPaymentProofButton paymentProofPath={order.paymentProofUrl} />
+            )}
           </div>
           <div className="flex min-w-0 items-center justify-between gap-3 sm:border-l sm:border-border/50 sm:pl-6">
             <div className="min-w-0 text-left">

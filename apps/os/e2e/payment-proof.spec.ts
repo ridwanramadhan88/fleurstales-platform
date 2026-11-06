@@ -45,7 +45,7 @@ const signProofAsCurrentUser = async (page: Page, objectPath: string) => {
   })
 }
 
-test('finance can see the transfer proof the admin attached', async ({ page, problems }) => {
+test('admin, owner and finance can see the transfer proof the admin attached', async ({ page, problems }) => {
   void problems
   const customerName = `E2E Bukti ${uniqueSuffix()}`
 
@@ -60,6 +60,16 @@ test('finance can see the transfer proof the admin attached', async ({ page, pro
   await expectNoEnglish(page, 'transfer payment confirmation')
   await payment.getByRole('button', { name: 'Konfirmasi Lunas' }).click()
   await expect(payment).toHaveCount(0)
+
+  // Admin and Owner see the proof straight from the order details.
+  const viewProof = async () => {
+    const opened = await openOrder(page, customerName)
+    await expectProofOpensInNewTab(page, () => opened.getByRole('button', { name: 'Lihat bukti transfer' }).click())
+  }
+  await viewProof()
+  await signOut(page)
+  await signIn(page, 'owner')
+  await viewProof()
   await signOut(page)
 
   await signIn(page, 'finance')
