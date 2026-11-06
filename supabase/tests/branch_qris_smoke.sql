@@ -113,4 +113,23 @@ begin
 end
 $checkout$;
 
+-- Customers (anon) can read active QRIS without touching staff-only helpers,
+-- and never see inactive ones.
+insert into public.branch_qris_codes(branch_id, image_path, linked_account_id, is_active)
+select 'Pahoman', 'qris/smoke-pahoman-off.png', linked_account_id, false
+from public.branch_qris_codes where branch_id = 'Kedamaian'
+on conflict (branch_id) do update set is_active = false;
+set local role anon;
+do $anon$
+declare v_count int;
+begin
+  select count(*) into v_count from public.branch_qris_codes;
+  if v_count <> 1 then raise exception 'anon should see exactly the active QRIS, saw %', v_count; end if;
+  if not exists (select 1 from public.branch_qris_codes where branch_id = 'Kedamaian') then
+    raise exception 'anon cannot see the active Kedamaian QRIS';
+  end if;
+end
+$anon$;
+reset role;
+
 rollback;
