@@ -31,6 +31,9 @@ eval "$($SUPABASE status -o env | grep -E '^(API_URL|DB_URL|PUBLISHABLE_KEY)=')"
 export E2E_STAFF_PASSWORD="${E2E_STAFF_PASSWORD:-e2e-$(node -e "process.stdout.write(require('node:crypto').randomBytes(12).toString('hex'))")}"
 psql "$DB_URL" -X -q -v ON_ERROR_STOP=1 -v password="$E2E_STAFF_PASSWORD" -f apps/os/e2e/seed.sql
 
+# Specs that call Supabase directly (e.g. Storage access checks) use these.
+export E2E_SUPABASE_URL="$API_URL" E2E_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY"
+
 cd apps/os
 FLEURSTALES_SUPABASE_URL="$API_URL" FLEURSTALES_SUPABASE_PUBLISHABLE_KEY="$PUBLISHABLE_KEY" node scripts/build.mjs --production
 npx playwright test "$@"
