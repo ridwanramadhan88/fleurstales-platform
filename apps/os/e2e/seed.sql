@@ -76,9 +76,21 @@ select 'hr', 1, jsonb_build_object(
     'phone', '08120000009',
     'hireDate', '2026-01-01'
   )),
-  'attendance', '[]'::jsonb,
+  -- E2E Florist checked out 95 minutes after an 08:00-16:00 shift today and
+  -- chose "Lembur" (payroll-overtime.spec.ts).
+  'attendance', jsonb_build_array(jsonb_build_object(
+    'id', 'e2e-att-overtime', 'employeeId', 'e2e-emp-florist', 'date', to_char(timezone('Asia/Jakarta', now())::date, 'YYYY-MM-DD'),
+    'status', 'present', 'actor', 'E2E Florist', 'source', 'selfie', 'createdAt', now(),
+    'checkInAt', (timezone('Asia/Jakarta', now())::date + time '08:00') at time zone 'Asia/Jakarta',
+    'checkOutAt', (timezone('Asia/Jakarta', now())::date + time '17:35') at time zone 'Asia/Jakarta',
+    'checkOutReason', 'overtime', 'checkOutReasonNote', 'Merangkai pesanan wedding'
+  )),
   'pointRules', '[]'::jsonb,
-  'scheduleOverrides', '[]'::jsonb,
+  'scheduleOverrides', jsonb_build_array(jsonb_build_object(
+    'id', 'e2e-shift-overtime', 'employeeId', 'e2e-emp-florist', 'date', to_char(timezone('Asia/Jakarta', now())::date, 'YYYY-MM-DD'),
+    'shift', jsonb_build_object('mode', 'custom', 'isWorking', true, 'branchId', 'Kedamaian', 'startTime', '08:00', 'endTime', '16:00'),
+    'updatedAt', now(), 'updatedBy', 'HR'
+  )),
   'scheduleRevisions', '[]'::jsonb,
   'employeePointEntries', '[]'::jsonb,
   'attendanceReviewCases', '[]'::jsonb,
@@ -86,6 +98,14 @@ select 'hr', 1, jsonb_build_object(
   'weeklySchedulePublications', '[]'::jsonb
 ), now()
 on conflict (domain) do update set snapshot = excluded.snapshot, revision = private.operational_domain_state.revision + 1, updated_at = now();
+
+-- The selfie attendance above is server-owned evidence: it must exist in the
+-- attendance table too, or HR snapshot saves are rejected.
+insert into public.staff_attendance_records(id, employee_id, attendance_date, status, record)
+select a->>'id', a->>'employeeId', (a->>'date')::date, a->>'status', a
+from private.operational_domain_state s, jsonb_array_elements(s.snapshot->'attendance') a
+where s.domain = 'hr'
+on conflict (employee_id, attendance_date) do update set record = excluded.record, status = excluded.status, updated_at = now();
 
 insert into private.operational_domain_state(domain, revision, snapshot, updated_at) values
   ('payroll', 1, '{"periods":[],"compensations":[],"payrollReviews":[],"employeePayrolls":[],"payrollProposals":[],"payrollProposalReviews":[],"payrollScheduleAdjustments":[]}'::jsonb, now()),

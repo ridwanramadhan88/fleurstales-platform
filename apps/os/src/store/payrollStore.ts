@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { mergeOvertimeLines, overtimeLinesForPeriod, payrollAdditionLines, sumPayrollAdditions, type PayrollAdditionKind, type PayrollAdditionLine } from '../domain/payrollAdditionsDomain'
 import { getCurrentPayrollSchedule, getPayrollPeriodKey, getPayrollScheduleStage, type PayrollScheduleSnapshot } from '../domain/payrollScheduleDomain'
 import {
   buildPayrollCalculationPolicy,
@@ -41,6 +42,7 @@ export interface EmployeeCompensation {
   createdAt: string
 }
 
+export type { PayrollAdditionLine } from '../domain/payrollAdditionsDomain'
 export type PayrollManualPayeeType = 'owner' | 'part_time' | 'contractor' | 'other'
 export type EmployeePayrollStatus = 'draft' | 'pending_finance_review' | 'finance_rejected' | 'finance_verified' | 'paid' | 'resolved'
 
@@ -73,8 +75,11 @@ export interface EmployeePayrollDraft {
   netPoints: number
   bonusIdr: number
   finalPayrollIdr: number
+  /** Total of `hrAdjustments` (kept as one number for Finance and the server checks). */
   hrAdjustmentIdr?: number
   hrAdjustmentReason?: string
+  /** Itemised additions/deductions: overtime from attendance, allowances, fees, deductions. */
+  hrAdjustments?: PayrollAdditionLine[]
   pointEntries: PayrollPointSnapshot[]
   /** Frozen rules used to calculate this payroll row. Optional for legacy persisted rows. */
   calculationPolicy?: PayrollCalculationPolicy
@@ -185,6 +190,11 @@ interface PayrollStoreState {
   saveManualPayrollDraft: (params: { payrollPeriodId:string; payrollDraftId?:string; payeeName:string; payeeType:PayrollManualPayeeType; amountIdr:number; reason:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
   removeManualPayrollDraft: (params: { payrollDraftId:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
   adjustEmployeePayrollByHr: (params: { payrollDraftId:string; adjustmentIdr:number; reason:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
+  /** Adds an allowance/fee/bonus/meal-transport line, or a deduction (amount entered positive). */
+  addEmployeePayrollAdditionLine: (params: { payrollDraftId:string; kind:PayrollAdditionKind; amountIdr:number; reason:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
+  removeEmployeePayrollAdditionLine: (params: { payrollDraftId:string; lineId:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
+  /** Re-applies confirmed attendance overtime to the employee's editable payroll row for that date. */
+  syncOvertimeAdditionsForEmployee: (params: { employeeId:string; date:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
   submitPayrollToFinance: (params: { payrollPeriodId:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
   approvePayrollProposal: (params: { payrollProposalId:string; note?:string; actor:{ employeeId?:string; name:string; role:UserRole } }) => PayrollCommandResult
   resolveRejectedEmployeePayroll: (params: { payrollDraftId:string; reason:string; actor:{ name:string; role:UserRole } }) => PayrollCommandResult
@@ -234,6 +244,39 @@ const testCompensations: EmployeeCompensation[] = TEST_RUNTIME ? [
   ['emp-zahra', 4_000_000], ['emp-vero', 4_000_000], ['emp-zizi', 4_000_000],
   ['emp-dela', 4_000_000], ['emp-dila', 4_000_000], ['emp-gaby', 4_000_000],
 ].map(([employeeId, salary]) => ({ id:`comp-${employeeId}-initial`, employeeId:String(employeeId), baseSalaryIdr:Number(salary), effectiveFrom:'2026-01-01', createdBy:'Test setup', createdAt:'2026-01-01T00:00:00.000Z' })) : []
+
+type PayrollStoreGet = () => PayrollStoreState
+type PayrollStoreSet = (partial: Partial<PayrollStoreState> | ((state: PayrollStoreState) => Partial<PayrollStoreState>)) => void
+
+/** Applies new addition lines to an editable payroll row and publishes the HR "prepare" command. */
+const applyAdditionLines = (
+  get: PayrollStoreGet,
+  set: PayrollStoreSet,
+  payrollDraftId: string,
+  actor: { name:string; role:UserRole },
+  change: (lines: PayrollAdditionLine[]) => PayrollAdditionLine[],
+  legacyReason?: string,
+): PayrollCommandResult => {
+  if (!isActionAuthorized(actor.role, 'hr.edit_payroll_proposal')) return { ok:false, code:'forbidden', reason:'This role cannot edit payroll proposals.' }
+  if (!['owner','hr'].includes(actor.role)) return { ok:false, code:'forbidden', reason:'Only HR or Owner can change payroll additions.' }
+  const draft = get().employeePayrolls.find((item) => item.id === payrollDraftId)
+  if (!draft) return { ok:false, code:'not_found', reason:'Employee payroll was not found.' }
+  if (draft.employeeRole === 'owner' && draft.entryMode !== 'manual') return { ok:false, code:'forbidden', reason:'Generated Owner salary is not managed from staff payroll.' }
+  const proposal = get().payrollProposals.find((item) => item.payrollPeriodId === draft.payrollPeriodId && item.status !== 'resolved')
+  if (proposal && !['draft','returned_to_hr'].includes(proposal.status)) return { ok:false, code:'invalid_status', reason:'Payroll can only be changed by HR before Finance approval.' }
+  if (!['draft','finance_rejected'].includes(draft.status)) return { ok:false, code:'invalid_status', reason:'This employee payroll is not editable by HR.' }
+  const lines = change(payrollAdditionLines(draft))
+  const total = sumPayrollAdditions(lines)
+  const finalPayrollIdr = draft.entryMode === 'manual' ? draft.baseSalaryIdr + total : draft.baseSalaryIdr + draft.bonusIdr + total
+  if (draft.entryMode === 'manual' ? finalPayrollIdr <= 0 : finalPayrollIdr < draft.baseSalaryIdr) {
+    return { ok:false, code:'calculation_mismatch', reason:'Deductions cannot reduce payroll below base salary.' }
+  }
+  set((state) => ({ employeePayrolls:state.employeePayrolls.map((item) => item.id === payrollDraftId
+    ? { ...item, hrAdjustments:lines, hrAdjustmentIdr:total, hrAdjustmentReason:legacyReason ?? item.hrAdjustmentReason, finalPayrollIdr }
+    : item) }))
+  publishPayrollWorkflowMutation('prepare')
+  return { ok:true, draftId:payrollDraftId }
+}
 
 export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
   periods: [],
@@ -312,6 +355,11 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
       if (existing && ['finance_verified','paid','resolved'].includes(existing.status)) return existing
       const calculationPolicy = activeProposal?.calculationPolicy ?? existing?.calculationPolicy ?? proposalPolicy
       const calculation = calculateEmployeePayroll(baseSalaryIdr, entries, calculationPolicy.pointValueIdr)
+      const additionLines = mergeOvertimeLines(
+        existing ? payrollAdditionLines(existing) : [],
+        overtimeLinesForPeriod(hr.attendanceReviewCases ?? [], employee.id, period.periodStart, period.periodEnd),
+      )
+      const additionTotal = sumPayrollAdditions(additionLines)
       return {
         id: existing?.id ?? `payroll-draft-${payrollPeriodId}-${employee.id}`,
         payrollPeriodId,
@@ -322,9 +370,10 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
         compensationId:compensation?.id,
         baseSalaryIdr,
         ...calculation,
-        hrAdjustmentIdr: existing?.hrAdjustmentIdr ?? 0,
+        hrAdjustmentIdr: additionTotal,
         hrAdjustmentReason: existing?.hrAdjustmentReason,
-        finalPayrollIdr: Math.max(baseSalaryIdr, calculation.finalPayrollIdr + (existing?.hrAdjustmentIdr ?? 0)),
+        hrAdjustments: additionLines,
+        finalPayrollIdr: Math.max(baseSalaryIdr, calculation.finalPayrollIdr + additionTotal),
         pointEntries:entries.filter((entry) => entry.status === 'approved').map((entry) => ({ id:entry.id, category:entry.category, points:entry.points, reason:entry.reason, sourceType:entry.sourceType, sourceId:entry.sourceId, orderNumber:entry.orderNumber, createdAt:entry.createdAt, effectiveDate:entry.effectiveDate, payrollPeriodId:entry.payrollPeriodId })),
         calculationPolicy,
         status:'draft',
@@ -417,23 +466,48 @@ export const usePayrollStore = create<PayrollStoreState>((set, get) => ({
   },
 
   adjustEmployeePayrollByHr: ({ payrollDraftId, adjustmentIdr, reason, actor }) => {
-    if (!isActionAuthorized(actor.role, 'hr.edit_payroll_proposal')) return { ok:false, code:'forbidden', reason:'This role cannot edit payroll proposals.' }
-    if (!['owner','hr'].includes(actor.role)) return { ok:false, code:'forbidden', reason:'Only HR or Owner can adjust a payroll proposal.' }
     if (!Number.isInteger(adjustmentIdr)) return { ok:false, code:'calculation_mismatch', reason:'Adjustment must be a whole rupiah amount.' }
     const normalizedReason = reason.trim()
     if (adjustmentIdr !== 0 && !normalizedReason) return { ok:false, code:'note_required', reason:'Adjustment reason is required.' }
+    // The single legacy adjustment becomes one "adjustment" line next to the itemised ones.
+    return applyAdditionLines(get, set, payrollDraftId, actor, (lines) => [
+      ...lines.filter((line) => line.kind !== 'adjustment'),
+      ...(adjustmentIdr === 0 ? [] : [{ id:`adjustment-${payrollDraftId}`, kind:'adjustment' as const, amountIdr:adjustmentIdr, reason:normalizedReason, createdBy:actor.name, createdAt:new Date().toISOString() }]),
+    ], normalizedReason || undefined)
+  },
+
+  addEmployeePayrollAdditionLine: ({ payrollDraftId, kind, amountIdr, reason, actor }) => {
+    if (kind === 'overtime' || kind === 'adjustment') return { ok:false, code:'invalid_status', reason:'Overtime comes from confirmed attendance.' }
+    if (!Number.isInteger(amountIdr) || amountIdr <= 0) return { ok:false, code:'calculation_mismatch', reason:'Enter a positive whole rupiah amount.' }
+    const normalizedReason = reason.trim()
+    if (normalizedReason.replace(/\s/g, '').length < 3) return { ok:false, code:'note_required', reason:'Add a reason for this line.' }
+    const line: PayrollAdditionLine = {
+      id:`addition-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      kind,
+      amountIdr: kind === 'deduction' ? -amountIdr : amountIdr,
+      reason:normalizedReason,
+      createdBy:actor.name,
+      createdAt:new Date().toISOString(),
+    }
+    return applyAdditionLines(get, set, payrollDraftId, actor, (lines) => [...lines, line])
+  },
+
+  removeEmployeePayrollAdditionLine: ({ payrollDraftId, lineId, actor }) => {
     const draft = get().employeePayrolls.find((item) => item.id === payrollDraftId)
-    if (!draft) return { ok:false, code:'not_found', reason:'Employee payroll was not found.' }
-    if (draft.employeeRole === 'owner' && draft.entryMode !== 'manual') return { ok:false, code:'forbidden', reason:'Generated Owner salary is not managed from staff payroll.' }
-    const proposal = get().payrollProposals.find((item) => item.payrollPeriodId === draft.payrollPeriodId && item.status !== 'resolved')
-    if (proposal && !['draft','returned_to_hr'].includes(proposal.status)) return { ok:false, code:'invalid_status', reason:'Payroll can only be adjusted by HR before Finance approval.' }
-    if (!['draft','finance_rejected'].includes(draft.status)) return { ok:false, code:'invalid_status', reason:'This employee payroll is not editable by HR.' }
-    const unadjusted = draft.baseSalaryIdr + draft.bonusIdr
-    const finalPayrollIdr = unadjusted + adjustmentIdr
-    if (finalPayrollIdr < draft.baseSalaryIdr) return { ok:false, code:'calculation_mismatch', reason:'An adjustment cannot reduce payroll below base salary.' }
-    set((state) => ({ employeePayrolls:state.employeePayrolls.map((item) => item.id === payrollDraftId ? { ...item, hrAdjustmentIdr:adjustmentIdr, hrAdjustmentReason:normalizedReason || undefined, finalPayrollIdr } : item) }))
-    publishPayrollWorkflowMutation('prepare')
-    return { ok:true, draftId:payrollDraftId }
+    const line = draft ? payrollAdditionLines(draft).find((item) => item.id === lineId) : undefined
+    if (!line) return { ok:false, code:'not_found', reason:'Payroll line was not found.' }
+    if (line.kind === 'overtime') return { ok:false, code:'invalid_status', reason:'Overtime is removed by cancelling its confirmation in attendance review.' }
+    return applyAdditionLines(get, set, payrollDraftId, actor, (lines) => lines.filter((item) => item.id !== lineId))
+  },
+
+  syncOvertimeAdditionsForEmployee: ({ employeeId, date, actor }) => {
+    const period = get().periods.find((item) => item.periodStart <= date && date <= item.periodEnd)
+    if (!period) return { ok:true, affected:0 }
+    const draft = get().employeePayrolls.find((item) => item.payrollPeriodId === period.id && item.employeeId === employeeId && item.entryMode !== 'manual' && item.status !== 'resolved')
+    // No payroll row yet: the overtime is picked up when HR generates the period.
+    if (!draft) return { ok:true, affected:0 }
+    const overtime = overtimeLinesForPeriod(useHrStore.getState().attendanceReviewCases ?? [], employeeId, period.periodStart, period.periodEnd)
+    return applyAdditionLines(get, set, draft.id, actor, (lines) => mergeOvertimeLines(lines, overtime))
   },
 
   submitPayrollToFinance: ({ payrollPeriodId, actor }) => {

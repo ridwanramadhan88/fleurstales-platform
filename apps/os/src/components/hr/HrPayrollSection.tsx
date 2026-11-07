@@ -1,4 +1,7 @@
 import { CircleAlert, CircleCheck, MoreHorizontal, type LucideIcon } from 'lucide-react'
+import { PayrollAdditionsEditor, PayrollAdditionsList } from './PayrollAdditionsEditor'
+import { payrollAdditionLines } from '../../domain/payrollAdditionsDomain'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { validatePayrollForFinance } from '../../domain/payrollFinanceReviewDomain'
 import { doesEmploymentOverlapPeriod, isPartialPeriodEmployment } from '../../domain/hrEmployeeLifecycleDomain'
@@ -48,6 +51,7 @@ const ReadinessRow = ({ item }: { item: ReadinessItem }) => {
 
 export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string }) => {
   const role = useUserStore((state) => state.role)
+  const tr = useBilingualCopy()
   const actorName = useUserStore((state) => state.name)
   const payrollSettings = useSettingsStore((state) => state.payroll)
   const employees = useHrStore((state) => state.employees)
@@ -64,7 +68,6 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const saveManualPayee = usePayrollStore((state) => state.saveManualPayrollDraft)
   const removeManualPayee = usePayrollStore((state) => state.removeManualPayrollDraft)
   const submit = usePayrollStore((state) => state.submitPayrollToFinance)
-  const adjust = usePayrollStore((state) => state.adjustEmployeePayrollByHr)
   const resolveRejectedEmployee = usePayrollStore((state) => state.resolveRejectedEmployeePayroll)
   const setCompensation = usePayrollStore((state) => state.setEmployeeCompensation)
 
@@ -76,8 +79,6 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const [manualAmount, setManualAmount] = useState('')
   const [manualReason, setManualReason] = useState('')
   const [adjustDraft, setAdjustDraft] = useState<EmployeePayrollDraft | null>(null)
-  const [adjustment, setAdjustment] = useState('0')
-  const [adjustmentReason, setAdjustmentReason] = useState('')
   const [resolveDraft, setResolveDraft] = useState<EmployeePayrollDraft | null>(null)
   const [resolutionReason, setResolutionReason] = useState('')
   const [salaryEmployeeId, setSalaryEmployeeId] = useState<string | null>(null)
@@ -89,7 +90,10 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
 
-  useEffect(() => { ensureCurrentPeriod() }, [ensureCurrentPeriod])
+  // The server copy of payroll can arrive after mount and replace the periods;
+  // re-create the current period (a no-op once it exists) so HR always sees it.
+  // It is saved together with the first "generate".
+  useEffect(() => { ensureCurrentPeriod() }, [ensureCurrentPeriod, periods])
   const latestPeriod = useMemo(() => periods.slice().sort((a, b) => b.paymentDate.localeCompare(a.paymentDate))[0], [periods])
   useEffect(() => { if (!selectedMonth && latestPeriod) setSelectedMonth(latestPeriod.paymentDate.slice(0, 7)) }, [latestPeriod, selectedMonth])
 
@@ -197,7 +201,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
     const result = generate({ payrollPeriodId: period.id, actor: { name: actorName, role } })
     if (!result.ok) { setError(result.reason); setMessage(null); return }
     setError(null)
-    setMessage(`${result.affected ?? 0} employee payroll drafts generated.`)
+    setMessage(tr(`${result.affected ?? 0} employee payroll drafts generated.`, `${result.affected ?? 0} draf gaji karyawan dibuat.`))
   }
   const handleSubmit = () => {
     if (!period) return
@@ -259,17 +263,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
   }
   const openAdjustment = (draft: EmployeePayrollDraft) => {
     setAdjustDraft(draft)
-    setAdjustment(String(draft.hrAdjustmentIdr ?? 0))
-    setAdjustmentReason(draft.hrAdjustmentReason ?? '')
     setError(null)
-  }
-  const saveAdjustment = () => {
-    if (!adjustDraft) return
-    const result = adjust({ payrollDraftId: adjustDraft.id, adjustmentIdr: Number(adjustment || 0), reason: adjustmentReason, actor: { name: actorName, role } })
-    if (!result.ok) { setError(result.reason); return }
-    setAdjustDraft(null)
-    setError(null)
-    setMessage('HR payroll adjustment saved.')
   }
   const handleResolveEmployee = () => {
     if (!resolveDraft) return
@@ -431,7 +425,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
                     {draft.entryMode === 'manual' && <span className="rounded-full bg-info/10 px-2 py-0.5 text-2xs font-semibold text-info">Manual</span>}
                     <PayrollStatusBadge status={draft.status} />
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">Base {formatIdr(draft.baseSalaryIdr)} · Bonus {formatIdr(draft.bonusIdr)}{draft.hrAdjustmentIdr ? ` · Adj. ${formatIdr(draft.hrAdjustmentIdr)}` : ''}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Base {formatIdr(draft.baseSalaryIdr)} · Bonus {formatIdr(draft.bonusIdr)}{draft.hrAdjustmentIdr ? ` · ${tr('Additions', 'Tambahan')} ${formatIdr(draft.hrAdjustmentIdr)}` : ''}</p>
                 </div>
                 {(role === 'owner' && editable && draft.entryMode !== 'manual') && <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label={`More payroll actions for ${draft.employeeName}`} className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card"><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => openSalary(draft.employeeId)}>Set base salary</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
               </div>
@@ -440,7 +434,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
               <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 <button onClick={() => setSelectedDraft(draft)} className="h-11 rounded-full border border-border px-4 text-sm font-medium">{draft.entryMode === 'manual' ? 'View details' : 'View points'}</button>
                 {editable && draft.entryMode === 'manual' && <button onClick={() => openManualEditor(draft)} className="h-11 rounded-full border border-border px-4 text-sm font-medium">Edit payee</button>}
-                {editable && draft.entryMode !== 'manual' && <button onClick={() => openAdjustment(draft)} className="h-11 rounded-full border border-border px-4 text-sm font-medium">Edit adjustment</button>}
+                {editable && draft.entryMode !== 'manual' && <button onClick={() => openAdjustment(draft)} className="h-11 rounded-full border border-border px-4 text-sm font-medium">{tr('Additions & deductions', 'Tambahan & potongan')}</button>}
                 {draft.status === 'finance_rejected' && <button onClick={() => { setResolveDraft(draft); setResolutionReason(''); setError(null) }} className="col-span-2 h-11 rounded-full border border-destructive/40 px-4 text-sm font-medium text-destructive sm:col-span-1">Resolve employee</button>}
               </div>
             </article>
@@ -448,9 +442,9 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
         })}
       </div>
 
-      {selectedDraft && <Modal title={`${selectedDraft.employeeName} payroll`} onClose={() => setSelectedDraft(null)}><div className="space-y-2 text-sm"><Line label={selectedDraft.entryMode === 'manual' ? 'Manual amount' : 'Base salary'} value={formatIdr(selectedDraft.baseSalaryIdr)} /><Line label="Point bonus" value={formatIdr(selectedDraft.bonusIdr)} /><Line label="HR adjustment" value={formatIdr(selectedDraft.hrAdjustmentIdr ?? 0)} /><Line label="Final payroll" value={formatIdr(selectedDraft.finalPayrollIdr)} strong /></div>{selectedDraft.manualReason && <p className="rounded-lg bg-info/10 p-3 text-xs text-info">{`HR reason: ${selectedDraft.manualReason}`}</p>}<h4 className="mt-5 text-sm font-semibold">Approved point evidence</h4><div className="mt-2 space-y-2">{selectedDraft.pointEntries.length === 0 ? <p className="text-xs text-muted-foreground">{selectedDraft.entryMode === 'manual' ? 'Manual payees do not use point calculations.' : 'No approved point entries.'}</p> : selectedDraft.pointEntries.map((entry) => <div key={entry.id} className="rounded-lg bg-muted/50 p-3 text-xs"><p className="font-medium">{`${entry.points > 0 ? '+' : ''}${entry.points} points · ${entry.category.replaceAll('_', ' ')}`}</p><p className="text-muted-foreground">{entry.reason}</p></div>)}</div></Modal>}
+      {selectedDraft && <Modal title={`${selectedDraft.employeeName} payroll`} onClose={() => setSelectedDraft(null)}><div className="space-y-2 text-sm"><Line label={selectedDraft.entryMode === 'manual' ? 'Manual amount' : 'Base salary'} value={formatIdr(selectedDraft.baseSalaryIdr)} /><Line label="Point bonus" value={formatIdr(selectedDraft.bonusIdr)} /><Line label={tr('Additions & deductions', 'Tambahan & potongan')} value={formatIdr(selectedDraft.hrAdjustmentIdr ?? 0)} /><Line label="Final payroll" value={formatIdr(selectedDraft.finalPayrollIdr)} strong /></div>{selectedDraft.manualReason && <p className="rounded-lg bg-info/10 p-3 text-xs text-info">{`HR reason: ${selectedDraft.manualReason}`}</p>}<h4 className="mt-5 text-sm font-semibold">{tr('Additions & deductions', 'Tambahan & potongan')}</h4><div className="mt-2"><PayrollAdditionsList lines={payrollAdditionLines(selectedDraft)} /></div><h4 className="mt-5 text-sm font-semibold">Approved point evidence</h4><div className="mt-2 space-y-2">{selectedDraft.pointEntries.length === 0 ? <p className="text-xs text-muted-foreground">{selectedDraft.entryMode === 'manual' ? 'Manual payees do not use point calculations.' : 'No approved point entries.'}</p> : selectedDraft.pointEntries.map((entry) => <div key={entry.id} className="rounded-lg bg-muted/50 p-3 text-xs"><p className="font-medium">{`${entry.points > 0 ? '+' : ''}${entry.points} points · ${entry.category.replaceAll('_', ' ')}`}</p><p className="text-muted-foreground">{entry.reason}</p></div>)}</div></Modal>}
       {manualEditorOpen && <Modal title={manualDraft ? `Edit ${manualDraft.employeeName}` : 'Add manual payroll payee'} onClose={() => { setManualEditorOpen(false); setManualDraft(null) }}><p className="text-xs text-muted-foreground">Use this for Owner, part-time workers, contractors, or another payee not generated from the employee roster.</p><div className="grid gap-3 sm:grid-cols-2"><label className="space-y-1"><span className="text-xs font-medium">Payee type</span><select value={manualPayeeType} onChange={(event) => setManualPayeeType(event.target.value as PayrollManualPayeeType)} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm">{Object.entries(manualPayeeLabels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label><label className="space-y-1"><span className="text-xs font-medium">Payee name</span><input value={manualPayeeName} onChange={(event) => setManualPayeeName(event.target.value)} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></label><label className="space-y-1 sm:col-span-2"><span className="text-xs font-medium">Payroll amount (IDR)</span><input inputMode="numeric" value={manualAmount} onChange={(event) => setManualAmount(event.target.value.replace(/\D/g,''))} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></label><label className="space-y-1 sm:col-span-2"><span className="text-xs font-medium">Reason · Required</span><textarea value={manualReason} onChange={(event) => setManualReason(event.target.value)} className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" placeholder="Why is this payee included manually?" /></label></div>{error && <p className="text-xs text-destructive">{error}</p>}<ActionFooter className="mt-4">{manualDraft?.status === 'draft' && <button onClick={removeManual} className="mr-auto h-11 rounded-full px-[18px] text-sm font-medium text-destructive">Remove draft</button>}<button onClick={() => { setManualEditorOpen(false); setManualDraft(null) }} className="h-11 rounded-full px-[18px] text-sm font-medium text-muted-foreground">Cancel</button><button onClick={saveManual} className="h-11 rounded-full bg-primary px-[18px] text-sm font-medium text-primary-foreground">Save payee</button></ActionFooter></Modal>}
-      {adjustDraft && <Modal title={`Adjust ${adjustDraft.employeeName}`} onClose={() => setAdjustDraft(null)}><p className="text-xs text-muted-foreground">HR owns proposal adjustments. Finance may approve or reject this employee inside the monthly group.</p><label className="mt-4 block space-y-1"><span className="text-xs font-medium">Adjustment amount (IDR)</span><input aria-label="HR payroll adjustment" value={adjustment} onChange={(e) => setAdjustment(e.target.value.replace(/[^\d-]/g, ''))} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></label><label className="mt-3 block space-y-1"><span className="text-xs font-medium">Reason · Required when amount changes</span><textarea aria-label="HR payroll adjustment reason" value={adjustmentReason} onChange={(e) => setAdjustmentReason(e.target.value)} className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" /></label>{error && <p className="mt-2 text-xs text-destructive">{error}</p>}<Footer cancel={() => setAdjustDraft(null)} confirm={saveAdjustment} label="Save adjustment" /></Modal>}
+      {adjustDraft && <Modal title={tr(`Additions & deductions · ${adjustDraft.employeeName}`, `Tambahan & potongan · ${adjustDraft.employeeName}`)} onClose={() => setAdjustDraft(null)}><PayrollAdditionsEditor payrollDraftId={adjustDraft.id} onDone={() => setAdjustDraft(null)} /></Modal>}
       {resolveDraft && <Modal title={`Resolve ${resolveDraft.employeeName}`} onClose={() => setResolveDraft(null)}><p className="text-xs text-muted-foreground">Remove only this rejected employee from the current monthly proposal. Other Finance-approved payrolls remain accepted.</p><textarea aria-label="Employee payroll resolution reason" value={resolutionReason} onChange={(e) => setResolutionReason(e.target.value)} className="mt-3 min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" placeholder="Reason · Required" />{error && <p className="mt-2 text-xs text-destructive">{error}</p>}<Footer cancel={() => setResolveDraft(null)} confirm={handleResolveEmployee} label="Resolve employee" /></Modal>}
       {salaryEmployeeId && <Modal title="Set base salary" onClose={() => setSalaryEmployeeId(null)}><label className="block space-y-1"><span className="text-xs font-medium">Monthly base salary</span><input aria-label="Monthly base salary" inputMode="numeric" value={salary} onChange={(event) => setSalary(event.target.value.replace(/\D/g, ''))} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm" /></label><label className="mt-3 block space-y-1"><span className="text-xs font-medium">Effective from</span><DatePickerField value={effectiveFrom} onChange={setEffectiveFrom} /></label>{error && <p className="mt-2 text-xs text-destructive">{error}</p>}<Footer cancel={() => setSalaryEmployeeId(null)} confirm={saveSalary} label="Save salary" /></Modal>}
       {pointRejectEntryId && <Modal title="Reject point adjustment" onClose={() => { setPointRejectEntryId(null); setPointRejectReason(''); setError(null) }}><p className="text-xs text-muted-foreground">Rejected adjustments stay in history but are excluded from payroll.</p><textarea aria-label="Point adjustment rejection reason" value={pointRejectReason} onChange={(event) => setPointRejectReason(event.target.value)} className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" placeholder="Reason · Required" />{error && <p className="mt-2 text-xs text-destructive">{error}</p>}<Footer cancel={() => { setPointRejectEntryId(null); setPointRejectReason('') }} confirm={handleRejectPoint} label="Reject adjustment" /></Modal>}

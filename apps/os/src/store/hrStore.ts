@@ -183,10 +183,17 @@ interface HrStoreState {
     selfieDataUrl: string
     actor: HrActor
     location?: GeoPoint
+    /** Required when checking out after the shift end (plus grace): lembur or telat check-out. */
+    checkOutReason?: 'overtime' | 'late_checkout'
+    checkOutReasonNote?: string
   }) => { ok: true } | { ok: false; reason: string }
   generateAttendanceWarnings: (now?: Date) => number
   generateOrderWarnings: (orders: OrderTableRow[]) => number
   reviewAttendanceCase: (params: { caseId:string; decision:AttendanceReviewDecision; note?:string; actor:HrActor; proposedMinusPoints?:number }) => { ok:true } | { ok:false; reason:string }
+  /** HR confirms overtime and enters its amount; the caller then syncs payroll additions. */
+  approveOvertimeCase: (params: { caseId:string; minutes:number; amountIdr:number; note?:string; actor:HrActor }) => { ok:true; employeeId:string; date:string } | { ok:false; reason:string }
+  /** Reopens a confirmed overtime (only while its payroll row is still editable). */
+  revokeOvertimeApproval: (params: { caseId:string; actor:HrActor }) => { ok:true; employeeId:string; date:string } | { ok:false; reason:string }
   createManualPointAdjustment: (params: { employeeId:string; points:number; reason:string; actor:HrActor }) => { ok:true; entryId:string } | { ok:false; reason:string }
   approvePointEntry: (params: { entryId:string; note?:string; actor:HrActor }) => { ok:true } | { ok:false; reason:string }
   rejectPointEntry: (params: { entryId:string; note:string; actor:HrActor }) => { ok:true } | { ok:false; reason:string }
@@ -827,7 +834,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
     return result
   },
 
-  recordSelfieCheckOut: ({ employeeId, selfieDataUrl, actor, location }) => {
+  recordSelfieCheckOut: ({ employeeId, selfieDataUrl, actor, location, checkOutReason, checkOutReasonNote }) => {
     let result: { ok: true } | { ok: false; reason: string } = { ok: false, reason: 'Check-out could not be recorded.' }
     set((state) => {
       const now = nowInJakarta()
@@ -865,9 +872,16 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
         locationWithinRange: nearest.withinAnyBranchRange,
       })
       if (!result.ok || attendanceIndex < 0) return state
+      const minutesAfterEnd = minutesFromTime(currentTime) - minutesFromTime(scheduledEnd)
+      const afterShift = minutesAfterEnd > settings.attendance.checkoutGraceMinutes
+      if (afterShift && !checkOutReason) {
+        result = { ok:false, reason:'Choose overtime or late check-out before checking out.' }
+        return state
+      }
       const next = [...state.attendance]
       next[attendanceIndex] = {
         ...next[attendanceIndex],
+        ...(afterShift ? { checkOutReason, checkOutReasonNote: checkOutReasonNote?.trim() || undefined } : {}),
         checkOutSelfieDataUrl: selfieDataUrl,
         checkOutAt: nowIso(),
         actor: actor.name,
@@ -953,6 +967,45 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       return {
         attendanceReviewCases:(state.attendanceReviewCases ?? []).map(item=>item.id===caseId
           ? {...item,status:decision,reviewNote:clean || undefined,reviewedBy:actor.name,reviewedAt,proposedMinusPoints:undefined}
+          : item),
+      }
+    })
+    return result
+  },
+
+  approveOvertimeCase: ({ caseId, minutes, amountIdr, note, actor }) => {
+    if (!isActionAuthorized(actor.role, 'hr.review_attendance')) return { ok:false, reason:'This role cannot review attendance.' }
+    if (!['owner','hr'].includes(actor.role)) return { ok:false, reason:'Only Owner or HR can confirm overtime.' }
+    if (!Number.isInteger(minutes) || minutes <= 0) return { ok:false, reason:'Enter the overtime duration in minutes.' }
+    if (!Number.isInteger(amountIdr) || amountIdr <= 0) return { ok:false, reason:'Enter the overtime amount in rupiah.' }
+    let result:{ok:true;employeeId:string;date:string}|{ok:false;reason:string}={ok:false,reason:'Overtime could not be confirmed.'}
+    set((state)=>{
+      const target=(state.attendanceReviewCases ?? []).find(item=>item.id===caseId)
+      if (!target || target.warningType!=='overtime') { result={ok:false,reason:'Overtime case was not found.'}; return state }
+      const employee=state.employees.find(item=>item.id===target.employeeId)
+      if (!employee || !canActorManageEmployee(actor.role, employee.systemRole, 'attendance', useSettingsStore.getState().staffRoles.hrManagedRoles)) { result={ok:false,reason:HR_PROTECTED_ROLE_MESSAGE}; return state }
+      if (!['pending','problem'].includes(target.status)) { result={ok:false,reason:'This overtime has already been reviewed.'}; return state }
+      result={ok:true,employeeId:target.employeeId,date:target.date}
+      return {
+        attendanceReviewCases:(state.attendanceReviewCases ?? []).map(item=>item.id===caseId
+          ? {...item,status:'accepted' as const,approvedOvertimeMinutes:minutes,approvedOvertimeAmountIdr:amountIdr,reviewNote:(note ?? '').trim() || undefined,reviewedBy:actor.name,reviewedAt:nowIso()}
+          : item),
+      }
+    })
+    return result
+  },
+
+  revokeOvertimeApproval: ({ caseId, actor }) => {
+    if (!isActionAuthorized(actor.role, 'hr.review_attendance')) return { ok:false, reason:'This role cannot review attendance.' }
+    if (!['owner','hr'].includes(actor.role)) return { ok:false, reason:'Only Owner or HR can change overtime.' }
+    let result:{ok:true;employeeId:string;date:string}|{ok:false;reason:string}={ok:false,reason:'Overtime could not be reopened.'}
+    set((state)=>{
+      const target=(state.attendanceReviewCases ?? []).find(item=>item.id===caseId)
+      if (!target || target.warningType!=='overtime' || target.status!=='accepted') { result={ok:false,reason:'Confirmed overtime was not found.'}; return state }
+      result={ok:true,employeeId:target.employeeId,date:target.date}
+      return {
+        attendanceReviewCases:(state.attendanceReviewCases ?? []).map(item=>item.id===caseId
+          ? {...item,status:'pending' as const,approvedOvertimeMinutes:undefined,approvedOvertimeAmountIdr:undefined,reviewNote:undefined,reviewedBy:undefined,reviewedAt:undefined}
           : item),
       }
     })

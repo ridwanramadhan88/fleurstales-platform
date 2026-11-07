@@ -167,6 +167,9 @@ export interface AttendanceReviewCase {
   reviewNote?: string
   reviewedBy?: string
   reviewedAt?: string
+  /** Set when HR confirms an overtime case; the amount lands in payroll additions. */
+  approvedOvertimeMinutes?: number
+  approvedOvertimeAmountIdr?: number
   createdAt: string
 }
 
@@ -240,6 +243,12 @@ export interface AttendanceRecord {
   source?: 'manual' | 'selfie'
   checkInLocation?: AttendanceLocationEvidence
   checkOutLocation?: AttendanceLocationEvidence
+  /**
+   * Employee's choice when checking out after the shift end: `overtime` goes
+   * to HR for confirmation (and pay), `late_checkout` is not paid.
+   */
+  checkOutReason?: 'overtime' | 'late_checkout'
+  checkOutReasonNote?: string
   /** Append-only HR correction history. Original evidence and creation metadata remain unchanged. */
   corrections?: AttendanceCorrection[]
 }

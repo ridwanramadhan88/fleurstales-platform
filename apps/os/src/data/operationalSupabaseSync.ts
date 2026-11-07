@@ -260,7 +260,19 @@ const loadDomain = async (
     'get_operational_domain_state',
     { p_domain: domain },
   )
+  const knownRevision = revisions.get(domain)
   revisions.set(domain, response.revision)
+  // A realtime echo of this session's own last save carries nothing new. If
+  // local edits were made after that save (still debounced or in flight),
+  // applying the echo would silently roll them back - e.g. an overtime
+  // approval made right after the review cases were saved.
+  if (
+    apply && !force &&
+    knownRevision !== undefined && response.revision === knownRevision &&
+    (dirty.has(domain) || saving.has(domain) || timers.has(domain))
+  ) {
+    return response
+  }
   // Once the circuit is open, only an explicit manual reload (apply=true is
   // also used for that) may pass through - but a manual reload is expected
   // to reset the streak. Passive callers (realtime/auth-refresh hydrates)

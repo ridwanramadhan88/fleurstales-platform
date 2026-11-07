@@ -1,4 +1,6 @@
 import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { PayrollAdditionsList } from '../hr/PayrollAdditionsEditor'
+import { payrollAdditionLines } from '../../domain/payrollAdditionsDomain'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { hasActionPermission } from '../../config/actionPermissions'
 import { usePayrollStore, type EmployeePayrollDraft, type PayrollProposal } from '../../store/payrollStore'
@@ -368,9 +370,9 @@ export const FinancePayrollReview = () => {
                           <dl className="grid grid-cols-3 gap-2 text-xs">
                             <Breakdown label="Base" value={formatIdr(draft.baseSalaryIdr)} />
                             <Breakdown label="Bonus" value={formatIdr(draft.bonusIdr)} />
-                            <Breakdown label="Adjustment" value={formatIdr(draft.hrAdjustmentIdr ?? 0)} />
+                            <Breakdown label="Additions" value={formatIdr(draft.hrAdjustmentIdr ?? 0)} />
                           </dl>
-                          {draft.hrAdjustmentReason && <p className="mt-2 rounded-lg bg-surface-panel p-2 text-xs">HR adjustment: {draft.hrAdjustmentReason}</p>}
+                          {payrollAdditionLines(draft).length > 0 && <div className="mt-2"><PayrollAdditionsList lines={payrollAdditionLines(draft)} /></div>}
                           {draft.manualReason && <p className="mt-2 rounded-lg bg-info/10 p-2 text-xs text-info">HR manual-payee reason: {draft.manualReason}</p>}
                           {draft.rejectionReason && <p className="mt-2 rounded-lg bg-destructive/10 p-2 text-xs text-destructive">Finance rejection: {draft.rejectionReason}</p>}
                           {lastReview && <p className="mt-2 text-xs text-muted-foreground">Last Finance decision: {lastReview.decision}{lastReview.selfApproval ? ' · self-approved from HR proposal' : ''}{lastReview.note ? ` · ${lastReview.note}` : ''}</p>}
