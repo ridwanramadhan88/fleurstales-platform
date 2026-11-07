@@ -46,11 +46,12 @@ values
   ('evt-void-a', 'ord-void-a', 'payment_received', 300000, 0, 300000, 'paid', 'transfer', 'BCA/A', 'Smoke', now(), 'smoke-void-a', 'smoke-void-bank'),
   ('evt-void-b1', 'ord-void-b', 'payment_received', 200000, 0, 200000, 'partial', 'transfer', 'BCA/B1', 'Smoke', now(), 'smoke-void-b1', 'smoke-void-bank'),
   ('evt-void-b2', 'ord-void-b', 'payment_received', 300000, 200000, 500000, 'paid', 'cash', 'CASH/B2', 'Smoke', now(), 'smoke-void-b2', 'cash:main');
+insert into public.customers(id, name, whatsapp_number, normalized_whatsapp_number, tags, created_source, created_at, updated_at, revision, promo_preferences)
+values ('cust-smoke-void', 'Smoke Void', '081200000999', '6281200000999', '{}', 'admin', now(), now(), 1, '{}');
 insert into private.order_reviews(id, order_id, order_number, customer_id)
-select 'smoke-void-review', 'ord-void-b', 'SMK-VOID-B', c.id from public.customers c limit 1;
+values ('smoke-void-review', 'ord-void-b', 'SMK-VOID-B', 'cust-smoke-void');
 insert into private.customer_review_rewards(id, customer_id, source_order_id, source_review_id, percent_off, min_order_idr, status, redeemed_order_id, redeemed_at, issued_at)
-select 'smoke-void-reward', c.id, 'ord-void-b', 'smoke-void-review', 10, 0, 'redeemed', 'ord-void-a', now(), now()
-from public.customers c limit 1;
+values ('smoke-void-reward', 'cust-smoke-void', 'ord-void-b', 'smoke-void-review', 10, 0, 'redeemed', 'ord-void-a', now(), now());
 update private.operational_domain_state
 set snapshot = jsonb_set(snapshot, '{transactions}', jsonb_build_array(
     jsonb_build_object('id','smoke-manual-exp','type','expense','category','supplies','branch','Kedamaian','scope','branch',
