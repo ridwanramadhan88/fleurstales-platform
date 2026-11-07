@@ -12,7 +12,9 @@ begin
   select pg_get_functiondef('private.sync_order_finance_transactions(text)'::regprocedure)
   into v_sync_source;
 
-  if position('''status'',''verified''' in v_sync_source)=0
+  -- Order payments post as verified (or void once Finance voids the source event).
+  if (position('''status'',''verified''' in v_sync_source)=0
+      and position('then ''void'' else ''verified'' end' in v_sync_source)=0)
      or position('''reconciliationStatus''' in v_sync_source)=0
      or position('else ''pending''' in v_sync_source)>0 then
     raise exception 'Admin-confirmed order payments are not posted independently from Finance reconciliation';

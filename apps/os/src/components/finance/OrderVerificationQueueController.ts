@@ -147,7 +147,9 @@ export const paymentRowsForOrders = (
     (transaction) =>
       transaction.source === 'order_payment' &&
       Boolean(transaction.orderNumber) &&
-      transaction.status !== 'rejected',
+      // Voided payments need no reconciliation (the order was cancelled).
+      transaction.status !== 'rejected' &&
+      transaction.status !== 'void',
   )
 
   return orders.flatMap((order) => {
