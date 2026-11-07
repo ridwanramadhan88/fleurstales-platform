@@ -71,10 +71,23 @@ export const editPostedFinanceTransaction = async (input: {
   reason: string
 }): Promise<void> => {
   const revision = await getFinanceRevision()
-  await getClient().rpc('edit_manual_finance_transaction', {
+  // v2 edits every row: manual, payroll, transfers (as a pair) and order
+  // payments/refunds (the order's paid/refund amount follows).
+  await getClient().rpc('edit_finance_transaction_v2_guarded', {
     p_expected_revision: revision,
     p_transaction_id: input.transactionId,
     p_patch: input.patch as unknown as Json,
+    p_reason: input.reason.trim(),
+  })
+  await refreshFinance()
+}
+
+/** Voids a ledger row (transfers as a pair). Voiding an order payment cancels the order. */
+export const voidFinanceTransaction = async (input: { transactionId: string; reason: string }): Promise<void> => {
+  const revision = await getFinanceRevision()
+  await getClient().rpc('void_finance_transaction_guarded', {
+    p_expected_revision: revision,
+    p_transaction_id: input.transactionId,
     p_reason: input.reason.trim(),
   })
   await refreshFinance()

@@ -45,8 +45,8 @@ describe('Finance workspace v2.2 regressions', () => {
 
     expect(detail).toContain('Open order')
     expect(detail).toContain('Open payroll')
-    expect(detail).toContain("editable ? 'Editable manual entry' : 'Read only'")
-    expect(detail).toContain('This entry is owned by its source workflow.')
+    expect(detail).toContain("tr('Editable', 'Bisa diedit')")
+    expect(detail).toContain("tr('Only Finance can correct or void posted transactions.'")
     expect(ledger).toContain('requestFinanceWorkspaceNavigation({')
     expect(ledger).toContain("module: 'payroll', view: 'history', proposalId")
     expect(bridge).toContain("view: 'review' | 'ready' | 'history'; proposalId?: string")

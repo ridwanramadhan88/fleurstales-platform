@@ -8,8 +8,10 @@ export interface TransactionLedgerViewModel {
   defaultBranch?: import('../../types/orders').BranchFilter
 }
 
+// Pending order payments wait in Reconciliation; voided rows stay visible
+// (struck through) for the audit trail.
 const isPostedTransaction = (transaction: FinanceTransaction): boolean =>
-  transaction.source !== 'order_payment' || transaction.status === 'verified'
+  transaction.source !== 'order_payment' || transaction.status === 'verified' || transaction.status === 'void'
 
 export const useTransactionLedgerController = ({
   transactions,

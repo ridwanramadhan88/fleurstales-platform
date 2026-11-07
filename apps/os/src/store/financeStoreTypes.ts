@@ -78,7 +78,8 @@ export interface FinanceCustomCategory {
 }
 
 export type FinancePaymentMethod = 'cash' | 'transfer' | 'card' | 'other'
-export type FinanceTransactionStatus = 'pending' | 'verified' | 'rejected'
+/** `void`: cancelled by Finance; kept for the audit trail, never counted. */
+export type FinanceTransactionStatus = 'pending' | 'verified' | 'rejected' | 'void'
 export type FinanceTransactionSource =
   | 'manual'
   | 'order_payment'
@@ -93,6 +94,8 @@ export interface FinanceTransactionEditRecord {
   editedAt: string
   editedBy: string
   reason?: string
+  /** `void` when the record documents a void; absent/`edit` for corrections. */
+  kind?: 'edit' | 'void'
   previous: {
     type: FinanceTransactionType
     category: FinanceCategory
@@ -162,4 +165,7 @@ export interface FinanceTransaction {
   revision?: number
   updatedBy?: string
   editHistory?: FinanceTransactionEditRecord[]
+  voidedAt?: string
+  voidedBy?: string
+  voidReason?: string
 }

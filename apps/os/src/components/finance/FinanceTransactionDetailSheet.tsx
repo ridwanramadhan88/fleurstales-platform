@@ -1,10 +1,11 @@
 import type { FC, ReactNode } from 'react'
-import { ExternalLink, FileCheck2, Pencil, ShieldCheck } from 'lucide-react'
+import { Ban, ExternalLink, FileCheck2, Pencil, ShieldCheck } from 'lucide-react'
 import type { FinanceTransaction } from '../../store/financeStoreTypes'
 import { openFinanceTransactionProof } from '../../data/financeTransactionProof'
 import { toast } from '../../hooks/use-toast'
 import { AppSheet } from '../ui/app-sheet'
 import { StatusChip } from '../ui/chip'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 
 interface FinanceTransactionDetailSheetProps {
   transaction: FinanceTransaction | null
@@ -13,6 +14,7 @@ interface FinanceTransactionDetailSheetProps {
   editable: boolean
   onClose: () => void
   onEdit?: () => void
+  onVoid?: () => void
   onOpenOrder?: () => void
   onOpenPayroll?: () => void
 }
@@ -57,11 +59,14 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
   editable,
   onClose,
   onEdit,
+  onVoid,
   onOpenOrder,
   onOpenPayroll,
 }) => {
+  const tr = useBilingualCopy()
   if (!transaction) return null
 
+  const voided = transaction.status === 'void'
   const scope = transaction.scope ?? (transaction.branch === 'All' ? 'company' : 'branch')
   const entryMode = transaction.entryMode ?? (transaction.isSystemGenerated ? 'automatic' : 'manual')
 
@@ -96,20 +101,29 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
                   {transaction.type === 'income' ? 'Money in' : 'Money out'}
                 </StatusChip>
                 <StatusChip tone="neutral">{sourceLabel(transaction)}</StatusChip>
-                <StatusChip tone={editable ? 'info' : 'neutral'}>{editable ? 'Editable manual entry' : 'Read only'}</StatusChip>
+                <StatusChip tone={voided ? 'danger' : editable ? 'info' : 'neutral'}>{voided ? 'Void' : editable ? tr('Editable', 'Bisa diedit') : tr('Read only', 'Hanya baca')}</StatusChip>
               </div>
               <h3 className="mt-3 text-base font-semibold text-foreground">{transaction.name ?? transaction.description}</h3>
               <p className="mt-1 text-xs text-muted-foreground">{transaction.description}</p>
             </div>
-            <p className={`shrink-0 text-xl font-semibold tabular-nums ${transaction.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+            <p className={`shrink-0 text-xl font-semibold tabular-nums ${voided ? 'text-muted-foreground line-through' : transaction.type === 'income' ? 'text-success' : 'text-destructive'}`}>
               {transaction.type === 'income' ? '+' : '−'}{formatIdr(transaction.amount)}
             </p>
           </div>
 
-          {!editable && (
+          {voided ? (
+            <div className="mt-4 flex gap-2 rounded-xl bg-destructive/10 p-3 text-xs text-destructive">
+              <Ban className="mt-0.5 size-4 shrink-0" />
+              <p>
+                {tr('Voided by', 'Di-void oleh')} {transaction.voidedBy ?? '—'} · {formatTimestamp(transaction.voidedAt)}
+                <br />{tr('Reason', 'Alasan')}: {transaction.voidReason ?? '—'}
+                <br />{tr('Kept for the audit trail; not counted in balances or reports.', 'Tetap tercatat untuk jejak audit; tidak dihitung di saldo maupun laporan.')}
+              </p>
+            </div>
+          ) : !editable && (
             <div className="mt-4 flex gap-2 rounded-xl bg-muted/55 p-3 text-xs text-muted-foreground">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              <p>{entryMode === 'automatic' || transaction.isSystemGenerated ? 'This entry is owned by its source workflow. Corrections must happen from that workflow instead of editing the ledger row.' : 'This ledger row is read only in its current state.'}</p>
+              <p>{tr('Only Finance can correct or void posted transactions.', 'Hanya Finance yang bisa mengoreksi atau mem-void transaksi.')}</p>
             </div>
           )}
 
@@ -131,7 +145,12 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
             )}
             {editable && onEdit && (
               <button type="button" onClick={onEdit} className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground">
-                <Pencil className="size-4" /> Edit manual entry
+                <Pencil className="size-4" /> {tr('Edit transaction', 'Ubah transaksi')}
+              </button>
+            )}
+            {onVoid && (
+              <button type="button" onClick={onVoid} className="inline-flex h-10 items-center gap-2 rounded-full border border-destructive/40 px-4 text-xs font-semibold text-destructive">
+                <Ban className="size-4" /> {tr('Void', 'Void')}
               </button>
             )}
           </div>
@@ -141,7 +160,7 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ledger</h4>
           <dl className="grid gap-2 sm:grid-cols-2">
             <DetailField label="Transaction code" mono>{transaction.transactionCode?.trim() || '—'}</DetailField>
-            <DetailField label="Status">{transaction.status === 'verified' ? 'Posted' : transaction.status}</DetailField>
+            <DetailField label="Status">{transaction.status === 'verified' ? 'Posted' : transaction.status === 'void' ? 'Void' : transaction.status}</DetailField>
             <DetailField label="Account">{accountLabel}</DetailField>
             <DetailField label="Category">{categoryLabel}</DetailField>
             <DetailField label="Method">{transaction.method}</DetailField>
@@ -184,7 +203,7 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
               {[...transaction.editHistory].reverse().map((edit) => (
                 <article key={`${edit.revision}-${edit.editedAt}`} className="rounded-xl bg-surface-panel p-3 ring-1 ring-border/50">
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <p className="font-semibold">Revision {edit.revision} · {edit.editedBy}</p>
+                    <p className="font-semibold">{edit.kind === 'void' ? 'Void' : tr(`Revision ${edit.revision}`, `Revisi ${edit.revision}`)} · {edit.editedBy}</p>
                     <p className="text-muted-foreground">{formatTimestamp(edit.editedAt)}</p>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{edit.reason?.trim() || 'No correction reason recorded.'}</p>

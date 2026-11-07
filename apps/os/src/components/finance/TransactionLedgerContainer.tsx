@@ -5,6 +5,7 @@ import {
 } from './TransactionLedger'
 import { useTransactionLedgerController } from './TransactionLedgerController'
 import { FinancePostedTransactionEditor } from './FinancePostedTransactionEditor'
+import { FinanceVoidTransactionDialog } from './FinanceVoidTransactionDialog'
 
 export const TransactionLedgerContainer: FC<TransactionLedgerProps> = (props) => {
   const viewModel = useTransactionLedgerController(props)
@@ -12,6 +13,7 @@ export const TransactionLedgerContainer: FC<TransactionLedgerProps> = (props) =>
     <div className="space-y-8">
       <TransactionLedger {...viewModel} />
       <FinancePostedTransactionEditor />
+      <FinanceVoidTransactionDialog />
     </div>
   )
 }

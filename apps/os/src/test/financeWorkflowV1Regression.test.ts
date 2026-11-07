@@ -48,19 +48,19 @@ describe('Finance workflow v1 regressions', () => {
     expect(client).toContain('p_finance_account_id: input.financeAccountId')
   })
 
-  it('keeps automatic source-owned ledger rows out of generic editing', () => {
+  it('lets Finance edit and void every posted row through the server (Owner decision 2026-11-07)', () => {
     const editor = read('src/components/finance/FinancePostedTransactionEditor.tsx')
     const ledger = read('src/components/finance/TransactionLedger.tsx')
+    const domain = read('src/domain/financeTransactionActionsDomain.ts')
+    const client = read('src/data/financeCashFlow.ts')
 
-    expect(editor).toContain("entryMode !== 'manual'")
-    expect(ledger).toContain('const isManual = (transaction: FinanceTransaction) =>')
-    expect(ledger).toContain("=== 'manual'")
-    expect(ledger).toContain('const isEditableManualTransaction = (transaction: FinanceTransaction, canEdit: boolean): boolean =>')
-    expect(ledger).toContain('canEdit')
-    expect(ledger).toContain("&& transaction.status === 'verified'")
-    expect(ledger).toContain('&& isManual(transaction)')
-    expect(ledger).toContain("&& (transaction.source ?? 'manual') === 'manual'")
-    expect(ledger).toContain('&& !transaction.isSystemGenerated')
+    expect(editor).toContain('canEditFinanceTransaction(target, true)')
+    expect(ledger).toContain('canEditFinanceTransaction(transaction, canEdit)')
+    expect(ledger).toContain('canVoidFinanceTransaction(transaction, canEdit)')
     expect(ledger).toContain('editable={selectedEditable}')
+    // Voided rows are final; the server freezes them too.
+    expect(domain).toContain("isFinance && transaction.status === 'verified'")
+    expect(client).toContain("'edit_finance_transaction_v2_guarded'")
+    expect(client).toContain("'void_finance_transaction_guarded'")
   })
 })

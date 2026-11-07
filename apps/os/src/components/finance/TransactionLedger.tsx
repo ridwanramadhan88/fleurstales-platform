@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FC, type KeyboardEvent } from 'react'
-import { ExternalLink, FileCheck2, Pencil, ReceiptText, Search } from 'lucide-react'
+import { Ban, ExternalLink, FileCheck2, Pencil, ReceiptText, Search } from 'lucide-react'
 import type {
   FinanceCategory,
   FinanceTransaction,
@@ -11,6 +11,8 @@ import { useUserStore } from '../../store/userStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { isActionAuthorized } from '../../config/authorization'
 import { getFinanceCategoryLabel } from '../../domain/financeTransactionCategoryDomain'
+import { canEditFinanceTransaction, canVoidFinanceTransaction } from '../../domain/financeTransactionActionsDomain'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { openFinanceTransactionProof } from '../../data/financeTransactionProof'
 import { toast } from '../../hooks/use-toast'
 import type { TransactionLedgerViewModel } from './TransactionLedgerController'
@@ -57,6 +59,7 @@ const sourceLabel = (transaction: FinanceTransaction) => {
 }
 
 const statusLabel = (transaction: FinanceTransaction) => {
+  if (transaction.status === 'void') return 'Void'
   if (transaction.status === 'pending') return 'Pending'
   if (transaction.status === 'rejected') return 'Needs correction'
   return 'Posted'
@@ -65,12 +68,8 @@ const statusLabel = (transaction: FinanceTransaction) => {
 const directionLabel = (transaction: FinanceTransaction): string =>
   transaction.type === 'income' ? 'In' : 'Out'
 
-const isEditableManualTransaction = (transaction: FinanceTransaction, canEdit: boolean): boolean =>
-  canEdit
-  && transaction.status === 'verified'
-  && isManual(transaction)
-  && (transaction.source ?? 'manual') === 'manual'
-  && !transaction.isSystemGenerated
+const openEdit = (id: string) => window.dispatchEvent(new CustomEvent('finance-edit-posted-transaction', { detail: id }))
+const openVoid = (id: string) => window.dispatchEvent(new CustomEvent('finance-void-transaction', { detail: id }))
 
 const TransactionRow: FC<{
   transaction: FinanceTransaction
@@ -82,7 +81,10 @@ const TransactionRow: FC<{
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const scope = transaction.scope ?? (transaction.branch === 'All' ? 'company' : 'branch')
-  const editable = isEditableManualTransaction(transaction, canEdit)
+  const tr = useBilingualCopy()
+  const editable = canEditFinanceTransaction(transaction, canEdit)
+  const voidable = canVoidFinanceTransaction(transaction, canEdit)
+  const voided = transaction.status === 'void'
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.currentTarget !== event.target) return
@@ -118,7 +120,7 @@ const TransactionRow: FC<{
             <p className="truncate text-sm font-semibold">{transaction.name ?? transaction.description}</p>
             <StatusChip tone={transaction.type === 'income' ? 'success' : 'danger'}>{directionLabel(transaction)}</StatusChip>
             <StatusChip tone="neutral">{sourceLabel(transaction)}</StatusChip>
-            {transaction.status !== 'verified' && <StatusChip tone="warning">{statusLabel(transaction)}</StatusChip>}
+            {transaction.status !== 'verified' && <StatusChip tone={voided ? 'danger' : 'warning'}>{statusLabel(transaction)}</StatusChip>}
           </div>
 
           <div className="mt-3 grid gap-x-5 gap-y-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
@@ -169,11 +171,16 @@ const TransactionRow: FC<{
             )}
           </div>
           {transaction.adjustmentReason && <p className="mt-1 text-xs text-muted-foreground">Reason: {transaction.adjustmentReason}</p>}
-          {transaction.editHistory?.length ? <p className="mt-1 text-2xs text-muted-foreground">Edited {transaction.editHistory.length}× · latest correction retained in audit history</p> : null}
+          {voided && (
+            <p className="mt-1 text-xs font-medium text-destructive" data-testid="finance-void-note">
+              {tr('Voided', 'Di-void')} · {transaction.voidReason} · {transaction.voidedBy}
+            </p>
+          )}
+          {transaction.editHistory?.some((record) => record.kind !== 'void') ? <p className="mt-1 text-2xs text-muted-foreground">{tr(`Edited ${transaction.editHistory.filter((record) => record.kind !== 'void').length}× · see the correction history`, `Diedit ${transaction.editHistory.filter((record) => record.kind !== 'void').length}× · lihat riwayat koreksi`)}</p> : null}
         </div>
 
         <div className="shrink-0 text-right">
-          <p className={`whitespace-nowrap text-sm font-semibold sm:text-base ${transaction.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+          <p className={`whitespace-nowrap text-sm font-semibold sm:text-base ${voided ? 'text-muted-foreground line-through' : transaction.type === 'income' ? 'text-success' : 'text-destructive'}`}>
             {transaction.type === 'income' ? '+' : '−'}{formatIdr(transaction.amount)}
           </p>
           {transaction.proofPath && (
@@ -188,17 +195,29 @@ const TransactionRow: FC<{
               <FileCheck2 className="size-3.5" aria-hidden="true" /> Bukti
             </button>
           )}
-          {editable && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                window.dispatchEvent(new CustomEvent('finance-edit-posted-transaction', { detail: transaction.id }))
-              }}
-              className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold"
-            >
-              <Pencil className="size-3.5" aria-hidden="true" /> Edit
-            </button>
+          {(editable || voidable) && (
+            <div className="mt-2 flex justify-end gap-1.5">
+              {editable && (
+                <button
+                  type="button"
+                  aria-label={tr(`Edit transaction ${transaction.transactionCode ?? transaction.id}`, `Ubah transaksi ${transaction.transactionCode ?? transaction.id}`)}
+                  onClick={(event) => { event.stopPropagation(); openEdit(transaction.id) }}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold"
+                >
+                  <Pencil className="size-3.5" aria-hidden="true" /> Edit
+                </button>
+              )}
+              {voidable && (
+                <button
+                  type="button"
+                  aria-label={tr(`Void transaction ${transaction.transactionCode ?? transaction.id}`, `Void transaksi ${transaction.transactionCode ?? transaction.id}`)}
+                  onClick={(event) => { event.stopPropagation(); openVoid(transaction.id) }}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-destructive/40 px-3 text-xs font-semibold text-destructive"
+                >
+                  <Ban className="size-3.5" aria-hidden="true" /> Void
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -300,7 +319,10 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
     ? getFinanceCategoryLabel(selectedTransaction.category, customCategories, categoryOverrides)
     : '—'
   const selectedEditable = selectedTransaction
-    ? isEditableManualTransaction(selectedTransaction, canEditManual)
+    ? canEditFinanceTransaction(selectedTransaction, canEditManual)
+    : false
+  const selectedVoidable = selectedTransaction
+    ? canVoidFinanceTransaction(selectedTransaction, canEditManual)
     : false
 
   if (!isVisible) return null
@@ -368,7 +390,11 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
         editable={selectedEditable}
         onClose={() => setSelectedTransactionId(null)}
         onEdit={selectedEditable && selectedTransaction ? () => {
-          window.dispatchEvent(new CustomEvent('finance-edit-posted-transaction', { detail: selectedTransaction.id }))
+          openEdit(selectedTransaction.id)
+          setSelectedTransactionId(null)
+        } : undefined}
+        onVoid={selectedVoidable && selectedTransaction ? () => {
+          openVoid(selectedTransaction.id)
           setSelectedTransactionId(null)
         } : undefined}
         onOpenOrder={selectedLinkedOrder ? () => {
