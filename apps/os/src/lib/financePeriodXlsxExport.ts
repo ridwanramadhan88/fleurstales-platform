@@ -9,21 +9,25 @@ import type { FinanceTransaction } from '../store/financeStoreTypes'
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 const LEGACY_ACCOUNT_ID = 'legacy:unassigned'
 
-type CellFormat = 'header' | 'currency'
-type CellValue = string | number | null | undefined
-interface StyledCell {
+export type CellFormat = 'header' | 'currency' | 'percent' | 'total' | 'muted'
+export type CellValue = string | number | null | undefined
+export interface StyledCell {
   value: CellValue
   format?: CellFormat
 }
-type WorkbookCell = CellValue | StyledCell
-interface WorksheetSpec {
+export type WorkbookCell = CellValue | StyledCell
+export interface WorksheetSpec {
   name: string
   rows: WorkbookCell[][]
+  /** Column widths in characters. */
+  widths?: number[]
 }
 
-const cell = (value: CellValue, format?: CellFormat): StyledCell => ({ value, format })
-const money = (value: number): StyledCell => cell(value, 'currency')
-const header = (value: string): StyledCell => cell(value, 'header')
+export const cell = (value: CellValue, format?: CellFormat): StyledCell => ({ value, format })
+export const money = (value: number): StyledCell => cell(value, 'currency')
+export const header = (value: string): StyledCell => cell(value, 'header')
+
+const STYLE_ID: Record<CellFormat, number> = { currency: 1, header: 2, percent: 3, total: 4, muted: 5 }
 
 const xmlEscape = (value: unknown): string => String(value ?? '')
   .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
@@ -49,13 +53,13 @@ const unwrapCell = (entry: WorkbookCell): StyledCell => {
   return { value: entry }
 }
 
-const worksheetXml = (rows: WorkbookCell[][]): string => {
+const worksheetXml = (rows: WorkbookCell[][], widths?: number[]): string => {
   const renderedRows = rows.map((row, rowIndex) => {
     const cells = row.map((entry, columnIndex) => {
       const { value, format } = unwrapCell(entry)
       if (value === null || value === undefined) return ''
       const ref = `${columnName(columnIndex)}${rowIndex + 1}`
-      const styleId = format === 'currency' ? 1 : format === 'header' ? 2 : 0
+      const styleId = format ? STYLE_ID[format] : 0
       if (typeof value === 'number' && Number.isFinite(value)) {
         return `<c r="${ref}"${styleId ? ` s="${styleId}"` : ''}><v>${value}</v></c>`
       }
@@ -64,10 +68,10 @@ const worksheetXml = (rows: WorkbookCell[][]): string => {
     return `<row r="${rowIndex + 1}">${cells}</row>`
   }).join('')
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><sheetData>${renderedRows}</sheetData></worksheet>`
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/>${widths?.length ? `<cols>${widths.map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`).join('')}</cols>` : ''}<sheetData>${renderedRows}</sheetData></worksheet>`
 }
 
-const workbookFiles = (sheets: WorksheetSpec[]): Record<string, Uint8Array> => {
+export const workbookFiles = (sheets: WorksheetSpec[]): Record<string, Uint8Array> => {
   const sheetOverrides = sheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')
   const sheetEntries = sheets.map((sheet, index) => `<sheet name="${xmlEscape(sheet.name)}" sheetId="${index + 1}" r:id="rId${index + 2}"/>`).join('')
   const sheetRelationships = sheets.map((_, index) => `<Relationship Id="rId${index + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join('')
@@ -77,10 +81,10 @@ const workbookFiles = (sheets: WorksheetSpec[]): Record<string, Uint8Array> => {
     '_rels/.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
     'xl/workbook.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheetEntries}</sheets></workbook>`,
     'xl/_rels/workbook.xml.rels': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${sheetRelationships}</Relationships>`,
-    'xl/styles.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0;[Red]-#,##0"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Aptos"/></font><font><b/><sz val="11"/><name val="Aptos"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
+    'xl/styles.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="#,##0;[Red]-#,##0"/><numFmt numFmtId="165" formatCode="0.0%;[Red]-0.0%"/></numFmts><fonts count="3"><font><sz val="11"/><name val="Aptos"/></font><font><b/><sz val="11"/><name val="Aptos"/></font><font><i/><sz val="11"/><color rgb="FF808080"/><name val="Aptos"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`,
   }
   sheets.forEach((sheet, index) => {
-    files[`xl/worksheets/sheet${index + 1}.xml`] = worksheetXml(sheet.rows)
+    files[`xl/worksheets/sheet${index + 1}.xml`] = worksheetXml(sheet.rows, sheet.widths)
   })
   return Object.fromEntries(Object.entries(files).map(([path, content]) => [path, strToU8(content)]))
 }

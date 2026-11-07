@@ -15,7 +15,7 @@ describe('finance workspace privacy', () => {
 
   it('keeps Overview first while preserving the internal reconciliation routes', () => {
     expect(getFinanceWorkspaceModules('finance')).toEqual([
-      'balance', 'order_verification', 'refunds', 'ledger', 'payroll',
+      'balance', 'order_verification', 'refunds', 'ledger', 'payroll', 'report',
     ])
   })
 

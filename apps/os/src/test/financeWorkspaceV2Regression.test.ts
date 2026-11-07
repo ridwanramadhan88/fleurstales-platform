@@ -5,11 +5,12 @@ const read = (path: string) => readFileSync(path, 'utf8')
 
 // Keep this suite as the integration contract for the Finance v2 workspace shell.
 describe('Finance workspace v2 regressions', () => {
-  it('presents four top-level Finance workspaces and nests refunds under Reconciliation', () => {
+  it('presents the top-level Finance workspaces (with the LK report) and nests refunds under Reconciliation', () => {
     const tabs = read('src/components/finance/FinanceWorkspaceTabs.tsx')
 
-    expect(tabs).toContain("type FinanceWorkspaceGroup = 'overview' | 'reconciliation' | 'transactions' | 'payroll'")
-    expect(tabs).toContain("const GROUP_ORDER: FinanceWorkspaceGroup[] = ['overview', 'reconciliation', 'transactions', 'payroll']")
+    expect(tabs).toContain("type FinanceWorkspaceGroup = 'overview' | 'reconciliation' | 'transactions' | 'payroll' | 'report'")
+    expect(tabs).toContain("const GROUP_ORDER: FinanceWorkspaceGroup[] = ['overview', 'reconciliation', 'transactions', 'payroll', 'report']")
+    expect(tabs).toContain("label: 'Reports'")
     expect(tabs).toContain("label: 'Balances'")
     expect(tabs).toContain("label: 'Reconciliation'")
     expect(tabs).toContain("label: 'Transactions'")
@@ -22,7 +23,7 @@ describe('Finance workspace v2 regressions', () => {
   it('makes Overview the default without changing the stable internal Finance routes', () => {
     const domain = read('src/domain/financeWorkspaceDomain.ts')
 
-    expect(domain).toContain("const MODULE_ORDER: FinanceWorkspaceModule[] = ['balance','order_verification','refunds','ledger','payroll']")
+    expect(domain).toContain("const MODULE_ORDER: FinanceWorkspaceModule[] = ['balance','order_verification','refunds','ledger','payroll','report']")
     expect(domain).toContain("?? 'balance'")
     expect(domain).toContain("| 'order_verification'")
     expect(domain).toContain("| 'refunds'")

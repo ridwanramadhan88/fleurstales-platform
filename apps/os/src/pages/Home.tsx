@@ -32,6 +32,7 @@ import { StockTabContentContainer } from '../components/stock/StockTabContentCon
 import { CatalogTabContentContainer } from '../components/catalog/CatalogTabContentContainer'
 import { CustomersTabContentContainer } from '../components/customers/CustomersTabContentContainer'
 import { RevenueDashboardContainer } from '../components/dashboard/RevenueDashboardContainer'
+import { FinanceLkReportPanel } from '../components/finance/FinanceLkReportPanel'
 import { OrderVerificationQueueContainer } from '../components/finance/OrderVerificationQueueContainer'
 import { TransactionLedgerContainer } from '../components/finance/TransactionLedgerContainer'
 import { FinanceRefundQueue } from '../components/finance/FinanceRefundQueue'
@@ -573,7 +574,11 @@ const HomePage: FC<HomePageProps> = ({
           )}
 
           {activeTab === 'revenue' && canAccessSection(userRole, 'revenue', permissions) && (
-            <RevenueDashboardContainer activeBranch={activeBranch} />
+            <>
+              <RevenueDashboardContainer activeBranch={activeBranch} />
+              {/* The Owner has no Finance workspace; the LK report lives here for them. */}
+              {userRole === 'owner' && <FinanceLkReportPanel showHeading />}
+            </>
           )}
 
           {activeTab === 'finance' && canAccessSection(userRole, 'finance', permissions) && (
@@ -622,6 +627,10 @@ const HomePage: FC<HomePageProps> = ({
                   actorRole={userRole}
                   onOpenOrder={handleOpenOrderFromNotification}
                 />
+              )}
+
+              {financeModule === 'report' && hasActionPermission(userRole, 'finance.view_ledger', actionPermissions, permissions) && (
+                <FinanceLkReportPanel />
               )}
 
               {financeModule === 'ledger' && hasActionPermission(userRole, 'finance.view_ledger', actionPermissions, permissions) && (
