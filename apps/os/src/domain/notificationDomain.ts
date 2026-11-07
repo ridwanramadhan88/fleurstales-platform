@@ -11,7 +11,7 @@ export interface NotificationRecord extends AlertItem {
 
 const ROLE_ALERT_KINDS: Record<UserRole, readonly AlertKind[]> = {
   owner: ['hr_attendance_problem', 'order_change_requested', 'order_change_resolved', 'payroll_submitted', 'payroll_rejected', 'payroll_approved', 'payroll_paid', 'authorization_changed'],
-  admin: ['finance_rejected', 'schedule_published', 'order_received', 'order_change_resolved', 'authorization_changed'],
+  admin: ['finance_rejected', 'schedule_published', 'order_received', 'order_change_resolved', 'authorization_changed', 'customer_birthday'],
   finance: ['admin_resubmitted', 'order_pending_verification', 'order_change_requested', 'payroll_submitted', 'authorization_changed'],
   hr: ['hr_attendance_problem', 'payroll_rejected', 'payroll_approved', 'payroll_paid', 'authorization_changed'],
   florist: ['schedule_published', 'order_assigned', 'authorization_changed'],

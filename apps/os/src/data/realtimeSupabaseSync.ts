@@ -42,6 +42,7 @@ interface OrderActivityRow {
 }
 
 const DISPLAY_KINDS = new Set<AlertKind>([
+  'customer_birthday',
   'order_pending_verification',
   'finance_rejected',
   'admin_resubmitted',
@@ -62,6 +63,7 @@ const DISPLAY_TARGETS = new Set<NonNullable<NotificationItem['target']>>([
   'finance_payroll',
   'hr_attendance',
   'hr_reports',
+  'customers',
   'hr_payroll',
   'my_schedule',
 ])

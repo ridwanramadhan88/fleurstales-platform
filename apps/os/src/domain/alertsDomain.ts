@@ -48,6 +48,8 @@ export type AlertKind =
   | 'payroll_approved'
   | 'payroll_paid'
   | 'authorization_changed'
+  /** Daily: a customer has a birthday today (all Admins). */
+  | 'customer_birthday'
 
 /**
  * @description Single alert item used by UI components.
@@ -69,7 +71,7 @@ export interface AlertItem {
   /** Order number this alert refers to, when applicable. */
   orderNumber?: string
   /** Destination opened when the notification is selected. */
-  target?: 'order' | 'finance_order_verification' | 'finance_payroll' | 'hr_attendance' | 'hr_reports' | 'hr_payroll' | 'my_schedule'
+  target?: 'order' | 'finance_order_verification' | 'finance_payroll' | 'hr_attendance' | 'hr_reports' | 'hr_payroll' | 'my_schedule' | 'customers'
   /** Optional record identifier for the destination. */
   targetId?: string
 }
