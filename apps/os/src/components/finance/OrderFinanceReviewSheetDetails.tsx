@@ -101,7 +101,7 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">Ringkasan pembayaran</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {paymentMethod === 'transfer' ? 'Bank transfer' : paymentMethod === 'cash' ? 'Cash' : 'Metode pembayaran belum tercatat'}
+              {paymentMethod === 'transfer' ? (order.paymentChannel === 'qris' ? 'QRIS' : 'Bank transfer') : paymentMethod === 'cash' ? 'Cash' : 'Metode pembayaran belum tercatat'}
             </p>
           </div>
           <span className={`rounded-full px-2.5 py-1 text-2xs font-semibold ${paymentReady ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>

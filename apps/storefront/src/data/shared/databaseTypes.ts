@@ -101,6 +101,15 @@ export interface BranchRow {
   updated_at: string
 }
 
+/** One static QRIS per branch, paid into the linked bank account. */
+export interface BranchQrisCodeRow {
+  branch_id: string
+  image_path: string
+  linked_account_id: string
+  is_active: boolean
+  updated_at: string
+}
+
 export interface PublicPaymentAccountRow {
   id: string
   bank_name: string
@@ -322,6 +331,8 @@ export interface OrderRow {
   delivery_fee_idr: number
   payment_status: PaymentStatus
   payment_method: PaymentMethod | null
+  /** Account the customer paid into; `channel: 'qris'` marks a branch-QRIS payment. */
+  payment_account_snapshot?: Json | null
   paid_amount_idr: number
   refund_amount_idr: number | null
   refund_reason: string | null
@@ -484,7 +495,8 @@ export interface CreateStorefrontOrderRpcArgs {
   p_order_note?: string | null
   p_greeting_message?: string | null
   p_greeting_card_name?: string | null
-  p_payment_method?: PaymentMethod | null
+  /** 'qris' = pay the branch QRIS (still recorded as a transfer). */
+  p_payment_method?: PaymentMethod | 'qris' | null
   p_promo_code?: string | null
 }
 
@@ -503,6 +515,7 @@ export interface Database {
       store_profile: TableDefinition<StoreProfileRow>
       branches: TableDefinition<BranchRow>
       public_payment_accounts: TableDefinition<PublicPaymentAccountRow>
+      branch_qris_codes: TableDefinition<BranchQrisCodeRow>
       storefront_payment_settings: TableDefinition<StorefrontPaymentSettingsRow>
       occasions: TableDefinition<OccasionRow>
       arrangement_types: TableDefinition<ArrangementTypeRow>

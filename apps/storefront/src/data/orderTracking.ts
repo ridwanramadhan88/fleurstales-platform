@@ -14,6 +14,9 @@ export interface PublicPaymentAccountSnapshot {
   accountNumber: string
   accountHolder: string
   type?: string
+  /** 'qris' when the customer chose the branch QRIS (paid into accountId). */
+  channel?: 'qris'
+  qrisImagePath?: string
 }
 
 export interface PublicReviewQuestion {

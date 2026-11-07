@@ -47,6 +47,9 @@ const base = (): CartDrawerViewModel => ({
   paymentMethod: 'transfer',
   placedOrderNumber: null,
   bankAccounts: [],
+  branchQris: null,
+  paymentChannel: 'bank_transfer',
+  setPaymentChannel: vi.fn(),
   paymentInstructions: '',
   itemsTotalIdr: 200_000,
   itemCount: 1,
@@ -115,5 +118,25 @@ describe('customer checkout CRM and voucher UI', () => {
     expect(screen.getByText('Automatically applied from your WhatsApp customer profile.')).toBeInTheDocument()
     expect(screen.getByText('Discount (Review reward · 10% off)')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Place order/ })).toHaveTextContent('180.000')
+  })
+})
+
+describe('QRIS at checkout', () => {
+  const qris = { branchId: 'Kedamaian', imagePath: 'qris/kdm.png', imageUrl: 'https://cdn.test/qris/kdm.png', linkedAccountId: 'bank-bca', isActive: true }
+
+  it('offers only bank transfer when the branch has no QRIS', () => {
+    render(<ReviewStep {...base()} />)
+    expect(screen.getByRole('radio', { name: 'Bank transfer' })).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: 'QRIS' })).not.toBeInTheDocument()
+  })
+
+  it('lets the customer choose the branch QRIS and shows its image', async () => {
+    const setPaymentChannel = vi.fn()
+    const { rerender } = render(<ReviewStep {...base()} branchQris={qris} setPaymentChannel={setPaymentChannel} />)
+    await userEvent.click(screen.getByRole('radio', { name: 'QRIS' }))
+    expect(setPaymentChannel).toHaveBeenCalledWith('qris')
+    rerender(<ReviewStep {...base()} branchQris={qris} paymentChannel="qris" setPaymentChannel={setPaymentChannel} />)
+    expect(screen.getByRole('radio', { name: 'QRIS' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('img', { name: 'QRIS' })).toHaveAttribute('src', qris.imageUrl)
   })
 })

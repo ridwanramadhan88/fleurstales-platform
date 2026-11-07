@@ -317,6 +317,8 @@ export interface SharedOrder {
   deliveryFeeIdr: number
   paymentStatus: PaymentStatus
   paymentMethod?: PaymentMethod
+  /** Set when a storefront transfer was paid through the branch QRIS. */
+  paymentChannel?: 'qris'
   paidAmountIdr: number
   paymentHistory?: SharedOrderPaymentEvent[]
   refundAmountIdr?: number
@@ -410,6 +412,8 @@ export interface CreateStorefrontOrderInput {
   greetingMessage?: string
   greetingCardName?: string
   paymentMethod?: PaymentMethod
+  /** Storefront transfer channel: bank account (default) or the branch QRIS. */
+  paymentChannel?: 'bank_transfer' | 'qris'
   /** Stored as an order snapshot. Discount remains server/internal-domain derived. */
   promoCode?: string
 }

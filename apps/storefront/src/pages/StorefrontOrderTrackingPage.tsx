@@ -16,6 +16,7 @@ import { buildStorefrontTrackingPath } from '../data/shared/storefrontCheckoutRe
 import { requestStorefrontNavigation } from '../lib/storefrontNavigation'
 import type { OrderStatus } from '../data/shared/databaseTypes'
 import { formatIdr } from '../lib/currency'
+import { bootstrapSharedData } from '../data/shared/bootstrap'
 import { getStorefrontWhatsappHref } from '../domain/storefrontContactDomain'
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -263,7 +264,13 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                         <span className="sf-type-2 text-black/55">Total</span>
                         <strong className="text-[1.75rem] font-medium leading-none sm:text-[2rem]">{formatIdr(details.totalIdr)}</strong>
                       </div>
-                      {details.paymentAccountSnapshot ? (
+                      {details.paymentAccountSnapshot?.channel === 'qris' && details.paymentAccountSnapshot.qrisImagePath ? (
+                        <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl bg-white/65 p-4 text-center">
+                          <p className="sf-type-2 font-semibold">QRIS</p>
+                          <QrisImage path={details.paymentAccountSnapshot.qrisImagePath} />
+                          <p className="sf-type-1 leading-5 text-black/55">Scan dengan aplikasi bank atau e-wallet dan bayar jumlah penuh.</p>
+                        </div>
+                      ) : details.paymentAccountSnapshot ? (
                         <div className="mt-4 rounded-2xl bg-white/65 p-4">
                           <p className="sf-type-2 font-semibold">{details.paymentAccountSnapshot.bankName}</p>
                           <p className="mt-1 sf-type-1 text-black/50">a.n. {details.paymentAccountSnapshot.accountHolder}</p>
@@ -406,3 +413,10 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
 }
 
 export default StorefrontOrderTrackingPage
+
+/** QRIS image of the branch, from the public store-assets bucket. */
+const QrisImage: FC<{ path: string }> = ({ path }) => {
+  const shared = bootstrapSharedData()
+  if (!shared.enabled) return null
+  return <img src={shared.repositories.client.storagePublicUrl('store-assets', path)} alt="QRIS" className="aspect-square w-full max-w-[16rem] rounded-2xl bg-white object-contain" />
+}
