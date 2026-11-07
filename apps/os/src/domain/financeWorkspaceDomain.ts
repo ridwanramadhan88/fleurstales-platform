@@ -13,9 +13,10 @@ export type FinanceWorkspaceModule =
   | 'refunds'
   | 'ledger'
   | 'balance'
+  | 'report'
 
 /** Finance v2 visible order: Overview → Reconciliation → Transactions → Payroll. */
-const MODULE_ORDER: FinanceWorkspaceModule[] = ['balance','order_verification','refunds','ledger','payroll']
+const MODULE_ORDER: FinanceWorkspaceModule[] = ['balance','order_verification','refunds','ledger','payroll','report']
 
 const CAPABILITY_BY_MODULE: Record<FinanceWorkspaceModule, Parameters<typeof hasActionPermission>[1]> = {
   order_verification: 'finance.view_order_verification',
@@ -24,6 +25,8 @@ const CAPABILITY_BY_MODULE: Record<FinanceWorkspaceModule, Parameters<typeof has
   ledger: 'finance.view_ledger',
   // Overview shares the ledger capability because every displayed balance is ledger-derived.
   balance: 'finance.view_ledger',
+  // The LK report is built from the same ledger plus orders.
+  report: 'finance.view_ledger',
 }
 
 export const getFinanceWorkspaceModules = (

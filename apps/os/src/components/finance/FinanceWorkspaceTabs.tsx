@@ -2,6 +2,7 @@ import { useEffect, useMemo, type FC } from 'react'
 import {
   BadgeDollarSign,
   ClipboardCheck,
+  FileSpreadsheet,
   Landmark,
   ReceiptText,
 } from 'lucide-react'
@@ -19,7 +20,7 @@ interface FinanceWorkspaceTabsProps {
   onChange: (module: FinanceWorkspaceModule) => void
 }
 
-type FinanceWorkspaceGroup = 'overview' | 'reconciliation' | 'transactions' | 'payroll'
+type FinanceWorkspaceGroup = 'overview' | 'reconciliation' | 'transactions' | 'payroll' | 'report'
 
 const GROUP_ITEMS: Record<
   FinanceWorkspaceGroup,
@@ -46,14 +47,20 @@ const GROUP_ITEMS: Record<
     description: 'Review proposals and record final payroll payments',
     icon: BadgeDollarSign,
   },
+  report: {
+    label: 'Reports',
+    description: 'Monthly financial report in the LK format, ready to download',
+    icon: FileSpreadsheet,
+  },
 }
 
-const GROUP_ORDER: FinanceWorkspaceGroup[] = ['overview', 'reconciliation', 'transactions', 'payroll']
+const GROUP_ORDER: FinanceWorkspaceGroup[] = ['overview', 'reconciliation', 'transactions', 'payroll', 'report']
 
 const groupForModule = (module: FinanceWorkspaceModule): FinanceWorkspaceGroup => {
   if (module === 'balance') return 'overview'
   if (module === 'order_verification' || module === 'refunds') return 'reconciliation'
   if (module === 'ledger') return 'transactions'
+  if (module === 'report') return 'report'
   return 'payroll'
 }
 
@@ -61,6 +68,7 @@ const hasGroup = (modules: FinanceWorkspaceModule[], group: FinanceWorkspaceGrou
   if (group === 'overview') return modules.includes('balance')
   if (group === 'reconciliation') return modules.includes('order_verification') || modules.includes('refunds')
   if (group === 'transactions') return modules.includes('ledger')
+  if (group === 'report') return modules.includes('report')
   return modules.includes('payroll')
 }
 
@@ -72,6 +80,7 @@ const targetForGroup = (
   if (group === 'overview') return modules.includes('balance') ? 'balance' : null
   if (group === 'transactions') return modules.includes('ledger') ? 'ledger' : null
   if (group === 'payroll') return modules.includes('payroll') ? 'payroll' : null
+  if (group === 'report') return modules.includes('report') ? 'report' : null
   if ((activeModule === 'order_verification' || activeModule === 'refunds') && modules.includes(activeModule)) {
     return activeModule
   }
