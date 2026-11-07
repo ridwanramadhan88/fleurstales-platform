@@ -14,6 +14,7 @@ import { StatusChip } from '../ui/chip'
 import { surfaceCardClass } from '../ui/card'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
 import { formatHumanDate } from '../../lib/humanDates'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 
 const stopStream = (stream: MediaStream | null) => stream?.getTracks().forEach((track) => track.stop())
 const formatTime = (iso?: string) => iso ? new Date(iso).toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit' }) : '—'
@@ -67,6 +68,11 @@ export const SelfieAttendanceCard: FC = () => {
   const shiftMinutesRemaining = todayShift?.isWorking ? minutesUntilShiftEnd(currentTime, todayShift.endTime) : null
   const checkOutWindow = Boolean(todayRecord?.checkInAt && !todayRecord.checkOutAt && todayShift?.isWorking && shiftMinutesRemaining !== null && shiftMinutesRemaining <= attendanceSettings.checkoutGraceMinutes)
   const checkOutAvailable = checkOutWindow
+  // Past the shift end (plus grace) the employee says why: overtime goes to HR, a late check-out is not paid.
+  const checkOutAfterShift = shiftMinutesRemaining !== null && -shiftMinutesRemaining > attendanceSettings.checkoutGraceMinutes
+  const [checkOutReason, setCheckOutReason] = useState<'overtime' | 'late_checkout' | null>(null)
+  const [checkOutReasonNote, setCheckOutReasonNote] = useState('')
+  const tr = useBilingualCopy()
   const attendanceComplete = Boolean(todayRecord?.checkInAt && todayRecord.checkOutAt)
   const shouldForceExpanded = !todayRecord?.checkInAt || checkOutWindow
 
@@ -221,7 +227,7 @@ export const SelfieAttendanceCard: FC = () => {
     setProcessing(true)
     const result = action === 'check-in'
       ? recordSelfieAttendance({ employeeId: employee.id, selfieDataUrl: photo, actor: { name: actorName, role }, location: verifiedLocation })
-      : recordSelfieCheckOut({ employeeId: employee.id, selfieDataUrl: photo, actor: { name: actorName, role }, location: verifiedLocation })
+      : recordSelfieCheckOut({ employeeId: employee.id, selfieDataUrl: photo, actor: { name: actorName, role }, location: verifiedLocation, checkOutReason: checkOutAfterShift ? checkOutReason ?? undefined : undefined, checkOutReasonNote: checkOutAfterShift ? checkOutReasonNote : undefined })
     if (!result.ok) {
       setError(result.reason)
       setProcessing(false)
@@ -231,6 +237,8 @@ export const SelfieAttendanceCard: FC = () => {
     setVerifiedLocation(null)
     setVerifiedAction(null)
     setLocationStatus(null)
+    setCheckOutReason(null)
+    setCheckOutReasonNote('')
     setSuccess(action === 'check-in' ? 'Check-in recorded successfully.' : 'Check-out recorded successfully.')
     setError(null)
     setProcessing(false)
@@ -265,6 +273,26 @@ export const SelfieAttendanceCard: FC = () => {
               </div>
             </div>
 
+            {captureAction === 'check-out' && checkOutAfterShift && (
+              <fieldset className="space-y-2 rounded-xl border border-border bg-surface-panel p-3" data-testid="checkout-reason">
+                <legend className="px-1 text-sm font-semibold leading-5">{tr('Why are you checking out after your shift?', 'Kenapa check-out lewat jam shift?')}</legend>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {([
+                    ['overtime', tr('Overtime', 'Lembur'), tr('I worked extra time. HR will confirm it.', 'Saya bekerja lebih lama. HR akan mengonfirmasi.')],
+                    ['late_checkout', tr('Late check-out', 'Telat check-out'), tr('I forgot or was late to check out. Not overtime.', 'Saya lupa/telat check-out. Bukan lembur.')],
+                  ] as const).map(([value, label, hint]) => (
+                    <label key={value} className={`flex cursor-pointer gap-2 rounded-xl border p-3 text-sm ${checkOutReason === value ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                      <input type="radio" name="checkout-reason" value={value} checked={checkOutReason === value} onChange={() => setCheckOutReason(value)} className="mt-0.5" />
+                      <span><span className="block font-semibold">{label}</span><span className="block text-xs text-muted-foreground">{hint}</span></span>
+                    </label>
+                  ))}
+                </div>
+                {checkOutReason === 'overtime' && (
+                  <textarea aria-label={tr('Overtime note', 'Catatan lembur')} value={checkOutReasonNote} onChange={(event) => setCheckOutReasonNote(event.target.value)} rows={2} maxLength={300} placeholder={tr('What did you work on? (optional)', 'Mengerjakan apa? (opsional)')} className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm" />
+                )}
+              </fieldset>
+            )}
+
             <p className="text-sm font-semibold leading-5">2. Take selfie</p>
             {cameraOpen && action === captureAction && (
               <div className="mx-auto aspect-square max-w-sm overflow-hidden rounded-xl bg-black">
@@ -289,7 +317,7 @@ export const SelfieAttendanceCard: FC = () => {
                 {processing ? 'Compressing…' : 'Upload photo'}
                 <input aria-label={`Upload ${captureAction} selfie photo`} type="file" accept="image/*" capture="user" onChange={(event) => { setAction(captureAction); void handleUpload(event) }} disabled={processing} className="sr-only" />
               </label>
-              {photo && action === captureAction && <button type="button" onClick={submit} disabled={processing} className="rounded-full bg-foreground text-sm font-medium text-background rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Submit {captureAction}</button>}
+              {photo && action === captureAction && <button type="button" onClick={submit} disabled={processing || (captureAction === 'check-out' && checkOutAfterShift && !checkOutReason)} className="rounded-full bg-foreground text-sm font-medium text-background rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Submit {captureAction}</button>}
             </div>
           </>
         )}

@@ -38,8 +38,20 @@ export const buildCheckoutWarnings = (params:{ record:AttendanceRecord; employee
   // attendance records and other explicit exceptions; leaving before the
   // scheduled end does not automatically create a problem task.
   if (actual > scheduledEnd + grace) {
+    // The employee chose "telat check-out": nothing to pay or review.
+    if (record.checkOutReason === 'late_checkout') return []
     const difference = actual - scheduledEnd
-    return [{ id:`review-${record.id}-overtime`, warningType:'overtime', reason:`Checked out ${difference} minute${difference===1?'':'s'} after the scheduled end time.`, minutesDifference:difference, ...base }]
+    const claimed = record.checkOutReason === 'overtime'
+    return [{
+      id:`review-${record.id}-overtime`,
+      warningType:'overtime',
+      reason: claimed
+        ? `Employee claimed overtime: checked out ${difference} minute${difference===1?'':'s'} after the scheduled end time.`
+        : `Checked out ${difference} minute${difference===1?'':'s'} after the scheduled end time.`,
+      minutesDifference:difference,
+      employeeNote: record.checkOutReasonNote,
+      ...base,
+    }]
   }
   return []
 }

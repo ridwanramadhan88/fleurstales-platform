@@ -25,11 +25,24 @@ describe('selfie check-out', () => {
   it('records a second selfie at or after branch closing time', () => {
     vi.setSystemTime(new Date('2026-07-10T08:00:00.000Z'))
     expect(useHrStore.getState().recordSelfieAttendance({ employeeId:admin.id, selfieDataUrl:selfie, actor:{name:'Sari',role:'admin'}, location:{ latitude:-5.3971, longitude:105.2668, accuracyMeters:10 } }).ok).toBe(true)
-    vi.setSystemTime(new Date('2026-07-10T11:00:00.000Z')) // 18:00 Jakarta
-    expect(useHrStore.getState().recordSelfieCheckOut({ employeeId:admin.id, selfieDataUrl:selfie, actor:{name:'Sari',role:'admin'}, location:{ latitude:-5.3971, longitude:105.2668, accuracyMeters:10 } }).ok).toBe(true)
+    vi.setSystemTime(new Date('2026-07-10T11:00:00.000Z')) // 18:00 Jakarta, 90 minutes after the 16:30 shift end
+    const location = { latitude:-5.3971, longitude:105.2668, accuracyMeters:10 }
+    // Past the shift end the employee must say whether this is overtime or a late check-out.
+    expect(useHrStore.getState().recordSelfieCheckOut({ employeeId:admin.id, selfieDataUrl:selfie, actor:{name:'Sari',role:'admin'}, location })).toEqual({ ok:false, reason:'Choose overtime or late check-out before checking out.' })
+    expect(useHrStore.getState().recordSelfieCheckOut({ employeeId:admin.id, selfieDataUrl:selfie, actor:{name:'Sari',role:'admin'}, location, checkOutReason:'overtime', checkOutReasonNote:' Rangkai pesanan wedding ' }).ok).toBe(true)
     const record = useHrStore.getState().attendance[0]
     expect(record.checkOutSelfieDataUrl).toBe(selfie)
     expect(record.checkOutAt).toBeTruthy()
+    expect(record.checkOutReason).toBe('overtime')
+    expect(record.checkOutReasonNote).toBe('Rangkai pesanan wedding')
+  })
+
+  it('does not ask for a reason when checking out inside the shift window', () => {
+    vi.setSystemTime(new Date('2026-07-10T08:00:00.000Z'))
+    expect(useHrStore.getState().recordSelfieAttendance({ employeeId:admin.id, selfieDataUrl:selfie, actor:{name:'Sari',role:'admin'}, location:{ latitude:-5.3971, longitude:105.2668, accuracyMeters:10 } }).ok).toBe(true)
+    vi.setSystemTime(new Date('2026-07-10T09:35:00.000Z')) // 16:35 Jakarta, inside the grace period
+    expect(useHrStore.getState().recordSelfieCheckOut({ employeeId:admin.id, selfieDataUrl:selfie, actor:{name:'Sari',role:'admin'}, location:{ latitude:-5.3971, longitude:105.2668, accuracyMeters:10 } }).ok).toBe(true)
+    expect(useHrStore.getState().attendance[0].checkOutReason).toBeUndefined()
   })
 
   it('handles a dated shift that ends after midnight', () => {
