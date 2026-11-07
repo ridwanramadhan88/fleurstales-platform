@@ -52,7 +52,10 @@ export interface PublicSubmittedReview {
 }
 
 export interface PublicReviewReward {
-  percentOff: number
+  /** null for Rupiah rewards (see amountOffIdr). */
+  percentOff: number | null
+  /** Fixed Rupiah reward (Owner setting, e.g. 20.000). */
+  amountOffIdr?: number | null
   minOrderIdr: number
   status: 'available' | 'redeemed'
   issuedAt: string
@@ -115,7 +118,8 @@ export interface SubmitReviewResult {
   reviewId: string
   reward?: {
     id: string
-    percentOff: number
+    percentOff: number | null
+    amountOffIdr?: number | null
     minOrderIdr: number
     status: 'available'
   } | null
@@ -201,6 +205,7 @@ export const submitPublicOrderReview = async (
       reviewReward: result.reward
         ? {
             percentOff: result.reward.percentOff,
+            amountOffIdr: result.reward.amountOffIdr ?? null,
             minOrderIdr: result.reward.minOrderIdr,
             status: result.reward.status,
             issuedAt: submittedAt,
@@ -212,3 +217,9 @@ export const submitPublicOrderReview = async (
 
   return result
 }
+
+/** "Rp20.000" for Rupiah rewards, "10%" for percent rewards. */
+export const formatReviewRewardValue = (reward: Pick<PublicReviewReward, 'percentOff' | 'amountOffIdr'>): string =>
+  (reward.amountOffIdr ?? 0) > 0
+    ? `Rp${Number(reward.amountOffIdr).toLocaleString('id-ID')}`
+    : `${Number(reward.percentOff ?? 0)}%`

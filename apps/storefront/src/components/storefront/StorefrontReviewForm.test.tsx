@@ -45,7 +45,7 @@ describe('StorefrontReviewForm', () => {
     )
 
     expect(screen.getByLabelText(/Nama lengkap/)).toHaveValue('Rani Anggraini')
-    expect(screen.getByLabelText('Email')).toHaveValue('rani@email.com')
+    expect(screen.getByLabelText(/^Email/)).toHaveValue('rani@email.com')
     expect(screen.getByText('WhatsApp pesanan')).toBeInTheDocument()
     expect(screen.getByText('081234567890')).toBeInTheDocument()
     expect(screen.queryByDisplayValue('081234567890')).not.toBeInTheDocument()
@@ -57,6 +57,11 @@ describe('StorefrontReviewForm', () => {
 
     await user.click(within(rating).getByRole('button', { name: 'Nilai 4 dari 5' }))
     expect(within(rating).getByText('4/5')).toBeInTheDocument()
+    // Every field is required (Owner decision 6 Nov 2026): the note too.
+    expect(screen.getByRole('button', { name: 'Kirim review & aktifkan diskon' })).toBeDisabled()
+    await user.type(screen.getByLabelText(/Saran atau catatan/), 'Bunganya segar.')
     expect(screen.getByRole('button', { name: 'Kirim review & aktifkan diskon' })).toBeEnabled()
+    await user.clear(screen.getByLabelText(/^Email/))
+    expect(screen.getByRole('button', { name: 'Kirim review & aktifkan diskon' })).toBeDisabled()
   })
 })

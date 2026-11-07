@@ -10,6 +10,7 @@
  */
 
 import type { FC } from 'react'
+import { formatVoucherValue } from '../../domain/voucherDomain'
 import { Plus, Trash2, Pencil, Search, Ticket } from 'lucide-react'
 import {
   Dialog,
@@ -91,7 +92,7 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
                         {voucher.code}
                       </span>
                       <span className="text-xs font-medium text-foreground">
-                        -{voucher.percentOff}% off
+                        -{formatVoucherValue(voucher)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -163,21 +164,50 @@ export const CustomerVoucherDialog: FC<CustomerVoucherDialogViewModel> = ({
             </div>
 
             <div className="space-y-1">
-              <label className={labelClass}>% off</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={form.percentOff}
-                  onChange={(event) =>
-                    onFormFieldChange('percentOff', event.target.value)
-                  }
-                  placeholder="e.g. 20"
-                  className={`${inputClass} max-w-[110px]`}
-                />
-                <span className="text-sm text-muted-foreground">% off order subtotal</span>
+              <label className={labelClass}>Discount</label>
+              <div className="inline-flex rounded-lg bg-muted p-1" role="group" aria-label="Discount type">
+                {(['amount', 'percent'] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    aria-pressed={form.discountType === type}
+                    onClick={() => onFormFieldChange('discountType', type)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold ${form.discountType === type ? 'bg-card text-foreground shadow-sm ring-1 ring-border/60' : 'text-muted-foreground'}`}
+                  >
+                    {type === 'amount' ? '-Rp' : '%'}
+                  </button>
+                ))}
               </div>
+              {form.discountType === 'amount' ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Rp</span>
+                  <input
+                    inputMode="numeric"
+                    aria-label="Rupiah off"
+                    value={form.amountOffIdr}
+                    onChange={(event) => onFormFieldChange('amountOffIdr', event.target.value.replace(/\D/g, ''))}
+                    placeholder="20000"
+                    className={`${inputClass} max-w-[160px]`}
+                  />
+                  <span className="text-sm text-muted-foreground">off order subtotal</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    aria-label="Percent off"
+                    value={form.percentOff}
+                    onChange={(event) =>
+                      onFormFieldChange('percentOff', event.target.value)
+                    }
+                    placeholder="e.g. 20"
+                    className={`${inputClass} max-w-[110px]`}
+                  />
+                  <span className="text-sm text-muted-foreground">% off order subtotal</span>
+                </div>
+              )}
             </div>
 
             {/* Date-offering rule */}

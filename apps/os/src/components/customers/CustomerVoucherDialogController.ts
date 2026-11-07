@@ -11,7 +11,9 @@ import type { CustomerVoucherDialogProps } from './CustomerVoucherDialog'
 
 export interface VoucherFormState {
   code: string
+  discountType: 'percent' | 'amount'
   percentOff: string
+  amountOffIdr: string
   startDate: string
   endDate: string
   minOrderIdr: string
@@ -50,7 +52,9 @@ export interface CustomerVoucherDialogViewModel
 
 const emptyFormState: VoucherFormState = {
   code: '',
+  discountType: 'percent',
   percentOff: '',
+  amountOffIdr: '',
   startDate: '',
   endDate: '',
   minOrderIdr: '',
@@ -60,7 +64,9 @@ const emptyFormState: VoucherFormState = {
 
 const formFromVoucher = (voucher: Voucher): VoucherFormState => ({
   code: voucher.code,
-  percentOff: voucher.percentOff.toString(),
+  discountType: voucher.discountType ?? 'percent',
+  percentOff: voucher.discountType === 'amount' ? '' : voucher.percentOff.toString(),
+  amountOffIdr: voucher.amountOffIdr?.toString() ?? '',
   startDate: voucher.startDate ?? '',
   endDate: voucher.endDate ?? '',
   minOrderIdr: voucher.minOrderIdr?.toString() ?? '',
@@ -153,11 +159,15 @@ export const useCustomerVoucherDialogController = ({
     },
     onCancelForm: cancelForm,
     onSave: () => {
-      const percentOff = Number.parseInt(form.percentOff, 10)
+      const isAmount = form.discountType === 'amount'
+      const percentOff = isAmount ? 0 : Number.parseInt(form.percentOff, 10)
+      const amountOffIdr = isAmount ? Number.parseInt(form.amountOffIdr.replace(/\D/g, ''), 10) : undefined
       const minOrderParsed = Number.parseInt(form.minOrderIdr, 10)
       const payload = {
         code: form.code,
+        discountType: form.discountType,
         percentOff,
+        amountOffIdr,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         minOrderIdr:

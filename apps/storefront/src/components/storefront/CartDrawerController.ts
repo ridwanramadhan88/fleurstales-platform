@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { calculateOrderTotal, validateVoucherCode } from '../../domain/voucherDomain'
+import { calculateOrderTotal, formatVoucherValue, validateVoucherCode } from '../../domain/voucherDomain'
 import { buildCustomerMetrics, getOrdersForCustomer } from '../../domain/customerDomain'
 import { useDismissableModal } from '../../hooks/useDismissableModal'
 import { useCustomerStore } from '../../store/customerStore'
@@ -30,7 +30,8 @@ type CheckoutStep = 'cart' | 'details' | 'review' | 'summary'
 type PaymentMethod = 'cash' | 'transfer'
 type StorefrontCheckoutQuoteWithAutoPromo = StorefrontCheckoutQuoteResult & {
   reviewRewardApplied?: boolean
-  reviewRewardPercentOff?: number
+  reviewRewardPercentOff?: number | null
+  reviewRewardAmountOffIdr?: number | null
   reviewRewardMinOrderIdr?: number
 }
 
@@ -276,7 +277,7 @@ export const useCartDrawerController = (
       : 0
 
   const automaticPromoLabel = remoteQuote?.reviewRewardApplied
-    ? `Review reward${remoteQuote.reviewRewardPercentOff ? ` · ${remoteQuote.reviewRewardPercentOff}% off` : ''}`
+    ? `Review reward${remoteQuote.reviewRewardAmountOffIdr ? ` · Rp${remoteQuote.reviewRewardAmountOffIdr.toLocaleString('id-ID')} off` : remoteQuote.reviewRewardPercentOff ? ` · ${remoteQuote.reviewRewardPercentOff}% off` : ''}`
     : !appliedVoucherCode && remoteQuote?.promoAccepted && remoteQuote.promoCode
       ? `Voucher ${remoteQuote.promoCode}`
       : null
@@ -350,8 +351,8 @@ export const useCartDrawerController = (
         setRemoteQuote(quote)
         if (quote.reviewRewardApplied) {
           setAppliedVoucherCode(null)
-          setVoucherMessage(quote.reviewRewardPercentOff
-            ? `Your automatic review reward (${quote.reviewRewardPercentOff}% off) gives the best discount and stays applied.`
+          setVoucherMessage(quote.reviewRewardAmountOffIdr || quote.reviewRewardPercentOff
+            ? `Your automatic review reward (${quote.reviewRewardAmountOffIdr ? `Rp${quote.reviewRewardAmountOffIdr.toLocaleString('id-ID')}` : `${quote.reviewRewardPercentOff}%`} off) gives the best discount and stays applied.`
             : 'Your automatic review reward gives the best discount and stays applied.')
           return
         }
@@ -367,7 +368,7 @@ export const useCartDrawerController = (
     const result = validateVoucherCode(code, vouchers, { orderSubtotalIdr: itemsTotalIdr, customer: matchedCustomer })
     if (!result.ok || !result.voucher) { setAppliedVoucherCode(null); setVoucherMessage(result.reason ?? 'This voucher code is not valid.'); return }
     setAppliedVoucherCode(result.voucher.code)
-    setVoucherMessage(`Voucher "${result.voucher.code}" applied — -${result.voucher.percentOff}% off.`)
+    setVoucherMessage(`Voucher "${result.voucher.code}" applied — -${formatVoucherValue(result.voucher)} off.`)
   }
 
   const handleApplyVoucher = () => { void applyVoucherCode(voucherCode) }

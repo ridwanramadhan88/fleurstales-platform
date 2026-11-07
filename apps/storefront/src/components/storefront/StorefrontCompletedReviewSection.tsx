@@ -1,6 +1,6 @@
 import type { FC } from 'react'
 import { CheckCircle2, Gift } from 'lucide-react'
-import type { PublicOrderTrackingDetails } from '../../data/orderTracking'
+import { formatReviewRewardValue, type PublicOrderTrackingDetails } from '../../data/orderTracking'
 import { StorefrontReviewForm } from './StorefrontReviewForm'
 
 const currencyFormatter = new Intl.NumberFormat('id-ID', {
@@ -39,7 +39,7 @@ export const StorefrontCompletedReviewSection: FC<StorefrontCompletedReviewSecti
           </p>
           <h2 className="mt-1.5 max-w-2xl font-display text-[1.65rem] font-medium leading-[1.08] tracking-[-0.02em] sm:text-[2rem]">
             {rewardAvailable
-              ? `Diskon ${Number(reward.percentOff)}% untuk pesanan berikutnya sudah aktif`
+              ? `Diskon ${formatReviewRewardValue(reward)} untuk pesanan berikutnya sudah aktif`
               : rewardRedeemed
                 ? 'Terima kasih, reward review sudah digunakan'
                 : details.reviewSubmitted

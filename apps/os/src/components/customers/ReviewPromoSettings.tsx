@@ -1,4 +1,5 @@
 import { useEffect, useState, type FC } from 'react'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { Gift, MessageSquareText, Plus, Save, Trash2 } from 'lucide-react'
 import { useUserStore } from '../../store/userStore'
 import {
@@ -26,6 +27,7 @@ const normalizeQuestion = (question: ReviewQuestionConfig, index: number): Revie
 })
 
 export const ReviewPromoSettings: FC = () => {
+  const tr = useBilingualCopy()
   const role = useUserStore((state) => state.role)
   const [open, setOpen] = useState(false)
   const [config, setConfig] = useState<ReviewConfiguration | null>(null)
@@ -96,8 +98,13 @@ export const ReviewPromoSettings: FC = () => {
       setError('At least one review question must stay active.')
       return
     }
-    if (!(config.reward.percentOff > 0 && config.reward.percentOff <= 100)) {
-      setError('Review reward must be between 1% and 100%.')
+    const rewardType = config.reward.rewardType ?? ((config.reward.amountOffIdr ?? 0) > 0 ? 'amount' : 'percent')
+    if (rewardType === 'percent' && !(config.reward.percentOff > 0 && config.reward.percentOff <= 100)) {
+      setError(tr('Review reward must be between 1% and 100%.', 'Hadiah ulasan harus antara 1% dan 100%.'))
+      return
+    }
+    if (rewardType === 'amount' && !((config.reward.amountOffIdr ?? 0) > 0)) {
+      setError(tr('Review reward must be more than Rp0.', 'Hadiah ulasan harus lebih dari Rp0.'))
       return
     }
     if (config.reward.minOrderIdr < 0) {
@@ -162,10 +169,27 @@ export const ReviewPromoSettings: FC = () => {
                     </label>
                   </div>
 
-                  <label className="block space-y-1.5 text-xs font-medium">
-                    Discount (%)
-                    <input type="number" min={1} max={100} value={config.reward.percentOff} onChange={(event) => setConfig((current) => current ? { ...current, reward: { ...current.reward, percentOff: Number(event.target.value) } } : current)} className={inputClass} />
-                  </label>
+                  {(() => {
+                    const rewardType = config.reward.rewardType ?? ((config.reward.amountOffIdr ?? 0) > 0 ? 'amount' : 'percent')
+                    const setReward = (patch: Partial<typeof config.reward>) => setConfig((current) => current ? { ...current, reward: { ...current.reward, ...patch } } : current)
+                    return (
+                      <div className="space-y-1.5 text-xs font-medium">
+                        <span>{tr('Discount', 'Diskon')}</span>
+                        <div className="inline-flex rounded-lg bg-muted p-1" role="group" aria-label={tr('Discount type', 'Jenis diskon')}>
+                          {(['amount', 'percent'] as const).map((type) => (
+                            <button key={type} type="button" aria-pressed={rewardType === type} onClick={() => setReward({ rewardType: type, amountOffIdr: type === 'amount' ? (config.reward.amountOffIdr ?? 20_000) : config.reward.amountOffIdr })} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${rewardType === type ? 'bg-card text-foreground shadow-sm ring-1 ring-border/60' : 'text-muted-foreground'}`}>
+                              {type === 'amount' ? '-Rp' : '%'}
+                            </button>
+                          ))}
+                        </div>
+                        {rewardType === 'amount' ? (
+                          <input inputMode="numeric" aria-label={tr('Rupiah off', 'Potongan Rupiah')} value={config.reward.amountOffIdr ?? ''} onChange={(event) => setReward({ amountOffIdr: Number(event.target.value.replace(/\D/g, '')) || 0 })} className={inputClass} />
+                        ) : (
+                          <input type="number" min={1} max={100} aria-label={tr('Percent off', 'Persen diskon')} value={config.reward.percentOff} onChange={(event) => setReward({ percentOff: Number(event.target.value) })} className={inputClass} />
+                        )}
+                      </div>
+                    )
+                  })()}
                   <label className="block space-y-1.5 text-xs font-medium">
                     Minimum order (IDR)
                     <input type="number" min={0} step={1000} value={config.reward.minOrderIdr} onChange={(event) => setConfig((current) => current ? { ...current, reward: { ...current.reward, minOrderIdr: Math.max(0, Number(event.target.value)) } } : current)} className={inputClass} />
