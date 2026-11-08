@@ -1,15 +1,10 @@
 import type { FC, ReactNode } from 'react'
-import { MoreVertical, Pencil, RotateCcw, X, XCircle } from 'lucide-react'
+import { X } from 'lucide-react'
 import { StatusChip } from '../ui/chip'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu'
 import { URGENCY_CHIP } from './orderTableLabels'
 import { formatOrderCreatedAtLabel, getDisplayScheduleLabel } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
+import { OrderMoreActionsMenu } from './OrderMoreActionsMenu'
 import { InfoHint } from '../ui/info-hint'
 import { ORDER_PRODUCT_FALLBACK_NAME } from '../../domain/catalogDomain'
 
@@ -27,18 +22,12 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
     canEdit,
     canVerify,
     canRequestChange,
-    hasPendingRequest,
     locked,
     currentUserRole,
     isEditing,
-    setIsEditing,
     draft,
-    isCancellable,
     onDraftChange,
-    onCancelOrder,
-    onOpenRequestModal,
     canManageRefund,
-    onOpenInitiateRefund,
   } = viewModel
 
   const canInitiateRefund = canManageRefund && order.paymentStatus === 'paid'
@@ -76,57 +65,7 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
             {getDisplayScheduleLabel(order) ?? URGENCY_CHIP[urgency].label}
           </StatusChip>
 
-          {hasMenuActions && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-                  aria-label="More order actions"
-                >
-                  <MoreVertical className="size-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {canInitiateRefund && (
-                  <DropdownMenuItem onClick={onOpenInitiateRefund}>
-                    <RotateCcw className="size-3.5" />
-                    Initiate refund
-                  </DropdownMenuItem>
-                )}
-                {canEdit && (
-                  <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                    <Pencil className="size-3.5" />
-                    Edit details
-                  </DropdownMenuItem>
-                )}
-                {canEdit && isCancellable && (
-                  <DropdownMenuItem
-                    onClick={onCancelOrder}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <XCircle className="size-3.5" />
-                    Cancel order
-                  </DropdownMenuItem>
-                )}
-                {canRequestChange && !hasPendingRequest && (
-                  <DropdownMenuItem onClick={() => onOpenRequestModal('edit')}>
-                    <Pencil className="size-3.5" />
-                    Request edit
-                  </DropdownMenuItem>
-                )}
-                {canRequestChange && isCancellable && !hasPendingRequest && (
-                  <DropdownMenuItem
-                    onClick={() => onOpenRequestModal('cancel')}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <XCircle className="size-3.5" />
-                    Request cancellation
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {hasMenuActions && <OrderMoreActionsMenu viewModel={viewModel} />}
 
           {!isEditing && !canEdit && !canRequestChange && !canVerify && !canInitiateRefund && (
             <span className="hidden shrink-0 whitespace-nowrap rounded-full bg-surface-neutral px-3 py-1.5 text-xs font-medium text-foreground ring-1 ring-border/80 lg:inline-flex">

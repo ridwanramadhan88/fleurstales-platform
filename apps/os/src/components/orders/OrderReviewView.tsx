@@ -7,13 +7,14 @@
  */
 
 import type { FC } from 'react'
-import { Mail, MessageCircle, Package2, StickyNote, X } from 'lucide-react'
+import { MessageCircle, Package2, X } from 'lucide-react'
 import type { OrderSource } from '../../types/orders'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { addDays, getLocalDateString, nowInJakarta } from '../../domain/orderTimingDomain'
 import { PRODUCTION_LEAD_MINUTES, getOrderPriority } from '../../domain/orderWorkStageDomain'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { OrderStagePill } from './OrderStagePill'
+import { OrderNoteBlock } from './OrderNoteBlock'
 import { formatMinutesLeft } from './orderWorkStagePresentation'
 import { formatOrderCreatedAtLabel } from './orderTableFormatters'
 import { buildWhatsAppLink } from './orderTableWhatsApp'
@@ -68,9 +69,6 @@ export const OrderReviewView: FC<{ viewModel: OrderDetailsViewModel }> = ({ view
 
   const priority = getOrderPriority(order)
   const isDelivery = order.fulfillment === 'delivery'
-  const note = (order.orderNote ?? order.internalNote)?.trim()
-  const greeting = (order.greetingMessage ?? order.giftMessage)?.trim()
-  const cardName = order.greetingCardName?.trim()
   const deliveryFee = order.deliveryFeeIdr ?? 0
   const discount = order.discountIdr ?? 0
   const method = order.paymentChannel === 'qris' ? 'QRIS' : order.paymentMethod === 'cash' ? copy('Cash', 'Tunai') : order.paymentMethod === 'transfer' ? 'Transfer' : copy('Not chosen', 'Belum dipilih')
@@ -140,30 +138,7 @@ export const OrderReviewView: FC<{ viewModel: OrderDetailsViewModel }> = ({ view
       <div className="-mx-5 min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-5 sm:-mx-6 sm:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
           <div className="flex min-w-0 flex-1 flex-col gap-6">
-            {(note || greeting) && (
-              <section aria-label={copy('Note and greeting card', 'Catatan dan kartu ucapan')} className="space-y-3.5 rounded-2xl bg-[#FFFAE6] p-4 ring-1 ring-[#F5E7B0] dark:bg-[#3A3000] dark:ring-[#5C4A00]">
-                {note && (
-                  <div className="flex gap-3">
-                    <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#FFCC00] text-[#1D1D21]"><StickyNote className="size-3.5" /></span>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">{copy('Order note', 'Catatan pesanan')}</p>
-                      <p className="mt-0.5 whitespace-pre-wrap text-base font-semibold leading-snug text-foreground">{note}</p>
-                    </div>
-                  </div>
-                )}
-                {greeting && (
-                  <div className="flex gap-3">
-                    <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white text-[#1D1D21] ring-1 ring-[#F5E7B0] dark:bg-transparent dark:text-foreground"><Mail className="size-3.5" /></span>
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground">
-                        {cardName ? copy(`Greeting card from ${cardName}`, `Kartu ucapan dari ${cardName}`) : copy('Greeting card', 'Kartu ucapan')}
-                      </p>
-                      <p className="mt-0.5 whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">{greeting}</p>
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
+            <OrderNoteBlock order={order} />
 
             <section aria-label={copy('What was ordered', 'Yang dipesan')} className="space-y-3">
               <h3 className="text-[15px] font-semibold text-foreground">{copy('What was ordered', 'Yang dipesan')}</h3>

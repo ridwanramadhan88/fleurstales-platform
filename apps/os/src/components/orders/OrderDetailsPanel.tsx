@@ -8,6 +8,8 @@ import { useUiLanguage } from '../../i18n/uiLanguage'
 import { OrderActivityTimeline } from './OrderActivityTimeline'
 import { OrderDetailsActionDialogs, OrderDetailsActionsSection } from './OrderDetailsActionsSection'
 import { OrderReviewView } from './OrderReviewView'
+import { OrderProcessView } from './OrderProcessView'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { OrderDetailsContextTab } from './OrderDetailsContextTab'
 import { OrderDetailsDeliverySection } from './OrderDetailsDeliverySection'
 import { OrderDetailsFinanceSection } from './OrderDetailsFinanceSection'
@@ -72,6 +74,13 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   const showLifecycle = shouldShowAdminLifecycle(currentUserRole, order.status)
   // Orders still waiting for confirmation open in the review layout; editing uses the full form.
   const showReview = order.status === 'pending_verification' && !isEditing
+  // Confirmed orders open on the step-by-step process for the people who run it.
+  const [showFullDetails, setShowFullDetails] = useState(false)
+  useEffect(() => { setShowFullDetails(false) }, [order.orderNumber])
+  const processEligible = (currentUserRole === 'admin' || currentUserRole === 'owner')
+    && ['confirmed', 'processing', 'ready', 'delivering', 'delivered', 'picked_up'].includes(order.status)
+  const showProcess = processEligible && !isEditing && !showFullDetails
+  const copy = useBilingualCopy()
   const isFinished = order.status === 'delivered' || order.status === 'picked_up'
 
   const requestClose = useCallback(() => {
@@ -154,11 +163,22 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
       >
         {showReview ? (
           <OrderReviewView viewModel={panelViewModel} />
+        ) : showProcess ? (
+          <OrderProcessView viewModel={panelViewModel} onShowFullDetails={() => setShowFullDetails(true)} />
         ) : (
         <>
         <OrderDetailsHeader viewModel={panelViewModel} progress={lifecycle} />
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-10 px-px pt-0 text-sm text-foreground/90">
+          {processEligible && !isEditing && (
+            <button
+              type="button"
+              onClick={() => setShowFullDetails(false)}
+              className="mt-4 inline-flex h-9 items-center rounded-full bg-muted px-3.5 text-xs font-semibold text-foreground transition hover:bg-muted/70"
+            >
+              {copy('← Back to the steps', '← Kembali ke langkah proses')}
+            </button>
+          )}
           <OrderDetailsKeyInfo order={order} customerWhatsappNumber={customerWhatsappNumber} />
           <div role="tablist" aria-label="Order sections" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-border/60">
             {tabs.map(([id, label]) => (
@@ -300,7 +320,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         )}
       </AppSheet>
 
-      {showReview && <OrderDetailsActionDialogs viewModel={panelViewModel} />}
+      {(showReview || showProcess) && <OrderDetailsActionDialogs viewModel={panelViewModel} />}
 
       {/* Modal state must stay mounted regardless of the selected content tab. */}
       <OrderDetailsFinanceSection viewModel={panelViewModel} mode="dialogs" />

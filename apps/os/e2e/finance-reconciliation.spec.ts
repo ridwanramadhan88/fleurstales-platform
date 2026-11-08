@@ -17,7 +17,7 @@ const finishPickupOrder = async (page: Page, customerName: string) => {
 
   // Ready needs the finished-order photo first.
   details = await openOrder(page, customerName)
-  await details.getByRole('button', { name: /Tandai Siap/ }).click()
+  await details.getByRole('button', { name: /Tandai siap/i }).click()
   const photo = page.getByRole('dialog', { name: /Foto pesanan selesai/ })
   await photo.locator('input[type="file"]').last().setInputFiles('e2e/assets/finish-photo.jpg')
   await photo.getByRole('button', { name: 'Gunakan foto ini' }).click()
@@ -25,7 +25,7 @@ const finishPickupOrder = async (page: Page, customerName: string) => {
   await expect(page.getByRole('dialog', { name: /Pesanan siap/ })).toBeVisible()
 
   details = await openOrder(page, customerName)
-  await details.getByRole('button', { name: 'Selesaikan pengambilan' }).click()
+  await details.getByRole('button', { name: 'Sudah diambil' }).click()
   await expect(page.getByRole('dialog', { name: /Pesanan selesai/ })).toBeVisible()
   await expectNoEnglish(page, 'review request dialog')
   await signOut(page)

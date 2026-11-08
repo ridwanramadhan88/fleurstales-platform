@@ -304,7 +304,7 @@ describe('critical application workflows', () => {
       throw new Error('Payment-gated order row not found')
     }
     await user.click(orderRow)
-    const blockedAction = screen.getByRole('button', { name: /^(Complete pickup|Start delivery)$/ })
+    const blockedAction = screen.getByRole('button', { name: /^(Complete pickup|Start delivery|Sudah diambil|Mulai kirim)$/ })
     expect(blockedAction).toBeEnabled()
     expect(
       useOrdersStore

@@ -68,7 +68,7 @@ export const assignFloristAndStart = async (page: Page, details: ReturnType<Page
   const keepAssigning = page.getByRole('button', { name: 'Tetap tugaskan' })
   if (await keepAssigning.count()) await keepAssigning.click()
   await expect(assign).toHaveCount(0)
-  await expect(details).toContainText('Diproses')
+  await expect(details).toContainText(/Sedang dirangkai|Diproses/)
 }
 
 /** Every toast currently on screen (title + description). */
