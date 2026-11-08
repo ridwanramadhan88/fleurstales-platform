@@ -28,7 +28,8 @@ import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCusto
 import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
 import type { OrderStatusFilter, OrdersTableViewProps } from './OrdersTableView'
 import type { SortDirection } from './orderTableColumns'
-import { getOrderStatusGroup } from '../../domain/orderGroupingDomain'
+import type { OrdersExportStatusScope } from '../../domain/ordersExportDomain'
+import { getLocalDateString, nowInJakarta } from '../../domain/orderTimingDomain'
 
 export interface OrdersActionModalData {
   kind: 'ready' | 'delivering' | 'review'
@@ -55,7 +56,11 @@ export interface OrdersTableViewModel {
   sortedOrders: OrderTableRow[]
   sortKey: OrdersListSortKey
   sortDirection: SortDirection
-  canExportFinishedCsv: boolean
+  /** Orders the viewer may see in the active branch; the export dialog filters them further. */
+  exportableOrders: OrderTableRow[]
+  exportBranch: string
+  exportDefaultRange: { from?: string; to?: string }
+  exportDefaultStatus: OrdersExportStatusScope
   orderKeys: string[]
   formatter: Intl.NumberFormat
   selectedOrder: OrderTableRow | null
@@ -73,7 +78,6 @@ export interface OrdersTableViewModel {
   onStatusFilterChange: (filter: OrderStatusFilter) => void
   onStatusGroupFilterChange: (filter: UiStatusGroup | 'all' | 'drafts') => void
   onSortChange: (key: OrdersListSortKey) => void
-  onExportFinishedCsv: () => void
   onResumeDraft: (draftId: string) => void
   onDeleteDraft: (draftId: string) => void
   onOpenDetails: (order: OrderTableRow) => void
@@ -262,48 +266,14 @@ export const useOrdersTableViewController = ({
       }
     : null
 
-  const exportableFinishedOrders = sortedOrders.filter((order) => getOrderStatusGroup(order) === 'completed')
-  const canExportFinishedCsv = statusGroupFilter === 'finished' && exportableFinishedOrders.length > 0
-  const exportFinishedCsv = () => {
-    if (!canExportFinishedCsv) return
-    const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`
-    const headers = [
-      'Order ID','Order number','Created','Expected date','Expected time','Finished at','Branch',
-      'Customer ID','Customer name','Customer phone','Customer email','Fulfillment','Delivery address',
-      'Products','Quantities','Unit prices IDR','Items subtotal IDR','Discount IDR','Voucher','Delivery fee IDR',
-      'Final total IDR','Payment method','Payment status','Paid amount IDR','Payment reference','Finance verified',
-      'Finance verified by','Finance verified at','Admin handler','Assigned florist','Florist employee ID',
-      'Fulfillment status','Refund amount IDR','Refund status','Void/cancel status','Order note','Updated at',
-    ]
-    const rows = exportableFinishedOrders.map((order) => {
-      const items = order.items?.length ? order.items : [{ id: 'legacy', productId: order.productId, productName: getProductName(order), quantity: 1, unitPriceIdr: order.itemsSubtotalIdr ?? order.totalIdr }]
-      const paymentReference = order.paymentHistory?.map((event) => event.reference).filter(Boolean).join(' | ')
-      return [
-        order.id, order.orderNumber, order.createdAtLabel, order.scheduleDate, order.scheduleTime,
-        order.completedAt, order.branch, order.customerId, order.customerName,
-        order.customerSnapshot?.whatsappNumber ?? order.customerSnapshot?.phone,
-        order.customerSnapshot?.email, order.fulfillment, order.deliveryAddress,
-        items.map((item) => item.productName ?? item.productId ?? 'Custom item').join(' | '),
-        items.map((item) => item.quantity).join(' | '), items.map((item) => item.unitPriceIdr).join(' | '),
-        order.itemsSubtotalIdr, order.discountIdr, order.promoCode, order.deliveryFeeIdr, order.totalIdr,
-        order.paymentMethod, order.paymentStatus, order.paidAmountIdr, paymentReference,
-        order.financeVerified ? 'Yes' : 'No', order.financeVerifiedBy, order.financeVerifiedAt,
-        order.adminHandledByName, order.florist, order.floristAssignedEmployeeId, order.status,
-        order.refundAmountIdr, order.paymentStatus === 'refunded' ? 'Refunded' : order.paymentStatus === 'refund_pending' ? 'Refund pending' : '',
-        order.status === 'cancelled' || order.status === 'failed' ? order.status : '', order.orderNote, order.updatedAt,
-      ].map(escape).join(',')
-    })
-    const blob = new Blob([[headers.map(escape).join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    const dateLabel = activeScope === 'custom' && dateRange?.from
-      ? `${dateRange.from.toISOString().slice(0,10)}-${(dateRange.to ?? dateRange.from).toISOString().slice(0,10)}`
-      : activeScope
-    anchor.href = url
-    anchor.download = `fleurstales-finished-orders-${dateLabel}.csv`
-    anchor.click()
-    URL.revokeObjectURL(url)
-  }
+  const isoDay = (date?: Date) => (date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : undefined)
+  const todayKey = getLocalDateString(nowInJakarta())
+  const exportDefaultRange = activeScope === 'today'
+    ? { from: todayKey, to: todayKey }
+    : activeScope === 'future'
+      ? { from: todayKey }
+      : { from: isoDay(dateRange?.from), to: isoDay(dateRange?.to ?? dateRange?.from) }
+  const exportDefaultStatus: OrdersExportStatusScope = statusGroupFilter === 'finished' ? 'finished' : 'all'
 
   return {
     activeScope,
@@ -320,7 +290,10 @@ export const useOrdersTableViewController = ({
     sortedOrders,
     sortKey,
     sortDirection,
-    canExportFinishedCsv,
+    exportableOrders: allOrders,
+    exportBranch: activeBranch,
+    exportDefaultRange,
+    exportDefaultStatus,
     orderKeys: sortedOrders.map((order) => order.orderNumber),
     formatter: new Intl.NumberFormat('id-ID'),
     selectedOrder,
@@ -341,7 +314,6 @@ export const useOrdersTableViewController = ({
       if (key === sortKey) setSortDirection((direction) => direction === 'asc' ? 'desc' : 'asc')
       else { setSortKey(key); setSortDirection('asc') }
     },
-    onExportFinishedCsv: exportFinishedCsv,
     onResumeDraft: (draftId) => onOpenDraft?.(draftId),
     onDeleteDraft: deleteOrderDraft,
     onOpenDetails: (order) => setSelectedOrderNumber(order.orderNumber),

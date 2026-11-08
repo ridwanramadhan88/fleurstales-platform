@@ -81,9 +81,3 @@ export const buildHrMonthlyReport = (params: {
     })
     .sort((a, b) => a.role.localeCompare(b.role) || a.employeeName.localeCompare(b.employeeName))
 }
-
-export const monthlyReportToCsv = (rows: HrMonthlyEmployeeReport[]): string => {
-  const headers = ['Employee', 'Role', 'Scheduled days', 'Kedamaian days', 'Pahoman days', 'Present days', 'Leave days', 'OFF days', 'Late review tasks', 'Missing check-in tasks', 'Missing checkout tasks', 'Open HR problems']
-  const escape = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`
-  return [headers.map(escape).join(','), ...rows.map((row) => [row.employeeName, row.role, row.scheduledDays, row.kedamaianDays, row.pahomanDays, row.presentDays, row.leaveDays, row.offDays, row.lateTasks, row.missingCheckInTasks, row.missingCheckOutTasks, row.openProblems].map(escape).join(','))].join('\n')
-}

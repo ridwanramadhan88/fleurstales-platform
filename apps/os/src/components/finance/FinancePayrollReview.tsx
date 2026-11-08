@@ -1,3 +1,4 @@
+import { PayrollExportButton } from '../hr/PayrollExportButton'
 import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { PayrollAdditionsList } from '../hr/PayrollAdditionsEditor'
 import { payrollAdditionLines } from '../../domain/payrollAdditionsDomain'
@@ -281,6 +282,8 @@ export const FinancePayrollReview = () => {
                     <p className="text-sm font-semibold">{approved} / {rows.length} approved</p>
                     <p className="text-xs text-muted-foreground">{proposalStatusText(proposal, approved, rows.length, returned)}</p>{proposal.warnings?.length ? <p className="mt-1 text-xs font-medium text-warning">{proposal.warnings.length} warning(s)</p> : null}
                   </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                  {period && <PayrollExportButton period={period} drafts={rows} />}
                   <button
                     type="button"
                     onClick={() => { setSelectedId(proposal.id); setMessage(null); reset() }}
@@ -288,6 +291,7 @@ export const FinancePayrollReview = () => {
                   >
                     Review proposal
                   </button>
+                  </div>
                 </div>
                 {proposal.status === 'paid' && (
                   <p className="mt-3 rounded-lg bg-success/10 p-2.5 text-xs text-success">{`Paid ${proposal.paidAt ? formatHumanDate(proposal.paidAt.slice(0, 10)) : ''} via ${proposal.paymentMethod ?? ''} · ${proposal.paymentReference ?? ''}`}</p>

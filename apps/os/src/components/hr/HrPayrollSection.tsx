@@ -16,6 +16,7 @@ import { PayrollStatusBadge } from '../payroll/PayrollStatusBadge'
 import { PayrollStageTrack } from '../payroll/PayrollStageTrack'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
 import { PeopleMonthPeriodFields } from './PeoplePeriodControls'
+import { PayrollExportButton } from './PayrollExportButton'
 import { PeoplePageHeader, PeopleSummaryCard, PeopleSummaryGrid } from './PeopleWorkspaceUI'
 import { formatHumanDateRange } from '../../lib/humanDates'
 
@@ -323,6 +324,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
         <PeopleMonthPeriodFields month={monthKey} onMonthChange={setSelectedMonth} settings={payrollSettings} className="md:flex-1" />
         {/* The main step comes first; occasional tools live under "More". */}
         <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:justify-end">
+          {activeDrafts.length > 0 && <PayrollExportButton period={period} drafts={allPeriodDrafts} />}
           {!generatedDrafts.length ? (
             <button type="button" onClick={handleGenerate} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground">
               Generate staff payroll

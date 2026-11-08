@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { strFromU8, unzipSync } from 'fflate'
 import { test, expect, signIn } from './fixtures'
 import { expectNoEnglish } from './orders'
 
@@ -53,4 +55,19 @@ test('HR approves claimed overtime and it becomes a payroll addition', async ({ 
   await expect(editor.getByRole('button', { name: 'Hapus Lembur' })).toHaveCount(0)
   await expectNoEnglish(page, 'payroll additions')
   await page.screenshot({ path: test.info().outputPath('payroll-additions.png') })
+  await page.keyboard.press('Escape')
+  await expect(editor).toHaveCount(0)
+
+  // Rekap gaji: every addition kind gets its own column.
+  const download = page.waitForEvent('download')
+  await main.getByRole('button', { name: 'Unduh Excel' }).click()
+  const file = await download
+  expect(file.suggestedFilename()).toMatch(/^Rekap_gaji_\d{4}-\d{2}\.xlsx$/)
+  await file.saveAs(test.info().outputPath(file.suggestedFilename()))
+  const files = unzipSync(new Uint8Array(readFileSync((await file.path())!)))
+  for (const sheet of ['Rekap gaji', 'Tambahan &amp; potongan', 'Poin', 'Info']) expect(strFromU8(files['xl/workbook.xml'])).toContain(`name="${sheet}"`)
+  const recap = strFromU8(files['xl/worksheets/sheet1.xml'])
+  for (const text of ['E2E Florist', 'Lembur (Rp)', 'Fee / komisi (Rp)', 'TOTAL']) expect(recap).toContain(text)
+  const lines = strFromU8(files['xl/worksheets/sheet2.xml'])
+  for (const text of ['Fee instalasi Hotel X', '1 jam 30 menit', '45000', '150000']) expect(lines).toContain(text)
 })

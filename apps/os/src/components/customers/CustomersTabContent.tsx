@@ -27,6 +27,7 @@ import { CustomerSegmentRulesSettingsContainer } from './CustomerSegmentRulesSet
 import { ReviewPromoSettings } from './ReviewPromoSettings'
 import { StaffReviewHistory } from './StaffReviewHistory'
 import { useCanReadStaffReviews } from './useCanReadStaffReviews'
+import { CustomersExportButton, ReviewsExportButton } from './CustomerExports'
 import type { CustomersTabContentViewModel } from './CustomersTabContentController'
 
 export interface CustomersTabContentProps {
@@ -78,6 +79,13 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
 
         {workspaceTab === 'customers' && canEditCustomerWorkspace && (
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <CustomersExportButton
+              customers={displayed}
+              filterLabel={[
+                segmentFilter === 'all' ? 'Semua segmen' : `Segmen ${({ vip: 'VIP', regular: 'Reguler', new: 'Baru' } as Record<string, string>)[segmentFilter] ?? segmentFilter}`,
+                searchQuery.trim() ? `pencarian "${searchQuery.trim()}"` : '',
+              ].filter(Boolean).join(', ')}
+            />
             <CustomerSegmentRulesSettingsContainer />
             <button
               type="button"
@@ -90,7 +98,12 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
           </div>
         )}
 
-        {workspaceTab === 'reviews' && canEditCustomerWorkspace && <ReviewPromoSettings />}
+        {workspaceTab === 'reviews' && (
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <ReviewsExportButton />
+            {canEditCustomerWorkspace && <ReviewPromoSettings />}
+          </div>
+        )}
       </header>
 
       <nav aria-label="Customer workspace" className="flex w-full gap-1 rounded-xl bg-muted/55 p-1 sm:w-fit">
