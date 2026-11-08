@@ -37,6 +37,51 @@ describe('next-step action labels', () => {
   })
 })
 
+const renderFullDetails = () => {
+  render(<OrderDetailsPanelController order={deliveryOrder} onClose={vi.fn()} formatter={formatter} />)
+  // Owner/Admin open confirmed orders on the step view; the full details are one tap away.
+  fireEvent.click(screen.getByRole('button', { name: 'Detail lengkap' }))
+}
+
+describe('order process view (Owner/Admin)', () => {
+  beforeEach(() => {
+    useUserStore.getState().setRole('owner')
+    useOrdersStore.setState({ orders: [deliveryOrder] })
+  })
+  afterEach(() => {
+    useUserStore.getState().setRole(originalRole)
+    useOrdersStore.setState({ orders: originalOrders })
+  })
+
+  it('opens on the current step with its one next action', () => {
+    render(<OrderDetailsPanelController order={deliveryOrder} onClose={vi.fn()} formatter={formatter} />)
+    expect(screen.getByRole('list', { name: 'Langkah 3 dari 5' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Sedang dirangkai' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tandai siap' })).toHaveClass('bg-primary')
+  })
+
+  it('earlier steps can be opened to look back; later steps cannot', () => {
+    render(<OrderDetailsPanelController order={deliveryOrder} onClose={vi.fn()} formatter={formatter} />)
+    fireEvent.click(screen.getByRole('button', { name: /^Bayar/ }))
+    expect(screen.getByRole('heading', { name: 'Pembayaran lunas' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Selesai/ })).toBeDisabled()
+  })
+
+  it('full details and back', () => {
+    renderFullDetails()
+    expect(screen.getByRole('region', { name: 'Customer and fulfillment' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '← Kembali ke langkah proses' }))
+    expect(screen.getByRole('list', { name: 'Langkah 3 dari 5' })).toBeInTheDocument()
+  })
+
+  it('Finance keeps the full details panel', () => {
+    useUserStore.getState().setRole('finance')
+    render(<OrderDetailsPanelController order={deliveryOrder} onClose={vi.fn()} formatter={formatter} />)
+    expect(screen.queryByRole('list', { name: 'Langkah 3 dari 5' })).toBeNull()
+    expect(screen.getByRole('region', { name: 'Customer and fulfillment' })).toBeInTheDocument()
+  })
+})
+
 describe('order details panel', () => {
   beforeEach(() => {
     // Owner works across branches, so no shift branch is needed here.
@@ -49,7 +94,7 @@ describe('order details panel', () => {
   })
 
   it('shows phone, time and address without expanding anything', () => {
-    render(<OrderDetailsPanelController order={deliveryOrder} onClose={vi.fn()} formatter={formatter} />)
+    renderFullDetails()
 
     const keyInfo = screen.getByRole('region', { name: 'Customer and fulfillment' })
     expect(within(keyInfo).getByRole('link', { name: '081234567890' })).toHaveAttribute('href', expect.stringContaining('wa.me/6281234567890'))
@@ -60,21 +105,21 @@ describe('order details panel', () => {
   })
 
   it('labels the next step with the action, in primary style', () => {
-    render(<OrderDetailsPanelController order={deliveryOrder} onClose={vi.fn()} formatter={formatter} />)
+    renderFullDetails()
 
     const next = screen.getByRole('button', { name: 'Mark ready' })
     expect(next).toHaveClass('bg-primary', 'text-primary-foreground')
   })
 
   it('shows the order number once, without a second "Order" label', () => {
-    render(<OrderDetailsPanelController order={deliveryOrder} onClose={vi.fn()} formatter={formatter} />)
+    renderFullDetails()
     const header = document.querySelector('[data-order-details-header]') as HTMLElement
     expect(within(header).queryByText('Order')).toBeNull()
     expect(within(header).getByText('KDM-2026-0101')).toBeInTheDocument()
   })
 
   it('does not show a large empty image frame when the item has no photo', () => {
-    render(<OrderDetailsPanelController order={deliveryOrder} onClose={vi.fn()} formatter={formatter} />)
+    renderFullDetails()
     fireEvent.click(screen.getByRole('tab', { name: 'Details' }))
     expect(screen.queryAllByTestId('order-item-no-photo').length).toBeGreaterThan(0)
     expect(document.querySelector('.size-40')).toBeNull()
@@ -90,7 +135,9 @@ describe('schedule time from the database', () => {
   it('says each fact once: order number, total and contact (UX audit)', () => {
     const noEmail = { ...deliveryOrder, customerSnapshot: { name: 'Dita Anjani' } } as typeof deliveryOrder
     useOrdersStore.setState({ orders: [noEmail] })
+    useUserStore.getState().setRole('finance')
     render(<OrderDetailsPanelController order={noEmail} onClose={vi.fn()} formatter={formatter} />)
+    useUserStore.getState().setRole(originalRole)
     // Order number only in the header.
     expect(screen.getAllByText('KDM-2026-0101')).toHaveLength(1)
     expect(screen.queryByText('Order number')).toBeNull()

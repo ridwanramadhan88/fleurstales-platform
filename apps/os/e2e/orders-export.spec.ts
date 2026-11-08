@@ -37,6 +37,8 @@ test('admin downloads orders with complete order and customer data', async ({ pa
   const details = await openOrder(page, customerName)
   await confirmCashPayment(page, details)
   await page.keyboard.press('Escape')
+  // Wait for the order window to close before using the list toolbar.
+  await expect(details).toHaveCount(0)
 
   const complete = await downloadOrders(page, { fullOrder: true, fullCustomer: true })
   expect(complete.name).toMatch(/^Pesanan_.*_semua-tanggal_lengkap\.xlsx$/)
