@@ -77,6 +77,11 @@ export interface PublicOrderTrackingDetails {
   contactWhatsapp?: string | null
   deliveryAddress?: string | null
   deliveryInstructions?: string | null
+  recipientName?: string | null
+  recipientPhone?: string | null
+  deliveryLandmark?: string | null
+  deliveryLatitude?: number | null
+  deliveryLongitude?: number | null
   scheduleDate?: string | null
   scheduleTime?: string | null
   requestedPickupDate?: string | null

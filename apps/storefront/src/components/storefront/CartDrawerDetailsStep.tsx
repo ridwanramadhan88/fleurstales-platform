@@ -4,6 +4,8 @@ import { DatePickerField, TimeSelectField } from '../ui/date-time-field'
 import type { CartDrawerViewModel } from './CartDrawerController'
 import { DeliveryFillIcon, PickupFillIcon } from './StorefrontFulfilmentIcons'
 import { useOrderSlotAvailability } from '../../hooks/useOrderSlotAvailability'
+import { DeliveryPinPicker } from './DeliveryPinPicker'
+import { LANDMARK_MAX_LENGTH } from '../../domain/deliveryDetailsDomain'
 
 const fieldClass = 'sf-field'
 const textareaClass = 'sf-field sf-textarea'
@@ -79,6 +81,8 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
   deliveryDate,
   deliveryTime,
   deliveryAddress,
+  deliveryDetails,
+  selectedBranch,
   orderNote,
   greetingMessage,
   greetingCardName,
@@ -95,6 +99,7 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
   setDeliveryDate,
   setDeliveryTime,
   setDeliveryAddress,
+  updateDeliveryDetails,
   setOrderNote,
   setGreetingMessage,
   setGreetingCardName,
@@ -222,8 +227,55 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
           </select>
         </Field>
 
-        {fulfillment === 'delivery' && (
-          <Field id="checkoutDeliveryAddress" label="Delivery address" required>
+      </CheckoutSection>
+
+      {fulfillment === 'delivery' && (
+        <CheckoutSection title="Recipient">
+          <label className="flex min-h-12 items-center gap-3 sf-type-2">
+            <input
+              type="checkbox"
+              checked={deliveryDetails.sendToOther}
+              onChange={(event) => updateDeliveryDetails({ sendToOther: event.target.checked })}
+              className="size-[1.375rem] accent-[#00813f]"
+            />
+            Send to someone else
+          </label>
+          {deliveryDetails.sendToOther ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="checkoutRecipientName" label="Recipient name" required>
+                <input
+                  id="checkoutRecipientName"
+                  value={deliveryDetails.recipientName}
+                  onChange={(event) => updateDeliveryDetails({ recipientName: event.target.value })}
+                  placeholder="Who receives the flowers"
+                  className={fieldClass}
+                />
+              </Field>
+              <Field id="checkoutRecipientPhone" label="Recipient WhatsApp" required>
+                <input
+                  id="checkoutRecipientPhone"
+                  value={deliveryDetails.recipientPhone}
+                  onChange={(event) => updateDeliveryDetails({ recipientPhone: event.target.value })}
+                  placeholder="08xx-xxxx-xxxx"
+                  inputMode="tel"
+                  className={fieldClass}
+                />
+              </Field>
+              <p className="sf-type-1 text-black/55 sm:col-span-2">
+                The courier calls this number on arrival. A surprise? Say so in the landmark.
+              </p>
+            </div>
+          ) : (
+            <p className="rounded-[var(--sf-radius-field)] bg-[#f0e6dd] px-3.5 py-3 sf-type-2">
+              {customerName.trim() || 'You'}{whatsappNumber.trim() ? ` · ${whatsappNumber.trim()}` : ''}
+            </p>
+          )}
+        </CheckoutSection>
+      )}
+
+      {fulfillment === 'delivery' && (
+        <CheckoutSection title="Delivery address">
+          <Field id="checkoutDeliveryAddress" label="Full address" required>
             <textarea
               id="checkoutDeliveryAddress"
               name="street-address"
@@ -231,12 +283,29 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
               enterKeyHint="next"
               value={deliveryAddress}
               onChange={(event) => setDeliveryAddress(event.target.value)}
-              placeholder="Street, city, building, and useful landmark"
+              placeholder="Street, number, area, city"
               className={textareaClass}
             />
           </Field>
-        )}
-      </CheckoutSection>
+          <Field label="Pin on the map" required>
+            <DeliveryPinPicker
+              value={deliveryDetails.pin}
+              onChange={(pin) => updateDeliveryDetails({ pin })}
+              center={selectedBranch?.location}
+            />
+          </Field>
+          <Field id="checkoutLandmark" label="Landmark & house detail" required>
+            <textarea
+              id="checkoutLandmark"
+              value={deliveryDetails.landmark}
+              maxLength={LANDMARK_MAX_LENGTH}
+              onChange={(event) => updateDeliveryDetails({ landmark: event.target.value })}
+              placeholder="Black gate, opposite the mosque, leave with security"
+              className={textareaClass}
+            />
+          </Field>
+        </CheckoutSection>
+      )}
 
       <CheckoutSection title={fulfillment === 'delivery' ? 'Delivery schedule' : 'Pickup schedule'}>
         <div className="grid grid-cols-2 gap-3">

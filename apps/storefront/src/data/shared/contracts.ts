@@ -345,6 +345,14 @@ export interface SharedOrder {
   greetingCardName?: string
   deliveryAddress?: string
   deliveryInstructions?: string
+  /** Who receives a delivery (may differ from the customer). */
+  recipientName?: string
+  recipientPhone?: string
+  /** Map pin of the delivery address. */
+  deliveryLatitude?: number
+  deliveryLongitude?: number
+  /** Landmark / house detail for the courier. */
+  deliveryLandmark?: string
   promoCode?: string
   floristDisplayName?: string
   floristAssignedEmployeeId?: string
@@ -398,6 +406,15 @@ export interface StorefrontCheckoutItemInput {
   quantity: number
 }
 
+/** Recipient, map pin and landmark of a delivery order. */
+export interface DeliveryDetailsInput {
+  recipientName?: string
+  recipientPhone?: string
+  latitude?: number
+  longitude?: number
+  landmark?: string
+}
+
 export interface CreateStorefrontOrderInput {
   idempotencyKey: string
   customer: StorefrontCheckoutCustomerInput
@@ -408,6 +425,7 @@ export interface CreateStorefrontOrderInput {
   items: StorefrontCheckoutItemInput[]
   deliveryAddress?: string
   deliveryInstructions?: string
+  deliveryDetails?: DeliveryDetailsInput
   orderNote?: string
   greetingMessage?: string
   greetingCardName?: string
@@ -459,6 +477,7 @@ export interface CreateInternalOrderInput {
   items: CreateInternalOrderItemInput[]
   deliveryAddress?: string
   deliveryInstructions?: string
+  deliveryDetails?: DeliveryDetailsInput
   orderNote?: string
   greetingMessage?: string
   greetingCardName?: string
@@ -485,6 +504,21 @@ export interface CreateInternalOrderResult {
   totalIdr: number
   paidAmountIdr: number
   deduplicated: boolean
+}
+
+export interface SaveOrderDeliveryDetailsInput extends DeliveryDetailsInput {
+  address?: string
+}
+
+export interface SaveOrderDeliveryDetailsResult {
+  orderId: string
+  revision: number
+  deliveryAddress?: string | null
+  recipientName?: string | null
+  recipientPhone?: string | null
+  deliveryLandmark?: string | null
+  deliveryLatitude?: number | null
+  deliveryLongitude?: number | null
 }
 
 export interface CreateStorefrontOrderResult {

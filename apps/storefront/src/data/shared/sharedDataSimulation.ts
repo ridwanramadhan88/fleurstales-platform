@@ -309,6 +309,7 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         items: input.items.map((item) => ({ productId: item.productId!, variantId: item.variantId!, quantity: item.quantity })),
         deliveryAddress: input.deliveryAddress,
         deliveryInstructions: input.deliveryInstructions,
+        deliveryDetails: input.deliveryDetails,
         orderNote: input.orderNote,
         greetingMessage: input.greetingMessage,
         greetingCardName: input.greetingCardName,
@@ -325,6 +326,32 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         emit()
       }
       return { ...created, paidAmountIdr }
+    },
+    async saveOrderDeliveryDetails(orderId, expectedRevision, details) {
+      const order = bundle.orders.orders.find((row) => row.id === orderId)
+      if (!order) throw new Error('ORDER_NOT_FOUND')
+      if (order.revision !== expectedRevision) throw new Error(`REVISION_CONFLICT expected=${expectedRevision}, actual=${order.revision}`)
+      if (details.address?.trim()) order.deliveryAddress = details.address.trim()
+      if (details.recipientName?.trim()) order.recipientName = details.recipientName.trim()
+      if (details.recipientPhone?.trim()) order.recipientPhone = details.recipientPhone.trim()
+      if (typeof details.latitude === 'number' && typeof details.longitude === 'number') {
+        order.deliveryLatitude = details.latitude
+        order.deliveryLongitude = details.longitude
+      }
+      if (details.landmark?.trim()) order.deliveryLandmark = details.landmark.trim()
+      order.revision += 1
+      order.updatedAt = now()
+      emit()
+      return {
+        orderId: order.id,
+        revision: order.revision,
+        deliveryAddress: order.deliveryAddress ?? null,
+        recipientName: order.recipientName ?? null,
+        recipientPhone: order.recipientPhone ?? null,
+        deliveryLandmark: order.deliveryLandmark ?? null,
+        deliveryLatitude: order.deliveryLatitude ?? null,
+        deliveryLongitude: order.deliveryLongitude ?? null,
+      }
     },
   }
 
@@ -518,6 +545,16 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         ...(input.greetingCardName?.trim() ? { greetingCardName: input.greetingCardName.trim() } : {}),
         ...(input.fulfillment === 'delivery' && input.deliveryAddress?.trim() ? { deliveryAddress: input.deliveryAddress.trim() } : {}),
         ...(input.fulfillment === 'delivery' && input.deliveryInstructions?.trim() ? { deliveryInstructions: input.deliveryInstructions.trim() } : {}),
+        ...(input.fulfillment === 'delivery'
+          ? {
+              recipientName: input.deliveryDetails?.recipientName?.trim() || input.customer.name,
+              recipientPhone: input.deliveryDetails?.recipientPhone?.trim() || input.customer.whatsappNumber,
+              ...(typeof input.deliveryDetails?.latitude === 'number' && typeof input.deliveryDetails?.longitude === 'number'
+                ? { deliveryLatitude: input.deliveryDetails.latitude, deliveryLongitude: input.deliveryDetails.longitude }
+                : {}),
+              ...(input.deliveryDetails?.landmark?.trim() ? { deliveryLandmark: input.deliveryDetails.landmark.trim() } : {}),
+            }
+          : {}),
         ...(input.promoCode?.trim() ? { promoCode: input.promoCode.trim().toUpperCase() } : {}),
         createdAt: current,
         updatedAt: current,

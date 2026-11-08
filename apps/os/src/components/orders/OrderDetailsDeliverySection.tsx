@@ -1,4 +1,6 @@
 import type { ComponentType, FC, SVGProps } from 'react'
+import { OrderDeliveryDestination } from './OrderDeliveryDestination'
+import { useUserStore } from '../../store/userStore'
 import {
   Mail,
   MessageCircle,
@@ -14,6 +16,8 @@ interface OrderDetailsDeliverySectionProps {
 export const OrderDetailsDeliverySection: FC<OrderDetailsDeliverySectionProps> = ({
   viewModel,
 }) => {
+  const role = useUserStore((state) => state.role)
+  const canEditDelivery = role === 'owner' || role === 'admin'
   const { order, isEditing, draft, onDraftChange } = viewModel
   const savedPhone = order.customerSnapshot?.whatsappNumber ?? order.customerSnapshot?.phone ?? ''
   const savedEmail = order.customerSnapshot?.email ?? ''
@@ -139,20 +143,7 @@ export const OrderDetailsDeliverySection: FC<OrderDetailsDeliverySectionProps> =
             <p className="text-2xs text-muted-foreground">Address and courier instructions.</p>
           </div>
           {!isEditing ? (
-            <div className="space-y-3">
-              <div>
-                <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground/80">Address</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
-                  {order.deliveryAddress?.trim() || 'Not set'}
-                </p>
-              </div>
-              <div>
-                <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground/80">Instructions</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
-                  {order.deliveryInstructions?.trim() || 'Not added'}
-                </p>
-              </div>
-            </div>
+            <OrderDeliveryDestination order={order} canEdit={canEditDelivery} />
           ) : (
             <div className="space-y-2">
               <textarea

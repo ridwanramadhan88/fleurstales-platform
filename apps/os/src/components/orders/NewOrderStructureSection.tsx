@@ -2,6 +2,10 @@ import { useEffect, useState, type FC } from 'react'
 import { DatePickerField, TimeSelectField } from '../ui/date-time-field'
 import type { NewOrderSheetViewModel } from './NewOrderSheetController'
 import { useOrderSlotAvailability } from '../../hooks/useOrderSlotAvailability'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
+import { useSettingsStore } from '../../store/settingsStore'
+import { parseMapsLocation, LANDMARK_MAX_LENGTH } from '../../domain/deliveryDetailsDomain'
+import { DeliveryPinPicker } from './DeliveryPinPicker'
 
 /**
  * @description "Pickup or delivery" card of the New Order sheet: fulfillment
@@ -75,6 +79,9 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
     isWalkInPickup,
   } = viewModel
   const [showWalkInSchedule, setShowWalkInSchedule] = useState(false)
+  const copy = useBilingualCopy()
+  const branchLocation = useSettingsStore((state) => state.branches.find((branch) => branch.id === branchLabel)?.location)
+  const deliveryPin = parseMapsLocation(values.deliveryPin)
   // A walk-in pickup shows the filled-in earliest slot as one line. The
   // pickers come back when the user asks, or when the slot needs fixing.
   const collapseWalkInSchedule = isWalkInPickup
@@ -210,6 +217,75 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
             {errors.deliveryAddress && (
               <p id="deliveryAddress-error" className="text-xs text-destructive" role="alert">{errors.deliveryAddress}</p>
             )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="deliveryPin" className="text-xs font-medium text-muted-foreground">
+              {copy('Delivery pin', 'Pin lokasi antar')}
+            </label>
+            <DeliveryPinPicker
+              id="deliveryPin"
+              value={deliveryPin}
+              onChange={(pin) => onFieldValueChange('deliveryPin', pin ? `${pin.latitude},${pin.longitude}` : '')}
+              center={branchLocation}
+              invalid={Boolean(errors.deliveryPin)}
+            />
+            {errors.deliveryPin && (
+              <p id="deliveryPin-error" className="text-xs text-destructive" role="alert">{errors.deliveryPin}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="deliveryLandmark" className="text-xs font-medium text-muted-foreground">
+              {copy('Landmark & house detail', 'Patokan & detail rumah')}
+            </label>
+            <textarea
+              id="deliveryLandmark"
+              value={values.deliveryLandmark}
+              maxLength={LANDMARK_MAX_LENGTH}
+              onChange={onFieldChange('deliveryLandmark')}
+              className={textAreaClass(activeGuideField === 'deliveryLandmark') + (errors.deliveryLandmark ? ' border-destructive ring-destructive/25' : '')}
+              placeholder={copy('Black gate, opposite the mosque', 'Pagar hitam, depan masjid')}
+              aria-invalid={Boolean(errors.deliveryLandmark)}
+              aria-describedby={errors.deliveryLandmark ? 'deliveryLandmark-error' : undefined}
+            />
+            {errors.deliveryLandmark && (
+              <p id="deliveryLandmark-error" className="text-xs text-destructive" role="alert">{errors.deliveryLandmark}</p>
+            )}
+          </div>
+
+          <div className="grid gap-2 lg:grid-cols-2">
+            <div className="space-y-1.5">
+              <label htmlFor="recipientName" className="text-xs font-medium text-muted-foreground">
+                {copy('Recipient name (if not the customer)', 'Nama penerima (jika bukan pelanggan)')}
+              </label>
+              <input
+                id="recipientName"
+                type="text"
+                value={values.recipientName}
+                onChange={onFieldChange('recipientName')}
+                className={fieldClass(activeGuideField === 'recipientName')}
+                placeholder={values.customerName.trim() || copy('Customer', 'Pelanggan')}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="recipientPhone" className="text-xs font-medium text-muted-foreground">
+                {copy('Recipient WhatsApp', 'WhatsApp penerima')}
+              </label>
+              <input
+                id="recipientPhone"
+                type="tel"
+                inputMode="tel"
+                value={values.recipientPhone}
+                onChange={onFieldChange('recipientPhone')}
+                className={fieldClass(activeGuideField === 'recipientPhone') + (errors.recipientPhone ? ' border-destructive ring-destructive/25' : '')}
+                placeholder={values.customerWhatsappNumber.trim() || '08xx-xxxx-xxxx'}
+                aria-invalid={Boolean(errors.recipientPhone)}
+              />
+              {errors.recipientPhone && (
+                <p className="text-xs text-destructive" role="alert">{errors.recipientPhone}</p>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-2 lg:grid-cols-2">

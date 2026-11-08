@@ -2,6 +2,8 @@ import type {
   CreateInternalOrderInput,
   CustomerBusinessMetric,
   CreateInternalOrderResult,
+  SaveOrderDeliveryDetailsInput,
+  SaveOrderDeliveryDetailsResult,
   CreateStorefrontOrderInput,
   CreateStorefrontOrderResult,
   StorefrontCheckoutQuoteResult,
@@ -708,6 +710,11 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   greetingCardName: optional(row.greeting_card_name),
   deliveryAddress: optional(row.delivery_address),
   deliveryInstructions: optional(row.delivery_instructions),
+  recipientName: optional(row.recipient_name),
+  recipientPhone: optional(row.recipient_phone),
+  deliveryLatitude: row.delivery_lat ?? undefined,
+  deliveryLongitude: row.delivery_lng ?? undefined,
+  deliveryLandmark: optional(row.delivery_landmark),
   promoCode: optional(row.promo_code),
   floristDisplayName: optional(row.florist_display_name),
   floristAssignedEmployeeId: optional(row.florist_assigned_employee_id),
@@ -791,6 +798,14 @@ export const createOrdersAdminRepository = (client: SupabaseHttpClient): OrdersA
       p_payload: asJson(input),
     })
   },
+
+  async saveOrderDeliveryDetails(orderId: string, expectedRevision: number, details: SaveOrderDeliveryDetailsInput) {
+    return client.rpc<SaveOrderDeliveryDetailsResult>('save_order_delivery_details', {
+      p_order_id: orderId,
+      p_expected_revision: expectedRevision,
+      p_details: asJson(details),
+    })
+  },
 })
 
 export const createStorefrontCheckoutRepository = (client: SupabaseHttpClient): StorefrontCheckoutRepository => ({
@@ -830,6 +845,7 @@ export const createStorefrontCheckoutRepository = (client: SupabaseHttpClient): 
       p_greeting_card_name: input.greetingCardName ?? null,
       p_payment_method: input.paymentChannel === 'qris' ? 'qris' : input.paymentMethod ?? 'transfer',
       p_promo_code: input.promoCode ?? null,
+      p_delivery_details: input.deliveryDetails ? asJson(input.deliveryDetails) : null,
     }
     return client.rpc<CreateStorefrontOrderResult>('create_storefront_order', args as unknown as Record<string, Json>)
   },

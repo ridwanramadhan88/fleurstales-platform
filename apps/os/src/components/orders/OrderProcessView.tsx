@@ -8,6 +8,8 @@
  * notices), so only the layout is new.
  */
 
+import { OrderDeliveryDestination } from './OrderDeliveryDestination'
+import { useUserStore } from '../../store/userStore'
 import { useEffect, useState, type FC } from 'react'
 import { Check, MessageCircle, Package2, X } from 'lucide-react'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
@@ -53,6 +55,8 @@ const whenText = (at: Date | null, copy: Copy): string => {
 
 export const OrderProcessView: FC<{ viewModel: OrderDetailsViewModel; onShowFullDetails: () => void }> = ({ viewModel, onShowFullDetails }) => {
   const copy = useBilingualCopy()
+  const role = useUserStore((state) => state.role)
+  const canEditDelivery = role === 'owner' || role === 'admin'
   const {
     order,
     formatter,
@@ -286,11 +290,7 @@ export const OrderProcessView: FC<{ viewModel: OrderDetailsViewModel; onShowFull
                 </h3>
                 <div className="rounded-2xl bg-muted/60 p-4 text-sm">
                   {isDelivery ? (
-                    <>
-                      <p className="text-xs text-muted-foreground">{copy('Deliver to', 'Alamat antar')}</p>
-                      <p className="mt-0.5 text-[15px] leading-relaxed text-foreground">{order.deliveryAddress?.trim() || copy('No address yet', 'Belum ada alamat')}</p>
-                      {order.deliveryInstructions?.trim() && <p className="mt-2 text-foreground/80">{order.deliveryInstructions.trim()}</p>}
-                    </>
+                    <OrderDeliveryDestination order={order} canEdit={canEditDelivery} />
                   ) : (
                     <p className="text-foreground">{copy(`Picked up at ${order.branch}.`, `Diambil di ${order.branch}.`)}</p>
                   )}

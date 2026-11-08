@@ -1,5 +1,6 @@
 import type { OrderTableRow } from '../types/orders'
 import type { BranchSettings } from '../types/settings'
+import { validateDeliveryDetails, type DeliveryDetailsDraft } from './deliveryDetailsDomain'
 import { getBranchHoursForDate, getOpeningHourTimeSlots, isTimeWithinBranchOpeningHours } from './branchOpeningHoursDomain'
 import { getLocalDateString, nowInJakarta } from './orderTimingDomain'
 import { getAvailableOrderSlots, getOrderSlotValidationMessage, validateOrderSlot } from './orderScheduleAvailabilityDomain'
@@ -9,6 +10,8 @@ export interface StorefrontCheckoutValidationInput {
   whatsappNumber: string
   fulfillment: 'delivery' | 'pickup'
   deliveryAddress: string
+  /** Recipient, pin and landmark; checked for delivery orders when given. */
+  deliveryDetails?: DeliveryDetailsDraft
   date: string
   time: string
   branch: BranchSettings | null | undefined
@@ -23,6 +26,10 @@ export const validateStorefrontCheckoutDetails = (
   if (!input.customerName.trim() || !input.whatsappNumber.trim()) return 'Please fill in your name and WhatsApp number.'
   if (!input.branch?.isActive) return 'Please choose an available branch.'
   if (input.fulfillment === 'delivery' && !input.deliveryAddress.trim()) return 'Please add a delivery address.'
+  if (input.fulfillment === 'delivery' && input.deliveryDetails) {
+    const deliveryError = validateDeliveryDetails(input.deliveryDetails)
+    if (deliveryError) return deliveryError
+  }
   if (!input.date) return input.fulfillment === 'delivery' ? 'Please choose a delivery date.' : 'Please choose a pickup date.'
   const hours = getBranchHoursForDate(input.branch, input.date)
   if (!hours?.isOpen) return 'The selected branch is closed on this date.'

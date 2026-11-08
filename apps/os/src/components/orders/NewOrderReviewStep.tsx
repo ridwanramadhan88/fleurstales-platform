@@ -31,6 +31,9 @@ export interface NewOrderReviewValues {
   deliveryTime: string
   deliveryAddress: string
   deliveryInstructions: string
+  recipientName: string
+  recipientPhone: string
+  deliveryLandmark: string
   deliveryFee: string
   greetingMessage: string
   greetingCardName: string
@@ -208,6 +211,14 @@ export const NewOrderReviewStep: FC<NewOrderReviewStepProps> = ({
             <>
               <p className="text-muted-foreground">
                 {values.deliveryAddress || 'No address set.'}
+              </p>
+              {values.deliveryLandmark.trim() && (
+                <p className="text-muted-foreground">{values.deliveryLandmark.trim()}</p>
+              )}
+              <p className="text-muted-foreground">
+                {(values.recipientName.trim() || values.customerName.trim())}
+                {' · '}
+                {(values.recipientPhone.trim() || values.customerWhatsappNumber.trim())}
               </p>
               {(values.deliveryDate || values.deliveryTime) && (
                 <p className="text-muted-foreground">

@@ -19,6 +19,7 @@ import type { CreateInternalOrderInput, StorefrontCheckoutQuoteResult } from '..
 import { browserSupabaseTokenProvider, getSupabaseAccessToken } from '../../data/shared/supabaseSession'
 import { refreshBusinessOsOrdersFromRemote } from '../../data/shared/orderBridge'
 import { refreshBusinessOsCustomersFromRemote } from '../../data/shared/customerBridge'
+import { parseMapsLocation } from '../../domain/deliveryDetailsDomain'
 
 interface CustomerDraft {
   id: string | null
@@ -191,6 +192,7 @@ export const useNewOrderSubmit = ({
       }],
       deliveryAddress: values.fulfillmentType === 'delivery' ? values.deliveryAddress.trim() || undefined : undefined,
       deliveryInstructions: values.fulfillmentType === 'delivery' ? values.deliveryInstructions.trim() || undefined : undefined,
+      deliveryDetails: values.fulfillmentType === 'delivery' ? buildDeliveryDetails() : undefined,
       orderNote: values.orderNote.trim() || undefined,
       greetingMessage: values.greetingMessage.trim() || undefined,
       greetingCardName: values.greetingCardName.trim() || undefined,
@@ -205,6 +207,17 @@ export const useNewOrderSubmit = ({
         totalIdr: expectedQuote.totalIdr,
         promoAccepted: expectedQuote.promoAccepted,
       } : undefined,
+    }
+  }
+
+  /** Recipient (the customer unless Admin filled another), pin and landmark. */
+  function buildDeliveryDetails() {
+    const pin = parseMapsLocation(values.deliveryPin)
+    return {
+      recipientName: values.recipientName.trim() || values.customerName.trim(),
+      recipientPhone: values.recipientPhone.trim() || values.customerWhatsappNumber.trim(),
+      ...(pin ? { latitude: pin.latitude, longitude: pin.longitude } : {}),
+      landmark: values.deliveryLandmark.trim(),
     }
   }
 
@@ -359,6 +372,18 @@ export const useNewOrderSubmit = ({
       greetingCardName: payload.greeting_card_name ?? undefined,
       deliveryAddress: payload.delivery_address ?? undefined,
       deliveryInstructions: payload.delivery_instructions ?? undefined,
+      ...(values.fulfillmentType === 'delivery'
+        ? (() => {
+            const details = buildDeliveryDetails()
+            return {
+              recipientName: details.recipientName,
+              recipientPhone: details.recipientPhone,
+              deliveryLatitude: details.latitude,
+              deliveryLongitude: details.longitude,
+              deliveryLandmark: details.landmark,
+            }
+          })()
+        : {}),
       promoCode: trimmedPromoCode || undefined,
       productId:
         primaryOrderItem.mode === 'catalog'

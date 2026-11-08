@@ -46,4 +46,12 @@ describe('storefront customer copy (V2 batch 2)', () => {
     expect(translateUiText('Shop filters', 'id')).toBe('Filter belanja')
     expect(translateUiText('Close cart', 'id')).toBe('Tutup keranjang')
   })
+
+  it('translates delivery recipient and pin copy', () => {
+    expect(translateUiText('Send to someone else', 'id')).toBe('Kirim ke orang lain')
+    expect(translateUiText('Landmark & house detail', 'id')).toBe('Patokan & detail rumah')
+    expect(translateUiText('Pin set', 'id')).toBe('Pin terpasang')
+    expect(translateUiText('Please set the delivery pin on the map.', 'id')).toBe('Pasang pin lokasi antar di peta.')
+    expect(translateUiText('DELIVERY_PIN_REQUIRED', 'id')).toBe('Pasang pin lokasi antar di peta.')
+  })
 })

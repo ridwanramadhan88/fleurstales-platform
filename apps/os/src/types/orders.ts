@@ -282,6 +282,14 @@ export interface OrderTableRow {
   deliveryAddress?: string
   /** Optional courier delivery instructions (delivery orders only). */
   deliveryInstructions?: string
+  /** Who receives a delivery; defaults to the customer. */
+  recipientName?: string
+  recipientPhone?: string
+  /** Map pin of the delivery address. */
+  deliveryLatitude?: number
+  deliveryLongitude?: number
+  /** Landmark / house detail for the courier (required on new delivery orders). */
+  deliveryLandmark?: string
   /** Optional promo code applied to this order (from customer's CRM record or manual entry). */
   promoCode?: string
   /** Storefront-only CRM suggestions that must not block checkout or overwrite existing data. */

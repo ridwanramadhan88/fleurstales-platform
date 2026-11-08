@@ -6,7 +6,7 @@ begin
   if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='orders' and column_name='idempotency_request_hash') then
     raise exception 'orders.idempotency_request_hash is missing';
   end if;
-  if to_regprocedure('public.create_storefront_order(text,jsonb,text,text,date,time,jsonb,text,text,text,text,text,text,text)') is null then
+  if to_regprocedure('public.create_storefront_order(text,jsonb,text,text,date,time,jsonb,text,text,text,text,text,text,text,jsonb)') is null then
     raise exception 'V3.6 storefront checkout function is missing';
   end if;
   if to_regprocedure('public.create_internal_order(jsonb)') is null then
