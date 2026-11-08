@@ -37,6 +37,14 @@ describe('getOrderWorkStage', () => {
     expect(getOrderWorkStage(order({ status: 'cancelled' }))).toBe('cancelled')
   })
 
+  it('an active order being refunded waits on Finance; a refunded active order counts as cancelled', () => {
+    expect(getOrderWorkStage(order({ status: 'processing', paymentStatus: 'refund_pending' }))).toBe('refunding')
+    expect(getOrderPriority(order({ status: 'confirmed', paymentStatus: 'refund_pending' }), NOW).needsAdmin).toBe(false)
+    expect(getOrderWorkStage(order({ status: 'confirmed', paymentStatus: 'refunded', paidAmountIdr: 0 }))).toBe('cancelled')
+    // Finished orders keep their stage after an after-sale refund.
+    expect(getOrderWorkStage(order({ status: 'delivered', paymentStatus: 'refunded' }))).toBe('done')
+  })
+
   it('treats a paid status with a short amount as not paid', () => {
     expect(getOrderWorkStage(order({ status: 'confirmed', paymentStatus: 'paid', paidAmountIdr: 90_000 }))).toBe('payment')
   })
