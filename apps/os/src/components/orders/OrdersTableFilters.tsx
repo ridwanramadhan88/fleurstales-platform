@@ -1,5 +1,6 @@
 import type { FC } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Download } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import { OrdersExportButton } from './OrdersExportDialog'
 import { ChipRow, FilterChip } from '../ui/chip'
 import {
   DropdownMenu,
@@ -22,18 +23,14 @@ const SORT_OPTIONS: Array<{ id: OrdersListSortKey; label: string }> = [
 ]
 
 export const OrdersTableFilters: FC<OrdersTableFiltersProps> = ({ viewModel }) => {
-  const { statusGroupFilter, newOrderCount, draftCount, isDraftMode, scopeLabel, sortKey, sortDirection, canExportFinishedCsv, onStatusGroupFilterChange, onSortChange, onExportFinishedCsv } = viewModel
+  const { statusGroupFilter, newOrderCount, draftCount, isDraftMode, scopeLabel, sortKey, sortDirection, exportableOrders, exportBranch, exportDefaultRange, exportDefaultStatus, onStatusGroupFilterChange, onSortChange } = viewModel
   const DirectionIcon = sortDirection === 'asc' ? ArrowUp : ArrowDown
   return (
     <div className={surfaceCardClass('dense', 'space-y-3 sm:bg-transparent sm:p-0 sm:ring-0', { shadow: false })}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-foreground">{scopeLabel}</p>
         {!isDraftMode && <div className="flex items-center gap-2">
-          {statusGroupFilter === 'finished' && (
-            <button type="button" onClick={onExportFinishedCsv} disabled={!canExportFinishedCsv} className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-medium disabled:opacity-40">
-              <Download className="size-4" /> Export CSV
-            </button>
-          )}
+          <OrdersExportButton orders={exportableOrders} branch={exportBranch} defaultRange={exportDefaultRange} defaultStatus={exportDefaultStatus} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button type="button" aria-label={`Sort orders by ${sortKey}, ${sortDirection}`} title="Sort orders" className="inline-flex size-11 items-center justify-center rounded-full border border-border bg-card hover:bg-accent">

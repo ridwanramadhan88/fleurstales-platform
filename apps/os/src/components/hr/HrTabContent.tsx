@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { HrSchedulingSection } from './HrSchedulingSection'
 import { AttendanceReviewQueue } from './AttendanceReviewQueue'
+import { AttendanceExportButton } from './AttendanceExportButton'
 import { HrPayrollSection } from './HrPayrollSection'
 import { FieldLabel, ValidationSummary } from '../ui/form-patterns'
 import { ChevronRight, UserPlus } from 'lucide-react'
@@ -111,7 +112,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
         </PeopleListCard>})}</div>
       </section>
     </> : <>
-      <PeoplePageHeader section="attendance" />
+      <PeoplePageHeader section="attendance" action={<AttendanceExportButton activeBranch={activeBranch} />} />
       <PeopleSummaryGrid className="grid-cols-2 gap-3 sm:grid-cols-3">
         <PeopleSummaryCard className="md:min-h-[76px]" label="Present today" value={summary.presentToday.toString()} tone="success" />
         <PeopleSummaryCard className="md:min-h-[76px]" label="Late / absent" value={(summary.lateToday + summary.absentToday).toString()} tone={summary.lateToday + summary.absentToday > 0 ? 'warning' : 'default'} />

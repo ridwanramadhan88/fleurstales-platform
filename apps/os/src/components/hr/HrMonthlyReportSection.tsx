@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, ExternalLink } from 'lucide-react'
+import { ChevronDown, Download, ExternalLink } from 'lucide-react'
 import type { BranchFilter } from '../../types/orders'
 import { useHrStore } from '../../store/hrStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useUserStore } from '../../store/userStore'
 import { useHrProblemStore } from '../../store/hrProblemStore'
-import { buildHrMonthlyReport, monthlyReportToCsv } from '../../domain/hrMonthlyReportDomain'
+import { buildHrMonthlyReport } from '../../domain/hrMonthlyReportDomain'
+import { attendanceExportFilename, buildAttendanceExportSheets } from '../../domain/attendanceExportDomain'
+import { downloadTableXlsx } from '../../lib/excelTableExport'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { buildHrProblems, getHrProblemStatus, type HrProblemRecord, type HrProblemSource, type HrProblemStatus } from '../../domain/hrProblemDomain'
 import { PeoplePageHeader, PeopleSummaryCard, PeopleSummaryGrid } from './PeopleWorkspaceUI'
 import { PeopleMonthPeriodFields } from './PeoplePeriodControls'
@@ -38,6 +41,7 @@ const STATUS_LABELS: Record<HrProblemStatus, string> = {
 }
 
 export const HrMonthlyReportSection = ({ activeBranch, searchQuery = '', onOpenOrder }: { activeBranch: BranchFilter; searchQuery?: string; onOpenOrder?: (orderNumber:string)=>void }) => {
+  const tr = useBilingualCopy()
   const [month, setMonth] = useState(jakartaMonth)
   const [view, setView] = useState<ReportView>('overview')
   const [problemSource, setProblemSource] = useState<'all' | HrProblemSource>('all')
@@ -77,14 +81,11 @@ export const HrMonthlyReportSection = ({ activeBranch, searchQuery = '', onOpenO
   const totals = useMemo(() => visibleRows.reduce((sum, row) => ({ scheduled:sum.scheduled+row.scheduledDays, present:sum.present+row.presentDays, problems:sum.problems+row.openProblems, missing:sum.missing+row.missingCheckInTasks+row.missingCheckOutTasks }), { scheduled:0, present:0, problems:0, missing:0 }), [visibleRows])
   const selectedEmployee = selectedEmployeeId ? visibleRows.find((row)=>row.employeeId===selectedEmployeeId) ?? null : null
 
-  const exportCsv = () => {
-    const blob = new Blob([monthlyReportToCsv(visibleRows)], { type:'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `fleurstales-hr-${month}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+  const exportExcel = () => {
+    downloadTableXlsx(attendanceExportFilename(month, activeBranch), buildAttendanceExportSheets({
+      month, branchId: activeBranch, summaryRows: visibleRows, employees, attendance, reviewCases, defaults, overrides, settings,
+      summary: { exportedBy: actor, exportedAt: new Date().toISOString() },
+    }))
   }
 
   const updateProblem = (status:HrProblemStatus) => {
@@ -140,7 +141,7 @@ export const HrMonthlyReportSection = ({ activeBranch, searchQuery = '', onOpenO
     {view === 'overview' ? <>
       <div className="flex flex-col gap-3 border-y border-border/60 py-3 md:flex-row md:items-center md:justify-between">
         <PeopleMonthPeriodFields month={month} onMonthChange={setMonth} settings={settings.payroll} className="md:flex-1" />
-        <button type="button" onClick={exportCsv} className="h-11 self-end rounded-full bg-foreground px-[18px] text-sm font-semibold text-background md:shrink-0 md:self-auto">Export CSV</button>
+        <button type="button" onClick={exportExcel} className="inline-flex h-11 items-center gap-2 self-end rounded-full bg-foreground px-[18px] text-sm font-semibold text-background md:shrink-0 md:self-auto"><Download className="size-4" />{tr('Download Excel', 'Unduh Excel')}</button>
       </div>
       <PeopleSummaryGrid className="grid-cols-2 gap-3 sm:grid-cols-4">
         <PeopleSummaryCard className="md:min-h-[76px]" label="Scheduled days" value={totals.scheduled} />
