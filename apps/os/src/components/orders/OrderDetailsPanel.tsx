@@ -79,6 +79,8 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   useEffect(() => { setShowFullDetails(false) }, [order.orderNumber])
   const processEligible = (currentUserRole === 'admin' || currentUserRole === 'owner')
     && ['confirmed', 'processing', 'ready', 'delivering', 'delivered', 'picked_up'].includes(order.status)
+    // Refunds are handled in the full details (refund panel), not in the step view.
+    && order.paymentStatus !== 'refund_pending' && order.paymentStatus !== 'refunded'
   const showProcess = processEligible && !isEditing && !showFullDetails
   const copy = useBilingualCopy()
   const isFinished = order.status === 'delivered' || order.status === 'picked_up'

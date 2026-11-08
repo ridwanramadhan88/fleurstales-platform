@@ -205,7 +205,7 @@ export const useOrdersTableViewController = ({
   const query = searchQuery.trim().toLowerCase()
   const isSearching = query.length > 0
   const prioritized = branchOrders.map((order) => ({ order, priority: getOrderPriority(order, now) }))
-  const isWaiting = (stage: OrderPriority['stage']) => stage === 'arranging' || stage === 'delivering'
+  const isWaiting = (stage: OrderPriority['stage']) => stage === 'arranging' || stage === 'delivering' || stage === 'refunding'
   const isClosed = (stage: OrderPriority['stage']) => stage === 'done' || stage === 'cancelled'
   const todayKey = getLocalDateString(now)
   const inRange = new Set(filterOrdersByScope('custom', branchOrders, dateRange).map((order) => order.orderNumber))

@@ -1,6 +1,6 @@
 {
   "name": "fleurstales-os",
-  "version": "2.8.31",
+  "version": "2.8.32",
   "scripts": {
     "clean": "rimraf dist coverage \"*.tsbuildinfo\"",
     "dev": "node scripts/dev-local.mjs",

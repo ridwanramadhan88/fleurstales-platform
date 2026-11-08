@@ -7,7 +7,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react'
-import { Clock3, CreditCard, Flower2, Inbox, PackageCheck, Truck, UserRound, CheckCircle2, XCircle } from 'lucide-react'
+import { Clock3, CreditCard, Flower2, Inbox, PackageCheck, RotateCcw, Truck, UserRound, CheckCircle2, XCircle } from 'lucide-react'
 import type { OrderTableRow } from '../../types/orders'
 import type { OrderPriority, OrderWorkStage } from '../../domain/orderWorkStageDomain'
 
@@ -29,6 +29,7 @@ export const ORDER_WORK_STAGE_STYLE: Record<OrderWorkStage, OrderWorkStageStyle>
   handover: { icon: PackageCheck, pillClass: 'bg-[#34C759]/12 text-[#1E7A34] dark:text-[#7EDB95]', dotClass: 'bg-[#34C759]' },
   arranging: { icon: Clock3, pillClass: 'bg-muted text-muted-foreground', dotClass: 'bg-muted-foreground/70' },
   delivering: { icon: Truck, pillClass: 'bg-muted text-muted-foreground', dotClass: 'bg-muted-foreground/70' },
+  refunding: { icon: RotateCcw, pillClass: 'bg-muted text-muted-foreground', dotClass: 'bg-muted-foreground/70' },
   done: { icon: CheckCircle2, pillClass: 'bg-success/10 text-success', dotClass: 'bg-success' },
   cancelled: { icon: XCircle, pillClass: 'bg-muted text-muted-foreground', dotClass: 'bg-muted-foreground/60' },
 }
@@ -46,6 +47,7 @@ export const getOrderWorkStageLabel = (
     case 'handover': return order.fulfillment === 'delivery' ? copy('Ready to send', 'Siap dikirim') : copy('Ready for pickup', 'Siap diambil')
     case 'arranging': return copy('Being arranged', 'Sedang dirangkai')
     case 'delivering': return copy('Out for delivery', 'Dalam pengiriman')
+    case 'refunding': return copy('Refund pending', 'Menunggu refund')
     case 'done': return order.status === 'picked_up' ? copy('Picked up', 'Sudah diambil') : copy('Delivered', 'Terkirim')
     case 'cancelled': return order.status === 'failed' ? copy('Failed', 'Gagal') : copy('Cancelled', 'Dibatalkan')
   }
@@ -109,6 +111,8 @@ export const getOrderWorkReason = (
       return copy(`Florist is working, ${kindEn} at ${at}`, `Sedang dirangkai, ${kindId} ${at}`)
     case 'delivering':
       return copy('With the courier', 'Sedang dibawa kurir')
+    case 'refunding':
+      return copy('Finance is returning the money; the order is cancelled once it is done', 'Finance sedang mengembalikan uang; pesanan batal setelah selesai')
     default:
       return ''
   }

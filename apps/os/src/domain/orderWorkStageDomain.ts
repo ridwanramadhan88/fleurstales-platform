@@ -39,6 +39,8 @@ export type OrderWorkStage =
   | 'handover'
   /** With the courier; waiting for delivery. */
   | 'delivering'
+  /** Finance is returning the money; the order is cancelled once the refund is complete. */
+  | 'refunding'
   | 'done'
   | 'cancelled'
 
@@ -60,6 +62,7 @@ const STAGE_INFO: Record<OrderWorkStage, Omit<OrderWorkStageInfo, 'stage'>> = {
   photo_in: { needsAdmin: true, points: 150, beforeProduction: false },
   arranging: { needsAdmin: false, points: 0, beforeProduction: false },
   delivering: { needsAdmin: false, points: 0, beforeProduction: false },
+  refunding: { needsAdmin: false, points: 0, beforeProduction: false },
   done: { needsAdmin: false, points: 0, beforeProduction: false },
   cancelled: { needsAdmin: false, points: 0, beforeProduction: false },
 }
@@ -72,7 +75,14 @@ type StageInput = Pick<
 export const isOrderFullyPaid = (order: Pick<OrderTableRow, 'paymentStatus' | 'paidAmountIdr' | 'totalIdr'>): boolean =>
   order.paymentStatus === 'paid' && (order.paidAmountIdr ?? order.totalIdr) >= order.totalIdr
 
+const ACTIVE_STATUSES: OrderTableRow['status'][] = ['pending_verification', 'confirmed', 'processing', 'ready', 'delivering']
+
 export const getOrderWorkStage = (order: StageInput): OrderWorkStage => {
+  if (ACTIVE_STATUSES.includes(order.status)) {
+    // A full refund cancels the order on the server; until then Finance is working on it.
+    if (order.paymentStatus === 'refund_pending') return 'refunding'
+    if (order.paymentStatus === 'refunded') return 'cancelled'
+  }
   switch (order.status) {
     case 'pending_verification':
       return 'confirm'

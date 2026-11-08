@@ -58,6 +58,16 @@ test('finance starts a refund on an active paid order and completes it', async (
   await test.step('finance completes the refund from the refund queue', async () => {
     await completeRefundAsFinance(page, customerName)
   })
+
+  await test.step('a full refund cancels the order: it leaves the Admin work list (Owner decision 8 Nov 2026)', async () => {
+    await signOut(page)
+    await signIn(page, 'admin')
+    await page.getByRole('navigation').first().getByText('Pesanan', { exact: true }).click()
+    await page.getByRole('tab', { name: /Perlu tindakan/ }).click()
+    await expect(page.locator('main').getByText(customerName)).toHaveCount(0)
+    await page.locator('input[type="search"]:visible').first().fill(customerName)
+    await expect(page.getByRole('button', { name: new RegExp(`${customerName}, Dibatalkan`) }).first()).toBeVisible()
+  })
 })
 
 test('owner can start a refund; finance completes it', async ({ page, problems }) => {
