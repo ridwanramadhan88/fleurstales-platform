@@ -20,13 +20,9 @@ import { NotificationCenter } from '../components/notifications/NotificationCent
 import type { NotificationItem } from '../types/notifications'
 import { NewOrderSheetContainer } from '../components/orders/NewOrderSheetContainer'
 import { getDateLocale } from '../i18n/uiLanguage'
-import {
-  OrdersSubTabs,
-  type OrdersSubTabId,
-} from '../components/orders/OrdersSubTabs'
+import type { OrdersSubTabId } from '../components/orders/OrdersSubTabs'
 import { OrdersTableViewContainer } from '../components/orders/OrdersTableViewContainer'
 import { OrdersTabHeader } from '../components/orders/OrdersTabHeader'
-import { useOrderDrafts } from '../components/orders/orderDraftStore'
 import { DesktopSidebarContainer } from '../components/layout/DesktopSidebarContainer'
 import { StockTabContentContainer } from '../components/stock/StockTabContentContainer'
 import { CatalogTabContentContainer } from '../components/catalog/CatalogTabContentContainer'
@@ -48,7 +44,6 @@ import { requestSettingsNavigation } from '../components/settings/settingsNaviga
 import { canAccessSection, canEditSection } from '../config/permissions'
 import { getAccessibleNavigationDestinationIds } from '../config/navigationGroups'
 import { hasActionPermission } from '../config/actionPermissions'
-import { useBranchOrderCounts, useFutureOrderCount, useFutureOrderDates } from '../hooks/useBranchOrders'
 import { useTheme } from '../hooks/useTheme'
 import type { DateRange } from 'react-day-picker'
 import type { BranchFilter } from '../types/orders'
@@ -160,8 +155,7 @@ const HomePage: FC<HomePageProps> = ({
     useState<boolean>(false)
   const [editingOrderDraftId, setEditingOrderDraftId] = useState<string | null>(null)
   const [activeOrdersSubTab, setActiveOrdersSubTab] =
-    useState<OrdersSubTabId>('today')
-  const [ordersInitialStatusGroup, setOrdersInitialStatusGroup] = useState<'finished' | undefined>(undefined)
+    useState<OrdersSubTabId>('action')
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   /**
    * @description Order number to deep-link straight to when arriving at the
@@ -185,17 +179,6 @@ const HomePage: FC<HomePageProps> = ({
 
   const { greeting, formattedDate } = getDashboardHeaderMeta()
 
-  /**
-   * @description Real, branch-scoped order counts for the Orders tab header
-   * chips — previously hardcoded literals that never matched the list below
-   * them (bug 1.2). Derived from the same data source OrdersTableView uses,
-   * via useBranchOrderCounts, so they can't drift apart again.
-   */
-  const orderCounts = useBranchOrderCounts(activeBranch)
-  const futureOrderCount = useFutureOrderCount(activeBranch)
-  const futureOrderDates = useFutureOrderDates(activeBranch)
-  const orderDrafts = useOrderDrafts()
-  const draftCount = orderDrafts.filter((draft) => activeBranch === 'All' || draft.branch === activeBranch).length
 
   // Data + permissions for the Finance tab's two verification queues.
   const allOrders = useOrdersStore((state) => state.orders)
@@ -308,7 +291,6 @@ const HomePage: FC<HomePageProps> = ({
 
       if (target.tab === 'orders') {
         if (target.ordersSubTab) setActiveOrdersSubTab(target.ordersSubTab)
-        setOrdersInitialStatusGroup(target.ordersStatusGroup)
 
         if (target.orderNumber) {
           const order = allOrders.find((item) => item.orderNumber === target.orderNumber)
@@ -343,8 +325,8 @@ const HomePage: FC<HomePageProps> = ({
 
   /** Existing top-level shell adapters now delegate to the navigation command. */
   const handleTabChange = (tab: AppTabId) => { navigate(toAppTab(tab)) }
-  const goToOrders = () => { navigate(toOrders({ ordersSubTab: 'today' })) }
-  const goToFinishedOrders = () => { navigate(toOrders({ ordersSubTab: 'today', ordersStatusGroup: 'finished' })) }
+  const goToOrders = () => { navigate(toOrders({ ordersSubTab: 'action' })) }
+  const goToFinishedOrders = () => { navigate(toOrders({ ordersSubTab: 'done' })) }
 
   const handleOpenOrderFromNotification = (orderNumber: string) => {
     if (navigate(toOrders({ orderNumber }))) setIsNotificationCenterOpen(false)
@@ -532,8 +514,6 @@ const HomePage: FC<HomePageProps> = ({
             <section className="space-y-4 sm:space-y-6">
               <OrdersTabHeader
                 activeOrdersSubTab={activeOrdersSubTab}
-                orderCounts={orderCounts}
-                draftCount={draftCount}
                 canCreateOrder={canCreateOrder}
                 createOrderBlockedReason={createOrderBlockedReason}
                 branchPicker={activeBranch === 'All' && createOrderBlockedReason
@@ -545,17 +525,10 @@ const HomePage: FC<HomePageProps> = ({
                 onNewOrder={() => { setEditingOrderDraftId(null); setIsNewOrderOpen(true) }}
               />
 
-              <OrdersSubTabs
-                activeTab={activeOrdersSubTab}
-                onTabChange={setActiveOrdersSubTab}
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-                futureOrderCount={futureOrderCount}
-                futureOrderDates={futureOrderDates}
-              />
-
               <OrdersTableViewContainer
                 activeScope={activeOrdersSubTab}
+                onScopeChange={setActiveOrdersSubTab}
+                onDateRangeChange={setDateRange}
                 activeBranch={activeBranch}
                 dateRange={dateRange}
                 searchQuery={searchQuery}
@@ -564,7 +537,6 @@ const HomePage: FC<HomePageProps> = ({
                 onInitialSelectedOrderNumberConsumed={() =>
                   setDeepLinkOrderNumber(null)
                 }
-                initialStatusGroupFilter={ordersInitialStatusGroup}
                 onOpenDraft={(draftId) => {
                   setEditingOrderDraftId(draftId)
                   setIsNewOrderOpen(true)

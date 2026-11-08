@@ -7,10 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
-import {
-  STATUS_GROUP_FROM_STATUS,
-  URGENCY_CHIP,
-} from './orderTableLabels'
+import { URGENCY_CHIP } from './orderTableLabels'
 import { formatOrderCreatedAtLabel, getDisplayScheduleLabel } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { InfoHint } from '../ui/info-hint'
@@ -152,7 +149,8 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
         {!isEditing ? (
           <h2 className="flex min-w-0 items-center gap-2 text-lg font-semibold leading-6 text-foreground">
             <span className="truncate">{order.customerName}</span>
-            {STATUS_GROUP_FROM_STATUS[order.status] === 'new' && (
+            {/* New = still waiting for the Admin to confirm it; a confirmed order is not new. */}
+            {order.status === 'pending_verification' && (
               <span className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary">
                 New
               </span>

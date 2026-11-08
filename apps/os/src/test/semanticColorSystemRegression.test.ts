@@ -5,15 +5,13 @@ const read = (path: string) => readFileSync(path, 'utf8')
 
 describe('semantic color system regression', () => {
   it('keeps Customers and Catalog neutral while Orders keeps semantics in accents, not fills', () => {
-    const orders = read('src/components/orders/OrdersTabHeader.tsx')
+    const orders = read('src/components/orders/OrderWorkList.tsx')
     const customers = read('src/components/customers/CustomersTabContent.tsx')
     const catalog = read('src/components/catalog/CatalogTabContent.tsx')
 
-    expect(orders).toContain("const surfaceClass = 'bg-surface-card ring-border/60'")
-    expect(orders).toContain("neutral: 'text-foreground'")
-    expect(orders).toContain("success: 'text-success'")
-    expect(orders).toContain("warning: 'text-warning'")
-    expect(orders).toContain("info: 'text-info'")
+    // Orders: one white list surface; stage colour lives in the pill, never in row fills.
+    expect(orders).toContain('rounded-2xl bg-surface-card shadow-ios-sm ring-1 ring-border/60')
+    expect(orders).not.toContain('ORDER_CARD_BG')
     expect(customers.match(/rounded-2xl bg-surface-card p-4 shadow-ios-sm ring-1 ring-border\/60/g)?.length).toBeGreaterThanOrEqual(4)
     expect(catalog).toContain("'bg-surface-card shadow-ios-sm ring-1 ring-border/60'")
     expect(orders).not.toContain('bg-success/10 ring-success/30')

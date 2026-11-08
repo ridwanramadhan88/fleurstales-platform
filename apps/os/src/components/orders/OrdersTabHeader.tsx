@@ -4,15 +4,17 @@
  */
 
 import type { FC } from 'react'
-import { AlertTriangle, CheckCircle2, FilePenLine, Plus, Store, Workflow } from 'lucide-react'
+import { Plus, Store } from 'lucide-react'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import type { OrdersSubTabId } from './OrdersSubTabs'
 import { GuardedAction } from '../ui/guarded-action'
 import { InfoHint } from '../ui/info-hint'
 
-const TITLE_BY_SUB_TAB: Record<OrdersSubTabId, string> = {
-  today: "Today's Orders",
-  future: 'Future Orders',
-  custom: 'Custom Date Orders',
+const TITLE_BY_SUB_TAB: Record<OrdersSubTabId, [string, string]> = {
+  action: ['Orders', 'Pesanan'],
+  waiting: ['Orders', 'Pesanan'],
+  done: ['Orders', 'Pesanan'],
+  custom: ['Orders', 'Pesanan'],
 }
 
 export interface OrderCounts {
@@ -28,8 +30,10 @@ export interface OrdersTabHeaderBranchPicker {
 
 export interface OrdersTabHeaderProps {
   activeOrdersSubTab: OrdersSubTabId
-  orderCounts: OrderCounts
-  draftCount: number
+  /** @deprecated The work tabs carry the counts now; kept so callers need not change. */
+  orderCounts?: OrderCounts
+  /** @deprecated See orderCounts. */
+  draftCount?: number
   canCreateOrder: boolean
   createOrderBlockedReason?: string
   /** Shown in place of the blocked reason when picking a branch unblocks New order. */
@@ -37,42 +41,14 @@ export interface OrdersTabHeaderProps {
   onNewOrder: () => void
 }
 
-const SummaryCard: FC<{
-  label: string
-  value: number
-  tone: 'neutral' | 'success' | 'warning' | 'info'
-  icon: FC<{ className?: string }>
-}> = ({ label, value, tone, icon: Icon }) => {
-  const accentClass = {
-    neutral: 'text-foreground',
-    success: 'text-success',
-    warning: 'text-warning',
-    info: 'text-info',
-  }[tone]
-  // One white card material everywhere — semantics live in the icon/value
-  // accent, never in the card fill (matches OverviewStatCard).
-  const surfaceClass = 'bg-surface-card ring-border/60'
-
-  return (
-    <div className={`min-w-0 rounded-xl p-3 shadow-ios-sm ring-1 sm:rounded-2xl sm:p-4 ${surfaceClass}`}>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold leading-4 text-muted-foreground">{label}</p>
-        <Icon className={`size-3.5 shrink-0 sm:size-4 ${accentClass}`} />
-      </div>
-      <p className={`mt-0.5 text-lg font-semibold leading-6 tabular-nums sm:mt-1 sm:text-xl ${accentClass}`}>{value}</p>
-    </div>
-  )
-}
-
 export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
   activeOrdersSubTab,
-  orderCounts,
-  draftCount,
   canCreateOrder,
   createOrderBlockedReason,
   branchPicker,
   onNewOrder,
 }) => {
+  const copy = useBilingualCopy()
   const needsBranchSelection = Boolean(
     !canCreateOrder && createOrderBlockedReason?.includes('Select a specific branch'),
   )
@@ -86,10 +62,13 @@ export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">
-            {TITLE_BY_SUB_TAB[activeOrdersSubTab]}
+            {copy(...TITLE_BY_SUB_TAB[activeOrdersSubTab])}
           </h1>
-          <InfoHint label="About this orders view">
-            Track workload, drafts, and orders that need attention.
+          <InfoHint label={copy('How this list is ordered', 'Cara daftar ini diurutkan')}>
+            {copy(
+              'Orders are ranked by how soon they are due and which step they are on. Orders that still have to be made count from 90 minutes before pickup or delivery.',
+              'Pesanan diurutkan dari waktu yang paling mepet dan tahapnya. Pesanan yang belum dirangkai dihitung dari 90 menit sebelum jam ambil atau antar.',
+            )}
           </InfoHint>
         </div>
       </div>
@@ -133,14 +112,6 @@ export const OrdersTabHeader: FC<OrdersTabHeaderProps> = ({
       )}
     </header>
 
-    {/* Branch-wide counts. Hidden on phones, where the status chips already
-        show the counts and the first order should be near the top. */}
-    <div className="hidden gap-2 sm:grid sm:grid-cols-4 sm:gap-3">
-      <SummaryCard label="Active orders" value={orderCounts.active} tone="info" icon={Workflow} />
-      <SummaryCard label="Completed" value={orderCounts.completed} tone="success" icon={CheckCircle2} />
-      <SummaryCard label="Drafts" value={draftCount} tone="neutral" icon={FilePenLine} />
-      <SummaryCard label="Needs attention" value={orderCounts.needsAttention} tone="warning" icon={AlertTriangle} />
-    </div>
   </section>
   )
 }

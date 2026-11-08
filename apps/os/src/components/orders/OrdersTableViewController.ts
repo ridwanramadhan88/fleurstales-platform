@@ -13,9 +13,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { toast } from '../../hooks/use-toast'
 import type { OrderStatus, OrderTableRow } from '../../types/orders'
 import type { OrdersSubTabId } from './OrdersSubTabs'
-import { STATUS_GROUP_FROM_STATUS, type UiStatusGroup } from './orderTableLabels'
 import { doesOrderMatchSearch, filterOrdersByScope } from './orderTableFilters'
-import { getEtaTimestamp } from './orderTableSorting'
 import { deleteOrderDraft, useOrderDrafts, type SavedOrderDraft } from './orderDraftStore'
 import { advanceOrderStatus, getNextStatus } from './orderTableWorkflow'
 import {
@@ -26,10 +24,13 @@ import {
 } from './orderTableWhatsApp'
 import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'
 import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
-import type { OrderStatusFilter, OrdersTableViewProps } from './OrdersTableView'
-import type { SortDirection } from './orderTableColumns'
+import type { OrdersTableViewProps } from './OrdersTableView'
+import type { DateRange } from 'react-day-picker'
 import type { OrdersExportStatusScope } from '../../domain/ordersExportDomain'
 import { getLocalDateString, nowInJakarta } from '../../domain/orderTimingDomain'
+import { compareOrderPriority, getOrderPriority, isOrderFinishedOn, type OrderPriority } from '../../domain/orderWorkStageDomain'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
+import type { OrdersWorkViewCounts } from './OrdersSubTabs'
 
 export interface OrdersActionModalData {
   kind: 'ready' | 'delivering' | 'review'
@@ -39,23 +40,30 @@ export interface OrdersActionModalData {
   whatsAppLink: string
 }
 
-export type OrdersListSortKey = 'status' | 'eta' | 'order'
+/** One line in the work list. `divider` marks the first row after the urgent ones. */
+export interface OrderWorkRow {
+  order: OrderTableRow
+  priority: OrderPriority
+  divider: boolean
+}
 
 export interface OrdersTableViewModel {
   activeScope: OrdersSubTabId
+  onScopeChange?: (scope: OrdersSubTabId) => void
+  dateRange?: DateRange
+  onDateRangeChange?: (range: DateRange | undefined) => void
   searchQuery: string
   onSearchQueryChange?: (value: string) => void
-  statusFilter: OrderStatusFilter
-  statusGroupFilter: UiStatusGroup | 'all' | 'drafts'
   isDraftMode: boolean
+  workCounts: OrdersWorkViewCounts
+  rows: OrderWorkRow[]
+  sortedOrders: OrderTableRow[]
+  /** True while a search runs across every order instead of the active view. */
+  isSearching: boolean
   draftCount: number
   visibleDrafts: SavedOrderDraft[]
-  newOrderCount: number
   scopedOrderCount: number
   displayedOrderCount: number
-  sortedOrders: OrderTableRow[]
-  sortKey: OrdersListSortKey
-  sortDirection: SortDirection
   /** Orders the viewer may see in the active branch; the export dialog filters them further. */
   exportableOrders: OrderTableRow[]
   exportBranch: string
@@ -75,9 +83,7 @@ export interface OrdersTableViewModel {
   addressCopied: boolean
   getProductName: (order: OrderTableRow) => string
   getNextStatusForOrder: (order: OrderTableRow) => OrderStatus | null
-  onStatusFilterChange: (filter: OrderStatusFilter) => void
-  onStatusGroupFilterChange: (filter: UiStatusGroup | 'all' | 'drafts') => void
-  onSortChange: (key: OrdersListSortKey) => void
+  onToggleDrafts: () => void
   onResumeDraft: (draftId: string) => void
   onDeleteDraft: (draftId: string) => void
   onOpenDetails: (order: OrderTableRow) => void
@@ -95,6 +101,8 @@ export interface OrdersTableViewModel {
 
 export const useOrdersTableViewController = ({
   activeScope,
+  onScopeChange,
+  onDateRangeChange,
   activeBranch,
   dateRange,
   searchQuery = '',
@@ -102,11 +110,8 @@ export const useOrdersTableViewController = ({
   initialSelectedOrderNumber,
   onInitialSelectedOrderNumberConsumed,
   onOpenDraft,
-  initialStatusGroupFilter,
 }: OrdersTableViewProps): OrdersTableViewModel => {
-  const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>('all')
-  const [sortKey, setSortKey] = useState<OrdersListSortKey>('eta')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const copy = useBilingualCopy()
   const [selectedOrderNumber, setSelectedOrderNumber] = useState<string | null>(initialSelectedOrderNumber ?? null)
 
   useEffect(() => {
@@ -115,10 +120,8 @@ export const useOrdersTableViewController = ({
     onInitialSelectedOrderNumberConsumed?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSelectedOrderNumber])
-  const [statusGroupFilter, setStatusGroupFilter] = useState<UiStatusGroup | 'all' | 'drafts'>(initialStatusGroupFilter ?? 'all')
-  useEffect(() => {
-    if (initialStatusGroupFilter) setStatusGroupFilter(initialStatusGroupFilter)
-  }, [initialStatusGroupFilter])
+  const [isDraftMode, setIsDraftMode] = useState(false)
+  useEffect(() => { setIsDraftMode(false) }, [activeScope])
   const [actionModal, setActionModal] = useState<'ready' | 'delivering' | 'review' | null>(null)
   const [actionOrder, setActionOrder] = useState<OrderTableRow | null>(null)
   const [readyTrackingUrl, setReadyTrackingUrl] = useState<string | undefined>(undefined)
@@ -142,7 +145,11 @@ export const useOrdersTableViewController = ({
   const actionPermissions = useSettingsStore((state) => state.actionPermissions)
   const hasOrdersEditAccess = canEditSection(currentUserRole, 'orders', permissions)
   const actor = { employeeId: currentUserEmployeeId, name: currentUserName, role: currentUserRole, branchId: currentUserBranchId }
-  const getProductName = (order: OrderTableRow): string => resolveOrderProductDisplay(catalogProducts, order).name
+  const getProductName = (order: OrderTableRow): string => {
+    const items = order.items ?? []
+    const name = resolveOrderProductDisplay(catalogProducts, items[0] ?? order).name
+    return items.length > 1 ? `${name} +${items.length - 1}` : name
+  }
 
   const runAdvance = (order: OrderTableRow, next: OrderStatus) => {
     if (next === 'processing') {
@@ -194,53 +201,76 @@ export const useOrdersTableViewController = ({
     const haystack = `${values.customerName} ${values.customerWhatsappNumber} ${values.orderItemCustomName} ${values.orderItemCatalogId}`.toLowerCase()
     return haystack.includes(draftQuery)
   })
-  const isDraftMode = statusGroupFilter === 'drafts'
-  const scopedOrders = filterOrdersByScope(activeScope, branchOrders, dateRange)
-  const newOrderCount = scopedOrders.filter((order) => STATUS_GROUP_FROM_STATUS[order.status] === 'new').length
-
-  const displayedOrders = scopedOrders.filter((order) => {
-    const group = STATUS_GROUP_FROM_STATUS[order.status]
-    const matchesGroup = statusGroupFilter === 'drafts' ? false : statusGroupFilter === 'all' ? group !== 'finished' : group === statusGroupFilter
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
-    const query = searchQuery.trim().toLowerCase()
-    if (!query) return matchesGroup && matchesStatus
-    return matchesGroup && matchesStatus && doesOrderMatchSearch({
-      order,
-      query,
-      productName: getProductName(order),
-      customerContact: getCustomerContactForOrder(customers, order),
-    })
-  })
-
-  const statusRank: Record<OrderStatus, number> = {
-    pending_verification: 0, confirmed: 1, processing: 2, ready: 3,
-    delivering: 4, delivered: 5, picked_up: 5, cancelled: 6, failed: 7,
+  const now = nowInJakarta()
+  const query = searchQuery.trim().toLowerCase()
+  const isSearching = query.length > 0
+  const prioritized = branchOrders.map((order) => ({ order, priority: getOrderPriority(order, now) }))
+  const isWaiting = (stage: OrderPriority['stage']) => stage === 'arranging' || stage === 'delivering'
+  const isClosed = (stage: OrderPriority['stage']) => stage === 'done' || stage === 'cancelled'
+  const todayKey = getLocalDateString(now)
+  const inRange = new Set(filterOrdersByScope('custom', branchOrders, dateRange).map((order) => order.orderNumber))
+  const inView = (item: { order: OrderTableRow; priority: OrderPriority }): boolean => {
+    if (activeScope === 'action') return item.priority.needsAdmin
+    if (activeScope === 'waiting') return isWaiting(item.priority.stage)
+    if (activeScope === 'done') return isOrderFinishedOn(item.order, todayKey)
+    return inRange.has(item.order.orderNumber)
   }
-  const sortedOrders = [...displayedOrders].sort((a, b) => {
-    const comparison = sortKey === 'status'
-      ? statusRank[a.status] - statusRank[b.status]
-      : sortKey === 'eta'
-        ? getEtaTimestamp(a) - getEtaTimestamp(b)
-        : a.orderNumber.localeCompare(b.orderNumber, undefined, { numeric: true })
-    return sortDirection === 'asc' ? comparison : -comparison
+  const workCounts: OrdersWorkViewCounts = {
+    action: prioritized.filter((item) => item.priority.needsAdmin).length,
+    waiting: prioritized.filter((item) => isWaiting(item.priority.stage)).length,
+    done: prioritized.filter((item) => isOrderFinishedOn(item.order, todayKey)).length,
+  }
+  const matchesSearch = (order: OrderTableRow) => doesOrderMatchSearch({
+    order,
+    query,
+    productName: getProductName(order),
+    customerContact: getCustomerContactForOrder(customers, order),
   })
+  // A search looks through every order, whatever view is open.
+  const visible = prioritized.filter((item) => (isSearching ? matchesSearch(item.order) : inView(item)))
+  const group = (stage: OrderPriority['stage']) => (isClosed(stage) ? 2 : isWaiting(stage) ? 1 : 0)
+  const scheduled = (priority: OrderPriority) => priority.scheduledAt?.getTime() ?? Number.POSITIVE_INFINITY
+  const sortedItems = [...visible].sort((a, b) => {
+    if (!isSearching && activeScope === 'waiting') return scheduled(a.priority) - scheduled(b.priority)
+    if (!isSearching && activeScope === 'done') return scheduled(b.priority) - scheduled(a.priority)
+    return group(a.priority.stage) - group(b.priority.stage) || compareOrderPriority(a.priority, b.priority)
+  })
+  let seenUrgent = false
+  let dividerPlaced = false
+  const rows: OrderWorkRow[] = sortedItems.map((item) => {
+    const actionable = item.priority.needsAdmin
+    if (actionable && item.priority.urgent) seenUrgent = true
+    const divider = seenUrgent && !dividerPlaced && !(actionable && item.priority.urgent)
+    if (divider) dividerPlaced = true
+    return { ...item, divider }
+  })
+  const sortedOrders = rows.map((row) => row.order)
+  const displayedOrders = sortedOrders
   const selectedOrder = selectedOrderNumber ? (allOrders.find((order) => order.orderNumber === selectedOrderNumber) ?? null) : null
 
   const scopeLabel = isDraftMode
-    ? 'Saved drafts'
-    : activeScope === 'today'
-      ? "Today's orders"
-      : activeScope === 'future'
-        ? 'Future orders'
-        : 'Custom date orders'
+    ? copy('Saved drafts', 'Draf tersimpan')
+    : isSearching
+      ? copy('Search results', 'Hasil pencarian')
+      : activeScope === 'action'
+        ? copy('Most urgent first', 'Yang paling mendesak di atas')
+        : activeScope === 'waiting'
+          ? copy('Florist or courier is working', 'Sedang dirangkai atau diantar')
+          : activeScope === 'done'
+            ? copy('Delivered or picked up today', 'Terkirim atau diambil hari ini')
+            : copy('Orders on the picked dates', 'Pesanan pada tanggal terpilih')
 
   const emptyStateMessage = isDraftMode
-    ? (searchQuery.trim() ? `No drafts match "${searchQuery.trim()}".` : 'No saved order drafts yet.')
-    : searchQuery.trim()
-      ? `No orders match "${searchQuery.trim()}".`
-      : scopedOrders.length === 0
-        ? `No orders for ${scopeLabel.toLowerCase()} yet.`
-        : 'No orders match this filter yet.'
+    ? (query ? copy(`No drafts match "${searchQuery.trim()}".`, `Tidak ada draf yang cocok dengan "${searchQuery.trim()}".`) : copy('No saved order drafts yet.', 'Belum ada draf pesanan.'))
+    : isSearching
+      ? copy(`No orders match "${searchQuery.trim()}".`, `Tidak ada pesanan yang cocok dengan "${searchQuery.trim()}".`)
+      : activeScope === 'action'
+        ? copy('Nothing needs you right now.', 'Tidak ada pesanan yang perlu kamu kerjakan sekarang.')
+        : activeScope === 'waiting'
+          ? copy('No orders with a florist or courier right now.', 'Tidak ada pesanan yang sedang dirangkai atau dikirim.')
+          : activeScope === 'done'
+            ? copy('No orders finished today yet.', 'Belum ada pesanan yang selesai hari ini.')
+            : copy('No orders on these dates.', 'Tidak ada pesanan pada tanggal ini.')
 
   const getNextStatusForOrder = (order: OrderTableRow): OrderStatus | null =>
     hasOrdersEditAccess && canDirectlyEditOrder(order, currentUserRole) && authorizeOrderMutation({ order, actor, permissions, actionPermissions, kind: 'status' }).allowed
@@ -267,29 +297,29 @@ export const useOrdersTableViewController = ({
     : null
 
   const isoDay = (date?: Date) => (date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : undefined)
-  const todayKey = getLocalDateString(nowInJakarta())
-  const exportDefaultRange = activeScope === 'today'
+  const exportDefaultRange = activeScope === 'done'
     ? { from: todayKey, to: todayKey }
-    : activeScope === 'future'
-      ? { from: todayKey }
-      : { from: isoDay(dateRange?.from), to: isoDay(dateRange?.to ?? dateRange?.from) }
-  const exportDefaultStatus: OrdersExportStatusScope = statusGroupFilter === 'finished' ? 'finished' : 'all'
+    : activeScope === 'custom'
+      ? { from: isoDay(dateRange?.from), to: isoDay(dateRange?.to ?? dateRange?.from) }
+      : { from: todayKey }
+  const exportDefaultStatus: OrdersExportStatusScope = activeScope === 'done' ? 'finished' : 'all'
 
   return {
     activeScope,
+    onScopeChange,
+    dateRange,
+    onDateRangeChange,
     searchQuery,
     onSearchQueryChange,
-    statusFilter,
-    statusGroupFilter,
     isDraftMode,
+    workCounts,
+    rows,
+    isSearching,
     draftCount: branchDrafts.length,
     visibleDrafts,
-    newOrderCount,
-    scopedOrderCount: isDraftMode ? branchDrafts.length : scopedOrders.length,
+    scopedOrderCount: isDraftMode ? branchDrafts.length : visible.length,
     displayedOrderCount: isDraftMode ? visibleDrafts.length : displayedOrders.length,
     sortedOrders,
-    sortKey,
-    sortDirection,
     exportableOrders: allOrders,
     exportBranch: activeBranch,
     exportDefaultRange,
@@ -308,12 +338,7 @@ export const useOrdersTableViewController = ({
     addressCopied,
     getProductName,
     getNextStatusForOrder,
-    onStatusFilterChange: setStatusFilter,
-    onStatusGroupFilterChange: setStatusGroupFilter,
-    onSortChange: (key) => {
-      if (key === sortKey) setSortDirection((direction) => direction === 'asc' ? 'desc' : 'asc')
-      else { setSortKey(key); setSortDirection('asc') }
-    },
+    onToggleDrafts: () => setIsDraftMode((value) => !value),
     onResumeDraft: (draftId) => onOpenDraft?.(draftId),
     onDeleteDraft: deleteOrderDraft,
     onOpenDetails: (order) => setSelectedOrderNumber(order.orderNumber),

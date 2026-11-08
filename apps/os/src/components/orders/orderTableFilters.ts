@@ -1,14 +1,16 @@
 import type { DateRange } from 'react-day-picker'
 import type { OrderTableRow } from '../../types/orders'
-import type { OrdersSubTabId } from './OrdersSubTabs'
 import { getLocalDateString, isFutureOrder, nowInJakarta, parseOrderDateString } from './orderTableFormatters'
+
+/** Date scopes: today, upcoming (tomorrow on), or a picked range. */
+export type OrdersDateScope = 'today' | 'future' | 'custom'
 
 /**
  * @description Returns a list of orders filtered by high-level scope.
  * Future (Mendatang) starts tomorrow; later-today orders stay in Today only.
  */
 export const filterOrdersByScope = (
-  scope: OrdersSubTabId,
+  scope: OrdersDateScope,
   orders: OrderTableRow[],
   dateRange?: DateRange,
 ): OrderTableRow[] => {

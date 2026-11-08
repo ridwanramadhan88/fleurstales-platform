@@ -9,7 +9,7 @@ describe('OrdersTabHeader recovery states', () => {
   it('keeps New order visible and explains a temporary branch block', () => {
     render(
       <OrdersTabHeader
-        activeOrdersSubTab="today"
+        activeOrdersSubTab="action"
         orderCounts={counts}
         draftCount={0}
         canCreateOrder={false}
@@ -27,7 +27,7 @@ describe('OrdersTabHeader recovery states', () => {
   it('shows why New order is blocked as visible text, without tapping', () => {
     render(
       <OrdersTabHeader
-        activeOrdersSubTab="today"
+        activeOrdersSubTab="action"
         orderCounts={counts}
         draftCount={0}
         canCreateOrder={false}
@@ -43,7 +43,7 @@ describe('OrdersTabHeader recovery states', () => {
     const onSelect = vi.fn()
     render(
       <OrdersTabHeader
-        activeOrdersSubTab="today"
+        activeOrdersSubTab="action"
         orderCounts={counts}
         draftCount={0}
         canCreateOrder={false}
@@ -61,7 +61,7 @@ describe('OrdersTabHeader recovery states', () => {
   it('keeps the same action-area geometry when branch availability changes', () => {
     const { rerender } = render(
       <OrdersTabHeader
-        activeOrdersSubTab="today"
+        activeOrdersSubTab="action"
         orderCounts={counts}
         draftCount={0}
         canCreateOrder={false}
@@ -77,7 +77,7 @@ describe('OrdersTabHeader recovery states', () => {
 
     rerender(
       <OrdersTabHeader
-        activeOrdersSubTab="today"
+        activeOrdersSubTab="action"
         orderCounts={counts}
         draftCount={0}
         canCreateOrder
@@ -94,25 +94,10 @@ describe('OrdersTabHeader recovery states', () => {
     expect(screen.getByRole('button', { name: 'New order' })).not.toHaveAttribute('aria-disabled')
   })
 
-  it('uses compact mobile summary geometry without changing tablet cards', () => {
-    render(
-      <OrdersTabHeader
-        activeOrdersSubTab="today"
-        orderCounts={{ active: 4, completed: 2, needsAttention: 1 }}
-        draftCount={3}
-        canCreateOrder
-        onNewOrder={vi.fn()}
-      />,
-    )
-
-    expect(screen.getByText('Active orders').closest('div')?.parentElement?.className).toContain('p-3')
-    expect(screen.getByText('Active orders').closest('div')?.parentElement?.className).toContain('sm:p-4')
-  })
-
   it('does not expose order creation to a role that cannot create orders', () => {
     render(
       <OrdersTabHeader
-        activeOrdersSubTab="today"
+        activeOrdersSubTab="action"
         orderCounts={counts}
         draftCount={0}
         canCreateOrder={false}

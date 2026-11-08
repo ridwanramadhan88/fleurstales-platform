@@ -224,7 +224,8 @@ describe('critical application workflows', () => {
     const orderButtons = screen.getAllByRole('button', { name: 'Orders' })
     await user.click(orderButtons[0])
 
-    const orderNumbers = await screen.findAllByText(created.orderNumber)
+    // The work list shows the customer, not the order number.
+    const orderNumbers = await screen.findAllByText(created.customerName)
     const orderRow = orderNumbers[0].closest('[role="button"]')
     if (!(orderRow instanceof HTMLElement)) {
       throw new Error('Active order row not found')
@@ -296,7 +297,8 @@ describe('critical application workflows', () => {
     const user = await chooseRole('Owner')
     await user.click(screen.getAllByRole('button', { name: 'Orders' })[0])
 
-    const orderNumbers = await screen.findAllByText(created.orderNumber)
+    // The work list shows the customer, not the order number.
+    const orderNumbers = await screen.findAllByText(created.customerName)
     const orderRow = orderNumbers[0].closest('[role="button"]')
     if (!(orderRow instanceof HTMLElement)) {
       throw new Error('Payment-gated order row not found')
