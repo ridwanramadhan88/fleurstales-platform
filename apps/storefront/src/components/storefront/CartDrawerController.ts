@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { calculateOrderTotal, formatVoucherValue, validateVoucherCode } from '../../domain/voucherDomain'
+import {
+  EMPTY_DELIVERY_DETAILS,
+  toDeliveryDetailsInput,
+  type DeliveryDetailsDraft,
+} from '../../domain/deliveryDetailsDomain'
 import { buildCustomerMetrics, getOrdersForCustomer } from '../../domain/customerDomain'
 import { useDismissableModal } from '../../hooks/useDismissableModal'
 import { useCustomerStore } from '../../store/customerStore'
@@ -52,6 +57,7 @@ export interface CartDrawerViewModel extends CartDrawerProps {
   deliveryDate: string
   deliveryTime: string
   deliveryAddress: string
+  deliveryDetails: DeliveryDetailsDraft
   orderNote: string
   greetingMessage: string
   greetingCardName: string
@@ -89,6 +95,7 @@ export interface CartDrawerViewModel extends CartDrawerProps {
   setDeliveryDate: (value: string) => void
   setDeliveryTime: (value: string) => void
   setDeliveryAddress: (value: string) => void
+  updateDeliveryDetails: (patch: Partial<DeliveryDetailsDraft>) => void
   setOrderNote: (value: string) => void
   setGreetingMessage: (value: string) => void
   setGreetingCardName: (value: string) => void
@@ -120,6 +127,7 @@ export const useCartDrawerController = (
   const [deliveryDate, setDeliveryDate] = useState('')
   const [deliveryTime, setDeliveryTime] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [deliveryDetails, setDeliveryDetails] = useState<DeliveryDetailsDraft>(EMPTY_DELIVERY_DETAILS)
   const [orderNote, setOrderNote] = useState('')
   const [greetingMessage, setGreetingMessage] = useState('')
   const [greetingCardName, setGreetingCardName] = useState('')
@@ -300,6 +308,7 @@ export const useCartDrawerController = (
     setDeliveryDate('')
     setDeliveryTime('')
     setDeliveryAddress('')
+    setDeliveryDetails(EMPTY_DELIVERY_DETAILS)
     setOrderNote('')
     setGreetingMessage('')
     setGreetingCardName('')
@@ -344,7 +353,7 @@ export const useCartDrawerController = (
       return
     }
     if (remoteCheckoutEnabled && sharedData.enabled) {
-      const error = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
+      const error = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, deliveryDetails, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
       if (error) { setVoucherMessage(`Complete checkout details first. ${error}`); return }
       try {
         const quote = await sharedData.repositories.checkout.quoteOrder(buildQuoteRequest(code.trim())) as StorefrontCheckoutQuoteWithAutoPromo
@@ -402,6 +411,7 @@ export const useCartDrawerController = (
       whatsappNumber,
       fulfillment,
       deliveryAddress,
+      deliveryDetails,
       date: deliveryDate,
       time: deliveryTime,
       branch: selectedBranch,
@@ -433,7 +443,7 @@ export const useCartDrawerController = (
       setStep('cart')
       return
     }
-    const validationError = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
+    const validationError = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, deliveryDetails, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
     const paymentError = paymentMethod === 'transfer' && bankAccounts.length === 0
       ? 'Bank transfer is unavailable for this branch.'
       : null
@@ -463,6 +473,9 @@ export const useCartDrawerController = (
         return { productId: line.productId, variantId: variantId ?? '', quantity: line.quantity }
       }),
       deliveryAddress: fulfillment === 'delivery' ? deliveryAddress.trim() || undefined : undefined,
+      deliveryDetails: fulfillment === 'delivery'
+        ? toDeliveryDetailsInput(deliveryDetails, { name: customerName, whatsappNumber })
+        : undefined,
       orderNote: orderNote.trim() || undefined,
       greetingMessage: greetingMessage.trim() || undefined,
       greetingCardName: greetingCardName.trim() || undefined,
@@ -574,6 +587,18 @@ export const useCartDrawerController = (
       greetingCardName: greetingCardName.trim() || undefined,
       deliveryAddress:
         fulfillment === 'delivery' ? deliveryAddress.trim() || undefined : undefined,
+      ...(fulfillment === 'delivery'
+        ? (() => {
+            const details = toDeliveryDetailsInput(deliveryDetails, { name: customerName, whatsappNumber })
+            return {
+              recipientName: details.recipientName || undefined,
+              recipientPhone: details.recipientPhone || undefined,
+              deliveryLatitude: details.latitude,
+              deliveryLongitude: details.longitude,
+              deliveryLandmark: details.landmark || undefined,
+            }
+          })()
+        : {}),
       promoCode: appliedVoucherCode ?? undefined,
     })
 
@@ -613,6 +638,7 @@ export const useCartDrawerController = (
     deliveryDate,
     deliveryTime,
     deliveryAddress,
+    deliveryDetails,
     orderNote,
     greetingMessage,
     greetingCardName,
@@ -649,6 +675,7 @@ export const useCartDrawerController = (
     setDeliveryDate: (value) => { setDeliveryDate(value); setDeliveryTime(''); setDetailsError(null) },
     setDeliveryTime,
     setDeliveryAddress,
+    updateDeliveryDetails: (patch) => { setDeliveryDetails((current) => ({ ...current, ...patch })); setDetailsError(null) },
     setOrderNote,
     setGreetingMessage,
     setGreetingCardName,

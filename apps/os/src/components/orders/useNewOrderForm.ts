@@ -22,6 +22,12 @@ export interface NewOrderFormValues {
   pickupTime: string
   deliveryAddress: string
   deliveryInstructions: string
+  /** Recipient when it is not the customer (optional; defaults to the customer). */
+  recipientName: string
+  recipientPhone: string
+  /** Delivery pin as "lat,lng" ('' = not set). */
+  deliveryPin: string
+  deliveryLandmark: string
   deliveryFee: string
   greetingMessage: string
   greetingCardName: string
@@ -61,6 +67,10 @@ export const initialNewOrderValues: NewOrderFormValues = {
   pickupTime: '',
   deliveryAddress: '',
   deliveryInstructions: '',
+  recipientName: '',
+  recipientPhone: '',
+  deliveryPin: '',
+  deliveryLandmark: '',
   deliveryFee: '',
   greetingMessage: '',
   greetingCardName: '',

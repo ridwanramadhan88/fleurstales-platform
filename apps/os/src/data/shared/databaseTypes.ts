@@ -358,6 +358,11 @@ export interface OrderRow {
   greeting_card_name: string | null
   delivery_address: string | null
   delivery_instructions: string | null
+  recipient_name?: string | null
+  recipient_phone?: string | null
+  delivery_lat?: number | null
+  delivery_lng?: number | null
+  delivery_landmark?: string | null
   promo_code: string | null
   florist_display_name: string | null
   florist_assigned_employee_id: string | null
@@ -498,6 +503,8 @@ export interface CreateStorefrontOrderRpcArgs {
   /** 'qris' = pay the branch QRIS (still recorded as a transfer). */
   p_payment_method?: PaymentMethod | 'qris' | null
   p_promo_code?: string | null
+  /** create_storefront_order only (the quote ignores it). */
+  p_delivery_details?: Json | null
 }
 
 export type TableDefinition<Row> = {

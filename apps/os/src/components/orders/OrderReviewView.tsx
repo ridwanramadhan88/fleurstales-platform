@@ -6,6 +6,8 @@
  * ordered, and where it goes. One main action: confirm and tell the customer.
  */
 
+import { OrderDeliveryDestination } from './OrderDeliveryDestination'
+import { useUserStore } from '../../store/userStore'
 import type { FC } from 'react'
 import { MessageCircle, Package2, X } from 'lucide-react'
 import type { OrderSource } from '../../types/orders'
@@ -47,6 +49,8 @@ const Stat: FC<{ label: string; value: string; sub?: string; subClass?: string }
 
 export const OrderReviewView: FC<{ viewModel: OrderDetailsViewModel }> = ({ viewModel }) => {
   const copy = useBilingualCopy()
+  const role = useUserStore((state) => state.role)
+  const canEditDelivery = role === 'owner' || role === 'admin'
   const {
     order,
     formatter,
@@ -174,18 +178,7 @@ export const OrderReviewView: FC<{ viewModel: OrderDetailsViewModel }> = ({ view
 
           <aside aria-label={copy('Customer and destination', 'Pelanggan dan tujuan')} className="flex flex-col gap-4 rounded-2xl bg-muted/60 p-4 lg:w-[300px] lg:shrink-0">
             {isDelivery ? (
-              <>
-                <div>
-                  <p className="text-xs text-muted-foreground">{copy('Deliver to', 'Alamat antar')}</p>
-                  <p className="mt-0.5 text-[15px] leading-relaxed text-foreground">{order.deliveryAddress?.trim() || copy('No address yet', 'Belum ada alamat')}</p>
-                </div>
-                {order.deliveryInstructions?.trim() && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">{copy('For the courier', 'Untuk kurir')}</p>
-                    <p className="mt-0.5 text-sm text-foreground">{order.deliveryInstructions.trim()}</p>
-                  </div>
-                )}
-              </>
+              <OrderDeliveryDestination order={order} canEdit={canEditDelivery} />
             ) : (
               <div>
                 <p className="text-xs text-muted-foreground">{copy('Pickup at', 'Ambil di')}</p>

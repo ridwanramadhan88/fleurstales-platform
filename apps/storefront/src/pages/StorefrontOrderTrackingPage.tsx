@@ -312,7 +312,9 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                             <div><dt className="text-black/42">Jadwal</dt><dd className="mt-0.5 font-medium">{scheduleLabel}</dd></div>
                             {details.fulfillment === 'delivery' ? (
                               <>
+                                {details.recipientName ? <div><dt className="text-black/42">Penerima</dt><dd className="mt-0.5 font-medium">{details.recipientName}{details.recipientPhone ? ` · ${details.recipientPhone}` : ''}</dd></div> : null}
                                 <div><dt className="text-black/42">Alamat pengiriman</dt><dd className="mt-0.5 font-medium">{details.deliveryAddress ?? '—'}</dd></div>
+                                {details.deliveryLandmark ? <div><dt className="text-black/42">Patokan</dt><dd className="mt-0.5 font-medium">{details.deliveryLandmark}</dd></div> : null}
                                 {details.deliveryInstructions ? <div><dt className="text-black/42">Catatan pengiriman</dt><dd className="mt-0.5 font-medium">{details.deliveryInstructions}</dd></div> : null}
                               </>
                             ) : details.branchAddress ? <div><dt className="text-black/42">Alamat pickup</dt><dd className="mt-0.5 font-medium">{details.branchAddress}</dd></div> : null}

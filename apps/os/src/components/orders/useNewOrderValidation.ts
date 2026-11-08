@@ -1,4 +1,5 @@
 import type { NewOrderFormErrors, NewOrderFormValues } from './useNewOrderForm'
+import { isValidRecipientPhone, parseMapsLocation } from '../../domain/deliveryDetailsDomain'
 import { isPaymentMethodAllowedForFulfillment } from '../../domain/orderPaymentGateDomain'
 import type { BranchSettings } from '../../types/settings'
 import { getBranchHoursForDate, isTimeWithinBranchOpeningHours } from '../../domain/branchOpeningHoursDomain'
@@ -14,6 +15,9 @@ export const NEW_ORDER_ERROR_FOCUS_ORDER: Array<keyof NewOrderFormValues> = [
   'orderType',
   'fulfillmentType',
   'deliveryAddress',
+  'recipientPhone',
+  'deliveryPin',
+  'deliveryLandmark',
   'deliveryDate',
   'deliveryTime',
   'pickupDate',
@@ -60,6 +64,17 @@ export const validateNewOrderForm = (
   }
   if (values.fulfillmentType === 'delivery' && !values.deliveryAddress.trim()) {
     nextErrors.deliveryAddress = 'Delivery address is required for delivery.'
+  }
+  if (values.fulfillmentType === 'delivery') {
+    if (!parseMapsLocation(values.deliveryPin ?? '')) {
+      nextErrors.deliveryPin = 'Set the delivery pin: paste the Google Maps link or tap the map.'
+    }
+    if (!(values.deliveryLandmark ?? '').trim()) {
+      nextErrors.deliveryLandmark = 'Landmark or house detail is required for delivery.'
+    }
+    if ((values.recipientPhone ?? '').trim() && !isValidRecipientPhone(values.recipientPhone)) {
+      nextErrors.recipientPhone = 'Enter a valid recipient WhatsApp number.'
+    }
   }
   if (!values.orderType) {
     nextErrors.orderType = 'Select order source.'

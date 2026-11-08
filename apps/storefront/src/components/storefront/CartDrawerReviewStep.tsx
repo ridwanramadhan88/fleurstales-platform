@@ -36,6 +36,7 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
   deliveryDate,
   deliveryTime,
   deliveryAddress,
+  deliveryDetails,
   itemsTotalIdr,
   deliveryFeeIdr,
   discountIdr,
@@ -93,7 +94,15 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
             {fulfillment === 'delivery' && (
               <div className="flex items-start gap-3 rounded-[var(--sf-radius-field)] bg-white/55 px-4 py-4">
                 <MapPin className="mt-0.5 size-4 shrink-0 text-[#00813f]" strokeWidth={1.8} />
-                <p className="sf-type-2 leading-6 text-black/66">{deliveryAddress}</p>
+                <div className="min-w-0 space-y-1 sf-type-2 leading-6 text-black/66">
+                  <p className="font-medium text-black">
+                    {deliveryDetails.sendToOther ? deliveryDetails.recipientName : customerName}
+                    {' · '}
+                    {deliveryDetails.sendToOther ? deliveryDetails.recipientPhone : whatsappNumber}
+                  </p>
+                  <p>{deliveryAddress}</p>
+                  {deliveryDetails.landmark.trim() ? <p>{deliveryDetails.landmark.trim()}</p> : null}
+                </div>
               </div>
             )}
           </div>

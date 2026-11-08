@@ -2,6 +2,8 @@ import type {
   CreateInternalOrderInput,
   CustomerBusinessMetric,
   CreateInternalOrderResult,
+  SaveOrderDeliveryDetailsInput,
+  SaveOrderDeliveryDetailsResult,
   CreateStorefrontOrderInput,
   CreateStorefrontOrderResult,
   StorefrontCheckoutQuoteResult,
@@ -109,6 +111,11 @@ export interface OrdersReadRepository {
 export interface OrdersAdminRepository extends OrdersReadRepository {
   quoteInternalOrder(input: CreateInternalOrderInput): Promise<StorefrontCheckoutQuoteResult>
   createInternalOrder(input: CreateInternalOrderInput): Promise<CreateInternalOrderResult>
+  saveOrderDeliveryDetails(
+    orderId: string,
+    expectedRevision: number,
+    details: SaveOrderDeliveryDetailsInput,
+  ): Promise<SaveOrderDeliveryDetailsResult>
 }
 
 export interface StorefrontCheckoutRepository {
