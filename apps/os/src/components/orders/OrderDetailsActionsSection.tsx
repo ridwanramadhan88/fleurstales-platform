@@ -18,40 +18,18 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
     onClose,
     customerWhatsappNumber,
     nextStatus,
-    readyMessage,
-    whatsAppLink,
     canEdit,
     isEditing,
-    actionModal,
-    addressCopied,
     detailsCopied,
-    showPaymentGate,
-    showFinishPhotoDialog,
     isPendingStorefrontConfirmation,
     storefrontDecisionBusy,
     storefrontPreviewLoading,
-    storefrontCancelOpen,
-    storefrontCancelReason,
-    storefrontPreviewModal,
-    storefrontPreviewMessage,
-    setStorefrontCancelReason,
     onCancelEdit,
     onSaveChanges,
     onMoveToNextStatus,
-    onCancelPaymentGate,
-    onMarkPaidAndContinue,
-    onFinishPhotoUploaded,
-    onCancelFinishPhotoDialog,
-    onCloseActionModal,
-    onCopyAddress,
     onCopyOrderDetails,
     onOpenStorefrontCancel,
-    onCloseStorefrontCancel,
     onOpenStorefrontConfirmPreview,
-    onCloseStorefrontPreview,
-    onSendConfirmWhatsApp,
-    onSendRejectWhatsApp,
-    onSubmitStorefrontCancel,
   } = viewModel
 
   const paymentBlocked = Boolean(
@@ -127,6 +105,51 @@ export const OrderDetailsActionsSection: FC<OrderDetailsActionsSectionProps> = (
         </div>
       </section>
 
+      <OrderDetailsActionDialogs viewModel={viewModel} />
+    </>
+  )
+}
+
+/**
+ * Dialogs opened from the order window's actions (reject reason, payment gate,
+ * finish photo, WhatsApp previews). Shared by the details window and the
+ * review window so both open the same flows.
+ */
+export const OrderDetailsActionDialogs: FC<OrderDetailsActionsSectionProps> = ({ viewModel }) => {
+  const {
+    order,
+    onClose,
+    customerWhatsappNumber,
+    nextStatus,
+    readyMessage,
+    whatsAppLink,
+    actionModal,
+    addressCopied,
+    showPaymentGate,
+    showFinishPhotoDialog,
+    storefrontDecisionBusy,
+    storefrontPreviewLoading,
+    storefrontCancelOpen,
+    storefrontCancelReason,
+    storefrontPreviewModal,
+    storefrontPreviewMessage,
+    setStorefrontCancelReason,
+    onCancelPaymentGate,
+    onMarkPaidAndContinue,
+    onFinishPhotoUploaded,
+    onCancelFinishPhotoDialog,
+    onCloseActionModal,
+    onCopyAddress,
+    onCloseStorefrontCancel,
+    onCloseStorefrontPreview,
+    onSendConfirmWhatsApp,
+    onSendRejectWhatsApp,
+    onSubmitStorefrontCancel,
+  } = viewModel
+  const decisionBusy = storefrontDecisionBusy !== null || storefrontPreviewLoading
+
+  return (
+    <>
       <AppDialog
         open={storefrontCancelOpen}
         onOpenChange={(open) => { if (!open) onCloseStorefrontCancel() }}

@@ -12,8 +12,8 @@ import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { getLocalDateString, nowInJakarta, addDays } from '../../domain/orderTimingDomain'
 import { isOrderFullyPaid, orderHasNote } from '../../domain/orderWorkStageDomain'
 import type { OrderWorkRow, OrdersTableViewModel } from './OrdersTableViewController'
+import { OrderStagePill } from './OrderStagePill'
 import {
-  ORDER_WORK_STAGE_STYLE,
   formatMinutesLeft,
   getOrderWorkActionLabel,
   getOrderWorkReason,
@@ -59,21 +59,9 @@ const getPaymentLine = (order: OrderTableRow, stage: OrderWorkRow['priority']['s
   return { text, className: stage === 'payment' ? 'text-destructive' : 'text-muted-foreground' }
 }
 
-const StagePill: FC<{ row: OrderWorkRow; copy: Copy; compact?: boolean }> = ({ row, copy, compact }) => {
-  const style = ORDER_WORK_STAGE_STYLE[row.priority.stage]
-  const Icon = style.icon
-  return (
-    <span
-      data-stage={row.priority.stage}
-      className={`inline-flex max-w-full items-center gap-1.5 rounded-full font-semibold ${style.pillClass} ${compact ? 'h-6 py-0 pl-[3px] pr-2.5 text-xs' : 'h-[30px] py-0 pl-1 pr-3 text-[13px]'}`}
-    >
-      <span aria-hidden="true" className={`flex shrink-0 items-center justify-center rounded-full text-white ${style.dotClass} ${compact ? 'size-[18px]' : 'size-[22px]'}`}>
-        <Icon className={compact ? 'size-2.5' : 'size-3'} strokeWidth={2.6} />
-      </span>
-      <span className="truncate">{getOrderWorkStageLabel(row.priority.stage, row.order, copy)}</span>
-    </span>
-  )
-}
+const StagePill: FC<{ row: OrderWorkRow; copy: Copy; compact?: boolean }> = ({ row, copy, compact }) => (
+  <OrderStagePill stage={row.priority.stage} order={row.order} copy={copy} compact={compact} />
+)
 
 const NoteTag: FC<{ copy: Copy }> = ({ copy }) => (
   <span className="shrink-0 rounded-full bg-[#FFF3C4] px-2 py-0.5 text-[11px] font-semibold text-foreground/80 dark:bg-[#5C4A00] dark:text-[#FFE38A]">
