@@ -24,15 +24,24 @@ const runtimeLocalToday = (() => {
 })()
 
 describe('UX audit: numbers and order agree across screens', () => {
-  it('"work from the top": the priority list is ordered by due time, not just by day', () => {
-    useOrdersStore.setState({ orders: [
-      makeOrder({ id: 'a', orderNumber: 'LATE-AFTERNOON', status: 'confirmed', branch: 'Kedamaian', scheduleDate: today, scheduleTime: '14:00' } as never),
-      makeOrder({ id: 'b', orderNumber: 'EVENING', status: 'processing', branch: 'Kedamaian', scheduleDate: today, scheduleTime: '17:30:00' } as never),
-      makeOrder({ id: 'c', orderNumber: 'MORNING', status: 'confirmed', branch: 'Kedamaian', scheduleDate: today, scheduleTime: '9:00' } as never),
-    ] })
-    render(<AdminTodayQueue activeBranch="Kedamaian" onGoToOrders={vi.fn()} onOpenOrder={vi.fn()} />)
-    const numbers = screen.getAllByText(/^(MORNING|LATE-AFTERNOON|EVENING)$/).map((node) => node.textContent)
-    expect(numbers).toEqual(['MORNING', 'LATE-AFTERNOON', 'EVENING'])
+  it('"work from the top": the priority list uses the shared priority formula', () => {
+    // 08:00 in Jakarta. Orders that still have to be made count from 90 minutes before their time.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-08T01:00:00.000Z'))
+    try {
+      useOrdersStore.setState({ orders: [
+        makeOrder({ id: 'a', orderNumber: 'LATE-AFTERNOON', status: 'confirmed', paymentStatus: 'unpaid', branch: 'Kedamaian', scheduleDate: '2026-11-08', scheduleTime: '14:00' } as never),
+        makeOrder({ id: 'b', orderNumber: 'EVENING', status: 'processing', finishPhotoUrl: 'orders/b.jpg', branch: 'Kedamaian', scheduleDate: '2026-11-08', scheduleTime: '17:30:00' } as never),
+        makeOrder({ id: 'c', orderNumber: 'MORNING', status: 'confirmed', paymentStatus: 'unpaid', branch: 'Kedamaian', scheduleDate: '2026-11-08', scheduleTime: '9:00' } as never),
+        // The florist is working on it: nothing for the Admin, so it is not listed.
+        makeOrder({ id: 'd', orderNumber: 'ARRANGING', status: 'processing', branch: 'Kedamaian', scheduleDate: '2026-11-08', scheduleTime: '10:00' } as never),
+      ] })
+      render(<AdminTodayQueue activeBranch="Kedamaian" onGoToOrders={vi.fn()} onOpenOrder={vi.fn()} />)
+      const numbers = screen.getAllByText(/^(MORNING|LATE-AFTERNOON|EVENING|ARRANGING)$/).map((node) => node.textContent)
+      expect(numbers).toEqual(['MORNING', 'LATE-AFTERNOON', 'EVENING'])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('the home revenue chart counts confirmed payments, like the Revenue screen', () => {

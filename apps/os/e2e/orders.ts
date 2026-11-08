@@ -39,7 +39,8 @@ export const openOrder = async (page: Page, customerName: string) => {
   await page.reload()
   await expect(page.getByRole('navigation').first()).toBeVisible()
   await page.getByRole('navigation').first().getByText('Pesanan', { exact: true }).click()
-  await page.getByRole('tab', { name: /Mendatang/ }).click().catch(() => undefined)
+  // The work list splits orders by who acts next; a search looks through all of them.
+  await page.locator('input[type="search"]:visible').first().fill(customerName)
   await page.getByRole('button', { name: new RegExp(customerName) }).first().click()
   const details = page.getByRole('dialog', { name: /Detail pesanan/ }).first()
   await expect(details).toBeVisible()

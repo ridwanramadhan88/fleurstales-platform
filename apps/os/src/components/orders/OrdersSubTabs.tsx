@@ -1,6 +1,7 @@
 /**
  * @file OrdersSubTabs.tsx
- * @description Primary date range scope control for the Orders view.
+ * @description Work views of the Orders list: what needs the Admin, what
+ * waits on someone else, what finished today, or any date range.
  */
 
 import { useEffect, useMemo, useState, type FC } from 'react'
@@ -13,17 +14,24 @@ import { useUiLanguage } from '../../i18n/uiLanguage'
 import type { DateRange } from 'react-day-picker'
 import { tabButtonClass } from '../ui/tabs'
 import { useOrdersStore } from '../../store/ordersStore'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { getActiveFutureOrderDates } from '../../domain/futureOrderBadgeDomain'
 
-export type OrdersSubTabId = 'today' | 'future' | 'custom'
+export type OrdersSubTabId = 'action' | 'waiting' | 'done' | 'custom'
+
+export interface OrdersWorkViewCounts {
+  action: number
+  waiting: number
+  done: number
+}
 
 export interface OrdersSubTabsProps {
   activeTab: OrdersSubTabId
   onTabChange: (tab: OrdersSubTabId) => void
   dateRange?: DateRange
   onDateRangeChange?: (range: DateRange | undefined) => void
-  /** Number of active orders whose exact expected fulfillment is still ahead. */
-  futureOrderCount?: number
+  /** Order counts per work view (branch-scoped). */
+  counts?: OrdersWorkViewCounts
   /** Optional branch-scoped future dates. Falls back to all visible OS order data. */
   futureOrderDates?: string[]
 }
@@ -33,7 +41,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
   onTabChange,
   dateRange,
   onDateRangeChange,
-  futureOrderCount = 0,
+  counts,
   futureOrderDates,
 }) => {
   const allOrders = useOrdersStore((state) => state.orders)
@@ -45,10 +53,12 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
   )
   const futureDateSet = useMemo(() => new Set(resolvedFutureOrderDates), [resolvedFutureOrderDates])
 
-  const tabs: { id: OrdersSubTabId; label: string }[] = [
-    { id: 'today', label: 'Today' },
-    { id: 'future', label: 'Future' },
-    { id: 'custom', label: 'Pick a date' },
+  const copy = useBilingualCopy()
+  const tabs: { id: OrdersSubTabId; label: string; count?: number }[] = [
+    { id: 'action', label: copy('Needs action', 'Perlu tindakan'), count: counts?.action },
+    { id: 'waiting', label: copy('Waiting on others', 'Menunggu orang lain'), count: counts?.waiting },
+    { id: 'done', label: copy('Done today', 'Selesai hari ini'), count: counts?.done },
+    { id: 'custom', label: copy('Pick a date', 'Pilih tanggal') },
   ]
 
   const [isCustomPopoverOpen, setIsCustomPopoverOpen] = useState(false)
@@ -69,11 +79,11 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
 
   // No "Today" shortcut: "Today" is already the first tab.
   const presetOptions: { label: string; range: DateRange }[] = [
-    { label: 'Tomorrow', range: { from: addDays(today, 1), to: addDays(today, 1) } },
-    { label: 'Yesterday', range: { from: addDays(today, -1), to: addDays(today, -1) } },
-    { label: 'Next week', range: { from: addDays(today, 1), to: addDays(today, 7) } },
-    { label: 'Last week', range: { from: addDays(today, -7), to: addDays(today, -1) } },
-    { label: 'Last 30 days', range: { from: addDays(today, -30), to: today } },
+    { label: copy('Tomorrow', 'Besok'), range: { from: addDays(today, 1), to: addDays(today, 1) } },
+    { label: copy('Yesterday', 'Kemarin'), range: { from: addDays(today, -1), to: addDays(today, -1) } },
+    { label: copy('Next week', 'Minggu depan'), range: { from: addDays(today, 1), to: addDays(today, 7) } },
+    { label: copy('Last week', 'Minggu lalu'), range: { from: addDays(today, -7), to: addDays(today, -1) } },
+    { label: copy('Last 30 days', '30 hari terakhir'), range: { from: addDays(today, -30), to: today } },
   ]
 
   const commitCustomRange = (range: DateRange | undefined) => {
@@ -113,7 +123,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
                             ? ` - ${format(dateRange.to, 'dd MMM', { locale: dateLocale })}`
                             : ''}
                         </>
-                      ) : 'Pick a date'}
+                      ) : copy('Pick a date', 'Pilih tanggal')}
                     </span>
                     <CalendarIcon className="ml-1 size-3.5 opacity-60" />
                   </button>
@@ -158,7 +168,7 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
                     numberOfMonths={1}
                   />
                   {resolvedFutureOrderDates.length > 0 && (
-                    <p className="mt-2 text-2xs text-muted-foreground">Dot = future order scheduled on that date.</p>
+                    <p className="mt-2 text-2xs text-muted-foreground">{copy('Dot = an order is scheduled on that date.', 'Titik = ada pesanan pada tanggal itu.')}</p>
                   )}
                 </PopoverContent>
               </Popover>
@@ -176,13 +186,13 @@ export const OrdersSubTabs: FC<OrdersSubTabsProps> = ({
               aria-selected={isActive}
             >
               <span>{tab.label}</span>
-              {tab.id === 'future' && futureOrderCount > 0 && (
+              {tab.count !== undefined && (
                 <span
-                  className={`inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-2xs font-semibold ${
-                    isActive ? 'bg-surface-selected text-primary-foreground' : 'bg-primary text-primary-foreground'
+                  className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-2xs font-semibold tabular-nums ${
+                    isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-foreground/[0.07] text-muted-foreground'
                   }`}
                 >
-                  {futureOrderCount}
+                  {tab.count}
                 </span>
               )}
             </button>

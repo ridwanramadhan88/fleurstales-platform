@@ -118,7 +118,7 @@ describe('Indonesian copy guard', () => {
     useOrdersStore.setState({ orders: [
       makeOrder({ id: 'g1', orderNumber: 'KDM-2026-9001', customerName: 'Guard Baru', status: 'pending_verification', fulfillment: 'delivery', deliveryAddress: 'Jl. Uji 1', scheduleDate: today, scheduleTime: '23:00', branch: 'Kedamaian' } as never),
       makeOrder({ id: 'g2', orderNumber: 'KDM-2026-9002', customerName: 'Guard Dikonfirmasi', status: 'confirmed', fulfillment: 'pickup', paymentStatus: 'unpaid', paymentMethod: 'transfer', scheduleDate: today, scheduleTime: '23:15', branch: 'Kedamaian' } as never),
-      makeOrder({ id: 'g3', orderNumber: 'KDM-2026-9003', customerName: 'Guard Diproses', status: 'processing', fulfillment: 'pickup', paymentStatus: 'paid', florist: 'Agus', scheduleDate: today, scheduleTime: '23:30', branch: 'Kedamaian' } as never),
+      makeOrder({ id: 'g3', orderNumber: 'KDM-2026-9003', customerName: 'Guard Diproses', status: 'processing', finishPhotoUrl: 'orders/guard.jpg', fulfillment: 'pickup', paymentStatus: 'paid', florist: 'Agus', scheduleDate: today, scheduleTime: '23:30', branch: 'Kedamaian' } as never),
       makeOrder({ id: 'g5', orderNumber: 'KDM-2026-9005', customerName: 'Guard Storefront', source: 'customer_app', status: 'pending_verification', fulfillment: 'pickup', paymentStatus: 'unpaid', scheduleDate: today, scheduleTime: '22:45', branch: 'Kedamaian' } as never),
       makeOrder({ id: 'g4', orderNumber: 'KDM-2026-9004', customerName: 'Guard Siap', status: 'ready', fulfillment: 'delivery', paymentStatus: 'paid', deliveryAddress: 'Jl. Uji 4', florist: 'Agus', scheduleDate: today, scheduleTime: '23:45', branch: 'Kedamaian' } as never),
     ] })

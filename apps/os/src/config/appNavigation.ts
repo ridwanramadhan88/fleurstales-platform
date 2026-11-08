@@ -3,7 +3,7 @@ import type { NavigationDestinationId } from './navigationGroups'
 
 /** Existing top-level application destinations. */
 export type AppTabId = NavigationDestinationId
-export type OrdersNavigationScope = 'today' | 'future' | 'custom'
+export type OrdersNavigationScope = 'action' | 'waiting' | 'done' | 'custom'
 
 /** HR sections that can already be opened through the existing event bridge. */
 export type HrNavigationSection = 'attendance' | 'scheduling' | 'employees' | 'performance' | 'reports' | 'points' | 'payroll'
@@ -16,7 +16,6 @@ export interface AppNavigationTarget {
   tab: AppTabId
   financeModule?: FinanceWorkspaceModule
   ordersSubTab?: OrdersNavigationScope
-  ordersStatusGroup?: 'finished'
   orderNumber?: string
   hrSection?: HrNavigationSection
   targetId?: string
@@ -31,7 +30,7 @@ export const toFinanceModule = (
 ): AppNavigationTarget => ({ tab: 'finance', financeModule })
 
 export const toOrders = (
-  options: Pick<AppNavigationTarget, 'ordersSubTab' | 'ordersStatusGroup' | 'orderNumber'> = {},
+  options: Pick<AppNavigationTarget, 'ordersSubTab' | 'orderNumber'> = {},
 ): AppNavigationTarget => ({ tab: 'orders', ...options })
 
 export const toHrSection = (

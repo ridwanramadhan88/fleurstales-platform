@@ -1,31 +1,17 @@
 import { useMemo } from 'react'
 import { AlertTriangle, ArrowRight, CalendarClock, UserRound } from 'lucide-react'
-import type { BranchFilter, OrderTableRow } from '../../types/orders'
+import type { BranchFilter } from '../../types/orders'
 import { useOrdersStore } from '../../store/ordersStore'
 import { surfaceCardClass } from '../ui/card'
-import { getOrderStatusGroup } from '../../domain/orderGroupingDomain'
-import { getLocalDateString, nowInJakarta } from '../../domain/orderTimingDomain'
+import { prioritizeOrders } from '../../domain/orderWorkStageDomain'
+import { nowInJakarta } from '../../domain/orderTimingDomain'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
+import { formatMinutesLeft, getOrderWorkStageLabel } from '../orders/orderWorkStagePresentation'
 import { getOrderNextActionLabel } from '../orders/orderNextActionLabels'
 import { getDisplayScheduleLabel } from '../orders/orderTableFormatters'
 
-// "Work from the top" means the earliest due time first: date and time,
-// not date alone (an 11:00 order must come before a 14:00 one).
-const toDateValue = (order: OrderTableRow) => {
-  if (!order.scheduleDate) return Number.POSITIVE_INFINITY
-  const match = /^(\d{1,2}):(\d{2})/.exec(order.scheduleTime ?? '')
-  const time = match ? `${match[1].padStart(2, '0')}:${match[2]}` : '23:59'
-  const parsed = Date.parse(`${order.scheduleDate}T${time}:00`)
-  return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed
-}
-
-// A badge only when it adds something: the schedule line below already says
-// "Today · 14:00", so on-time orders need no "Due today" badge.
-const getPriorityLabel = (order: OrderTableRow, today: string) => {
-  if (!order.scheduleDate) return { label: 'No schedule', tone: 'bg-muted text-muted-foreground' }
-  if (order.scheduleDate < today) return { label: 'Late', tone: 'bg-destructive/10 text-destructive' }
-  return null
-}
-
+// "Work from the top": the same priority formula as the Orders list
+// (time left before the order must be started or handed over, plus stage).
 export function AdminTodayQueue({
   activeBranch,
   onGoToOrders,
@@ -37,25 +23,18 @@ export function AdminTodayQueue({
 }) {
   const orders = useOrdersStore((state) => state.orders)
 
-  const today = getLocalDateString(nowInJakarta())
-  const activeOrders = useMemo(
-    () =>
-      orders
-        .filter(
-          (order) =>
-            ['active', 'delivery'].includes(getOrderStatusGroup(order)) &&
-            (activeBranch === 'All' || order.branch === activeBranch),
-        )
-        .sort((a, b) => {
-          const dateDiff = toDateValue(a) - toDateValue(b)
-          if (dateDiff !== 0) return dateDiff
-          const unassignedDiff = Number(Boolean(a.floristAssignedEmployeeId)) - Number(Boolean(b.floristAssignedEmployeeId))
-          return unassignedDiff || a.orderNumber.localeCompare(b.orderNumber)
-        }),
+  const copy = useBilingualCopy()
+  const prioritized = useMemo(
+    () => prioritizeOrders(
+      orders.filter((order) => activeBranch === 'All' || order.branch === activeBranch),
+      nowInJakarta(),
+    ).filter((item) => item.priority.needsAdmin),
     [activeBranch, orders],
   )
+  const activeOrders = prioritized.map((item) => item.order)
 
-  const visibleOrders = activeOrders.slice(0, 4)
+  const visibleItems = prioritized.slice(0, 4)
+  const visibleOrders = visibleItems.map((item) => item.order)
 
   return (
     <section className={surfaceCardClass('standard', 'border border-border ring-0')} aria-label="Today's order priority">
@@ -88,8 +67,12 @@ export function AdminTodayQueue({
         </div>
       ) : (
         <div className="divide-y divide-border rounded-lg border border-border">
-          {visibleOrders.map((order, index) => {
-            const priority = getPriorityLabel(order, today)
+          {visibleItems.map(({ order, priority: rank }, index) => {
+            const priority = rank.urgent && rank.minutesLeft !== null
+              ? { label: formatMinutesLeft(rank.minutesLeft, copy), tone: 'bg-destructive text-white' }
+              : rank.timeBucket === 'unscheduled'
+                ? { label: copy('No schedule', 'Belum ada jadwal'), tone: 'bg-muted text-muted-foreground' }
+                : null
             return (
               <article key={order.orderNumber} className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-center">
                 <div className="min-w-0">
@@ -100,6 +83,7 @@ export function AdminTodayQueue({
                       </span>
                     )}
                     <span className="text-sm font-semibold leading-5">{order.orderNumber}</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-2xs font-semibold text-foreground/80">{getOrderWorkStageLabel(rank.stage, order, copy)}</span>
                     {priority && (
                       <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${priority.tone}`}>
                         {priority.label}

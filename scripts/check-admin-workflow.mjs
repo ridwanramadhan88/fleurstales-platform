@@ -46,7 +46,8 @@ assert(readScopeMigration.includes('enforce_admin_order_mutation_branch'), 'Admi
 assert(readScopeMigration.includes("v_role is distinct from 'admin'"), 'Admin order mutation trigger is not null-safe for non-staff/service writers.')
 assert(readScopeMigration.includes('ORDER_OUTSIDE_BRANCH_SCOPE'), 'Admin order mutation branch rejection is missing.')
 assert(!queue.includes("new Date().toISOString().slice(0, 10)"), 'Admin dashboard still uses UTC for today.')
-assert(queue.includes('getLocalDateString(nowInJakarta())'), 'Admin dashboard does not use Jakarta business date.')
+// The queue ranks with the shared priority formula on the Jakarta clock.
+assert(queue.includes('prioritizeOrders(') && queue.includes('nowInJakarta()'), 'Admin dashboard does not rank orders on the Jakarta clock.')
 // The labels are shared with the order details panel, so they live in one place.
 assert(queue.includes('getOrderNextActionLabel(order)'), 'Admin queue does not use the shared next-action labels.')
 assert(nextActionLabels.includes('Review & confirm') && nextActionLabels.includes('Assign & start'), 'Admin next-action labels are incomplete.')

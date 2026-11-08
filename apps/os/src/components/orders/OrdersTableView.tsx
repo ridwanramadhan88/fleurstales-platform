@@ -6,11 +6,10 @@
 
 import type { FC } from 'react'
 import { useLayoutEffect, useRef } from 'react'
-import type { OrdersSubTabId } from './OrdersSubTabs'
+import { OrdersSubTabs, type OrdersSubTabId } from './OrdersSubTabs'
 import type { DateRange } from 'react-day-picker'
 import type { BranchFilter, OrderStatus } from '../../types/orders'
-import { OrdersDesktopTable } from './OrdersDesktopTable'
-import { OrdersMobileCards } from './OrdersMobileCards'
+import { OrderWorkList } from './OrderWorkList'
 import { OrdersTableFilters } from './OrdersTableFilters'
 import { OrdersTableModals } from './OrdersTableModals'
 import { OrderDraftsList } from './OrderDraftsList'
@@ -21,6 +20,8 @@ export type OrderStatusFilter = 'all' | OrderStatus
 export interface OrdersTableViewProps {
   dateRange?: DateRange
   activeScope: OrdersSubTabId
+  onScopeChange?: (scope: OrdersSubTabId) => void
+  onDateRangeChange?: (range: DateRange | undefined) => void
   activeBranch: BranchFilter
   searchQuery?: string
   onSearchQueryChange?: (value: string) => void
@@ -34,7 +35,6 @@ export interface OrdersTableViewProps {
   /** Called once the deep-linked order number above has been consumed, so the caller can clear it. */
   onInitialSelectedOrderNumberConsumed?: () => void
   onOpenDraft?: (draftId: string) => void
-  initialStatusGroupFilter?: 'finished'
 }
 
 function useFlipList(keys: string[]) {
@@ -85,6 +85,13 @@ export const OrdersTableView: FC<OrdersTableViewModel> = (viewModel) => {
 
   return (
     <section aria-label="Orders list" className="space-y-3">
+      <OrdersSubTabs
+        activeTab={viewModel.activeScope}
+        onTabChange={(scope) => viewModel.onScopeChange?.(scope)}
+        dateRange={viewModel.dateRange}
+        onDateRangeChange={viewModel.onDateRangeChange}
+        counts={viewModel.workCounts}
+      />
       <OrdersTableFilters viewModel={viewModel} />
       {viewModel.isDraftMode ? (
         <OrderDraftsList
@@ -94,11 +101,7 @@ export const OrdersTableView: FC<OrdersTableViewModel> = (viewModel) => {
         />
       ) : (
         <>
-          <OrdersDesktopTable
-            viewModel={viewModel}
-            setDesktopRowRef={setDesktopRowRef}
-          />
-          <OrdersMobileCards viewModel={viewModel} setCardRef={setCardRef} />
+          <OrderWorkList viewModel={viewModel} setDesktopRowRef={setDesktopRowRef} setCardRef={setCardRef} />
         </>
       )}
       <OrdersTableModals viewModel={viewModel} />

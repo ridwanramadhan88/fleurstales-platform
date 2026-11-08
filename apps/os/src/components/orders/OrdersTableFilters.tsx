@@ -1,63 +1,34 @@
 import type { FC } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import { FilePenLine } from 'lucide-react'
 import { OrdersExportButton } from './OrdersExportDialog'
-import { ChipRow, FilterChip } from '../ui/chip'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu'
-import { STATUS_GROUP_FILTER_OPTIONS, type UiStatusGroup } from './orderTableLabels'
-import type { OrdersListSortKey, OrdersTableViewModel } from './OrdersTableViewController'
-import { surfaceCardClass } from '../ui/card'
+import { FilterChip } from '../ui/chip'
+import type { OrdersTableViewModel } from './OrdersTableViewController'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 
 interface OrdersTableFiltersProps { viewModel: OrdersTableViewModel }
 
-const SORT_OPTIONS: Array<{ id: OrdersListSortKey; label: string }> = [
-  { id: 'status', label: 'Status workflow' },
-  { id: 'eta', label: 'Expected time' },
-  { id: 'order', label: 'Order number' },
-]
-
+/**
+ * One line above the work list: what the list shows, saved drafts, and the
+ * Excel download. The list is always in priority order, so there is no sort
+ * menu or status chips any more.
+ */
 export const OrdersTableFilters: FC<OrdersTableFiltersProps> = ({ viewModel }) => {
-  const { statusGroupFilter, newOrderCount, draftCount, isDraftMode, scopeLabel, sortKey, sortDirection, exportableOrders, exportBranch, exportDefaultRange, exportDefaultStatus, onStatusGroupFilterChange, onSortChange } = viewModel
-  const DirectionIcon = sortDirection === 'asc' ? ArrowUp : ArrowDown
+  const copy = useBilingualCopy()
+  const { draftCount, isDraftMode, scopeLabel, exportableOrders, exportBranch, exportDefaultRange, exportDefaultStatus, onToggleDrafts } = viewModel
   return (
-    <div className={surfaceCardClass('dense', 'space-y-3 sm:bg-transparent sm:p-0 sm:ring-0', { shadow: false })}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground">{scopeLabel}</p>
-        {!isDraftMode && <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm font-semibold text-muted-foreground">{scopeLabel}</p>
+      <div className="flex items-center gap-2">
+        {(draftCount > 0 || isDraftMode) && (
+          <FilterChip active={isDraftMode} onClick={onToggleDrafts} className="h-11 shrink-0 gap-1.5 md:h-9">
+            <FilePenLine className="size-3.5" />
+            {copy('Drafts', 'Draf')}
+            <span className="tabular-nums">{draftCount}</span>
+          </FilterChip>
+        )}
+        {!isDraftMode && (
           <OrdersExportButton orders={exportableOrders} branch={exportBranch} defaultRange={exportDefaultRange} defaultStatus={exportDefaultStatus} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button type="button" aria-label={`Sort orders by ${sortKey}, ${sortDirection}`} title="Sort orders" className="inline-flex size-11 items-center justify-center rounded-full border border-border bg-card hover:bg-accent">
-                <ArrowUpDown className="size-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Sort orders</DropdownMenuLabel><DropdownMenuSeparator />
-              {SORT_OPTIONS.map((option) => <DropdownMenuItem key={option.id} onSelect={() => onSortChange(option.id)}>
-                <span>{option.label}</span>
-                {sortKey === option.id && <DirectionIcon className="ml-auto size-4" />}
-              </DropdownMenuItem>)}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>}
-      </div>
-      <div className="relative min-w-0">
-        {/* Status chips wrap onto a second line on phones, so every status
-            is visible; none hide past the screen edge. */}
-        <ChipRow activeKey={statusGroupFilter} edge="none" className="flex-wrap overflow-visible">
-          {STATUS_GROUP_FILTER_OPTIONS.flatMap((option) => {
-            const isActive = statusGroupFilter === option.id
-            const chips = [<FilterChip key={option.id} active={isActive} onClick={() => onStatusGroupFilterChange(option.id as UiStatusGroup | 'all')} className="h-11 shrink-0 md:h-9">{option.label}{option.id === 'new' && newOrderCount > 0 && <span className={`ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-2xs font-semibold ring-1 ${isActive ? 'bg-primary-foreground/20 text-primary-foreground ring-primary-foreground/25' : 'bg-primary/10 text-primary ring-primary/25'}`}>{newOrderCount}</span>}</FilterChip>]
-            if (option.id === 'new') chips.push(<FilterChip key="drafts" active={statusGroupFilter === 'drafts'} onClick={() => onStatusGroupFilterChange('drafts')} className="h-11 shrink-0 md:h-9">Drafts{draftCount > 0 && <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-muted-foreground/20 px-1 text-2xs font-semibold">{draftCount}</span>}</FilterChip>)
-            return chips
-          })}
-        </ChipRow>
+        )}
       </div>
     </div>
   )

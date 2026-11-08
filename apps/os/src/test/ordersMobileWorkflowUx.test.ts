@@ -4,30 +4,30 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string): string => readFileSync(path, 'utf8')
 
 describe('Orders mobile workflow UX', () => {
-  it('keeps the overview readable, and off phones where the chips carry the counts', () => {
+  it('drops the summary cards: the work tabs carry the counts', () => {
     const header = read('src/components/orders/OrdersTabHeader.tsx')
+    const tabs = read('src/components/orders/OrdersSubTabs.tsx')
 
-    expect(header).toContain('rounded-xl p-3')
-    expect(header).toContain('sm:rounded-2xl sm:p-4')
-    expect(header).toContain('text-xs font-semibold leading-4')
-    expect(header).toContain('hidden gap-2 sm:grid sm:grid-cols-4 sm:gap-3')
+    expect(header).not.toContain('SummaryCard')
+    expect(tabs).toContain("{ id: 'action', label: copy('Needs action', 'Perlu tindakan'), count: counts?.action }")
+    expect(tabs).toContain('{tab.count}')
   })
 
-  it('makes status filters touch-safe and keeps every status visible on phones', () => {
+  it('has no status chips or sort menu: the list is always in priority order', () => {
     const filters = read('src/components/orders/OrdersTableFilters.tsx')
 
-    expect(filters).toContain('className="h-11 shrink-0 md:h-9"')
-    // Chips wrap to a second line instead of hiding past the screen edge.
-    expect(filters).toContain('className="flex-wrap overflow-visible"')
-    expect(filters).not.toContain('bg-gradient-to-l')
+    expect(filters).not.toContain('STATUS_GROUP_FILTER_OPTIONS')
+    expect(filters).not.toContain('Sort orders')
+    // The drafts chip stays touch-safe on phones.
+    expect(filters).toContain('h-11 shrink-0')
   })
 
-  it('allows mobile order metadata and schedule labels to wrap instead of clipping', () => {
-    const cards = read('src/components/orders/OrdersMobileCards.tsx')
+  it('phone rows keep the next action reachable and the stage readable', () => {
+    const list = read('src/components/orders/OrderWorkList.tsx')
 
-    expect(cards).toContain('line-clamp-2 text-sm font-medium')
-    expect(cards).toContain('max-w-[48%] shrink-0 whitespace-normal')
-    expect(cards).not.toContain('truncate text-2xs leading-tight text-muted-foreground')
+    expect(list).toContain('lg:hidden')
+    expect(list).toContain('inline-flex h-9 shrink-0')
+    expect(list).toContain('<StagePill row={row} copy={copy} compact />')
   })
 
   it('uses compact Orders spacing and a short tablet search placeholder', () => {
