@@ -6,7 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FC } from 'reac
 import { MessageCircle } from 'lucide-react'
 import { useUiLanguage } from '../../i18n/uiLanguage'
 import { OrderActivityTimeline } from './OrderActivityTimeline'
-import { OrderDetailsActionsSection } from './OrderDetailsActionsSection'
+import { OrderDetailsActionDialogs, OrderDetailsActionsSection } from './OrderDetailsActionsSection'
+import { OrderReviewView } from './OrderReviewView'
 import { OrderDetailsContextTab } from './OrderDetailsContextTab'
 import { OrderDetailsDeliverySection } from './OrderDetailsDeliverySection'
 import { OrderDetailsFinanceSection } from './OrderDetailsFinanceSection'
@@ -69,6 +70,8 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
   const [sheetOpen, setSheetOpen] = useState(true)
   const previousStatusRef = useRef(order.status)
   const showLifecycle = shouldShowAdminLifecycle(currentUserRole, order.status)
+  // Orders still waiting for confirmation open in the review layout; editing uses the full form.
+  const showReview = order.status === 'pending_verification' && !isEditing
   const isFinished = order.status === 'delivered' || order.status === 'picked_up'
 
   const requestClose = useCallback(() => {
@@ -149,6 +152,10 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         headerClassName="sr-only"
         contentClassName="gap-0 overflow-hidden rounded-t-2xl bg-card px-5 pb-4 pt-5 shadow-ios-lg ring-1 ring-border/60 data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none sm:right-auto sm:h-[92vh] sm:max-h-[92vh] sm:px-6 sm:pb-5 sm:pt-5 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 md:max-w-3xl lg:h-[90vh] lg:max-h-[90vh] lg:max-w-5xl"
       >
+        {showReview ? (
+          <OrderReviewView viewModel={panelViewModel} />
+        ) : (
+        <>
         <OrderDetailsHeader viewModel={panelViewModel} progress={lifecycle} />
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-10 px-px pt-0 text-sm text-foreground/90">
@@ -289,7 +296,11 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
         </div>
 
         <OrderDetailsActionsSection viewModel={panelViewModel} />
+        </>
+        )}
       </AppSheet>
+
+      {showReview && <OrderDetailsActionDialogs viewModel={panelViewModel} />}
 
       {/* Modal state must stay mounted regardless of the selected content tab. */}
       <OrderDetailsFinanceSection viewModel={panelViewModel} mode="dialogs" />
