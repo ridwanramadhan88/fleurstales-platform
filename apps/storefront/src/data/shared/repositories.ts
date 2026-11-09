@@ -741,7 +741,6 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   deliveryTrackingUrl: optional(row.delivery_tracking_url),
   deliveryShippedAt: optional(row.delivery_shipped_at),
   deliveryCourierEmployeeId: optional(row.delivery_courier_employee_id),
-  deliveryStartedAt: optional(row.delivery_started_at),
   deliveryProofPhotoPath: optional(row.delivery_proof_photo_path),
   deliveryProofUploadedAt: optional(row.delivery_proof_uploaded_at),
   promoCode: optional(row.promo_code),

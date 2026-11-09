@@ -301,7 +301,6 @@ export interface OrderTableRow {
   deliveryShippedAt?: string
   /** Courier account assigned to deliver (staff employee id). */
   deliveryCourierEmployeeId?: string
-  deliveryStartedAt?: string
   /** Private proof-of-delivery photo path; internal only. */
   deliveryProofPhotoPath?: string
   deliveryProofUploadedAt?: string
