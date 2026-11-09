@@ -125,6 +125,8 @@ export interface SharedProduct {
   orderType?: CatalogOrderType
   isFeatured: boolean
   isActive: boolean
+  /** Must be delivered by car (Owner decision 8, 8 Nov 2026). */
+  requiresCar?: boolean
   promoLabel?: string
   originalPriceIdr?: number
   isCustomizable: boolean
@@ -168,6 +170,51 @@ export interface BranchDayHours {
 
 export type BranchOpeningHours = Record<string, BranchDayHours>
 
+export interface DeliveryVehicleTariff {
+  baseIdr: number
+  includedKm: number
+  perKmIdr: number
+}
+
+/** Distance-based delivery fee (Owner decisions 1, 7, 9, 8 Nov 2026). */
+export interface DeliveryTariff {
+  enabled: boolean
+  motor: DeliveryVehicleTariff
+  car: DeliveryVehicleTariff
+  maxKm: number
+  /** Above this total quantity the order goes by car. null = no limit. */
+  motorMaxItems: number | null
+}
+
+export type DeliveryVehicle = 'motor' | 'car'
+
+export interface DeliveryFeeQuote {
+  tariffEnabled: boolean
+  feeIdr: number
+  vehicle?: DeliveryVehicle
+  forcedCar?: boolean
+  forcedReason?: 'product' | 'quantity' | null
+  distanceKm?: number
+  maxDistanceKm?: number
+  motorMaxItems?: number | null
+}
+
+export interface DeliveryDistanceResult {
+  quoteId?: string
+  distanceKm?: number
+  maxDistanceKm?: number
+  error?: 'DELIVERY_OUT_OF_RANGE' | 'DISTANCE_SERVICE_UNAVAILABLE' | 'NO_ROUTE' | 'BRANCH_LOCATION_MISSING' | 'BRANCH_UNAVAILABLE' | 'INVALID_REQUEST'
+}
+
+export interface DeliveryFeeQuoteInput {
+  branchId: string
+  quoteId?: string
+  vehicle?: DeliveryVehicle
+  items: Array<{ productId?: string; quantity: number }>
+  latitude?: number
+  longitude?: number
+}
+
 export interface SharedBranch {
   id: string
   name: string
@@ -181,6 +228,7 @@ export interface SharedBranch {
   openingHours: BranchOpeningHours
   latitude?: number
   longitude?: number
+  deliveryTariff?: DeliveryTariff
 }
 
 export interface SharedPaymentAccount {
@@ -353,6 +401,8 @@ export interface SharedOrder {
   deliveryLongitude?: number
   /** Landmark / house detail for the courier. */
   deliveryLandmark?: string
+  deliveryVehicle?: DeliveryVehicle
+  deliveryDistanceKm?: number
   promoCode?: string
   floristDisplayName?: string
   floristAssignedEmployeeId?: string
@@ -413,6 +463,9 @@ export interface DeliveryDetailsInput {
   latitude?: number
   longitude?: number
   landmark?: string
+  /** Chosen vehicle and the distance quote it was priced from. */
+  vehicle?: DeliveryVehicle
+  quoteId?: string
 }
 
 export interface CreateStorefrontOrderInput {

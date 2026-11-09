@@ -97,3 +97,4 @@ jobs:
           npx -y supabase@2.109.1 functions deploy staff-admin --use-api --project-ref "$SUPABASE_PROJECT_ID"
           npx -y supabase@2.109.1 functions deploy staff-login --use-api --project-ref "$SUPABASE_PROJECT_ID"
           npx -y supabase@2.109.1 functions deploy staff-password-reset --use-api --project-ref "$SUPABASE_PROJECT_ID"
+          npx -y supabase@2.109.1 functions deploy delivery-quote --use-api --project-ref "$SUPABASE_PROJECT_ID"

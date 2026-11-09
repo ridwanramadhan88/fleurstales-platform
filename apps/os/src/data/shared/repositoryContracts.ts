@@ -1,5 +1,8 @@
 import type {
   CreateInternalOrderInput,
+  DeliveryDistanceResult,
+  DeliveryFeeQuote,
+  DeliveryFeeQuoteInput,
   CustomerBusinessMetric,
   CreateInternalOrderResult,
   SaveOrderDeliveryDetailsInput,
@@ -108,7 +111,14 @@ export interface OrdersReadRepository {
   getOrder(orderId: string): Promise<SharedOrder | null>
 }
 
-export interface OrdersAdminRepository extends OrdersReadRepository {
+export interface DeliveryQuoteRepository {
+  /** Road distance from the branch to the pin (Google, via Edge Function). */
+  measureDeliveryDistance(input: { branchId: string; latitude: number; longitude: number }): Promise<DeliveryDistanceResult>
+  /** Fee for one vehicle, recomputed by the server from a measured quote. */
+  quoteDeliveryFee(input: DeliveryFeeQuoteInput): Promise<DeliveryFeeQuote>
+}
+
+export interface OrdersAdminRepository extends OrdersReadRepository, DeliveryQuoteRepository {
   quoteInternalOrder(input: CreateInternalOrderInput): Promise<StorefrontCheckoutQuoteResult>
   createInternalOrder(input: CreateInternalOrderInput): Promise<CreateInternalOrderResult>
   saveOrderDeliveryDetails(
@@ -118,7 +128,7 @@ export interface OrdersAdminRepository extends OrdersReadRepository {
   ): Promise<SaveOrderDeliveryDetailsResult>
 }
 
-export interface StorefrontCheckoutRepository {
+export interface StorefrontCheckoutRepository extends DeliveryQuoteRepository {
   quoteOrder(input: CreateStorefrontOrderInput): Promise<StorefrontCheckoutQuoteResult>
   createOrder(input: CreateStorefrontOrderInput): Promise<CreateStorefrontOrderResult>
 }

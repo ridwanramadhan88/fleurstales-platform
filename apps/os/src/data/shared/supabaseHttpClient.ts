@@ -215,6 +215,11 @@ export class SupabaseHttpClient {
     })
   }
 
+  /** Calls a public Edge Function with the same keys as REST requests. */
+  async invokeFunction<T>(name: string, body: Record<string, Json | undefined>): Promise<T> {
+    return this.request<T>(`/functions/v1/${name}`, { method: 'POST', body: JSON.stringify(body) })
+  }
+
   async rpc<T>(functionName: string, args: Record<string, Json | undefined>): Promise<T> {
     const rpcName = GUARDED_RPC_NAMES[functionName] ?? functionName
     const now = Date.now()

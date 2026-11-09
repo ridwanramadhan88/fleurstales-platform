@@ -12,6 +12,8 @@ export const rememberStorefrontCheckoutResult = (
   repository: StorefrontCheckoutRepository,
 ): StorefrontCheckoutRepository => ({
   quoteOrder: (input) => repository.quoteOrder(input),
+  measureDeliveryDistance: (input) => repository.measureDeliveryDistance(input),
+  quoteDeliveryFee: (input) => repository.quoteDeliveryFee(input),
   async createOrder(input) {
     const result = await repository.createOrder(input)
     latestCreatedOrder = result

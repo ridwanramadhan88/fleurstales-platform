@@ -327,6 +327,14 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
       }
       return { ...created, paidAmountIdr }
     },
+    async measureDeliveryDistance() {
+      return { error: 'DISTANCE_SERVICE_UNAVAILABLE' as const }
+    },
+    async quoteDeliveryFee(input) {
+      const branch = bundle.store.snapshot.branches.find((row) => row.id === input.branchId && row.isActive)
+      if (!branch) throw new Error('Selected branch is unavailable.')
+      return { tariffEnabled: false, feeIdr: branch.deliveryFeeIdr }
+    },
     async saveOrderDeliveryDetails(orderId, expectedRevision, details) {
       const order = bundle.orders.orders.find((row) => row.id === orderId)
       if (!order) throw new Error('ORDER_NOT_FOUND')
@@ -397,6 +405,14 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
   })
 
   storefrontCheckout = {
+    async measureDeliveryDistance() {
+      return { error: 'DISTANCE_SERVICE_UNAVAILABLE' as const }
+    },
+    async quoteDeliveryFee(input) {
+      const branch = bundle.store.snapshot.branches.find((row) => row.id === input.branchId && row.isActive)
+      if (!branch) throw new Error('Selected branch is unavailable.')
+      return { tariffEnabled: false, feeIdr: branch.deliveryFeeIdr }
+    },
     async quoteOrder(input) {
       assertValidCustomerIntake(input.customer)
       const branch = bundle.store.snapshot.branches.find((row) => row.id === input.branchId && row.isActive)

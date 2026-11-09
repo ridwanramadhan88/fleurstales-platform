@@ -95,6 +95,15 @@ export interface BranchRow {
   opening_hours: Json
   latitude: number | null
   longitude: number | null
+  delivery_tariff_enabled?: boolean
+  motor_base_idr?: number
+  motor_included_km?: number | string
+  motor_per_km_idr?: number
+  car_base_idr?: number
+  car_included_km?: number | string
+  car_per_km_idr?: number
+  max_delivery_km?: number | string
+  motor_max_items?: number | null
   manager_employee_id: string | null
   daily_order_limit: number | null
   created_at: string
@@ -161,6 +170,7 @@ export interface ProductRow {
   pricing_type: PricingType | null
   order_type: CatalogOrderType | null
   is_featured: boolean
+  requires_car?: boolean
   is_active: boolean
   promo_label: string | null
   original_price_idr: number | null
@@ -363,6 +373,8 @@ export interface OrderRow {
   delivery_lat?: number | null
   delivery_lng?: number | null
   delivery_landmark?: string | null
+  delivery_vehicle?: 'motor' | 'car' | null
+  delivery_distance_km?: number | string | null
   promo_code: string | null
   florist_display_name: string | null
   florist_assigned_employee_id: string | null
