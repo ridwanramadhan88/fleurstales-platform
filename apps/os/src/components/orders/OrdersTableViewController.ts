@@ -19,6 +19,7 @@ import { deleteOrderDraft, useOrderDrafts, type SavedOrderDraft } from './orderD
 import { advanceOrderStatus, getNextStatus } from './orderTableWorkflow'
 import {
   buildReadyForDeliveryMessage,
+  buildOnTheWayMessage,
   buildReadyForPickupMessage,
   buildReviewRequestMessage,
   buildWhatsAppLink,
@@ -292,7 +293,9 @@ export const useOrdersTableViewController = ({
       : actionOrder.fulfillment === 'pickup'
         ? buildReadyForPickupMessage(actionOrder.customerName, getProductName(actionOrder), actionOrder.branch, readyTrackingUrl)
         : buildReadyForDeliveryMessage(actionOrder.customerName, getProductName(actionOrder), readyTrackingUrl)
-    : ''
+    : actionModal === 'delivering' && actionOrder?.deliveryProvider === 'gojek' && actionOrder.deliveryTrackingUrl
+      ? buildOnTheWayMessage(actionOrder.customerName, getProductName(actionOrder), actionOrder.deliveryTrackingUrl)
+      : ''
   const actionModalData = actionModal && actionOrder
     ? {
         kind: actionModal,
