@@ -157,4 +157,15 @@ begin
 end
 $order$;
 
+do $anon_columns$
+declare v_col text;
+begin
+  foreach v_col in array array['delivery_tariff_enabled','motor_base_idr','motor_included_km','motor_per_km_idr','car_base_idr','car_included_km','car_per_km_idr','max_delivery_km','motor_max_items'] loop
+    if not has_column_privilege('anon', 'public.branches', v_col, 'SELECT') then
+      raise exception 'anon must read branches.% (storefront branch list)', v_col;
+    end if;
+  end loop;
+end
+$anon_columns$;
+
 rollback;
