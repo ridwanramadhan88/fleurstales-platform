@@ -416,7 +416,6 @@ export interface SharedOrder {
   deliveryShippedAt?: string
   /** Courier account (staff employee id) assigned to deliver this order. */
   deliveryCourierEmployeeId?: string
-  deliveryStartedAt?: string
   /** Private proof-of-delivery photo path. Internal only; never shown to customers. */
   deliveryProofPhotoPath?: string
   deliveryProofUploadedAt?: string

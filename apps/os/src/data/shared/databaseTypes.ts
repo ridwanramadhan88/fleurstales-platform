@@ -382,7 +382,6 @@ export interface OrderRow {
   delivery_tracking_url?: string | null
   delivery_shipped_at?: string | null
   delivery_courier_employee_id?: string | null
-  delivery_started_at?: string | null
   delivery_proof_photo_path?: string | null
   delivery_proof_uploaded_at?: string | null
   promo_code: string | null

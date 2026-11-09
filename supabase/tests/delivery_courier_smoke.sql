@@ -139,7 +139,7 @@ $early$;
 reset role;
 
 set local session_replication_role = replica;
-update public.orders set status = 'delivering', delivery_started_at = now() where id = 'ord-cr-1';
+update public.orders set status = 'delivering' where id = 'ord-cr-1';
 set local session_replication_role = origin;
 
 -- Courier B cannot confirm courier A's order.
