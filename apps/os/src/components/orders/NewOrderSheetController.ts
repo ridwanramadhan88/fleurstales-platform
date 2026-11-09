@@ -19,6 +19,10 @@ import {
   getCustomerProfileSuggestions,
 } from '../../domain/customerIntakeDomain'
 import { useDismissableModal } from '../../hooks/useDismissableModal'
+import { useDeliveryFee } from '../../hooks/useDeliveryFee'
+import { bootstrapSharedData } from '../../data/shared/bootstrap'
+import { browserSupabaseTokenProvider } from '../../data/shared/supabaseSession'
+import { parseMapsLocation } from '../../domain/deliveryDetailsDomain'
 import type { NewOrderSheetProps } from './NewOrderSheet'
 import {
   type FormStep,
@@ -85,6 +89,9 @@ export interface NewOrderSheetViewModel {
   selectedCatalogVariant: CatalogProduct['variants'][number] | null
   estimatedOrderTotalIdr: number
   authoritativeDeliveryFeeIdr: number
+  /** Branch charges delivery by distance (Motor/Mobil). */
+  deliveryTariffEnabled: boolean
+  deliveryFee: ReturnType<typeof useDeliveryFee>
   voucherDiscountIdr: number
   depositValueForReview: number
   paymentStatusLabelForReview: string
@@ -156,6 +163,37 @@ export const useNewOrderSheetController = ({
     Partial<CustomerProfileSuggestions>
   >({})
   const [serverQuote, setServerQuote] = useState<StorefrontCheckoutQuoteResult | null>(null)
+
+  // Distance tariff (Motor/Mobil). The flat branch fee applies while it is off.
+  const branchTariff = configuredBranches.find((branch) => branch.id === branchForForm)?.deliveryTariff
+  const deliveryTariffEnabled = form.values.fulfillmentType === 'delivery' && branchForForm !== 'All' && branchTariff?.enabled === true
+  const deliveryFee = useDeliveryFee({
+    enabled: deliveryTariffEnabled,
+    branchId: branchForForm,
+    pin: parseMapsLocation(form.values.deliveryPin),
+    items: [{ productId: form.values.orderItemMode === 'catalog' ? form.values.orderItemCatalogId || undefined : undefined, quantity: 1 }],
+    measure: async (input) => {
+      const shared = bootstrapSharedData(browserSupabaseTokenProvider)
+      return shared.enabled ? shared.repositories.ordersAdmin.measureDeliveryDistance(input) : { error: 'DISTANCE_SERVICE_UNAVAILABLE' as const }
+    },
+    quote: async (input) => {
+      const shared = bootstrapSharedData(browserSupabaseTokenProvider)
+      return shared.enabled ? shared.repositories.ordersAdmin.quoteDeliveryFee(input) : { tariffEnabled: false, feeIdr: 0 }
+    },
+  })
+  const effectiveDeliveryFeeIdr = deliveryTariffEnabled ? (deliveryFee.feeIdr ?? 0) : authoritativeDeliveryFeeIdr
+  const displayQuote = deliveryTariffEnabled && serverQuote
+    ? { ...serverQuote, deliveryFeeIdr: effectiveDeliveryFeeIdr, totalIdr: Math.max(0, serverQuote.totalIdr - serverQuote.deliveryFeeIdr + effectiveDeliveryFeeIdr) }
+    : serverQuote
+
+  // The chosen vehicle and measured quote travel with the order.
+  useEffect(() => {
+    const vehicle = deliveryTariffEnabled ? (deliveryFee.vehicle ?? '') : ''
+    const quoteId = deliveryTariffEnabled ? (deliveryFee.quoteId ?? '') : ''
+    if ((form.values.deliveryVehicle ?? '') !== vehicle) form.onFieldValueChange('deliveryVehicle', vehicle as '' | 'motor' | 'car')
+    if ((form.values.deliveryQuoteId ?? '') !== quoteId) form.onFieldValueChange('deliveryQuoteId', quoteId)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveryTariffEnabled, deliveryFee.vehicle, deliveryFee.quoteId])
 
   const matchedCustomer: CustomerProfile | null = useMemo(() => {
     return findCustomerByWhatsapp(customers, form.values.customerWhatsappNumber)
@@ -238,16 +276,16 @@ export const useNewOrderSheetController = ({
     catalogProducts,
     vouchers,
     voucherCustomer,
-    authoritativeDeliveryFeeIdr,
-    serverQuote,
+    authoritativeDeliveryFeeIdr: effectiveDeliveryFeeIdr,
+    serverQuote: displayQuote,
   })
 
   useEffect(() => {
     const formatted = form.values.fulfillmentType === 'delivery'
-      ? new Intl.NumberFormat('id-ID').format(authoritativeDeliveryFeeIdr)
+      ? new Intl.NumberFormat('id-ID').format(effectiveDeliveryFeeIdr)
       : ''
     if (form.values.deliveryFee !== formatted) form.onFieldValueChange('deliveryFee', formatted)
-  }, [authoritativeDeliveryFeeIdr, form.values.fulfillmentType])
+  }, [effectiveDeliveryFeeIdr, form.values.fulfillmentType])
 
   useEffect(() => {
     if (!matchedCustomer || matchedCustomerSegment !== 'vip') {
@@ -308,7 +346,7 @@ export const useNewOrderSheetController = ({
     onClose,
     setStep: form.setStep,
     voucherDiscountIdr: pricing.voucherDiscountIdr,
-    authoritativeDeliveryFeeIdr,
+    authoritativeDeliveryFeeIdr: effectiveDeliveryFeeIdr,
     serverQuote,
   })
 
@@ -344,6 +382,13 @@ export const useNewOrderSheetController = ({
       const depositIdr = sanitizeCurrency(form.values.depositAmount)
       if (form.values.paymentStatus === 'partial' && depositIdr <= 0) {
         nextErrors.depositAmount = 'Deposit must be greater than Rp0.'
+      }
+      if (deliveryTariffEnabled && deliveryFee.status !== 'ready') {
+        nextErrors.deliveryPin = deliveryFee.error === 'OUT_OF_RANGE'
+          ? 'This address is outside the delivery range.'
+          : deliveryFee.status === 'loading'
+            ? 'The delivery fee is still being calculated. Try again in a moment.'
+            : 'The delivery fee could not be calculated. Check the pin.'
       }
       if (Object.keys(nextErrors).length > 0) {
         form.setErrors(nextErrors)
@@ -454,6 +499,7 @@ export const useNewOrderSheetController = ({
   }, [open, walkInPickup, hasPickupSchedule, branchLabel])
 
   const isFormReady = Object.keys(validateNewOrderForm(form.values, selectedBranch)).length === 0
+    && !(deliveryTariffEnabled && deliveryFee.status !== 'ready')
 
   const activeGuideStep = useMemo(
     () => getActiveGuideStep(form.values),
@@ -527,7 +573,9 @@ export const useNewOrderSheetController = ({
     selectedCatalogProduct: pricing.selectedCatalogProduct,
     selectedCatalogVariant: pricing.selectedCatalogVariant,
     estimatedOrderTotalIdr: pricing.estimatedOrderTotalIdr,
-    authoritativeDeliveryFeeIdr: serverQuote?.deliveryFeeIdr ?? authoritativeDeliveryFeeIdr,
+    authoritativeDeliveryFeeIdr: displayQuote?.deliveryFeeIdr ?? effectiveDeliveryFeeIdr,
+    deliveryTariffEnabled,
+    deliveryFee,
     voucherDiscountIdr: pricing.voucherDiscountIdr,
     depositValueForReview: pricing.depositValueForReview,
     paymentStatusLabelForReview,

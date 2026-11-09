@@ -3,6 +3,7 @@ import type { CatalogCategory, CatalogMaterial, CatalogProduct } from '../../sto
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import type { CatalogFormState } from './CatalogItemFormSheet'
 import { CatalogProductImagesField } from './CatalogProductImagesField'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 
 interface Props {
   form: CatalogFormState
@@ -28,6 +29,7 @@ export const CatalogProductDetailsSection: FC<Props> = ({
   labelClass,
   fieldErrors = {},
 }) => {
+  const tr = useBilingualCopy()
   const update = <K extends keyof CatalogFormState>(field: K, value: CatalogFormState[K]) =>
     setForm((previous) => ({ ...previous, [field]: value }))
 
@@ -190,6 +192,14 @@ export const CatalogProductDetailsSection: FC<Props> = ({
             </SelectContent>
           </Select>
         </div>
+
+        <label className="flex items-start gap-2 sm:col-span-2">
+          <input type="checkbox" checked={form.requiresCar} onChange={(event) => update('requiresCar', event.target.checked)} className="mt-0.5 size-4" />
+          <span className="text-xs">
+            <span className="font-semibold text-foreground">{tr('Must be delivered by car', 'Wajib dikirim dengan mobil')}</span>
+            <span className="block text-muted-foreground">{tr('Checkout picks car automatically and locks motor when this product is in the cart.', 'Saat produk ini ada di keranjang, checkout otomatis memilih mobil dan mengunci motor.')}</span>
+          </span>
+        </label>
 
         <div className="space-y-1.5 sm:col-span-2">
           <label className={labelClass}>Description</label>

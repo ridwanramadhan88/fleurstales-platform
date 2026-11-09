@@ -12,6 +12,7 @@ import { TimeSelectField } from '../ui/date-time-field'
 import type { BranchDependencyImpact } from '../../domain/settings/branchSafetyDomain'
 import { SettingsSectionHeader } from './SettingsPrimitives'
 import { OpenStreetMapPicker } from './OpenStreetMapPicker'
+import { BranchDeliveryTariffEditor } from './BranchDeliveryTariffEditor'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 
 interface Props {
@@ -627,6 +628,8 @@ export const BranchSettingsPanel: FC<Props> = ({
                         </>
                       )}
                     </div>
+
+                    <BranchDeliveryTariffEditor branch={branch} isEditing={isEditing} error={validationErrors[`branch.${branchIndex}.deliveryTariff`]} onUpdateBranch={onUpdateBranch} />
 
                     <BranchLocationEditor branch={branch} onUpdateBranch={onUpdateBranch} isEditing={isEditing} radiusMeters={attendanceRadiusMeters} />
                     {validationErrors[`branch.${branchIndex}.location`] && <p className="text-2xs font-medium text-destructive">{validationErrors[`branch.${branchIndex}.location`]}</p>}

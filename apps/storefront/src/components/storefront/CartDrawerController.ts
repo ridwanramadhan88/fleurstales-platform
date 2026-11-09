@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useDeliveryFee } from '../../hooks/useDeliveryFee'
 import { calculateOrderTotal, formatVoucherValue, validateVoucherCode } from '../../domain/voucherDomain'
 import {
   EMPTY_DELIVERY_DETAILS,
@@ -82,6 +83,9 @@ export interface CartDrawerViewModel extends CartDrawerProps {
   itemsTotalIdr: number
   itemCount: number
   deliveryFeeIdr: number
+  /** Distance-based delivery pricing (Motor/Mobil). tariffEnabled=false means the flat fee applies. */
+  deliveryTariffEnabled: boolean
+  deliveryFee: ReturnType<typeof useDeliveryFee>
   discountIdr: number
   grandTotalIdr: number
   setStep: (value: CheckoutStep) => void
@@ -198,7 +202,21 @@ export const useCartDrawerController = (
   const availableTimeSlots = getStorefrontAvailableTimeSlots(selectedBranch, deliveryDate)
   const branchHoursLabel = deliveryDate ? describeBranchHoursForDate(selectedBranch, deliveryDate) : 'Select a date to see branch hours.'
   const isDateUnavailable = (date: Date) => isStorefrontDateUnavailable(selectedBranch, date)
-  const deliveryFeeIdr = fulfillment === 'delivery' ? (selectedBranch?.deliveryFeeIdr ?? 15_000) : 0
+  const deliveryTariffEnabled = fulfillment === 'delivery' && sharedData.enabled && selectedBranch?.deliveryTariff?.enabled === true
+  const deliveryFee = useDeliveryFee({
+    enabled: deliveryTariffEnabled,
+    branchId: branch,
+    pin: deliveryDetails.pin,
+    items: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+    measure: async (input) => sharedData.enabled
+      ? sharedData.repositories.checkout.measureDeliveryDistance(input)
+      : { error: 'DISTANCE_SERVICE_UNAVAILABLE' as const },
+    quote: async (input) => sharedData.enabled
+      ? sharedData.repositories.checkout.quoteDeliveryFee(input)
+      : { tariffEnabled: false, feeIdr: 0 },
+  })
+  const tariffFeeIdr = deliveryTariffEnabled ? (deliveryFee.feeIdr ?? 0) : null
+  const deliveryFeeIdr = fulfillment === 'delivery' ? (tariffFeeIdr ?? selectedBranch?.deliveryFeeIdr ?? 15_000) : 0
 
   const matchedCustomer = useMemo<CustomerProfile | null>(() => {
     // Public Storefront must never expose CRM lookup by phone number. Existing
@@ -444,9 +462,16 @@ export const useCartDrawerController = (
       return
     }
     const validationError = validateStorefrontCheckoutDetails({ customerName, whatsappNumber, fulfillment, deliveryAddress, deliveryDetails, date: deliveryDate, time: deliveryTime, branch: selectedBranch })
-    const paymentError = paymentMethod === 'transfer' && bankAccounts.length === 0
-      ? 'Bank transfer is unavailable for this branch.'
+    const distanceError = deliveryTariffEnabled && deliveryFee.status !== 'ready'
+      ? (deliveryFee.error === 'OUT_OF_RANGE'
+        ? 'This address is outside our delivery range. Please contact the branch on WhatsApp.'
+        : deliveryFee.status === 'loading'
+          ? 'Calculating the delivery fee. Please wait a moment.'
+          : 'We could not calculate the delivery fee. Please check the map pin and try again.')
       : null
+    const paymentError = distanceError ?? (paymentMethod === 'transfer' && bankAccounts.length === 0
+      ? 'Bank transfer is unavailable for this branch.'
+      : null)
     if (lines.length === 0 || validationError || paymentError) {
       setDetailsError(validationError ?? paymentError)
       setStep('details')
@@ -474,7 +499,12 @@ export const useCartDrawerController = (
       }),
       deliveryAddress: fulfillment === 'delivery' ? deliveryAddress.trim() || undefined : undefined,
       deliveryDetails: fulfillment === 'delivery'
-        ? toDeliveryDetailsInput(deliveryDetails, { name: customerName, whatsappNumber })
+        ? {
+            ...toDeliveryDetailsInput(deliveryDetails, { name: customerName, whatsappNumber }),
+            ...(deliveryTariffEnabled && deliveryFee.quoteId && deliveryFee.vehicle
+              ? { vehicle: deliveryFee.vehicle, quoteId: deliveryFee.quoteId }
+              : {}),
+          }
         : undefined,
       orderNote: orderNote.trim() || undefined,
       greetingMessage: greetingMessage.trim() || undefined,
@@ -661,9 +691,13 @@ export const useCartDrawerController = (
     paymentInstructions,
     itemsTotalIdr: placedOrderTotals?.itemsTotalIdr ?? (remoteCheckoutEnabled ? remoteQuote?.itemsSubtotalIdr ?? itemsTotalIdr : itemsTotalIdr),
     itemCount,
-    deliveryFeeIdr: placedOrderTotals?.deliveryFeeIdr ?? (remoteCheckoutEnabled ? remoteQuote?.deliveryFeeIdr ?? deliveryFeeIdr : deliveryFeeIdr),
+    deliveryFeeIdr: placedOrderTotals?.deliveryFeeIdr ?? tariffFeeIdr ?? (remoteCheckoutEnabled ? remoteQuote?.deliveryFeeIdr ?? deliveryFeeIdr : deliveryFeeIdr),
+    deliveryTariffEnabled,
+    deliveryFee,
     discountIdr: placedOrderTotals?.discountIdr ?? discountIdr,
-    grandTotalIdr: placedOrderTotals?.grandTotalIdr ?? (remoteCheckoutEnabled ? remoteQuote?.totalIdr ?? grandTotalIdr : grandTotalIdr),
+    grandTotalIdr: placedOrderTotals?.grandTotalIdr ?? (tariffFeeIdr !== null
+      ? Math.max(0, (remoteQuote?.itemsSubtotalIdr ?? itemsTotalIdr) - (remoteQuote?.discountIdr ?? discountIdr) + tariffFeeIdr)
+      : remoteCheckoutEnabled ? remoteQuote?.totalIdr ?? grandTotalIdr : grandTotalIdr),
     setStep,
     setCustomerName,
     setWhatsappNumber,

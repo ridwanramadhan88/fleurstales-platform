@@ -46,6 +46,7 @@ export interface CatalogItemFormSheetProps {
     thumbnail?: string
     gallery?: string[]
     isCustomizable: boolean
+    requiresCar: boolean
     isActive: boolean
     variants: NewCatalogVariantInput[]
   }, sizeChart: CatalogProductSizeChart) => SaveResult
@@ -74,6 +75,7 @@ export interface CatalogFormState {
   pricingType: 'Fixed' | 'Starts From'
   orderType: 'Catalog' | 'Custom'
   isCustomizable: 'yes' | 'no'
+  requiresCar: boolean
   availability: 'active' | 'inactive'
   images: CatalogProductImage[]
   sizeTemplateId: string
@@ -100,6 +102,7 @@ const emptyForm = (defaultCategory: CatalogCategory): CatalogFormState => ({
   pricingType: 'Fixed',
   orderType: 'Catalog',
   isCustomizable: 'no',
+  requiresCar: false,
   availability: 'active',
   images: [],
   sizeTemplateId: '',
@@ -156,6 +159,7 @@ const formFromProduct = (product: CatalogProduct, targets: CatalogSizeGuideTarge
   pricingType: product.pricingType ?? 'Fixed',
   orderType: product.orderType ?? 'Catalog',
   isCustomizable: product.isCustomizable ? 'yes' : 'no',
+  requiresCar: product.requiresCar === true,
   availability: product.isActive ? 'active' : 'inactive',
   images: normalizeCatalogProductImages(product),
   sizeTemplateId: productSizeTemplateId(product.id, targets),
@@ -474,6 +478,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
       images: normalizedImages,
       ...imageAliases,
       isCustomizable: form.isCustomizable === 'yes',
+      requiresCar: form.requiresCar,
       isActive: form.availability === 'active',
       variants: parsedVariants,
     }

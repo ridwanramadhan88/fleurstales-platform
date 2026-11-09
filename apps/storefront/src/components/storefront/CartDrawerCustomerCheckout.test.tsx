@@ -55,6 +55,8 @@ const base = (): CartDrawerViewModel => ({
   itemsTotalIdr: 200_000,
   itemCount: 1,
   deliveryFeeIdr: 0,
+  deliveryTariffEnabled: false,
+  deliveryFee: { status: 'idle', feeIdr: null, vehicle: null, forcedReason: null, distanceKm: null, quoteId: null, maxDistanceKm: null, motorMaxItems: null, error: null, preference: null, chooseVehicle: vi.fn() },
   discountIdr: 0,
   grandTotalIdr: 200_000,
   setStep: vi.fn(),

@@ -28,6 +28,9 @@ export interface NewOrderFormValues {
   /** Delivery pin as "lat,lng" ('' = not set). */
   deliveryPin: string
   deliveryLandmark: string
+  /** Set from the distance tariff; '' while the flat fee applies. */
+  deliveryVehicle?: '' | 'motor' | 'car'
+  deliveryQuoteId?: string
   deliveryFee: string
   greetingMessage: string
   greetingCardName: string
@@ -71,6 +74,8 @@ export const initialNewOrderValues: NewOrderFormValues = {
   recipientPhone: '',
   deliveryPin: '',
   deliveryLandmark: '',
+  deliveryVehicle: '',
+  deliveryQuoteId: '',
   deliveryFee: '',
   greetingMessage: '',
   greetingCardName: '',

@@ -17,6 +17,7 @@ const injectPublicRuntimeConfig = async () => {
   const config = Object.fromEntries(Object.entries({
     supabaseUrl: process.env.FLEURSTALES_SUPABASE_URL?.trim(),
     supabasePublishableKey: process.env.FLEURSTALES_SUPABASE_PUBLISHABLE_KEY?.trim(),
+    googleMapsBrowserKey: process.env.FLEURSTALES_GOOGLE_MAPS_BROWSER_KEY?.trim(),
   }).filter(([, value]) => Boolean(value)))
 
   if (Object.keys(config).length === 0) return

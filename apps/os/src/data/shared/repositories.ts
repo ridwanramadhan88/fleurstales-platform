@@ -7,6 +7,10 @@ import type {
   CreateStorefrontOrderInput,
   CreateStorefrontOrderResult,
   StorefrontCheckoutQuoteResult,
+  DeliveryDistanceResult,
+  DeliveryFeeQuote,
+  DeliveryFeeQuoteInput,
+  DeliveryTariff,
   SharedBranch,
   SharedArrangementType,
   SharedArrangementTypesReplaceResult,
@@ -63,6 +67,7 @@ import type {
   CatalogAdminRepository,
   CatalogReadRepository,
   CustomerAdminRepository,
+  DeliveryQuoteRepository,
   OrdersAdminRepository,
   StoreAdminRepository,
   StoreReadRepository,
@@ -199,6 +204,7 @@ const mapProduct = (
   pricingType: optional(row.pricing_type),
   orderType: optional(row.order_type),
   isFeatured: row.is_featured,
+  requiresCar: row.requires_car ?? false,
   isActive: row.is_active,
   promoLabel: optional(row.promo_label),
   originalPriceIdr: optional(row.original_price_idr),
@@ -425,6 +431,14 @@ const parseOpeningHours = (value: Json): SharedBranch['openingHours'] => {
   return result
 }
 
+const mapDeliveryTariff = (row: BranchRow): DeliveryTariff => ({
+  enabled: row.delivery_tariff_enabled ?? false,
+  motor: { baseIdr: row.motor_base_idr ?? 0, includedKm: Number(row.motor_included_km ?? 3), perKmIdr: row.motor_per_km_idr ?? 0 },
+  car: { baseIdr: row.car_base_idr ?? 0, includedKm: Number(row.car_included_km ?? 3), perKmIdr: row.car_per_km_idr ?? 0 },
+  maxKm: Number(row.max_delivery_km ?? 25),
+  motorMaxItems: row.motor_max_items ?? null,
+})
+
 const mapBranch = (row: BranchRow): SharedBranch => ({
   id: row.id,
   name: row.name,
@@ -438,6 +452,7 @@ const mapBranch = (row: BranchRow): SharedBranch => ({
   openingHours: parseOpeningHours(row.opening_hours),
   latitude: optional(row.latitude),
   longitude: optional(row.longitude),
+  deliveryTariff: mapDeliveryTariff(row),
 })
 
 const mapPaymentAccount = (row: PublicPaymentAccountRow): SharedPaymentAccount => ({
@@ -474,7 +489,7 @@ export const createStoreReadRepository = (client: SupabaseHttpClient): StoreRead
 
   async listBranches(options) {
     const rows: BranchRow[] = await client.select('branches', {
-      select: 'id,name,code,address,phone,is_active,is_default,sort_order,delivery_fee_idr,opening_hours,latitude,longitude,created_at,updated_at',
+      select: 'id,name,code,address,phone,is_active,is_default,sort_order,delivery_fee_idr,opening_hours,latitude,longitude,delivery_tariff_enabled,motor_base_idr,motor_included_km,motor_per_km_idr,car_base_idr,car_included_km,car_per_km_idr,max_delivery_km,motor_max_items,created_at,updated_at',
       filters: options?.includeInactive ? undefined : { is_active: true },
       order: [{ column: 'sort_order' }, { column: 'name' }],
     })
@@ -715,6 +730,8 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   deliveryLatitude: row.delivery_lat ?? undefined,
   deliveryLongitude: row.delivery_lng ?? undefined,
   deliveryLandmark: optional(row.delivery_landmark),
+  deliveryVehicle: row.delivery_vehicle ?? undefined,
+  deliveryDistanceKm: row.delivery_distance_km == null ? undefined : Number(row.delivery_distance_km),
   promoCode: optional(row.promo_code),
   floristDisplayName: optional(row.florist_display_name),
   floristAssignedEmployeeId: optional(row.florist_assigned_employee_id),
@@ -787,6 +804,8 @@ export const createOrdersAdminRepository = (client: SupabaseHttpClient): OrdersA
     return rows[0] ? mapOrder(rows[0]) : null
   },
 
+  ...createDeliveryQuoteRepository(client),
+
   async quoteInternalOrder(input: CreateInternalOrderInput) {
     return client.rpc<StorefrontCheckoutQuoteResult>('quote_internal_order', {
       p_payload: asJson(input),
@@ -808,7 +827,28 @@ export const createOrdersAdminRepository = (client: SupabaseHttpClient): OrdersA
   },
 })
 
+const createDeliveryQuoteRepository = (client: SupabaseHttpClient): DeliveryQuoteRepository => ({
+  async measureDeliveryDistance(input) {
+    return client.invokeFunction<DeliveryDistanceResult>('delivery-quote', {
+      branchId: input.branchId,
+      latitude: input.latitude,
+      longitude: input.longitude,
+    })
+  },
+  async quoteDeliveryFee(input: DeliveryFeeQuoteInput) {
+    return client.rpc<DeliveryFeeQuote>('quote_delivery_fee', {
+      p_branch_id: input.branchId,
+      p_quote_id: input.quoteId ?? null,
+      p_vehicle: input.vehicle ?? null,
+      p_items: asJson(input.items),
+      p_lat: input.latitude ?? null,
+      p_lng: input.longitude ?? null,
+    })
+  },
+})
+
 export const createStorefrontCheckoutRepository = (client: SupabaseHttpClient): StorefrontCheckoutRepository => ({
+  ...createDeliveryQuoteRepository(client),
   async quoteOrder(input: CreateStorefrontOrderInput) {
     const args: CreateStorefrontOrderRpcArgs = {
       p_idempotency_key: input.idempotencyKey,

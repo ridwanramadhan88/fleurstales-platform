@@ -119,6 +119,8 @@ export interface CatalogProduct {
   promoLabel?: string
   originalPriceIdr?: number
   isCustomizable?: boolean
+  /** Must be delivered by car (checkout locks Motor). */
+  requiresCar?: boolean
 }
 
 export type NewCatalogProductInput = Omit<CatalogProduct, 'id' | 'productId' | 'variants'> & {

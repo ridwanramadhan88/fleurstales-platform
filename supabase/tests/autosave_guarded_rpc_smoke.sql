@@ -69,7 +69,8 @@ begin
       'get_unavailable_order_slots',
       'get_order_public_status',
       'verify_order_tracking_access',
-      'submit_order_review'
+      'submit_order_review',
+      'quote_delivery_fee'
     );
   if v_source is not null then
     raise exception 'SECURITY DEFINER functions are executable by anon outside the Storefront allowlist: %', v_source;
