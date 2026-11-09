@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { SaveOrderShipmentResult } from '../../data/shared/contracts'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useCatalogStore } from '../../store/catalogStore'
 import { useCustomerStore } from '../../store/customerStore'
@@ -78,6 +79,7 @@ export interface OrdersTableViewModel {
   currentUserRole: ReturnType<typeof useUserStore.getState>['role']
   paymentGate: { order: OrderTableRow; nextStatus: OrderStatus } | null
   finishPhotoGate: { order: OrderTableRow; nextStatus: OrderStatus } | null
+  shipmentGate: OrderTableRow | null
   actionModalData: OrdersActionModalData | null
   processingAssignment: OrderTableRow | null
   addressCopied: boolean
@@ -91,6 +93,8 @@ export interface OrdersTableViewModel {
   onQuickAdvance: (order: OrderTableRow) => void
   onCancelPaymentGate: () => void
   onMarkPaidAndContinue: () => void
+  onCancelShipment: () => void
+  onShipmentSaved: (result: SaveOrderShipmentResult) => void
   onCancelFinishPhotoDialog: () => void
   onFinishPhotoUploaded: (finishPhotoUrl: string) => Promise<void>
   onCloseActionModal: () => void
@@ -129,6 +133,7 @@ export const useOrdersTableViewController = ({
   const [processingAssignment, setProcessingAssignment] = useState<OrderTableRow | null>(null)
   const [paymentGate, setPaymentGate] = useState<{ order: OrderTableRow; nextStatus: OrderStatus } | null>(null)
   const [finishPhotoGate, setFinishPhotoGate] = useState<{ order: OrderTableRow; nextStatus: OrderStatus } | null>(null)
+  const [shipmentGate, setShipmentGate] = useState<OrderTableRow | null>(null)
 
   const allDrafts = useOrderDrafts()
   const localOrders = useOrdersStore((state) => state.orders)
@@ -158,6 +163,10 @@ export const useOrdersTableViewController = ({
     }
     if (next === 'ready' && !order.finishPhotoUrl) {
       setFinishPhotoGate({ order, nextStatus: next })
+      return
+    }
+    if (next === 'delivering' && order.fulfillment === 'delivery' && !order.deliveryProvider && (currentUserRole === 'owner' || currentUserRole === 'admin')) {
+      setShipmentGate(order)
       return
     }
     const advanced = advanceOrderStatus({ order, nextStatus: next, updateOrderStatus, addActivity, actor, quick: true })
@@ -333,6 +342,7 @@ export const useOrdersTableViewController = ({
     currentUserRole,
     paymentGate,
     finishPhotoGate,
+    shipmentGate,
     actionModalData,
     processingAssignment,
     addressCopied,
@@ -360,6 +370,20 @@ export const useOrdersTableViewController = ({
       // already refreshed the order store; close here and require a fresh
       // Process Order click to assign the florist.
       setPaymentGate(null)
+    },
+    onCancelShipment: () => setShipmentGate(null),
+    onShipmentSaved: (result) => {
+      if (!shipmentGate) return
+      const order = shipmentGate
+      setShipmentGate(null)
+      runAdvance({
+        ...order,
+        revision: result.revision,
+        deliveryProvider: result.deliveryProvider ?? undefined,
+        deliveryCourierName: result.deliveryCourierName ?? undefined,
+        deliveryActualCostIdr: result.deliveryActualCostIdr ?? undefined,
+        deliveryTrackingUrl: result.deliveryTrackingUrl ?? undefined,
+      }, 'delivering')
     },
     onCancelFinishPhotoDialog: () => setFinishPhotoGate(null),
     onFinishPhotoUploaded: async (finishPhotoUrl) => {

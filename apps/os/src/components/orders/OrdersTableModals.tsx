@@ -4,6 +4,7 @@ import { OrderDetailsPanelController } from './OrderDetailsPanelController'
 import type { OrdersTableViewModel } from './OrdersTableViewController'
 import { OrderPaymentGateDialog } from './OrderPaymentGateDialog'
 import { OrderFinishPhotoDialog } from './OrderFinishPhotoDialog'
+import { OrderShipmentDialog } from './OrderShipmentDialog'
 import { AssignFloristDialog } from './AssignFloristDialog'
 
 interface OrdersTableModalsProps {
@@ -16,6 +17,9 @@ export const OrdersTableModals: FC<OrdersTableModalsProps> = ({ viewModel }) => 
     formatter,
     paymentGate,
     finishPhotoGate,
+    shipmentGate,
+    onCancelShipment,
+    onShipmentSaved,
     actionModalData,
     processingAssignment,
     addressCopied,
@@ -57,6 +61,10 @@ export const OrdersTableModals: FC<OrdersTableModalsProps> = ({ viewModel }) => 
           onCancel={onCancelFinishPhotoDialog}
           onUploaded={onFinishPhotoUploaded}
         />
+      )}
+
+      {shipmentGate && (
+        <OrderShipmentDialog open order={shipmentGate} mode="start" onClose={onCancelShipment} onSaved={onShipmentSaved} />
       )}
 
       {actionModalData && (
