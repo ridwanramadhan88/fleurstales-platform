@@ -48,7 +48,7 @@ export const canRecordSelfieAttendance = (params: {
   locationWithinRange?: boolean
 }): HrCommandResult => {
   if (!params.employee) return { ok: false, reason: 'Employee record was not found for this account.' }
-  if (!['admin', 'florist'].includes(params.actor.role)) return { ok: false, reason: 'Only Admin and Florist accounts can use selfie attendance.' }
+  if (!['admin', 'florist', 'courier'].includes(params.actor.role)) return { ok: false, reason: 'Only Admin, Florist, and Courier accounts can use selfie attendance.' }
   if (params.employee.systemRole !== params.actor.role) return { ok: false, reason: 'This account is not linked to the selected employee.' }
   if (params.employee.status !== 'active') return { ok: false, reason: 'Inactive employees cannot check in.' }
   if (params.date !== params.today) return { ok: false, reason: 'Selfie attendance can only be recorded for today.' }
@@ -72,7 +72,7 @@ export const canRecordSelfieCheckOut = (params: {
   locationWithinRange?: boolean
 }): HrCommandResult => {
   if (!params.employee) return { ok: false, reason: 'Employee record was not found for this account.' }
-  if (!['admin', 'florist'].includes(params.actor.role)) return { ok: false, reason: 'Only Admin and Florist accounts can use selfie attendance.' }
+  if (!['admin', 'florist', 'courier'].includes(params.actor.role)) return { ok: false, reason: 'Only Admin, Florist, and Courier accounts can use selfie attendance.' }
   if (params.employee.systemRole !== params.actor.role) return { ok: false, reason: 'This account is not linked to the selected employee.' }
   if (params.employee.status !== 'active') return { ok: false, reason: 'Inactive employees cannot check out.' }
   if (params.date !== params.today) return { ok: false, reason: 'Selfie check-out can only be recorded for today.' }

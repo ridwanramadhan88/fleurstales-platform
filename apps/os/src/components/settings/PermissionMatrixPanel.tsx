@@ -31,7 +31,7 @@ interface Props {
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
-  owner: 'Owner', admin: 'Admin', finance: 'Finance', hr: 'HR', florist: 'Florist',
+  owner: 'Owner', admin: 'Admin', finance: 'Finance', hr: 'HR', florist: 'Florist', courier: 'Kurir',
 }
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -40,6 +40,7 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   hr: 'Manages people and payroll prep.',
   admin: 'Runs daily operations.',
   florist: 'Handles floral work and assigned operational duties.',
+  courier: 'Delivers assigned orders. Access is fixed (Tugas antar only).',
 }
 
 type Sector = 'Store Management' | 'Sales & Finance' | 'Operations' | 'People & HR'
@@ -169,13 +170,15 @@ export const PermissionMatrixPanel: FC<Props> = ({
   permissions,
   actionPermissions,
   roleEmployeeCounts,
-  roles,
+  roles: allRoles,
   onUpdateActionAccess,
   onUpdateAccess,
   isEditing,
   validationErrors,
 }) => {
-  const [selectedRole, setSelectedRole] = useState<UserRole>(roles[0] ?? 'owner')
+  // Courier access is fixed (Tugas antar only), so it is not part of the editable matrix.
+  const roles = allRoles.filter((item): item is Exclude<UserRole, 'courier'> => item !== 'courier')
+  const [selectedRole, setSelectedRole] = useState<Exclude<UserRole, 'courier'>>(roles[0] ?? 'owner')
   const [activeSector, setActiveSector] = useState<Sector | 'summary'>('Store Management')
   const [showAdvanced, setShowAdvanced] = useState(false)
 
@@ -378,7 +381,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
             <label className="space-y-1.5">
               <span className="text-xs font-semibold">Configure role</span>
               <div className="relative">
-                <select value={role} onChange={(event) => setSelectedRole(event.target.value as UserRole)} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20">
+                <select value={role} onChange={(event) => setSelectedRole(event.target.value as Exclude<UserRole, 'courier'>)} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20">
                   {roles.map((item) => <option key={item} value={item}>{ROLE_LABELS[item]}</option>)}
                 </select>
               </div>

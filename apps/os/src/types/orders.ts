@@ -299,6 +299,12 @@ export interface OrderTableRow {
   deliveryActualCostIdr?: number
   deliveryTrackingUrl?: string
   deliveryShippedAt?: string
+  /** Courier account assigned to deliver (staff employee id). */
+  deliveryCourierEmployeeId?: string
+  deliveryStartedAt?: string
+  /** Private proof-of-delivery photo path; internal only. */
+  deliveryProofPhotoPath?: string
+  deliveryProofUploadedAt?: string
   /** Optional promo code applied to this order (from customer's CRM record or manual entry). */
   promoCode?: string
   /** Storefront-only CRM suggestions that must not block checkout or overwrite existing data. */

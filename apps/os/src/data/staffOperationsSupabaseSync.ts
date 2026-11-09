@@ -91,7 +91,7 @@ export const hydrateMyStaffOperations = async (): Promise<boolean> => {
     const rosterEmployees: Employee[] = roster.map((item) => ({
       id: item.employeeId,
       name: item.displayName,
-      position: item.role === 'admin' ? 'Admin' : item.role === 'florist' ? 'Florist' : item.role,
+      position: item.role === 'admin' ? 'Admin' : item.role === 'florist' ? 'Florist' : item.role === 'courier' ? 'Kurir' : item.role,
       branch: item.profileBranchId ?? '',
       systemRole: item.role,
       status: 'active',
@@ -188,7 +188,7 @@ export const connectStaffOperationsSupabase = async (): Promise<boolean> => {
   const hydrated = await hydrateMyStaffOperations()
   if (!hydrated) return false
   const role = useUserStore.getState().role
-  if ((role === 'admin' || role === 'florist') && !stopSubscription) {
+  if ((role === 'admin' || role === 'florist' || role === 'courier') && !stopSubscription) {
     stopSubscription = useHrStore.subscribe(scheduleSave)
   }
   return true

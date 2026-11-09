@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react'
+import { useMemo, useState, type FC } from 'react'
 import type { OrderTableRow } from '../../types/orders'
 import type { SaveOrderShipmentResult } from '../../data/shared/contracts'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { saveOrderShipment } from '../../data/orderShipment'
 import { toast } from '../../hooks/use-toast'
 import { useSettingsStore } from '../../store/settingsStore'
+import { useHrStore } from '../../store/hrStore'
 import { isValidTrackingUrl } from '../../domain/orderShipmentDomain'
 
 interface Props {
@@ -28,6 +29,14 @@ export const OrderShipmentDialog: FC<Props> = ({ order, open, mode, onClose, onS
   const [cost, setCost] = useState(order.deliveryActualCostIdr ? String(order.deliveryActualCostIdr) : '')
   const [trackingUrl, setTrackingUrl] = useState(order.deliveryTrackingUrl ?? '')
   const [courierName, setCourierName] = useState(order.deliveryCourierName ?? '')
+  const employees = useHrStore((state) => state.employees)
+  const couriers = useMemo(
+    () => employees.filter((employee) => employee.systemRole === 'courier' && employee.status === 'active'),
+    [employees],
+  )
+  // '' = a courier without an account (plain name); otherwise a courier account id.
+  const [courierEmployeeId, setCourierEmployeeId] = useState(order.deliveryCourierEmployeeId ?? '')
+  const courierLocked = order.status === 'delivering' && Boolean(order.deliveryCourierEmployeeId)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const vehicleLabel = order.deliveryVehicle === 'car' ? copy('Car', 'Mobil') : copy('Motorbike', 'Motor')
@@ -49,13 +58,20 @@ export const OrderShipmentDialog: FC<Props> = ({ order, open, mode, onClose, onS
     try {
       const result = await saveOrderShipment(order, provider === 'gojek'
         ? { provider, actualCostIdr: Number(cost.replace(/\D/g, '')), trackingUrl: trackingUrl.trim() || undefined }
-        : { provider, courierName: courierName.trim() || undefined })
+        : courierEmployeeId
+          ? { provider, courierEmployeeId }
+          : { provider, courierName: courierName.trim() || undefined })
       if (provider === 'gojek' && !result.financeRecorded) {
         toast({
           title: copy('Shipment saved, cost not booked', 'Pengiriman tersimpan, ongkos belum dicatat'),
           description: result.financeReason === 'COURIER_PAYMENT_ACCOUNT_REQUIRED'
             ? copy('Set the courier payment account in Settings → Branches, then save the shipment again.', 'Atur "Akun bayar kurir" di Pengaturan cabang, lalu simpan pengiriman lagi.')
             : copy('The Finance expense could not be recorded.', 'Pengeluaran di Keuangan belum bisa dicatat.'),
+        })
+      } else if (result.deliveryCourierEmployeeId) {
+        toast({
+          title: copy('Task sent to the courier', 'Tugas dikirim ke kurir'),
+          description: copy('The order moves to "On the way" when the courier taps Start delivery.', 'Pesanan jadi "Sedang diantar" saat kurir menekan Mulai antar.'),
         })
       } else {
         toast({ title: copy('Shipment saved', 'Pengiriman disimpan') })
@@ -119,10 +135,32 @@ export const OrderShipmentDialog: FC<Props> = ({ order, open, mode, onClose, onS
               )}
             </>
           ) : (
-            <label className="block space-y-1.5 text-xs font-medium text-muted-foreground">
-              {copy('Courier name (optional)', 'Nama kurir (opsional)')}
-              <input value={courierName} onChange={(event) => setCourierName(event.target.value)} maxLength={120} className={fieldClass} />
-            </label>
+            <>
+              {couriers.length > 0 && (
+                <label className="block space-y-1.5 text-xs font-medium text-muted-foreground">
+                  {copy('Courier', 'Kurir')}
+                  <select
+                    value={courierEmployeeId}
+                    onChange={(event) => setCourierEmployeeId(event.target.value)}
+                    disabled={courierLocked}
+                    className={fieldClass}
+                  >
+                    <option value="">{copy('Courier without an account', 'Kurir tanpa akun')}</option>
+                    {couriers.map((courier) => <option key={courier.id} value={courier.id}>{courier.name}</option>)}
+                  </select>
+                </label>
+              )}
+              {courierEmployeeId ? (
+                <p className="text-xs text-muted-foreground">
+                  {copy('The courier sees this order in their delivery tasks and uploads the proof photo.', 'Kurir akan melihat pesanan ini di tugas antarnya dan mengunggah foto bukti terima.')}
+                </p>
+              ) : (
+                <label className="block space-y-1.5 text-xs font-medium text-muted-foreground">
+                  {copy('Courier name (optional)', 'Nama kurir (opsional)')}
+                  <input value={courierName} onChange={(event) => setCourierName(event.target.value)} maxLength={120} className={fieldClass} />
+                </label>
+              )}
+            </>
           )}
           {error && <p className="text-xs text-destructive" role="alert">{error}</p>}
         </div>

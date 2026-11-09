@@ -36,7 +36,7 @@ export type SharedDataCapability =
   | 'orders:read'
   | 'orders:write'
 
-const VALID_STAFF_ROLES = new Set<StaffRole>(['owner', 'admin', 'finance', 'hr', 'florist'])
+const VALID_STAFF_ROLES = new Set<StaffRole>(['owner', 'admin', 'finance', 'hr', 'florist', 'courier'])
 
 export const isStaffRole = (value: unknown): value is StaffRole =>
   typeof value === 'string' && VALID_STAFF_ROLES.has(value as StaffRole)

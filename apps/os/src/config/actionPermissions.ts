@@ -109,6 +109,7 @@ export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
   finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.verify_order','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry','finance.close_period'),
   hr: withEnabled('orders.read_all','hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
+  courier: withEnabled(),
 }
 
 export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {

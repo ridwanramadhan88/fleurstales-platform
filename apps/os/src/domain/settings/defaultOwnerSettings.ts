@@ -67,7 +67,7 @@ export const DEFAULT_OWNER_SETTINGS: OwnerSettingsStateValue = {
     paymentDay: 28,
     timezone: 'Asia/Jakarta',
     pointValueIdr: 1000,
-    baseSalaryByRole: { admin: 4_500_000, finance: 5_000_000, hr: 4_500_000, florist: 4_000_000 },
+    baseSalaryByRole: { admin: 4_500_000, finance: 5_000_000, hr: 4_500_000, florist: 4_000_000, courier: 3_500_000 },
   },
   paymentMethods: {
     bankAccounts: [
@@ -88,7 +88,7 @@ export const DEFAULT_OWNER_SETTINGS: OwnerSettingsStateValue = {
       'Please complete payment within 1 hour and keep your receipt. Our team will verify your payment and confirm the order shortly after.',
   },
   staffRoles: {
-    roles: ['owner', 'admin', 'finance', 'hr', 'florist'],
+    roles: ['owner', 'admin', 'finance', 'hr', 'florist', 'courier'],
     defaultRole: 'florist',
     hrManagedRoles: {
       employees: ['admin', 'florist'],

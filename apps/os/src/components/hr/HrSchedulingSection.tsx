@@ -101,7 +101,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
     else if (dayScrollRef.current) dayScrollRef.current.scrollLeft = 0
   }, [weekStart])
   const staff = useMemo(()=>employees.filter((employee)=>
-    ['admin','florist'].includes(employee.systemRole)
+    ['admin','florist','courier'].includes(employee.systemRole)
     && isEmployeeOperationallyReady({ employee, roleSalaryIdr:employee.systemRole === 'owner' ? 0 : (payrollSettings.baseSalaryByRole?.[employee.systemRole] ?? 0), productionAuth:isSupabaseConfigured() })
     && (!searchQuery.trim() || employee.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
   ),[employees,payrollSettings.baseSalaryByRole,searchQuery])

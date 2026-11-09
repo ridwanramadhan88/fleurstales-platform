@@ -49,7 +49,7 @@ export const resolveStaffBranchContext = ({
   const fallbackOperationalBranchId = activeProfileBranchId
     ?? activeBranches.find((branch) => branch.isDefault)?.id
     ?? activeBranches[0]?.id
-  const requiresOperationalBranch = role === 'admin' || role === 'florist'
+  const requiresOperationalBranch = role === 'admin' || role === 'florist' || role === 'courier'
 
   return {
     scheduledBranchId: activeScheduledBranchId,

@@ -12,6 +12,7 @@ import { AdminTodayQueue } from './AdminTodayQueue'
 import { OverviewCardsContainer } from './OverviewCardsContainer'
 import { OwnerAttentionQueue } from './OwnerAttentionQueue'
 import { FloristAssignedOrders } from './FloristAssignedOrders'
+import { CourierDeliveryTasks } from './CourierDeliveryTasks'
 import { AdminFinishedMetrics } from './AdminFinishedMetrics'
 import { MyDayStrip } from './MyDayStrip'
 import { FinanceHomeWork, HrHomeWork } from './HomeWorkCards'
@@ -82,6 +83,13 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         <>
           <MyDayStrip />
           <FloristAssignedOrders onGoToOrders={onGoToOrders} />
+        </>
+      )}
+
+      {userRole === 'courier' && (
+        <>
+          <MyDayStrip />
+          <CourierDeliveryTasks />
         </>
       )}
 

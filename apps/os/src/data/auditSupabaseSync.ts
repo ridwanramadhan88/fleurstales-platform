@@ -21,7 +21,7 @@ interface SecurityAuditRow {
   occurred_at: string
 }
 
-const ROLES = new Set<UserRole>(['owner', 'admin', 'finance', 'hr', 'florist'])
+const ROLES = new Set<UserRole>(['owner', 'admin', 'finance', 'hr', 'florist', 'courier'])
 const OUTCOMES = new Set<AuditOutcome>(['succeeded', 'denied', 'conflict'])
 
 const mapAuditEvent = (row: SecurityAuditRow): AuditEvent => ({

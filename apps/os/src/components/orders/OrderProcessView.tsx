@@ -20,6 +20,7 @@ import { OrderStagePill } from './OrderStagePill'
 import { OrderNoteBlock } from './OrderNoteBlock'
 import { OrderMoreActionsMenu, hasOrderMoreActions } from './OrderMoreActionsMenu'
 import { OrderPaymentProofButton, canViewPaymentProof } from './OrderPaymentProofButton'
+import { DeliveryProofButton, canViewDeliveryProof } from './DeliveryProofButton'
 import { formatMinutesLeft } from './orderWorkStagePresentation'
 import { buildWhatsAppLink } from './orderTableWhatsApp'
 import { StaffReviewHistory } from '../customers/StaffReviewHistory'
@@ -365,6 +366,9 @@ export const OrderProcessView: FC<{ viewModel: OrderDetailsViewModel; onShowFull
               <dd className={`text-right font-semibold ${paid ? 'text-success' : 'text-destructive'}`}>{paid ? copy('Paid', 'Lunas') : copy('Not paid', 'Belum lunas')}</dd>
               {viewStep !== 1 && paid && order.paymentProofUrl && canViewPaymentProof(currentUserRole, order) && (
                 <dd className="col-span-2 -mt-1 flex justify-end"><OrderPaymentProofButton paymentProofPath={order.paymentProofUrl} /></dd>
+              )}
+              {canViewDeliveryProof(currentUserRole, order) && order.deliveryProofPhotoPath && (
+                <dd className="col-span-2 -mt-1 flex justify-end"><DeliveryProofButton path={order.deliveryProofPhotoPath} /></dd>
               )}
               <dt className="text-muted-foreground">Total</dt>
               <dd className="text-right font-medium tabular-nums text-foreground">Rp {formatter.format(order.totalIdr)}</dd>

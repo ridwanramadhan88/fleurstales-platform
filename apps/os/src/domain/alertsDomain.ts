@@ -48,6 +48,10 @@ export type AlertKind =
   | 'payroll_approved'
   | 'payroll_paid'
   | 'authorization_changed'
+  /** Courier: a delivery task was assigned. */
+  | 'delivery_assigned'
+  /** Owner/Admin: a courier finished a delivery. */
+  | 'order_delivered'
   /** Daily: a customer has a birthday today (all Admins). */
   | 'customer_birthday'
 
@@ -262,7 +266,7 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
     return attendanceProblems
   }
 
-  if (role === 'florist' && currentEmployeeId) {
+  if ((role === 'florist' || role === 'courier') && currentEmployeeId) {
     return schedulePublications
       .slice()
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))

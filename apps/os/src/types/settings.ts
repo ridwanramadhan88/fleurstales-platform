@@ -141,7 +141,7 @@ export interface PayrollDefaultSettings {
   /** Owner-editable conversion used for future payroll calculations. */
   pointValueIdr: number
   /** Default monthly base salary by staff role. Owner stays outside generated payroll but is a safe optional lookup key. */
-  baseSalaryByRole?: Record<Exclude<UserRole, 'owner'>, number> & { owner?: number }
+  baseSalaryByRole?: Record<Exclude<UserRole, 'owner' | 'courier'>, number> & { owner?: number; courier?: number }
 }
 
 export interface BranchSettings {
