@@ -441,6 +441,10 @@ export const SettingsCenter: FC<SettingsCenterViewModel> = ({
                   branchImpacts={branchImpacts}
                   validationErrors={validationErrors}
                   attendanceRadiusMeters={attendance.locationRadiusMeters}
+                  courierAccountOptions={[
+                    { id: 'cash:main', label: 'Kas utama (tunai)' },
+                    ...paymentMethods.bankAccounts.filter((account) => account.isActive).map((account) => ({ id: account.id, label: `${account.bankName} · ${account.accountNumber}` })),
+                  ]}
                 />
               )}
               {activeSection === "attendance" && (

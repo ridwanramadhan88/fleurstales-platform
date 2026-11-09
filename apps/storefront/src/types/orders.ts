@@ -290,6 +290,15 @@ export interface OrderTableRow {
   deliveryLongitude?: number
   /** Landmark / house detail for the courier (required on new delivery orders). */
   deliveryLandmark?: string
+  /** How the order is sent (D3): Gojek or an internal courier. */
+  /** Motor or Mobil, chosen by the customer. */
+  deliveryVehicle?: 'motor' | 'car'
+  deliveryProvider?: 'gojek' | 'internal'
+  deliveryCourierName?: string
+  /** Real courier cost, Owner/Admin only. */
+  deliveryActualCostIdr?: number
+  deliveryTrackingUrl?: string
+  deliveryShippedAt?: string
   /** Optional promo code applied to this order (from customer's CRM record or manual entry). */
   promoCode?: string
   /** Storefront-only CRM suggestions that must not block checkout or overwrite existing data. */

@@ -9,6 +9,8 @@ import { advanceOrderStatus } from './orderTableWorkflow'
 import { formatOrderHandoffText } from './orderHandoffText'
 import { buildOrderTrackingUrl, getOrderTrackingId } from '../../data/orderCustomerConfirmation'
 import { attachOrderFinishPhoto } from '../../data/orderMediaUpload'
+import type { SaveOrderShipmentResult } from '../../data/shared/contracts'
+import { useUserStore } from '../../store/userStore'
 
 export const useOrderDetailsActions = ({
   order,
@@ -31,6 +33,9 @@ export const useOrderDetailsActions = ({
   const [detailsCopied, setDetailsCopied] = useState(false)
   const [showPaymentGate, setShowPaymentGate] = useState(false)
   const [showFinishPhotoDialog, setShowFinishPhotoDialog] = useState(false)
+  const [showShipmentDialog, setShowShipmentDialog] = useState(false)
+  const staffRole = useUserStore((state) => state.role)
+  const canRecordShipment = staffRole === 'owner' || staffRole === 'admin'
   const [floristDialogMode, setFloristDialogMode] = useState<'assign-and-process' | 'reassign' | null>(null)
   const isCancellable = canCancelOrder(order) && ['owner', 'admin', 'finance'].includes(actor.role)
 
@@ -72,11 +77,30 @@ export const useOrderDetailsActions = ({
       setFloristDialogMode('assign-and-process')
       return
     }
+    if (nextStatus === 'delivering' && order.fulfillment === 'delivery' && canRecordShipment && !order.deliveryProvider) {
+      setShowShipmentDialog(true)
+      return
+    }
     if (nextStatus === 'ready' && !order.finishPhotoUrl) {
       setShowFinishPhotoDialog(true)
       return
     }
     runAdvance(order)
+  }
+
+  const shipmentDialogMode: 'start' | 'edit' = order.status === 'ready' ? 'start' : 'edit'
+
+  const onShipmentSaved = (result: SaveOrderShipmentResult) => {
+    setShowShipmentDialog(false)
+    if (shipmentDialogMode !== 'start' || nextStatus !== 'delivering') return
+    runAdvance({
+      ...order,
+      revision: result.revision,
+      deliveryProvider: result.deliveryProvider ?? undefined,
+      deliveryCourierName: result.deliveryCourierName ?? undefined,
+      deliveryActualCostIdr: result.deliveryActualCostIdr ?? undefined,
+      deliveryTrackingUrl: result.deliveryTrackingUrl ?? undefined,
+    })
   }
 
   const onFinishPhotoUploaded = async (finishPhotoUrl: string): Promise<void> => {
@@ -142,6 +166,9 @@ export const useOrderDetailsActions = ({
     detailsCopied,
     showPaymentGate,
     showFinishPhotoDialog,
+    showShipmentDialog,
+    shipmentDialogMode,
+    canRecordShipment,
     showFloristAssignment: floristDialogMode !== null,
     floristDialogMode,
     isCancellable,
@@ -152,6 +179,9 @@ export const useOrderDetailsActions = ({
     onMoveToNextStatus,
     onFinishPhotoUploaded,
     onCancelFinishPhotoDialog: () => setShowFinishPhotoDialog(false),
+    onOpenShipmentEdit: () => setShowShipmentDialog(true),
+    onCloseShipmentDialog: () => setShowShipmentDialog(false),
+    onShipmentSaved,
     onCancelPaymentGate: () => setShowPaymentGate(false),
     onOpenFloristReassignment: () => setFloristDialogMode('reassign'),
     onCancelFloristAssignment: () => setFloristDialogMode(null),

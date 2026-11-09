@@ -257,6 +257,21 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                     </section>
                   ) : null}
 
+                  {details.status === 'delivering' && details.deliveryTrackingUrl ? (
+                    <a
+                      href={details.deliveryTrackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-3 rounded-[var(--sf-radius-card)] border border-[#00813f]/20 bg-[#00813f]/[0.055] px-4 py-4 sm:px-6"
+                    >
+                      <span>
+                        <span className="block sf-type-3 font-semibold text-[#006f36]">Lacak pengiriman</span>
+                        <span className="mt-0.5 block sf-type-1 text-black/50">Lihat posisi kurir secara langsung.</span>
+                      </span>
+                      <span aria-hidden="true" className="sf-type-3 font-semibold text-[#006f36]">→</span>
+                    </a>
+                  ) : null}
+
                   {showPaymentInstructions ? (
                     <section className="rounded-[var(--sf-radius-card)] border border-[#00813f]/20 bg-[#00813f]/[0.055] p-4 sm:p-6">
                       <p className="sf-label text-[#006f36]">Selesaikan pembayaran</p>

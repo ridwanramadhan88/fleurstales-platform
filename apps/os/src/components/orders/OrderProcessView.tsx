@@ -295,6 +295,35 @@ export const OrderProcessView: FC<{ viewModel: OrderDetailsViewModel; onShowFull
                     <p className="text-foreground">{copy(`Picked up at ${order.branch}.`, `Diambil di ${order.branch}.`)}</p>
                   )}
                 </div>
+                {isDelivery && order.deliveryProvider && (
+                  <div className="rounded-2xl bg-muted/60 p-4 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-foreground">
+                          {order.deliveryProvider === 'gojek' ? 'Gojek' : copy('Internal courier', 'Kurir internal')}
+                          {order.deliveryProvider === 'internal' && order.deliveryCourierName ? ` · ${order.deliveryCourierName}` : ''}
+                        </p>
+                        {order.deliveryProvider === 'gojek' && typeof order.deliveryActualCostIdr === 'number' && (
+                          <p className="text-muted-foreground">
+                            {copy('Real cost', 'Ongkos asli')} Rp {formatter.format(order.deliveryActualCostIdr)}
+                            {' · '}
+                            {copy('Charged', 'Ditagih')} Rp {formatter.format(order.deliveryFeeIdr ?? 0)}
+                          </p>
+                        )}
+                        {order.deliveryProvider === 'gojek' && order.deliveryTrackingUrl && (
+                          <a href={order.deliveryTrackingUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
+                            {copy('Open tracking link', 'Buka link lacak')}
+                          </a>
+                        )}
+                      </div>
+                      {canEditDelivery && (order.status === 'ready' || order.status === 'delivering') && (
+                        <button type="button" onClick={viewModel.onOpenShipmentEdit} className="shrink-0 text-xs font-semibold text-primary hover:underline">
+                          {copy('Change', 'Ubah')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {current === 4 && (
                   <p className="text-[13px] text-muted-foreground">
                     {copy('The customer gets the WhatsApp notice in the next step.', 'Pesan WhatsApp untuk pelanggan disiapkan setelah tombol ditekan.')}

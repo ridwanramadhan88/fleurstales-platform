@@ -229,6 +229,8 @@ export interface SharedBranch {
   latitude?: number
   longitude?: number
   deliveryTariff?: DeliveryTariff
+  /** Finance account the real Gojek cost is paid from (D3). */
+  courierPaymentAccountId?: string
 }
 
 export interface SharedPaymentAccount {
@@ -403,6 +405,15 @@ export interface SharedOrder {
   deliveryLandmark?: string
   deliveryVehicle?: DeliveryVehicle
   deliveryDistanceKm?: number
+  /** How the order is sent (D3). */
+  deliveryProvider?: DeliveryProvider
+  /** Internal courier, plain text until courier accounts exist. */
+  deliveryCourierName?: string
+  /** Real courier cost (Gojek), booked as a Finance expense. */
+  deliveryActualCostIdr?: number
+  /** Gojek tracking link shown to the customer while on the way. */
+  deliveryTrackingUrl?: string
+  deliveryShippedAt?: string
   promoCode?: string
   floristDisplayName?: string
   floristAssignedEmployeeId?: string
@@ -557,6 +568,30 @@ export interface CreateInternalOrderResult {
   totalIdr: number
   paidAmountIdr: number
   deduplicated: boolean
+}
+
+export type DeliveryProvider = 'gojek' | 'internal'
+
+export interface SaveOrderShipmentInput {
+  provider: DeliveryProvider
+  /** Gojek only: the real cost in IDR. */
+  actualCostIdr?: number
+  /** Gojek only: https tracking link. */
+  trackingUrl?: string
+  /** Internal courier: plain text name. */
+  courierName?: string
+}
+
+export interface SaveOrderShipmentResult {
+  orderId: string
+  revision: number
+  deliveryProvider?: DeliveryProvider | null
+  deliveryCourierName?: string | null
+  deliveryActualCostIdr?: number | null
+  deliveryTrackingUrl?: string | null
+  /** False when the cost could not be booked (e.g. no courier account yet). */
+  financeRecorded: boolean
+  financeReason?: string | null
 }
 
 export interface SaveOrderDeliveryDetailsInput extends DeliveryDetailsInput {

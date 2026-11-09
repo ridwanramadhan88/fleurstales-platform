@@ -104,6 +104,7 @@ export interface BranchRow {
   car_per_km_idr?: number
   max_delivery_km?: number | string
   motor_max_items?: number | null
+  courier_payment_account_id?: string | null
   manager_employee_id: string | null
   daily_order_limit: number | null
   created_at: string
@@ -375,6 +376,11 @@ export interface OrderRow {
   delivery_landmark?: string | null
   delivery_vehicle?: 'motor' | 'car' | null
   delivery_distance_km?: number | string | null
+  delivery_provider?: 'gojek' | 'internal' | null
+  delivery_courier_name?: string | null
+  delivery_actual_cost_idr?: number | string | null
+  delivery_tracking_url?: string | null
+  delivery_shipped_at?: string | null
   promo_code: string | null
   florist_display_name: string | null
   florist_assigned_employee_id: string | null

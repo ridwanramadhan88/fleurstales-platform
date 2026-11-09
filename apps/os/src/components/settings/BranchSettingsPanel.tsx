@@ -24,6 +24,8 @@ interface Props {
   branchImpacts?: Record<string, BranchDependencyImpact>
   validationErrors?: SettingsValidationErrors
   attendanceRadiusMeters?: number
+  /** Finance accounts a branch can pay couriers from (cash plus active payment accounts). */
+  courierAccountOptions?: Array<{ id: string; label: string }>
 }
 
 
@@ -495,7 +497,9 @@ export const BranchSettingsPanel: FC<Props> = ({
   isEditing,
   validationErrors = {},
   attendanceRadiusMeters = 100,
+  courierAccountOptions = [],
 }) => {
+  const tr = useBilingualCopy()
   const [expandedBranchId, setExpandedBranchId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -630,6 +634,25 @@ export const BranchSettingsPanel: FC<Props> = ({
                     </div>
 
                     <BranchDeliveryTariffEditor branch={branch} isEditing={isEditing} error={validationErrors[`branch.${branchIndex}.deliveryTariff`]} onUpdateBranch={onUpdateBranch} />
+
+                    <label className="block space-y-1 rounded-md border border-border/60 p-3">
+                      <span className="text-xs font-semibold text-foreground">{tr('Courier payment account', 'Akun bayar kurir')}</span>
+                      <span className="block text-2xs text-muted-foreground">{tr('The real Gojek cost of each order is booked as a Finance expense from this account.', 'Ongkos asli Gojek tiap pesanan dicatat sebagai pengeluaran Keuangan dari akun ini.')}</span>
+                      {isEditing ? (
+                        <select
+                          value={branch.courierPaymentAccountId ?? ''}
+                          onChange={(event) => onUpdateBranch(branch.id, { courierPaymentAccountId: event.target.value })}
+                          className={FIELD_CLASS}
+                        >
+                          <option value="">{tr('Not set', 'Belum diatur')}</option>
+                          {courierAccountOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                        </select>
+                      ) : (
+                        <span className="block text-sm font-medium text-foreground">
+                          {courierAccountOptions.find((option) => option.id === branch.courierPaymentAccountId)?.label ?? tr('Not set', 'Belum diatur')}
+                        </span>
+                      )}
+                    </label>
 
                     <BranchLocationEditor branch={branch} onUpdateBranch={onUpdateBranch} isEditing={isEditing} radiusMeters={attendanceRadiusMeters} />
                     {validationErrors[`branch.${branchIndex}.location`] && <p className="text-2xs font-medium text-destructive">{validationErrors[`branch.${branchIndex}.location`]}</p>}

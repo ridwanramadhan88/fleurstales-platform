@@ -5,6 +5,8 @@ import { buildFinancePeriodReport } from '../../domain/financePeriodReportDomain
 import { downloadFinancePeriodXlsx, buildFinancePeriodXlsx } from '../../lib/financePeriodXlsxExport'
 import { useFinanceStore } from '../../store/financeStore'
 import { useSettingsStore } from '../../store/settingsStore'
+import { useOrdersStore } from '../../store/ordersStore'
+import { summarizeDeliveryMargin } from '../../domain/orderShipmentDomain'
 
 const CASH_ACCOUNT_ID = 'cash:main'
 const LEGACY_ACCOUNT_ID = 'legacy:unassigned'
@@ -32,6 +34,12 @@ export const FinancePeriodReport: FC<{ period: FinancePeriodSummary }> = ({ peri
   const report = useMemo(
     () => buildFinancePeriodReport(transactions, period.periodMonth),
     [period.periodMonth, transactions],
+  )
+
+  const orders = useOrdersStore((state) => state.orders)
+  const delivery = useMemo(
+    () => summarizeDeliveryMargin(orders, period.periodMonth.slice(0, 7)),
+    [orders, period.periodMonth],
   )
 
   const accountLabels = useMemo(() => new Map<string, string>([
@@ -160,6 +168,18 @@ export const FinancePeriodReport: FC<{ period: FinancePeriodSummary }> = ({ peri
           </table>
         </div>
       </div>
+
+      {delivery.orderCount > 0 && (
+        <div className="rounded-xl border border-border/70 bg-card p-4">
+          <h4 className="text-sm font-semibold">Delivery: charged vs real cost</h4>
+          <p className="mt-0.5 text-xs text-muted-foreground">Delivered Gojek orders this month ({delivery.orderCount}). Internal couriers are not counted.</p>
+          <dl className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl bg-surface-panel px-3 py-3 ring-1 ring-border/60"><dt className="text-2xs text-muted-foreground">Charged to customers</dt><dd className="mt-1 text-sm font-semibold tabular-nums">{formatIdr(delivery.chargedIdr)}</dd></div>
+            <div className="rounded-xl bg-surface-panel px-3 py-3 ring-1 ring-border/60"><dt className="text-2xs text-muted-foreground">Real Gojek cost</dt><dd className="mt-1 text-sm font-semibold tabular-nums">{formatIdr(delivery.actualCostIdr)}</dd></div>
+            <div className="rounded-xl bg-surface-panel px-3 py-3 ring-1 ring-border/60"><dt className="text-2xs text-muted-foreground">Difference</dt><dd className={`mt-1 text-sm font-semibold tabular-nums ${delivery.differenceIdr < 0 ? 'text-destructive' : 'text-success'}`}>{formatIdr(delivery.differenceIdr)}</dd></div>
+          </dl>
+        </div>
+      )}
 
       <div className="rounded-xl border border-border/70 bg-card p-4">
         <h4 className="text-sm font-semibold">By source</h4>

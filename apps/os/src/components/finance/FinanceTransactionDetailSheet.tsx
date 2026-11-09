@@ -39,6 +39,7 @@ const sourceLabel = (transaction: FinanceTransaction): string => {
   if (transaction.source === 'order_payment') return 'Order payment'
   if (transaction.source === 'order_refund') return 'Order refund'
   if (transaction.source === 'payroll') return 'Payroll'
+  if (transaction.source === 'delivery_courier') return 'Courier cost'
   if (transaction.source === 'opening_balance') return 'Opening balance'
   if (transaction.source === 'adjustment') return 'Adjustment'
   if (transaction.source === 'transfer') return 'Account transfer'

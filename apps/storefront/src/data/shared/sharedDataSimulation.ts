@@ -361,6 +361,28 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         deliveryLongitude: order.deliveryLongitude ?? null,
       }
     },
+    async saveOrderShipment(orderId, expectedRevision, shipment) {
+      const order = bundle.orders.orders.find((row) => row.id === orderId)
+      if (!order) throw new Error('ORDER_NOT_FOUND')
+      if (order.revision !== expectedRevision) throw new Error(`REVISION_CONFLICT expected=${expectedRevision}, actual=${order.revision}`)
+      order.deliveryProvider = shipment.provider
+      order.deliveryCourierName = shipment.provider === 'internal' ? shipment.courierName?.trim() || undefined : undefined
+      order.deliveryActualCostIdr = shipment.provider === 'gojek' ? shipment.actualCostIdr : undefined
+      order.deliveryTrackingUrl = shipment.provider === 'gojek' ? shipment.trackingUrl?.trim() || undefined : undefined
+      order.revision += 1
+      order.updatedAt = now()
+      emit()
+      return {
+        orderId: order.id,
+        revision: order.revision,
+        deliveryProvider: order.deliveryProvider,
+        deliveryCourierName: order.deliveryCourierName ?? null,
+        deliveryActualCostIdr: order.deliveryActualCostIdr ?? null,
+        deliveryTrackingUrl: order.deliveryTrackingUrl ?? null,
+        financeRecorded: false,
+        financeReason: 'SIMULATION',
+      }
+    },
   }
 
   const jakartaDateParts = (iso: string): { date: string; year: number } => {

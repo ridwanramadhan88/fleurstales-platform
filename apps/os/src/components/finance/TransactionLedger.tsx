@@ -51,6 +51,7 @@ const sourceMatches = (transaction: FinanceTransaction, tab: SourceTab) =>
 const sourceLabel = (transaction: FinanceTransaction) => {
   if (transaction.source === 'order_payment') return 'Order'
   if (transaction.source === 'payroll') return 'Payroll'
+  if (transaction.source === 'delivery_courier') return 'Courier'
   if (transaction.source === 'order_refund') return 'Refund'
   if (transaction.source === 'opening_balance') return 'Opening Balance'
   if (transaction.source === 'adjustment') return 'Adjustment'
