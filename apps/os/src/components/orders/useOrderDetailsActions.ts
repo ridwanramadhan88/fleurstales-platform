@@ -40,11 +40,11 @@ export const useOrderDetailsActions = ({
   const isCancellable = canCancelOrder(order) && ['owner', 'admin', 'finance'].includes(actor.role)
 
   useEffect(() => {
-    if ((actionModal !== 'ready' && actionModal !== 'review') || !order.id) return
+    if ((actionModal !== 'ready' && actionModal !== 'review' && actionModal !== 'delivering') || !order.id) return
     let active = true
     getOrderTrackingId(order.id)
       .then((trackingId) => {
-        const moment = actionModal === 'review' ? 'finished' : 'ready'
+        const moment = actionModal === 'review' ? 'finished' : actionModal === 'delivering' ? 'delivering' : 'ready'
         if (active) setReadyTrackingUrl(buildOrderTrackingUrl(order.orderNumber, trackingId, moment))
       })
       .catch(() => { /* best-effort */ })
@@ -93,8 +93,6 @@ export const useOrderDetailsActions = ({
   const onShipmentSaved = (result: SaveOrderShipmentResult) => {
     setShowShipmentDialog(false)
     if (shipmentDialogMode !== 'start' || nextStatus !== 'delivering') return
-    // A courier account starts the delivery itself from its own task list.
-    if (result.deliveryCourierEmployeeId) return
     runAdvance({
       ...order,
       revision: result.revision,

@@ -56,7 +56,7 @@ const DISPLAY_KINDS = new Set<AlertKind>([
   'payroll_paid',
   'authorization_changed',
   'delivery_assigned',
-  'order_delivered',
+  'delivery_confirmed',
 ])
 
 const DISPLAY_TARGETS = new Set<NonNullable<NotificationItem['target']>>([

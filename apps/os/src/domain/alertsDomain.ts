@@ -50,8 +50,8 @@ export type AlertKind =
   | 'authorization_changed'
   /** Courier: a delivery task was assigned. */
   | 'delivery_assigned'
-  /** Owner/Admin: a courier finished a delivery. */
-  | 'order_delivered'
+  /** Owner/Admin: a courier confirmed the order was handed over. */
+  | 'delivery_confirmed'
   /** Daily: a customer has a birthday today (all Admins). */
   | 'customer_birthday'
 

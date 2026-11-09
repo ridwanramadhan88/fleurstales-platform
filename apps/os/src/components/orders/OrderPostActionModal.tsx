@@ -20,7 +20,7 @@ export interface OrderPostActionModalProps {
 
 const MODAL_TITLE: Record<NonNullable<OrderPostActionModalProps['kind']>, string> = {
   ready: 'Order ready — notify customer',
-  delivering: 'Out for delivery — courier address',
+  delivering: 'Out for delivery — send tracking link',
   review: 'Order complete — request a review',
   confirm: 'Order confirmed — notify customer',
   reject: 'Order rejected — notify customer',
@@ -106,8 +106,8 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
               <div className="mb-3 flex items-center gap-2">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/10 text-success"><Truck className="size-4" /></span>
                 <div>
-                  <h3 className="text-base font-semibold leading-6 text-foreground">Out for delivery — courier address</h3>
-                  <p className="text-xs text-muted-foreground">Copy the address for the courier</p>
+                  <h3 className="text-base font-semibold leading-6 text-foreground">Out for delivery — send tracking link</h3>
+                  <p className="text-xs text-muted-foreground">Send the tracking link to the customer, or copy the address for the courier</p>
                 </div>
               </div>
               <div className="rounded-lg bg-surface-panel px-3 py-2.5 text-sm text-foreground/90">{deliveryAddress ?? 'No delivery address on file for this order.'}</div>
@@ -121,7 +121,7 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
                 <button type="button" onClick={onClose} className="inline-flex h-11 items-center justify-center rounded-full px-[18px] text-sm font-medium text-muted-foreground hover:bg-muted">Close</button>
                 {readyMessage && whatsAppLink && (
                   <a href={whatsAppLink} target="_blank" rel="noreferrer" onClick={onClose} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-success px-5 text-sm font-medium text-white shadow-ios-sm">
-                    <MessageCircle className="size-3.5" /> Send WhatsApp
+                    <MessageCircle className="size-3.5" /> Send tracking link
                   </a>
                 )}
                 <button type="button" disabled={!deliveryAddress} onClick={onCopyAddress} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 disabled:opacity-50">

@@ -1,11 +1,10 @@
 import { useMemo, useState, type FC } from 'react'
-import { CalendarClock, MapPin, MessageCircle, Phone, PackageCheck, Truck } from 'lucide-react'
+import { CalendarClock, MapPin, MessageCircle, Phone, PackageCheck } from 'lucide-react'
 import { useOrdersStore } from '../../store/ordersStore'
 import { useUserStore } from '../../store/userStore'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { surfaceCardClass } from '../ui/card'
 import { toast } from '../../hooks/use-toast'
-import { startCourierDelivery } from '../../data/courierDelivery'
 import { getCourierTasks, toDialDigits } from '../../domain/deliveryProofDomain'
 import { googleMapsUrlForPin, toDeliveryPin } from '../../domain/deliveryDetailsDomain'
 import { formatOrderCreatedAtLabel } from '../orders/orderTableScheduleLabels'
@@ -28,28 +27,7 @@ export const CourierDeliveryTasks: FC = () => {
   const employeeId = useUserStore((state) => state.employeeId)
   const orders = useOrdersStore((state) => state.orders)
   const tasks = useMemo(() => getCourierTasks(orders, employeeId), [orders, employeeId])
-  const [busyOrder, setBusyOrder] = useState<string | null>(null)
   const [proofOrder, setProofOrder] = useState<OrderTableRow | null>(null)
-
-  const handleStart = async (order: OrderTableRow) => {
-    setBusyOrder(order.orderNumber)
-    try {
-      await startCourierDelivery(order)
-      toast({ title: copy('Delivery started', 'Pengantaran dimulai') })
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : ''
-      toast({
-        title: copy('Could not start', 'Gagal memulai'),
-        description: message.includes('OUTSTANDING_PAYMENT')
-          ? copy('Payment is not complete yet. Contact the admin.', 'Pembayaran belum lunas. Hubungi admin.')
-          : message.includes('REVISION_CONFLICT') || message.includes('PT409')
-            ? copy('This order just changed. Pull to refresh.', 'Pesanan baru saja berubah. Muat ulang.')
-            : copy('Try again.', 'Coba lagi.'),
-      })
-    } finally {
-      setBusyOrder(null)
-    }
-  }
 
   return (
     <section className={surfaceCardClass('standard', 'border border-border ring-0')} aria-label={copy('Delivery tasks', 'Tugas antar')}>
@@ -69,7 +47,6 @@ export const CourierDeliveryTasks: FC = () => {
           {tasks.map(({ order, stage }) => {
             const phone = toDialDigits(order.recipientPhone)
             const maps = mapsLinkFor(order)
-            const busy = busyOrder === order.orderNumber
             return (
               <li key={order.orderNumber} className="space-y-3 rounded-xl border border-border p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -111,12 +88,16 @@ export const CourierDeliveryTasks: FC = () => {
                   )}
                 </div>
                 {stage === 'ready' ? (
-                  <button type="button" disabled={busy} onClick={() => { void handleStart(order) }} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50">
-                    <Truck className="size-4" />{busy ? copy('Starting…', 'Memulai…') : copy('Start delivery', 'Mulai antar')}
-                  </button>
+                  <p className="rounded-lg bg-muted/50 px-3 py-2 text-center text-xs text-muted-foreground">
+                    {copy('Waiting for the admin to start the delivery.', 'Menunggu admin memulai pengiriman.')}
+                  </p>
+                ) : order.deliveryProofPhotoPath ? (
+                  <p className="rounded-lg bg-primary/10 px-3 py-2 text-center text-xs font-medium text-primary">
+                    {copy('Confirmation sent. Waiting for the admin.', 'Konfirmasi terkirim. Menunggu admin.')}
+                  </p>
                 ) : (
                   <button type="button" onClick={() => setProofOrder(order)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground">
-                    <PackageCheck className="size-4" />{copy('Delivered', 'Terkirim')}
+                    <PackageCheck className="size-4" />{copy('Confirm delivered', 'Konfirmasi selesai diantar')}
                   </button>
                 )}
               </li>
@@ -132,7 +113,7 @@ export const CourierDeliveryTasks: FC = () => {
           onClose={() => setProofOrder(null)}
           onDelivered={() => {
             setProofOrder(null)
-            toast({ title: copy('Order delivered', 'Pesanan terkirim') })
+            toast({ title: copy('Confirmation sent to the admin', 'Konfirmasi terkirim ke admin') })
           }}
         />
       )}
