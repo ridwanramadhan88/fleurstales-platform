@@ -1,3 +1,4 @@
+import { validateDeliveryTariff } from '../deliveryTariffDomain'
 import type { OwnerSettingsStateValue, SettingsSectionId } from '../../types/settings'
 import { DEFAULT_BRANCH_OPENING_HOURS, WEEKDAY_KEYS } from '../branchOpeningHoursDomain'
 import { isSupportedStoreLogoValue } from './storeLogoDomain'
@@ -37,6 +38,8 @@ export const validateOwnerSettings = (
     if (!Number.isFinite(branch.deliveryFeeIdr ?? 15000) || (branch.deliveryFeeIdr ?? 15000) < 0) {
       errors[`branch.${index}.deliveryFeeIdr`] = 'Delivery fee must be zero or greater.'
     }
+    const tariffError = validateDeliveryTariff(branch.deliveryTariff)
+    if (tariffError) errors[`branch.${index}.deliveryTariff`] = tariffError
     const openingHours = branch.openingHours ?? DEFAULT_BRANCH_OPENING_HOURS
     WEEKDAY_KEYS.forEach((day) => {
       const hours = openingHours[day]

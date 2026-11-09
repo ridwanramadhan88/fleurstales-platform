@@ -4,6 +4,7 @@ import type { NewOrderSheetViewModel } from './NewOrderSheetController'
 import { useOrderSlotAvailability } from '../../hooks/useOrderSlotAvailability'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { useSettingsStore } from '../../store/settingsStore'
+import { NewOrderDeliveryVehicle } from './NewOrderDeliveryVehicle'
 import { parseMapsLocation, LANDMARK_MAX_LENGTH } from '../../domain/deliveryDetailsDomain'
 import { DeliveryPinPicker } from './DeliveryPinPicker'
 
@@ -331,7 +332,10 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
           )}
 
           <div className="grid gap-2 lg:grid-cols-2">
-            <div className="space-y-1.5">
+            {viewModel.deliveryTariffEnabled ? (
+              <NewOrderDeliveryVehicle viewModel={viewModel} />
+            ) : (
+              <div className="space-y-1.5">
               <label
                 htmlFor="deliveryFee"
                 className="text-xs font-medium text-muted-foreground"
@@ -350,6 +354,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               />
               <p className="text-2xs text-muted-foreground">Set in Store Settings for this branch.</p>
             </div>
+            )}
             <div className="space-y-1.5">
               <label
                 htmlFor="deliveryInstructions"

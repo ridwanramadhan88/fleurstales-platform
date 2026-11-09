@@ -13,6 +13,7 @@
 
 import type { AppSection, AccessLevel } from '../config/permissions'
 import type { UserRole } from '../store/userStore'
+import type { DeliveryTariff } from '../data/shared/contracts'
 
 /**
  * @description Store-wide identity/contact info shown across the app
@@ -161,6 +162,8 @@ export interface BranchSettings {
   dailyOrderLimit?: number
   /** Default delivery fee used by storefront checkout for this branch. */
   deliveryFeeIdr?: number
+  /** Distance-based delivery fee. While off, the flat fee above applies. */
+  deliveryTariff?: DeliveryTariff
   /** Weekly operating hours used to constrain delivery and pickup slots. */
   openingHours?: BranchOpeningHours
   /** Geographic point used to validate selfie attendance. */

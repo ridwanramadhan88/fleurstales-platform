@@ -218,6 +218,9 @@ export const useNewOrderSubmit = ({
       recipientPhone: values.recipientPhone.trim() || values.customerWhatsappNumber.trim(),
       ...(pin ? { latitude: pin.latitude, longitude: pin.longitude } : {}),
       landmark: values.deliveryLandmark.trim(),
+      ...(values.deliveryVehicle && values.deliveryQuoteId
+        ? { vehicle: values.deliveryVehicle, quoteId: values.deliveryQuoteId }
+        : {}),
     }
   }
 

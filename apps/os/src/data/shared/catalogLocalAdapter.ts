@@ -91,6 +91,7 @@ export const catalogStateToSharedSnapshot = (
       promoLabel: product.promoLabel,
       originalPriceIdr: product.originalPriceIdr,
       isCustomizable: product.isCustomizable === true,
+      requiresCar: product.requiresCar === true,
       sortOrder: productIndex,
       variants: product.variants.map((variant, variantIndex) => ({
         id: variant.id,
@@ -205,6 +206,7 @@ export const sharedCatalogSnapshotToLocalState = (
         promoLabel: product.promoLabel,
         originalPriceIdr: product.originalPriceIdr,
         isCustomizable: product.isCustomizable,
+        requiresCar: product.requiresCar === true,
       }
     })
 

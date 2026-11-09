@@ -5,6 +5,7 @@ import type { CartDrawerViewModel } from './CartDrawerController'
 import { DeliveryFillIcon, PickupFillIcon } from './StorefrontFulfilmentIcons'
 import { useOrderSlotAvailability } from '../../hooks/useOrderSlotAvailability'
 import { DeliveryPinPicker } from './DeliveryPinPicker'
+import { DeliveryVehicleChoice } from './DeliveryVehicleChoice'
 import { LANDMARK_MAX_LENGTH } from '../../domain/deliveryDetailsDomain'
 
 const fieldClass = 'sf-field'
@@ -83,6 +84,8 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
   deliveryAddress,
   deliveryDetails,
   selectedBranch,
+  deliveryTariffEnabled,
+  deliveryFee,
   orderNote,
   greetingMessage,
   greetingCardName,
@@ -294,6 +297,11 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
               center={selectedBranch?.location}
             />
           </Field>
+          {deliveryTariffEnabled && (
+            <Field label="Delivery vehicle">
+              <DeliveryVehicleChoice deliveryFee={deliveryFee} selectedBranch={selectedBranch} deliveryDetails={deliveryDetails} />
+            </Field>
+          )}
           <Field id="checkoutLandmark" label="Landmark & house detail" required>
             <textarea
               id="checkoutLandmark"
