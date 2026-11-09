@@ -85,6 +85,7 @@ export type FinanceTransactionSource =
   | 'order_payment'
   | 'order_refund'
   | 'payroll'
+  | 'delivery_courier'
   | 'opening_balance'
   | 'adjustment'
   | 'transfer'

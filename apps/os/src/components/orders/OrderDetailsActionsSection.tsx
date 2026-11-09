@@ -2,6 +2,7 @@ import type { FC } from 'react'
 import { ArrowRight, Check, Copy, MessageCircle, X } from 'lucide-react'
 import { OrderPostActionModal } from './OrderPostActionModal'
 import { OrderFinishPhotoDialog } from './OrderFinishPhotoDialog'
+import { OrderShipmentDialog } from './OrderShipmentDialog'
 import { getOrderNextActionLabel } from './orderNextActionLabels'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { OrderPaymentGateDialog } from './OrderPaymentGateDialog'
@@ -127,6 +128,10 @@ export const OrderDetailsActionDialogs: FC<OrderDetailsActionsSectionProps> = ({
     addressCopied,
     showPaymentGate,
     showFinishPhotoDialog,
+    showShipmentDialog,
+    shipmentDialogMode,
+    onCloseShipmentDialog,
+    onShipmentSaved,
     storefrontDecisionBusy,
     storefrontPreviewLoading,
     storefrontCancelOpen,
@@ -191,6 +196,10 @@ export const OrderDetailsActionDialogs: FC<OrderDetailsActionsSectionProps> = ({
 
       {showFinishPhotoDialog && (
         <OrderFinishPhotoDialog open orderId={order.id ?? order.orderNumber} onCancel={onCancelFinishPhotoDialog} onUploaded={onFinishPhotoUploaded} />
+      )}
+
+      {showShipmentDialog && (
+        <OrderShipmentDialog open order={order} mode={shipmentDialogMode} onClose={onCloseShipmentDialog} onSaved={onShipmentSaved} />
       )}
 
       <OrderPostActionModal

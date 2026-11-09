@@ -164,6 +164,8 @@ export interface BranchSettings {
   deliveryFeeIdr?: number
   /** Distance-based delivery fee. While off, the flat fee above applies. */
   deliveryTariff?: DeliveryTariff
+  /** Finance account the real Gojek cost is paid from (empty until set). */
+  courierPaymentAccountId?: string
   /** Weekly operating hours used to constrain delivery and pickup slots. */
   openingHours?: BranchOpeningHours
   /** Geographic point used to validate selfie attendance. */

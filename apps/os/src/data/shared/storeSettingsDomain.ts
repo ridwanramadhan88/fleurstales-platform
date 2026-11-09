@@ -82,6 +82,7 @@ export const mapBranchToShared = (branch: BranchSettings, sortOrder: number): Sh
   deliveryFeeIdr: Math.max(0, Math.round(branch.deliveryFeeIdr ?? 0)),
   openingHours: toSharedOpeningHours(branch.openingHours),
   ...(branch.deliveryTariff ? { deliveryTariff: branch.deliveryTariff } : {}),
+  courierPaymentAccountId: branch.courierPaymentAccountId?.trim() || '',
   ...(branch.location && Number.isFinite(branch.location.latitude) ? { latitude: branch.location.latitude } : {}),
   ...(branch.location && Number.isFinite(branch.location.longitude) ? { longitude: branch.location.longitude } : {}),
 })
@@ -140,6 +141,7 @@ const mergeBranch = (current: BranchSettings | undefined, shared: SharedBranch):
   isDefault: shared.isDefault,
   deliveryFeeIdr: shared.deliveryFeeIdr,
   ...(shared.deliveryTariff ? { deliveryTariff: shared.deliveryTariff } : {}),
+  courierPaymentAccountId: shared.courierPaymentAccountId ?? '',
   openingHours: normalizeSharedOpeningHours(shared.openingHours),
   ...(shared.latitude !== undefined && shared.longitude !== undefined
     ? { location: { latitude: shared.latitude, longitude: shared.longitude } }

@@ -3,6 +3,7 @@
  * actions stay here so the panel remains a view over one view model.
  */
 
+import type { SaveOrderShipmentResult } from '../../data/shared/contracts'
 import { useMemo } from 'react'
 import type { OrderFulfillment, OrderStatus, OrderTableRow } from '../../types/orders'
 import { useOrderRuntimeStore, type OrderActivityEvent } from '../../store/orderRuntimeStore'
@@ -29,6 +30,7 @@ import { getOrderUrgency, isFutureOrder } from './orderTableFormatters'
 import { getNextStatus } from './orderTableWorkflow'
 import {
   buildReadyForDeliveryMessage,
+  buildOnTheWayMessage,
   buildReadyForPickupMessage,
   buildReviewRequestMessage,
   buildWhatsAppLink,
@@ -83,6 +85,9 @@ export interface OrderDetailsViewModel {
   detailsCopied: boolean
   showPaymentGate: boolean
   showFinishPhotoDialog: boolean
+  showShipmentDialog: boolean
+  shipmentDialogMode: 'start' | 'edit'
+  canRecordShipment: boolean
   showFloristAssignment: boolean
   floristDialogMode: 'assign-and-process' | 'reassign' | null
   isRequestModalOpen: 'edit' | 'cancel' | null
@@ -139,6 +144,9 @@ export interface OrderDetailsViewModel {
   onSubmitStorefrontCancel: () => void
   onFinishPhotoUploaded: (finishPhotoUrl: string) => void
   onCancelFinishPhotoDialog: () => void
+  onOpenShipmentEdit: () => void
+  onCloseShipmentDialog: () => void
+  onShipmentSaved: (result: SaveOrderShipmentResult) => void
 }
 
 export const useOrderDetailsController = ({ order, onClose, formatter }: UseOrderDetailsControllerParams): OrderDetailsViewModel => {
@@ -210,7 +218,9 @@ export const useOrderDetailsController = ({ order, onClose, formatter }: UseOrde
       : order.fulfillment === 'pickup'
         ? buildReadyForPickupMessage(order.customerName, productDisplay.name, order.branch, actions.readyTrackingUrl)
         : buildReadyForDeliveryMessage(order.customerName, productDisplay.name, actions.readyTrackingUrl)
-    : ''
+    : actions.actionModal === 'delivering' && order.deliveryProvider === 'gojek' && order.deliveryTrackingUrl
+      ? buildOnTheWayMessage(order.customerName, productDisplay.name, order.deliveryTrackingUrl)
+      : ''
   const whatsAppLink = readyMessage ? buildWhatsAppLink(customerWhatsappNumber, readyMessage) : ''
 
   return {
@@ -223,6 +233,8 @@ export const useOrderDetailsController = ({ order, onClose, formatter }: UseOrde
     isEditing: editing.isEditing, setIsEditing: editing.setIsEditing, draft: editing.draft,
     actionModal: actions.actionModal, addressCopied: actions.addressCopied, detailsCopied: actions.detailsCopied,
     showPaymentGate: actions.showPaymentGate, showFinishPhotoDialog: actions.showFinishPhotoDialog,
+    showShipmentDialog: actions.showShipmentDialog, shipmentDialogMode: actions.shipmentDialogMode,
+    canRecordShipment: actions.canRecordShipment,
     showFloristAssignment: actions.showFloristAssignment, floristDialogMode: actions.floristDialogMode,
     isRequestModalOpen: changeRequest.isRequestModalOpen, requestReason: changeRequest.requestReason,
     setRequestReason: changeRequest.setRequestReason, refundDialogMode: refund.refundDialogMode,
@@ -260,5 +272,8 @@ export const useOrderDetailsController = ({ order, onClose, formatter }: UseOrde
     onSubmitStorefrontCancel: storefrontConfirmation.onSubmitStorefrontCancel,
     onFinishPhotoUploaded: actions.onFinishPhotoUploaded,
     onCancelFinishPhotoDialog: actions.onCancelFinishPhotoDialog,
+    onOpenShipmentEdit: actions.onOpenShipmentEdit,
+    onCloseShipmentDialog: actions.onCloseShipmentDialog,
+    onShipmentSaved: actions.onShipmentSaved,
   }
 }

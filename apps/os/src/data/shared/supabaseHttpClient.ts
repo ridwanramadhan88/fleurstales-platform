@@ -74,6 +74,7 @@ const GUARDED_RPC_NAMES: Record<string, string> = {
   start_paid_order_production: 'start_paid_order_production_guarded',
   create_internal_order: 'create_internal_order_guarded',
   save_order_delivery_details: 'save_order_delivery_details_guarded',
+  save_order_shipment: 'save_order_shipment_guarded',
   save_review_reward_settings: 'save_review_reward_settings_guarded',
   payroll_set_compensation: 'payroll_set_compensation_guarded',
   payroll_prepare: 'payroll_prepare_guarded',

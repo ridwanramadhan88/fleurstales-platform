@@ -111,8 +111,19 @@ export const OrderPostActionModal: FC<OrderPostActionModalProps> = ({
                 </div>
               </div>
               <div className="rounded-lg bg-surface-panel px-3 py-2.5 text-sm text-foreground/90">{deliveryAddress ?? 'No delivery address on file for this order.'}</div>
+              {readyMessage && (
+                <div className="mt-3">
+                  <p className="mb-1 text-xs text-muted-foreground">WhatsApp{customerWhatsappNumber ? ` · ${customerWhatsappNumber}` : ''}</p>
+                  <div className="rounded-lg bg-surface-panel px-3 py-2.5 text-sm text-foreground/90">{readyMessage}</div>
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
                 <button type="button" onClick={onClose} className="inline-flex h-11 items-center justify-center rounded-full px-[18px] text-sm font-medium text-muted-foreground hover:bg-muted">Close</button>
+                {readyMessage && whatsAppLink && (
+                  <a href={whatsAppLink} target="_blank" rel="noreferrer" onClick={onClose} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-success px-5 text-sm font-medium text-white shadow-ios-sm">
+                    <MessageCircle className="size-3.5" /> Send WhatsApp
+                  </a>
+                )}
                 <button type="button" disabled={!deliveryAddress} onClick={onCopyAddress} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground shadow-ios-sm hover:bg-primary/90 disabled:opacity-50">
                   {addressCopied ? <><CheckCheck className="size-3.5" />Copied</> : <><Copy className="size-3.5" />Copy address</>}
                 </button>

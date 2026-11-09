@@ -4,6 +4,8 @@ import type {
   CreateInternalOrderResult,
   SaveOrderDeliveryDetailsInput,
   SaveOrderDeliveryDetailsResult,
+  SaveOrderShipmentInput,
+  SaveOrderShipmentResult,
   CreateStorefrontOrderInput,
   CreateStorefrontOrderResult,
   StorefrontCheckoutQuoteResult,
@@ -453,6 +455,7 @@ const mapBranch = (row: BranchRow): SharedBranch => ({
   latitude: optional(row.latitude),
   longitude: optional(row.longitude),
   deliveryTariff: mapDeliveryTariff(row),
+  courierPaymentAccountId: optional(row.courier_payment_account_id),
 })
 
 const mapPaymentAccount = (row: PublicPaymentAccountRow): SharedPaymentAccount => ({
@@ -489,7 +492,7 @@ export const createStoreReadRepository = (client: SupabaseHttpClient): StoreRead
 
   async listBranches(options) {
     const rows: BranchRow[] = await client.select('branches', {
-      select: 'id,name,code,address,phone,is_active,is_default,sort_order,delivery_fee_idr,opening_hours,latitude,longitude,delivery_tariff_enabled,motor_base_idr,motor_included_km,motor_per_km_idr,car_base_idr,car_included_km,car_per_km_idr,max_delivery_km,motor_max_items,created_at,updated_at',
+      select: 'id,name,code,address,phone,is_active,is_default,sort_order,delivery_fee_idr,opening_hours,latitude,longitude,delivery_tariff_enabled,motor_base_idr,motor_included_km,motor_per_km_idr,car_base_idr,car_included_km,car_per_km_idr,max_delivery_km,motor_max_items,courier_payment_account_id,created_at,updated_at',
       filters: options?.includeInactive ? undefined : { is_active: true },
       order: [{ column: 'sort_order' }, { column: 'name' }],
     })
@@ -732,6 +735,11 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   deliveryLandmark: optional(row.delivery_landmark),
   deliveryVehicle: row.delivery_vehicle ?? undefined,
   deliveryDistanceKm: row.delivery_distance_km == null ? undefined : Number(row.delivery_distance_km),
+  deliveryProvider: row.delivery_provider ?? undefined,
+  deliveryCourierName: optional(row.delivery_courier_name),
+  deliveryActualCostIdr: row.delivery_actual_cost_idr == null ? undefined : Number(row.delivery_actual_cost_idr),
+  deliveryTrackingUrl: optional(row.delivery_tracking_url),
+  deliveryShippedAt: optional(row.delivery_shipped_at),
   promoCode: optional(row.promo_code),
   floristDisplayName: optional(row.florist_display_name),
   floristAssignedEmployeeId: optional(row.florist_assigned_employee_id),
@@ -823,6 +831,14 @@ export const createOrdersAdminRepository = (client: SupabaseHttpClient): OrdersA
       p_order_id: orderId,
       p_expected_revision: expectedRevision,
       p_details: asJson(details),
+    })
+  },
+
+  async saveOrderShipment(orderId: string, expectedRevision: number, shipment: SaveOrderShipmentInput) {
+    return client.rpc<SaveOrderShipmentResult>('save_order_shipment', {
+      p_order_id: orderId,
+      p_expected_revision: expectedRevision,
+      p_shipment: asJson(shipment),
     })
   },
 })

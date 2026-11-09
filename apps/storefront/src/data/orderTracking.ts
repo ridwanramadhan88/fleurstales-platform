@@ -80,6 +80,9 @@ export interface PublicOrderTrackingDetails {
   recipientName?: string | null
   recipientPhone?: string | null
   deliveryLandmark?: string | null
+  /** Gojek link, only while the order is on the way. */
+  deliveryTrackingUrl?: string | null
+  deliveryProvider?: 'gojek' | 'internal' | null
   deliveryLatitude?: number | null
   deliveryLongitude?: number | null
   scheduleDate?: string | null

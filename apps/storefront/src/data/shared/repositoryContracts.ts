@@ -7,6 +7,8 @@ import type {
   CreateInternalOrderResult,
   SaveOrderDeliveryDetailsInput,
   SaveOrderDeliveryDetailsResult,
+  SaveOrderShipmentInput,
+  SaveOrderShipmentResult,
   CreateStorefrontOrderInput,
   CreateStorefrontOrderResult,
   StorefrontCheckoutQuoteResult,
@@ -126,6 +128,11 @@ export interface OrdersAdminRepository extends OrdersReadRepository, DeliveryQuo
     expectedRevision: number,
     details: SaveOrderDeliveryDetailsInput,
   ): Promise<SaveOrderDeliveryDetailsResult>
+  saveOrderShipment(
+    orderId: string,
+    expectedRevision: number,
+    shipment: SaveOrderShipmentInput,
+  ): Promise<SaveOrderShipmentResult>
 }
 
 export interface StorefrontCheckoutRepository extends DeliveryQuoteRepository {
