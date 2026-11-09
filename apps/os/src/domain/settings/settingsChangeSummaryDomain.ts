@@ -47,6 +47,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   finance: 'Finance',
   hr: 'HR',
   florist: 'Florist',
+  courier: 'Kurir',
 }
 
 const ACCESS_LABELS: Record<string, string> = { none: 'No access', view: 'View', edit: 'Edit' }

@@ -15,7 +15,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type StaffRole = 'owner' | 'admin' | 'finance' | 'hr' | 'florist'
+export type StaffRole = 'owner' | 'admin' | 'finance' | 'hr' | 'florist' | 'courier'
 export type CatalogMaterial = 'fresh' | 'artificial'
 export type CatalogVariantStatus = 'active' | 'inactive'
 export type PricingType = 'Fixed' | 'Starts From'
@@ -381,6 +381,10 @@ export interface OrderRow {
   delivery_actual_cost_idr?: number | string | null
   delivery_tracking_url?: string | null
   delivery_shipped_at?: string | null
+  delivery_courier_employee_id?: string | null
+  delivery_started_at?: string | null
+  delivery_proof_photo_path?: string | null
+  delivery_proof_uploaded_at?: string | null
   promo_code: string | null
   florist_display_name: string | null
   florist_assigned_employee_id: string | null

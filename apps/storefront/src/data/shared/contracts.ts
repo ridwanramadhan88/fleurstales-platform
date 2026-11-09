@@ -414,6 +414,12 @@ export interface SharedOrder {
   /** Gojek tracking link shown to the customer while on the way. */
   deliveryTrackingUrl?: string
   deliveryShippedAt?: string
+  /** Courier account (staff employee id) assigned to deliver this order. */
+  deliveryCourierEmployeeId?: string
+  deliveryStartedAt?: string
+  /** Private proof-of-delivery photo path. Internal only; never shown to customers. */
+  deliveryProofPhotoPath?: string
+  deliveryProofUploadedAt?: string
   promoCode?: string
   floristDisplayName?: string
   floristAssignedEmployeeId?: string
@@ -574,6 +580,8 @@ export type DeliveryProvider = 'gojek' | 'internal'
 
 export interface SaveOrderShipmentInput {
   provider: DeliveryProvider
+  /** Internal only: courier account (staff employee id). Wins over `courierName`. */
+  courierEmployeeId?: string
   /** Gojek only: the real cost in IDR. */
   actualCostIdr?: number
   /** Gojek only: https tracking link. */
@@ -587,6 +595,7 @@ export interface SaveOrderShipmentResult {
   revision: number
   deliveryProvider?: DeliveryProvider | null
   deliveryCourierName?: string | null
+  deliveryCourierEmployeeId?: string | null
   deliveryActualCostIdr?: number | null
   deliveryTrackingUrl?: string | null
   /** False when the cost could not be booked (e.g. no courier account yet). */

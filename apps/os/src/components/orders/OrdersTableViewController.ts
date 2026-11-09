@@ -379,6 +379,8 @@ export const useOrdersTableViewController = ({
       if (!shipmentGate) return
       const order = shipmentGate
       setShipmentGate(null)
+      // A courier account starts the delivery itself from its own task list.
+      if (result.deliveryCourierEmployeeId) return
       runAdvance({
         ...order,
         revision: result.revision,

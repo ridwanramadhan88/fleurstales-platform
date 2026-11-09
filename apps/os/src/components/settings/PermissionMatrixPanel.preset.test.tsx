@@ -16,7 +16,7 @@ const renderPanel = (overrides: { isEditing?: boolean } = {}) => {
       isEditing={overrides.isEditing ?? true}
       permissions={permissions}
       actionPermissions={actionPermissions}
-      roleEmployeeCounts={{ owner: 1, admin: 2, finance: 1, hr: 1, florist: 3 }}
+      roleEmployeeCounts={{ owner: 1, admin: 2, finance: 1, hr: 1, florist: 3, courier: 0 }}
       roles={['admin', 'owner']}
       onUpdateAccess={onUpdateAccess}
       onUpdateActionAccess={onUpdateActionAccess}

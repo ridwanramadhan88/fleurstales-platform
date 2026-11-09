@@ -20,7 +20,9 @@ const getRoleLabel = (
           ? "HR"
           : role === "florist"
             ? "Florist"
-            : "Florist";
+            : role === "courier"
+              ? "Kurir"
+              : "Florist";
 
 const getInitials = (name: string) =>
   name
@@ -78,7 +80,7 @@ export const useTopBarController = ({
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const canSwitchBranch = true;
   const branchDisplayLabel =
-    activeBranch === "All" && userRole === "florist"
+    activeBranch === "All" && (userRole === "florist" || userRole === "courier")
       ? "Select branch"
       : activeBranch;
 
@@ -155,7 +157,7 @@ export const useTopBarController = ({
     searchEnabled: showSearch && Boolean(onSearchQueryChange),
     today,
     branches: getBranchFilterOptions({ branches: settingsBranches }).filter(
-      (branch) => userRole === "florist" ? branch !== "All" : true,
+      (branch) => (userRole === "florist" ? branch !== "All" : true) && !(userRole === "courier" && branch === "All"),
     ),
     userName,
     roleLabel: getRoleLabel(userRole),

@@ -367,6 +367,7 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
       if (order.revision !== expectedRevision) throw new Error(`REVISION_CONFLICT expected=${expectedRevision}, actual=${order.revision}`)
       order.deliveryProvider = shipment.provider
       order.deliveryCourierName = shipment.provider === 'internal' ? shipment.courierName?.trim() || undefined : undefined
+      order.deliveryCourierEmployeeId = shipment.provider === 'internal' ? shipment.courierEmployeeId || undefined : undefined
       order.deliveryActualCostIdr = shipment.provider === 'gojek' ? shipment.actualCostIdr : undefined
       order.deliveryTrackingUrl = shipment.provider === 'gojek' ? shipment.trackingUrl?.trim() || undefined : undefined
       order.revision += 1
@@ -377,6 +378,7 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         revision: order.revision,
         deliveryProvider: order.deliveryProvider,
         deliveryCourierName: order.deliveryCourierName ?? null,
+        deliveryCourierEmployeeId: order.deliveryCourierEmployeeId ?? null,
         deliveryActualCostIdr: order.deliveryActualCostIdr ?? null,
         deliveryTrackingUrl: order.deliveryTrackingUrl ?? null,
         financeRecorded: false,

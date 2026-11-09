@@ -51,6 +51,9 @@ export const isOrderInActorRowScope = (order: OrderTableRow, actor: OrderActor):
   if (actor.role === 'florist') {
     return Boolean(actor.employeeId) && order.floristAssignedEmployeeId === actor.employeeId
   }
+  if (actor.role === 'courier') {
+    return Boolean(actor.employeeId) && order.deliveryCourierEmployeeId === actor.employeeId
+  }
   return false
 }
 
@@ -134,6 +137,7 @@ export const authorizeOrderMutation = ({
 
   if (kind === 'status') {
     if (actor.role === 'florist') return { allowed: false, reason: 'Florists can view assigned work but cannot change order status.' }
+    if (actor.role === 'courier') return { allowed: false, reason: 'Couriers use the delivery task buttons to change delivery status.' }
     const canOperateStatus = actor.role === 'owner' || actor.role === 'admin'
     if (!canOperateStatus || !hasSectionEdit) return { allowed: false, reason: 'Only Owner or Admin can advance active order statuses.' }
     if (isOrderLocked(order)) return { allowed: false, reason: 'This finished order requires Finance review or an approved change request.' }

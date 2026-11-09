@@ -213,7 +213,7 @@ const validateEmployeeScheduleShift = (employee: Pick<Employee,'systemRole'>, sh
 }
 
 export const getEmployeeRoleLabel = (role: UserRole): string => ({
-  owner: 'Owner', admin: 'Admin', finance: 'Finance', hr: 'HR', florist: 'Florist',
+  owner: 'Owner', admin: 'Admin', finance: 'Finance', hr: 'HR', florist: 'Florist', courier: 'Kurir',
 }[role])
 
 /**
@@ -468,7 +468,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       const employee=state.employees.find((item)=>item.id===employeeId)
       if (!employee) return state
       if (employee.systemRole==='owner') { result={ok:false,code:'forbidden',reason:'Owner accounts cannot be removed.'}; return state }
-      if (actor.role==='hr' && !['admin','florist'].includes(employee.systemRole)) { result={ok:false,code:'forbidden',reason:'HR can permanently remove unused Admin or Florist accounts only.'}; return state }
+      if (actor.role==='hr' && !['admin','florist','courier'].includes(employee.systemRole)) { result={ok:false,code:'forbidden',reason:'HR can permanently remove unused Admin, Florist, or Courier accounts only.'}; return state }
       const blockers=getEmployeeRemovalBlockers({
         employeeId,
         attendance:state.attendance,
@@ -585,7 +585,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       const activeBranches = settings.branches.filter((branch)=>branch.isActive && (branchId==='All' || branch.id===branchId)).sort((a,b)=>a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
       if (!activeBranches.length) { result={ok:false,code:'invalid_branch',reason:'No active branch is available for this schedule.'}; return state }
       const roster = state.employees.filter((employee)=>
-        (employee.systemRole==='admin' || employee.systemRole==='florist')
+        (employee.systemRole==='admin' || employee.systemRole==='florist' || employee.systemRole==='courier')
         && isEmployeeOperationallyReady({
           employee,
           roleSalaryIdr:settings.payroll.baseSalaryByRole?.[employee.systemRole] ?? 0,
@@ -631,7 +631,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       if (!canEditScheduling(actor.role, settings.permissions)) { result={ok:false,code:'forbidden',reason:'You do not have permission to copy schedules.'}; return state }
       const targetDates=Array.from({length:7},(_,index)=>{ const date=new Date(`${weekStart}T00:00:00`); date.setDate(date.getDate()+index); return getLocalDateString(date) })
       const sourceDates=targetDates.map((value)=>{ const date=new Date(`${value}T00:00:00`); date.setDate(date.getDate()-7); return getLocalDateString(date) })
-      const employees=state.employees.filter((employee)=>employee.status==='active' && (employee.systemRole==='admin'||employee.systemRole==='florist'))
+      const employees=state.employees.filter((employee)=>employee.status==='active' && (employee.systemRole==='admin'||employee.systemRole==='florist'||employee.systemRole==='courier'))
       if(!employees.length) return state
       const keys=new Set(employees.flatMap((employee)=>targetDates.map((date)=>`${employee.id}|${date}`)))
       const retained=state.scheduleOverrides.filter((item)=>!keys.has(`${item.employeeId}|${item.date}`))
@@ -655,7 +655,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       const settings=useSettingsStore.getState()
       if (!canEditScheduling(actor.role,settings.permissions)) { result={ok:false,code:'forbidden',reason:'You do not have permission to publish schedules.'}; return state }
       const dates=Array.from({length:7},(_,index)=>{ const date=new Date(`${weekStart}T00:00:00`); date.setDate(date.getDate()+index); return getLocalDateString(date) })
-      const employees=state.employees.filter((employee)=>employee.status==='active' && (employee.systemRole==='admin'||employee.systemRole==='florist'))
+      const employees=state.employees.filter((employee)=>employee.status==='active' && (employee.systemRole==='admin'||employee.systemRole==='florist'||employee.systemRole==='courier'))
       if (!employees.length) return state
       for (const employee of employees) {
         const employeeWeek = dates.map((date)=>state.scheduleOverrides.find((item)=>item.employeeId===employee.id && item.date===date))

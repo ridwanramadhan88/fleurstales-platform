@@ -21,7 +21,7 @@ export const getCreatableAccountRoles = (
   actorRole: UserRole,
   hrManagedRoles?: Partial<HrManagedRolesByArea>,
 ): UserRole[] => {
-  if (actorRole === 'owner') return ['admin', 'finance', 'hr', 'florist']
+  if (actorRole === 'owner') return ['admin', 'finance', 'hr', 'florist', 'courier']
   if (actorRole === 'hr') return getHrManagedRoles('employees', hrManagedRoles)
   return []
 }

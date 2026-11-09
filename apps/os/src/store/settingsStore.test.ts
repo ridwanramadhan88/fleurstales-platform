@@ -68,9 +68,9 @@ describe('settingsStore — branches', () => {
 })
 
 describe('settingsStore — staff & roles', () => {
-  it('defaults to five roles with florist as default', () => {
+  it('defaults to six roles with florist as default', () => {
     const staffRoles = useSettingsStore.getState().staffRoles
-    expect(staffRoles.roles).toEqual(['owner', 'admin', 'finance', 'hr', 'florist'])
+    expect(staffRoles.roles).toEqual(['owner', 'admin', 'finance', 'hr', 'florist', 'courier'])
     expect(staffRoles.defaultRole).toBe('florist')
   })
 
@@ -78,7 +78,7 @@ describe('settingsStore — staff & roles', () => {
     useSettingsStore.getState().updateStaffRoles({ defaultRole: 'admin' })
     const staffRoles = useSettingsStore.getState().staffRoles
     expect(staffRoles.defaultRole).toBe('admin')
-    expect(staffRoles.roles).toEqual(['owner', 'admin', 'finance', 'hr', 'florist'])
+    expect(staffRoles.roles).toEqual(['owner', 'admin', 'finance', 'hr', 'florist', 'courier'])
   })
 })
 

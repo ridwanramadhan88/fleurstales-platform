@@ -37,7 +37,7 @@ export const buildHrMonthlyReport = (params: {
 }): HrMonthlyEmployeeReport[] => {
   const dates = daysInMonth(params.month)
   return params.employees
-    .filter((employee) => employee.status === 'active' && ['admin', 'florist'].includes(employee.systemRole))
+    .filter((employee) => employee.status === 'active' && ['admin', 'florist', 'courier'].includes(employee.systemRole))
     .map((employee) => {
       const row: HrMonthlyEmployeeReport = {
         employeeId: employee.id,

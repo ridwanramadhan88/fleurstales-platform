@@ -9,7 +9,7 @@ import type { UserRole } from '../store/userStore'
  * an operational override because assigned work may be cross-branch.
  */
 export const isOperationalBranchRole = (role: UserRole): boolean =>
-  role === 'florist'
+  role === 'florist' || role === 'courier'
 
 export const getBranchSwitchDecision = ({
   role,

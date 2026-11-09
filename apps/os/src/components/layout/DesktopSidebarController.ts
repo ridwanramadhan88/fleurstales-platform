@@ -21,7 +21,9 @@ const getRoleLabel = (role: ReturnType<typeof useUserStore.getState>['role']) =>
           ? 'HR'
           : role === 'florist'
             ? 'Florist'
-            : 'Florist'
+            : role === 'courier'
+              ? 'Kurir'
+              : 'Florist'
 
 const getInitials = (name: string) =>
   name
@@ -98,7 +100,7 @@ export const useDesktopSidebarController = ({
     ...props,
     onBranchChange,
     branches: getBranchFilterOptions({ branches: settingsBranches }).filter((branch) =>
-      userRole === 'florist' ? branch !== 'All' : true,
+      (userRole === 'florist' ? branch !== 'All' : true) && !(userRole === 'courier' && branch === 'All'),
     ),
     storeName,
     storeLogoUrl: storeProfile.logoUrl,
