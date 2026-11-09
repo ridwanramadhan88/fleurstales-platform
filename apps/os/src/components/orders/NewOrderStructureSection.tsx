@@ -230,6 +230,7 @@ export const NewOrderStructureSection: FC<NewOrderStructureSectionProps> = ({
               onChange={(pin) => onFieldValueChange('deliveryPin', pin ? `${pin.latitude},${pin.longitude}` : '')}
               center={branchLocation}
               invalid={Boolean(errors.deliveryPin)}
+              onAddressPicked={(address) => { if (!values.deliveryAddress.trim()) onFieldValueChange('deliveryAddress', address) }}
             />
             {errors.deliveryPin && (
               <p id="deliveryPin-error" className="text-xs text-destructive" role="alert">{errors.deliveryPin}</p>

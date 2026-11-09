@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FC } from 'react'
 import { ExternalLink, LocateFixed, MapPin, X } from 'lucide-react'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
+import { usePlaceSearch } from '../../hooks/usePlaceSearch'
 import {
   formatDeliveryPin,
   googleMapsUrlForPin,
@@ -40,14 +41,17 @@ interface Props {
   onChange: (pin: DeliveryPin | null) => void
   center?: DeliveryPin
   invalid?: boolean
+  /** Called with the street address of a searched place (to prefill an empty address). */
+  onAddressPicked?: (address: string) => void
 }
 
 /**
  * Delivery pin for Admin: paste the location the customer shared on WhatsApp,
  * or tap / drag on the map (Leaflet is loaded by index.html for attendance).
  */
-export const DeliveryPinPicker: FC<Props> = ({ id, value, onChange, center, invalid }) => {
+export const DeliveryPinPicker: FC<Props> = ({ id, value, onChange, center, invalid, onAddressPicked }) => {
   const copy = useBilingualCopy()
+  const places = usePlaceSearch(center)
   const mapElement = useRef<HTMLDivElement>(null)
   const mapRef = useRef<LeafletMap | null>(null)
   const markerRef = useRef<LeafletMarker | null>(null)
@@ -132,8 +136,43 @@ export const DeliveryPinPicker: FC<Props> = ({ id, value, onChange, center, inva
       : copy('No coordinates found in this text.', 'Tidak ada koordinat di teks ini.'))
   }
 
+  const pickPlace = async (placeId: string) => {
+    const place = await places.choose(placeId)
+    if (!place) { setMessage(copy('Could not load that place. Tap the map instead.', 'Tempat itu tidak bisa dimuat. Ketuk peta saja.')); return }
+    const pin = toDeliveryPin(place.latitude, place.longitude)
+    if (pin) onChange(pin)
+    if (place.address) onAddressPicked?.(place.address)
+    places.clear()
+    setMessage(null)
+  }
+
   return (
     <div className="space-y-2">
+      {places.available && (
+        <div className="relative">
+          <input
+            value={places.query}
+            onChange={(event) => places.setQuery(event.target.value)}
+            placeholder={copy('Search address or place', 'Cari alamat atau tempat')}
+            aria-label={copy('Search address or place', 'Cari alamat atau tempat')}
+            autoComplete="off"
+            className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+          {places.suggestions.length > 0 && (
+            <ul role="listbox" className="absolute inset-x-0 top-full z-[600] mt-1 max-h-64 overflow-y-auto rounded-xl bg-background py-1 shadow-ios-sm ring-1 ring-border/60">
+              {places.suggestions.map((item) => (
+                <li key={item.placeId} role="option" aria-selected={false}>
+                  <button type="button" onClick={() => void pickPlace(item.placeId)} className="block w-full px-3 py-2 text-left hover:bg-muted">
+                    <span className="block text-sm font-medium text-foreground">{item.title}</span>
+                    {item.subtitle && <span className="block text-xs text-muted-foreground">{item.subtitle}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {places.status === 'error' && <p className="mt-1 text-xs text-muted-foreground">{copy('Address search is unavailable. Tap the map or paste a link.', 'Pencarian alamat tidak tersedia. Ketuk peta atau tempel link.')}</p>}
+        </div>
+      )}
       <input
         id={id}
         value={pasted}

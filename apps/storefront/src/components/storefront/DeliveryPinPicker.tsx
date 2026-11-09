@@ -7,6 +7,7 @@ import {
   toDeliveryPin,
   type DeliveryPin,
 } from '../../domain/deliveryDetailsDomain'
+import { usePlaceSearch } from '../../hooks/usePlaceSearch'
 
 interface LeafletLatLng { lat: number; lng: number }
 interface LeafletMap {
@@ -63,6 +64,8 @@ interface Props {
   onChange: (pin: DeliveryPin | null) => void
   /** Branch location: where the map opens. */
   center?: DeliveryPin
+  /** Called with the street address of a searched place (to prefill an empty address). */
+  onAddressPicked?: (address: string) => void
 }
 
 /**
@@ -70,7 +73,8 @@ interface Props {
  * location, or paste a Google Maps link. The paste field also works when the
  * map cannot load.
  */
-export const DeliveryPinPicker: FC<Props> = ({ value, onChange, center }) => {
+export const DeliveryPinPicker: FC<Props> = ({ value, onChange, center, onAddressPicked }) => {
+  const places = usePlaceSearch(center)
   const mapElement = useRef<HTMLDivElement>(null)
   const mapRef = useRef<LeafletMap | null>(null)
   const markerRef = useRef<LeafletMarker | null>(null)
@@ -174,8 +178,43 @@ export const DeliveryPinPicker: FC<Props> = ({ value, onChange, center }) => {
     )
   }
 
+  const pickPlace = async (placeId: string) => {
+    const place = await places.choose(placeId)
+    if (!place) { setPasteMessage('We could not load that place. Tap the map instead.'); return }
+    const pin = toDeliveryPin(place.latitude, place.longitude)
+    if (pin) onChange(pin)
+    if (place.address) onAddressPicked?.(place.address)
+    places.clear()
+    setPasteMessage(null)
+  }
+
   return (
     <div className="grid gap-2.5">
+      {places.available && (
+        <div className="relative">
+          <input
+            value={places.query}
+            onChange={(event) => places.setQuery(event.target.value)}
+            placeholder="Search address or place"
+            aria-label="Search address or place"
+            autoComplete="off"
+            className="sf-field"
+          />
+          {places.suggestions.length > 0 && (
+            <ul role="listbox" className="absolute inset-x-0 top-full z-[600] mt-1 max-h-64 overflow-y-auto rounded-[var(--sf-radius-card)] bg-white py-1 shadow-[0_4px_16px_rgba(0,0,0,0.16)]">
+              {places.suggestions.map((item) => (
+                <li key={item.placeId} role="option" aria-selected={false}>
+                  <button type="button" onClick={() => void pickPlace(item.placeId)} className="block w-full px-4 py-2.5 text-left hover:bg-black/5">
+                    <span className="block sf-type-2 font-medium text-black">{item.title}</span>
+                    {item.subtitle && <span className="block sf-type-1 text-black/55">{item.subtitle}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {places.status === 'error' && <p className="mt-1 sf-type-1 text-black/55">Address search is unavailable. Tap the map or paste a link.</p>}
+        </div>
+      )}
       <div className="relative overflow-hidden rounded-[var(--sf-radius-card)] bg-[#ECEBE6]">
         <div
           ref={mapElement}

@@ -295,6 +295,7 @@ export const DetailsStep: FC<CartDrawerViewModel> = ({
               value={deliveryDetails.pin}
               onChange={(pin) => updateDeliveryDetails({ pin })}
               center={selectedBranch?.location}
+              onAddressPicked={(address) => { if (!deliveryAddress.trim()) setDeliveryAddress(address) }}
             />
           </Field>
           {deliveryTariffEnabled && (
