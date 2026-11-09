@@ -215,12 +215,12 @@ export const useOrderDetailsController = ({ order, onClose, formatter }: UseOrde
   const readyMessage = actions.readyTrackingUrl
     ? actions.actionModal === 'review'
       ? buildReviewRequestMessage(order.customerName, order.orderNumber, actions.readyTrackingUrl)
+      : actions.actionModal === 'delivering'
+        ? buildOnTheWayMessage(order.customerName, productDisplay.name, actions.readyTrackingUrl)
       : order.fulfillment === 'pickup'
         ? buildReadyForPickupMessage(order.customerName, productDisplay.name, order.branch, actions.readyTrackingUrl)
         : buildReadyForDeliveryMessage(order.customerName, productDisplay.name, actions.readyTrackingUrl)
-    : actions.actionModal === 'delivering' && order.deliveryProvider === 'gojek' && order.deliveryTrackingUrl
-      ? buildOnTheWayMessage(order.customerName, productDisplay.name, order.deliveryTrackingUrl)
-      : ''
+    : ''
   const whatsAppLink = readyMessage ? buildWhatsAppLink(customerWhatsappNumber, readyMessage) : ''
 
   return {

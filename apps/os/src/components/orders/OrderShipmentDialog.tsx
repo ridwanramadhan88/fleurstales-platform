@@ -68,11 +68,6 @@ export const OrderShipmentDialog: FC<Props> = ({ order, open, mode, onClose, onS
             ? copy('Set the courier payment account in Settings → Branches, then save the shipment again.', 'Atur "Akun bayar kurir" di Pengaturan cabang, lalu simpan pengiriman lagi.')
             : copy('The Finance expense could not be recorded.', 'Pengeluaran di Keuangan belum bisa dicatat.'),
         })
-      } else if (result.deliveryCourierEmployeeId) {
-        toast({
-          title: copy('Task sent to the courier', 'Tugas dikirim ke kurir'),
-          description: copy('The order moves to "On the way" when the courier taps Start delivery.', 'Pesanan jadi "Sedang diantar" saat kurir menekan Mulai antar.'),
-        })
       } else {
         toast({ title: copy('Shipment saved', 'Pengiriman disimpan') })
       }
@@ -152,7 +147,7 @@ export const OrderShipmentDialog: FC<Props> = ({ order, open, mode, onClose, onS
               )}
               {courierEmployeeId ? (
                 <p className="text-xs text-muted-foreground">
-                  {copy('The courier sees this order in their delivery tasks and uploads the proof photo.', 'Kurir akan melihat pesanan ini di tugas antarnya dan mengunggah foto bukti terima.')}
+                  {copy('The courier sees this order in their delivery tasks and confirms to you when it is delivered.', 'Kurir melihat pesanan ini di tugas antarnya dan mengonfirmasi ke Anda saat sudah diantar.')}
                 </p>
               ) : (
                 <label className="block space-y-1.5 text-xs font-medium text-muted-foreground">

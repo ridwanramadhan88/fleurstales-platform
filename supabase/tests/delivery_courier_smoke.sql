@@ -1,17 +1,19 @@
--- D4 courier accounts: assignment, assigned-orders-only visibility, start /
--- complete delivery with a private proof photo, notifications, public page
--- never exposing the proof. Rolls back.
+-- D4 courier accounts: assignment, assigned-orders-only visibility, courier
+-- confirmation with a private proof photo (status stays with Admin),
+-- notifications, public page never exposing the proof. Rolls back.
 begin;
 
 do $static$
 begin
-  if has_function_privilege('anon', 'public.courier_start_delivery_guarded(text,integer)', 'EXECUTE')
-     or has_function_privilege('anon', 'public.courier_complete_delivery_guarded(text,integer,text)', 'EXECUTE') then
-    raise exception 'courier RPCs must not be anonymous';
+  if has_function_privilege('anon', 'public.courier_confirm_delivery_guarded(text,text)', 'EXECUTE') then
+    raise exception 'courier RPC must not be anonymous';
   end if;
-  if has_function_privilege('authenticated', 'public.courier_start_delivery(text,integer)', 'EXECUTE')
-     or has_function_privilege('authenticated', 'public.courier_complete_delivery(text,integer,text)', 'EXECUTE') then
-    raise exception 'courier RPCs must only be reachable through guarded wrappers';
+  if has_function_privilege('authenticated', 'public.courier_confirm_delivery(text,text)', 'EXECUTE') then
+    raise exception 'courier RPC must only be reachable through the guarded wrapper';
+  end if;
+  if to_regprocedure('public.courier_start_delivery(text,integer)') is not null
+     or to_regprocedure('public.courier_complete_delivery(text,integer,text)') is not null then
+    raise exception 'The courier start/complete RPCs must no longer exist';
   end if;
   if (select public from storage.buckets where id = 'order-delivery-proofs') is distinct from false then
     raise exception 'proof bucket must be private';
@@ -122,60 +124,48 @@ end
 $visibility$;
 reset role;
 
--- Courier B cannot start courier A's order; unpaid orders are blocked.
+-- Admin (owner here) starts the delivery: status is theirs alone.
+select set_config('request.jwt.claims', '{"sub":"d4000000-0000-4000-8000-0000000000e2","role":"authenticated"}', true);
+set local role authenticated;
+do $early$
+begin
+  begin
+    perform public.courier_confirm_delivery_guarded('ord-cr-1', 'ord-cr-1/proof-x.jpg');
+    raise exception 'Confirmed before the order was delivering';
+  exception when invalid_parameter_value then null;
+  end;
+end
+$early$;
+reset role;
+
+set local session_replication_role = replica;
+update public.orders set status = 'delivering', delivery_started_at = now() where id = 'ord-cr-1';
+set local session_replication_role = origin;
+
+-- Courier B cannot confirm courier A's order.
 select set_config('request.jwt.claims', '{"sub":"d4000000-0000-4000-8000-0000000000e3","role":"authenticated"}', true);
 set local role authenticated;
 do $other$
 begin
   begin
-    perform public.courier_start_delivery_guarded('ord-cr-1', (select value::int from cr_ctx where key='rev'));
-    raise exception 'Courier B started courier A order';
+    perform public.courier_confirm_delivery_guarded('ord-cr-1', 'ord-cr-1/proof-x.jpg');
+    raise exception 'Courier B confirmed courier A order';
   exception when insufficient_privilege then null;
   end;
 end
 $other$;
 reset role;
 
+-- Confirming needs a real uploaded proof; it never changes the status.
 select set_config('request.jwt.claims', '{"sub":"d4000000-0000-4000-8000-0000000000e2","role":"authenticated"}', true);
 set local role authenticated;
-do $start$
+do $confirm$
 declare
   v_result jsonb;
-  v_rev int := (select value::int from cr_ctx where key='rev');
 begin
   begin
-    perform public.courier_start_delivery_guarded('ord-cr-unpaid', 1);
-    raise exception 'Unpaid order started';
-  exception when invalid_parameter_value then null;
-  end;
-  begin
-    perform public.courier_complete_delivery_guarded('ord-cr-1', v_rev, 'ord-cr-1/proof-x.jpg');
-    raise exception 'Completed before starting';
-  exception when invalid_parameter_value then null;
-  end;
-  begin
-    perform public.courier_start_delivery_guarded('ord-cr-1', v_rev - 1);
-    raise exception 'Stale revision accepted';
-  exception when sqlstate 'PT409' then null;
-  end;
-  v_result := public.courier_start_delivery_guarded('ord-cr-1', v_rev);
-  if v_result->>'status' <> 'delivering' then raise exception 'Not delivering: %', v_result; end if;
-  update cr_ctx set value = v_result->>'revision' where key = 'rev';
-end
-$start$;
-reset role;
-
--- Completing needs a real uploaded proof. Only the assigned courier can upload / read it.
-select set_config('request.jwt.claims', '{"sub":"d4000000-0000-4000-8000-0000000000e2","role":"authenticated"}', true);
-set local role authenticated;
-do $complete$
-declare
-  v_result jsonb;
-  v_rev int := (select value::int from cr_ctx where key='rev');
-begin
-  begin
-    perform public.courier_complete_delivery_guarded('ord-cr-1', v_rev, 'ord-cr-1/proof-missing.jpg');
-    raise exception 'Completed with a proof that was never uploaded';
+    perform public.courier_confirm_delivery_guarded('ord-cr-1', 'ord-cr-1/proof-missing.jpg');
+    raise exception 'Confirmed with a proof that was never uploaded';
   exception when invalid_parameter_value then null;
   end;
 
@@ -189,15 +179,21 @@ begin
   exception when insufficient_privilege then null;
   end;
 
-  v_result := public.courier_complete_delivery_guarded('ord-cr-1', v_rev, 'ord-cr-1/proof-ok.jpg');
-  if v_result->>'status' <> 'delivered' or v_result->>'completedAt' is null then
-    raise exception 'Not delivered: %', v_result;
-  end if;
+  v_result := public.courier_confirm_delivery_guarded('ord-cr-1', 'ord-cr-1/proof-ok.jpg');
+  if v_result is null then raise exception 'No confirmation result'; end if;
+
+  begin
+    perform public.courier_confirm_delivery_guarded('ord-cr-1', 'ord-cr-1/proof-ok.jpg');
+    raise exception 'Double confirmation accepted';
+  exception when others then
+    if sqlerrm not like '%DELIVERY_ALREADY_CONFIRMED%' then raise; end if;
+  end;
+
   if (select count(*) from storage.objects where bucket_id = 'order-delivery-proofs') <> 1 then
     raise exception 'Courier A must read exactly their own proof';
   end if;
 end
-$complete$;
+$confirm$;
 reset role;
 
 do $after$
@@ -206,16 +202,17 @@ declare
   v_status jsonb;
 begin
   select * into v_order from public.orders where id = 'ord-cr-1';
-  if v_order.status <> 'delivered' or v_order.completed_at is null
-     or v_order.delivery_proof_photo_path <> 'ord-cr-1/proof-ok.jpg'
-     or v_order.delivery_started_at is null then
-    raise exception 'Order not completed correctly';
+  if v_order.status <> 'delivering' or v_order.completed_at is not null then
+    raise exception 'The courier confirmation must not change the order status';
   end if;
-  if (select count(*) from public.staff_notifications where kind = 'order_delivered' and recipient_employee_id = 'cr-owner') <> 1 then
-    raise exception 'Owner must be notified when the order is delivered';
+  if v_order.delivery_proof_photo_path <> 'ord-cr-1/proof-ok.jpg' or v_order.delivery_proof_uploaded_at is null then
+    raise exception 'Proof not recorded';
   end if;
-  if (select count(*) from public.order_activities where order_id = 'ord-cr-1' and description like 'Pesanan terkirim oleh kurir%') <> 1 then
-    raise exception 'Delivery activity missing';
+  if (select count(*) from public.staff_notifications where kind = 'delivery_confirmed' and recipient_employee_id = 'cr-owner') <> 1 then
+    raise exception 'Owner must be notified of the courier confirmation';
+  end if;
+  if (select count(*) from public.order_activities where order_id = 'ord-cr-1' and description like '%mengonfirmasi%') < 1 then
+    raise exception 'Confirmation activity missing';
   end if;
 
   v_status := public.get_order_public_status(v_order.public_tracking_id::text);

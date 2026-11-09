@@ -3,7 +3,7 @@ import { Camera } from 'lucide-react'
 import type { OrderTableRow } from '../../types/orders'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
-import { completeCourierDelivery } from '../../data/courierDelivery'
+import { confirmCourierDelivery } from '../../data/courierDelivery'
 import { dataUrlToBlob, prepareUploadedPaymentProof } from '../../domain/paymentProofImageDomain'
 
 interface Props {
@@ -48,16 +48,14 @@ export const DeliveryProofDialog: FC<Props> = ({ order, open, onClose, onDeliver
     setBusy(true)
     setError(null)
     try {
-      await completeCourierDelivery(order, dataUrlToBlob(preview))
+      await confirmCourierDelivery(order, dataUrlToBlob(preview))
       setPreview(null)
       onDelivered()
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : ''
-      setError(message.includes('REVISION_CONFLICT') || message.includes('PT409')
-        ? copy('This order just changed. Close and open it again.', 'Pesanan baru saja berubah. Tutup lalu buka lagi.')
-        : message.includes('OUTSTANDING_PAYMENT')
-          ? copy('Payment is not complete yet. Contact the admin.', 'Pembayaran belum lunas. Hubungi admin.')
-          : copy('Could not finish. Check the connection and try again.', 'Gagal menyelesaikan. Periksa koneksi lalu coba lagi.'))
+      setError(message.includes('DELIVERY_ALREADY_CONFIRMED')
+        ? copy('This delivery was already confirmed.', 'Pengantaran ini sudah dikonfirmasi.')
+        : copy('Could not send. Check the connection and try again.', 'Gagal mengirim. Periksa koneksi lalu coba lagi.'))
     } finally {
       setBusy(false)
     }
@@ -67,11 +65,11 @@ export const DeliveryProofDialog: FC<Props> = ({ order, open, onClose, onDeliver
     <Dialog open={open} onOpenChange={(next) => { if (!next && !busy) onClose() }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{copy('Proof of delivery', 'Bukti terima')} · {order.orderNumber}</DialogTitle>
+          <DialogTitle>{copy('Confirm delivery', 'Konfirmasi selesai diantar')} · {order.orderNumber}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            {copy('Take a photo showing the order was received. Only the shop team can see it.', 'Ambil foto yang menunjukkan pesanan sudah diterima. Foto hanya terlihat oleh tim toko.')}
+            {copy('Take a photo showing the order was received. It is sent to the admin, who marks the order delivered. Only the shop team can see it.', 'Ambil foto yang menunjukkan pesanan sudah diterima. Foto dikirim ke admin, yang menandai pesanan terkirim. Foto hanya terlihat oleh tim toko.')}
           </p>
           <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => { void handleFile(event) }} />
           {preview ? (
@@ -94,7 +92,7 @@ export const DeliveryProofDialog: FC<Props> = ({ order, open, onClose, onDeliver
             {copy('Cancel', 'Batal')}
           </button>
           <button type="button" onClick={() => { void handleConfirm() }} disabled={busy || !preview} className="h-11 rounded-full bg-primary px-[18px] text-sm font-medium text-primary-foreground disabled:opacity-50">
-            {busy ? copy('Sending…', 'Mengirim…') : copy('Mark as delivered', 'Tandai terkirim')}
+            {busy ? copy('Sending…', 'Mengirim…') : copy('Send confirmation', 'Kirim konfirmasi')}
           </button>
         </DialogFooter>
       </DialogContent>

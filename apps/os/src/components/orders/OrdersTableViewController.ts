@@ -190,11 +190,11 @@ export const useOrdersTableViewController = ({
   }
 
   useEffect(() => {
-    if ((actionModal !== 'ready' && actionModal !== 'review') || !actionOrder?.id) return
+    if ((actionModal !== 'ready' && actionModal !== 'review' && actionModal !== 'delivering') || !actionOrder?.id) return
     let active = true
     getOrderTrackingId(actionOrder.id)
       .then((trackingId) => {
-        const moment = actionModal === 'review' ? 'finished' : 'ready'
+        const moment = actionModal === 'review' ? 'finished' : actionModal === 'delivering' ? 'delivering' : 'ready'
         if (active) setReadyTrackingUrl(buildOrderTrackingUrl(actionOrder.orderNumber, trackingId, moment))
       })
       .catch(() => { /* best-effort */ })
@@ -290,12 +290,12 @@ export const useOrdersTableViewController = ({
   const readyMessage = actionOrder && readyTrackingUrl
     ? actionModal === 'review'
       ? buildReviewRequestMessage(actionOrder.customerName, actionOrder.orderNumber, readyTrackingUrl)
+      : actionModal === 'delivering'
+        ? buildOnTheWayMessage(actionOrder.customerName, getProductName(actionOrder), readyTrackingUrl)
       : actionOrder.fulfillment === 'pickup'
         ? buildReadyForPickupMessage(actionOrder.customerName, getProductName(actionOrder), actionOrder.branch, readyTrackingUrl)
         : buildReadyForDeliveryMessage(actionOrder.customerName, getProductName(actionOrder), readyTrackingUrl)
-    : actionModal === 'delivering' && actionOrder?.deliveryProvider === 'gojek' && actionOrder.deliveryTrackingUrl
-      ? buildOnTheWayMessage(actionOrder.customerName, getProductName(actionOrder), actionOrder.deliveryTrackingUrl)
-      : ''
+    : ''
   const actionModalData = actionModal && actionOrder
     ? {
         kind: actionModal,
@@ -379,8 +379,6 @@ export const useOrdersTableViewController = ({
       if (!shipmentGate) return
       const order = shipmentGate
       setShipmentGate(null)
-      // A courier account starts the delivery itself from its own task list.
-      if (result.deliveryCourierEmployeeId) return
       runAdvance({
         ...order,
         revision: result.revision,

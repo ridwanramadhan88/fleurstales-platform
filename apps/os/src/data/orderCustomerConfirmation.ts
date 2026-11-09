@@ -17,7 +17,7 @@ export const getStorefrontOrigin = (): string => STOREFRONT_ORIGIN
  * text, since no host serves an og:image for a URL WhatsApp never
  * (re-)crawled.
  */
-export type OrderTrackingMoment = 'confirmed' | 'ready' | 'finished'
+export type OrderTrackingMoment = 'confirmed' | 'ready' | 'delivering' | 'finished'
 
 /**
  * Canonical customer-facing tracking link. `/order/:trackingId` is

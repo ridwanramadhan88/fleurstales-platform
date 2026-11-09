@@ -33,9 +33,9 @@ export const buildReadyForDeliveryMessage = (
 export const buildOnTheWayMessage = (
   customerName: string,
   productName: string,
-  courierTrackingUrl: string,
+  trackingUrl: string,
 ): string =>
-  `Hi kak ${customerName}, pesanan ${productName} sudah dalam perjalanan 🌸\nLacak kurir langsung di sini: ${courierTrackingUrl}`
+  `Hi kak ${customerName}, pesanan ${productName} sudah dalam perjalanan 🌸\nPantau status pengiriman dan lacak kurir di sini: ${trackingUrl}`
 
 export const buildReviewRequestMessage = (
   customerName: string,

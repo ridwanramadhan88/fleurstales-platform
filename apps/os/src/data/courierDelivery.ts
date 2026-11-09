@@ -1,7 +1,7 @@
 /**
  * @file courierDelivery.ts
- * @description Courier actions: start a delivery and complete it with a proof
- * photo. The proof goes to a private bucket and is addressed by path only; it is
+ * @description Courier action: confirm to Admin that an order was delivered, with a proof
+ * photo (status stays with Admin). The proof goes to a private bucket and is addressed by path only; it is
  * readable by Owner, Admin and the assigned courier, never by customers.
  */
 
@@ -30,21 +30,12 @@ const getStorageClient = () => {
   return client
 }
 
-/** "Mulai antar": ready → delivering, only for the courier assigned to the order. */
-export const startCourierDelivery = async (order: OrderTableRow): Promise<void> => {
-  if (!order.id) throw new Error('Order id is missing.')
-  await getRpcClient().rpc<CourierResult>('courier_start_delivery', {
-    p_order_id: order.id,
-    p_expected_revision: order.revision ?? 1,
-  })
-  await refreshBusinessOsOrdersFromRemote().catch(() => false)
-}
-
 /**
- * "Terkirim": uploads the proof photo, then completes the delivery. The object
- * is removed only when the authoritative RPC itself fails.
+ * "Konfirmasi selesai diantar": uploads the proof photo, then sends the
+ * confirmation to Admin. The order status is NOT changed here; only Admin moves
+ * it to delivered. The object is removed only when the RPC itself fails.
  */
-export const completeCourierDelivery = async (order: OrderTableRow, proof: Blob): Promise<void> => {
+export const confirmCourierDelivery = async (order: OrderTableRow, proof: Blob): Promise<void> => {
   if (!order.id) throw new Error('Order id is missing.')
   const path = buildDeliveryProofStoragePath(order.id)
   const storage = getStorageClient().storage.from(DELIVERY_PROOF_BUCKET)
@@ -55,9 +46,8 @@ export const completeCourierDelivery = async (order: OrderTableRow, proof: Blob)
   })
   if (uploadError) throw uploadError
   try {
-    await getRpcClient().rpc<CourierResult>('courier_complete_delivery', {
+    await getRpcClient().rpc<CourierResult>('courier_confirm_delivery', {
       p_order_id: order.id,
-      p_expected_revision: order.revision ?? 1,
       p_proof_path: path,
     })
   } catch (error) {
