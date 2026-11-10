@@ -70,7 +70,9 @@ begin
       'get_order_public_status',
       'verify_order_tracking_access',
       'submit_order_review',
-      'quote_delivery_fee'
+      'quote_delivery_fee',
+      -- Read-only: this month's highlighted active product ids and a short note.
+      'get_flower_of_the_month'
     );
   if v_source is not null then
     raise exception 'SECURITY DEFINER functions are executable by anon outside the Storefront allowlist: %', v_source;
