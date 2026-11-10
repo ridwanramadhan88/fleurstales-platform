@@ -1,6 +1,6 @@
 {
   "name": "fleurstales-storefront",
-  "version": "3.0.73",
+  "version": "3.0.74",
   "scripts": {
     "clean": "rimraf dist coverage \"*.tsbuildinfo\"",
     "dev": "node scripts/dev-local.mjs",

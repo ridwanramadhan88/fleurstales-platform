@@ -5,7 +5,7 @@
  */
 
 import type { FC } from 'react'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
   Download,
   FileText,
@@ -17,6 +17,7 @@ import {
   Shapes,
   Tags,
   Upload,
+  Flower2,
 } from 'lucide-react'
 import { CatalogFiltersBar } from './CatalogFiltersBar'
 import { CatalogProductRow } from './CatalogProductRow'
@@ -27,6 +28,7 @@ import { CatalogCategoriesDialogContainer } from './CatalogCategoriesDialogConta
 import { CatalogArrangementTypesDialog } from './CatalogArrangementTypesDialog'
 import { CatalogPromoFeatureDialogContainer } from './CatalogPromoFeatureDialogContainer'
 import { CatalogSizeGuideDialog } from './CatalogSizeGuideDialog'
+import { FlowerOfTheMonthDialog } from './FlowerOfTheMonthDialog'
 import { Button } from '../ui/button'
 import { ConfirmActionDialog } from '../ui/confirm-action-dialog'
 import {
@@ -156,6 +158,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
   onLoadMoreProducts,
 }) => {
   const csvInputRef = useRef<HTMLInputElement | null>(null)
+  const [flowerOfTheMonthOpen, setFlowerOfTheMonthOpen] = useState(false)
 
   return (
     <section className="space-y-6">
@@ -208,6 +211,9 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onOpenPromoFeatureDialog}>
                     <Sparkles className="mr-2 size-4" /> Promo & featured products
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFlowerOfTheMonthOpen(true)}>
+                    <Flower2 className="mr-2 size-4" /> <span data-no-translate>Flower of the Month</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onOpenSizeGuideDialog}>
                     <Ruler className="mr-2 size-4" /> Manage size guides
@@ -352,6 +358,7 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
       <CatalogArrangementTypesDialog open={arrangementTypesDialogOpen} onClose={onCloseArrangementTypesDialog} />
       <CatalogPromoFeatureDialogContainer open={promoFeatureDialogOpen} onClose={onClosePromoFeatureDialog} />
       <CatalogSizeGuideDialog open={sizeGuideDialogOpen} onClose={onCloseSizeGuideDialog} />
+      <FlowerOfTheMonthDialog open={flowerOfTheMonthOpen} onClose={() => setFlowerOfTheMonthOpen(false)} />
       <ConfirmActionDialog
         open={pendingBulkDelete !== null}
         onOpenChange={(nextOpen) => { if (!nextOpen) cancelBulkDelete() }}

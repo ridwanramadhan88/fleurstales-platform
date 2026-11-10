@@ -11,6 +11,8 @@ export interface StorefrontProductCardProps {
   presentation?: 'default' | 'collection'
   tabIndex?: number
   ariaHidden?: boolean
+  /** Marks this month's hand-picked products. */
+  monthPick?: boolean
 }
 
 export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
@@ -20,6 +22,7 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
   presentation = 'default',
   tabIndex,
   ariaHidden,
+  monthPick = false,
 }) => {
   const displayPriceIdr = getDisplayPriceIdr(product)
   const hasVariants = product.variants.length > 1
@@ -75,6 +78,12 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
           {promoPercentLabel && (
             <span className="sf-promo-badge absolute left-3 top-3 z-[1] max-w-[75%] bg-[#f569a3] text-black sm:left-4 sm:top-4">
               {promoPercentLabel}
+            </span>
+          )}
+
+          {monthPick && (
+            <span data-no-translate className="sf-promo-badge absolute bottom-3 left-3 z-[1] max-w-[85%] bg-black text-white sm:bottom-4 sm:left-4">
+              Flower of the Month
             </span>
           )}
         </div>

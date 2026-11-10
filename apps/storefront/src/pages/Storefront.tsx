@@ -32,6 +32,8 @@ import type { CatalogVariant } from "../store/catalogStoreTypes";
 import { toast } from "../hooks/use-toast";
 import { useScrollThresholdCartBar } from "../hooks/useScrollThresholdCartBar";
 import { useElementInViewport } from "../hooks/useElementInViewport";
+import { fetchFlowerOfTheMonth } from "../data/flowerOfTheMonth";
+import { pickHighlightedProducts, type MonthlyHighlight } from "../domain/monthlyHighlightDomain";
 import { StorefrontHome } from "./StorefrontHome";
 import { StorefrontProductDetailPage } from "./StorefrontProductDetailPage";
 import { StorefrontCategoriesPage } from "./StorefrontCategoriesPage";
@@ -130,6 +132,7 @@ export const StorefrontPage: FC = () => {
   const [visibleProductCount, setVisibleProductCount] = useState(
     STOREFRONT_INITIAL_PRODUCT_BATCH_SIZE,
   );
+  const [monthlyHighlight, setMonthlyHighlight] = useState<MonthlyHighlight | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchDraft, setSearchDraft] = useState("");
@@ -177,15 +180,45 @@ export const StorefrontPage: FC = () => {
     });
   }, [storefrontProducts, categoryFilter, subCategoryFilter, arrangementFilter, collectionFilter, query]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchFlowerOfTheMonth().then((highlight) => {
+      if (!cancelled) setMonthlyHighlight(highlight);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // This month's hand-picked products, in the chosen order.
+  const monthPickProducts = useMemo(
+    () => (monthlyHighlight ? pickHighlightedProducts(storefrontProducts, monthlyHighlight.productIds) : []),
+    [monthlyHighlight, storefrontProducts],
+  );
+  const monthPickIds = useMemo(() => new Set(monthPickProducts.map((product) => product.id)), [monthPickProducts]);
+  // The rail belongs to the unfiltered shop; the badge stays on the cards everywhere.
+  const showMonthPickRail =
+    monthPickProducts.length > 0 &&
+    categoryFilter === "all" &&
+    subCategoryFilter === "all" &&
+    arrangementFilter === "all" &&
+    collectionFilter === "all" &&
+    query.trim() === "";
+
   const featuredProducts = useMemo(() => {
-    const markedFeatured = filteredProducts.filter((product) => product.isFeatured);
-    return (markedFeatured.length > 0 ? markedFeatured : filteredProducts).slice(0, 6);
-  }, [filteredProducts]);
+    const candidates = showMonthPickRail
+      ? filteredProducts.filter((product) => !monthPickIds.has(product.id))
+      : filteredProducts;
+    const markedFeatured = candidates.filter((product) => product.isFeatured);
+    return (markedFeatured.length > 0 ? markedFeatured : candidates).slice(0, 6);
+  }, [filteredProducts, monthPickIds, showMonthPickRail]);
 
   const regularProducts = useMemo(() => {
     const featuredIds = new Set(featuredProducts.map((product) => product.id));
-    return filteredProducts.filter((product) => !featuredIds.has(product.id));
-  }, [filteredProducts, featuredProducts]);
+    return filteredProducts.filter(
+      (product) => !featuredIds.has(product.id) && !(showMonthPickRail && monthPickIds.has(product.id)),
+    );
+  }, [filteredProducts, featuredProducts, monthPickIds, showMonthPickRail]);
 
   const gridProducts = regularProducts.length > 0 ? regularProducts : filteredProducts;
   const visibleGridProducts = gridProducts.slice(0, visibleProductCount);
@@ -666,6 +699,18 @@ export const StorefrontPage: FC = () => {
               availableSubCategories={availableSubCategories}
             />
 
+            {showMonthPickRail && (
+              <StorefrontProductRail
+                key={`month-pick-${monthlyHighlight?.month ?? ""}`}
+                title="Flower of the Month"
+                note={monthlyHighlight?.note}
+                products={monthPickProducts}
+                formatter={currencyFormatter}
+                onOpen={navigateProduct}
+                monthPickIds={monthPickIds}
+              />
+            )}
+
             {featuredProducts.length > 0 && (
               <StorefrontProductRail
                 key={`featured-${categoryFilter}-${subCategoryFilter}-${arrangementFilter}-${collectionFilter}-${query}`}
@@ -682,6 +727,7 @@ export const StorefrontPage: FC = () => {
               products={visibleGridProducts}
               formatter={currencyFormatter}
               onOpen={navigateProduct}
+              monthPickIds={monthPickIds}
               hasMore={hasMoreGridProducts}
               onLoadMore={handleLoadMoreProducts}
             />
