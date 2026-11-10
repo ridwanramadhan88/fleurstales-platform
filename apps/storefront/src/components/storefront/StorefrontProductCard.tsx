@@ -3,7 +3,6 @@ import type { CatalogProduct } from '../../store/catalogStoreTypes'
 import { getDisplayPriceIdr, getPromoPercentLabel } from '../../domain/catalogDomain'
 import { getStorefrontProductThumbnail } from './storefrontProductImages'
 import { formatIdr } from '../../lib/currency'
-import { FlowerOfTheMonthSeal } from './FlowerOfTheMonthSeal'
 
 export interface StorefrontProductCardProps {
   product: CatalogProduct
@@ -13,7 +12,6 @@ export interface StorefrontProductCardProps {
   tabIndex?: number
   ariaHidden?: boolean
   /** Marks this month's hand-picked products. */
-  monthPick?: boolean
 }
 
 export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
@@ -23,7 +21,6 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
   presentation = 'default',
   tabIndex,
   ariaHidden,
-  monthPick = false,
 }) => {
   const displayPriceIdr = getDisplayPriceIdr(product)
   const hasVariants = product.variants.length > 1
@@ -81,8 +78,6 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
               {promoPercentLabel}
             </span>
           )}
-
-          {monthPick && <FlowerOfTheMonthSeal className="absolute right-1.5 top-1.5 z-[2] sm:right-2.5 sm:top-2.5" />}
         </div>
 
         <div

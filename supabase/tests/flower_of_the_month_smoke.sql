@@ -22,14 +22,19 @@ declare
   v_saved jsonb;
   v_list jsonb;
 begin
-  v_saved := public.save_catalog_monthly_highlight(v_month, array['fm-prod-b', 'fm-prod-a', 'fm-prod-b'], '  Pilihan bulan ini  ');
-  if v_saved->'productIds' <> '["fm-prod-b","fm-prod-a"]'::jsonb or v_saved->>'note' <> 'Pilihan bulan ini' then
+  v_saved := public.save_catalog_monthly_highlight(v_month, array['fm-prod-b', 'fm-prod-b'], '  Pilihan bulan ini  ');
+  if v_saved->'productIds' <> '["fm-prod-b"]'::jsonb or v_saved->>'note' <> 'Pilihan bulan ini' then
     raise exception 'Saved highlight is wrong: %', v_saved;
   end if;
   v_list := public.get_catalog_monthly_highlights();
   if jsonb_array_length(v_list) <> 2 or v_list->0->>'month' <> v_month or v_list->1->'productIds' <> '[]'::jsonb then
     raise exception 'Editor list is wrong: %', v_list;
   end if;
+  begin
+    perform public.save_catalog_monthly_highlight(v_month, array['fm-prod-a', 'fm-prod-b'], null);
+    raise exception 'More than one Flower of the Month was accepted';
+  exception when invalid_parameter_value then null;
+  end;
   begin
     perform public.save_catalog_monthly_highlight(v_month, array['fm-prod-off'], null);
     raise exception 'Inactive product was accepted';
@@ -53,7 +58,7 @@ do $public$
 declare
   v_public jsonb := public.get_flower_of_the_month();
 begin
-  if v_public->'productIds' <> '["fm-prod-a"]'::jsonb or v_public->>'note' <> 'Pilihan bulan ini' then
+  if v_public->'productIds' <> '[]'::jsonb or v_public->>'note' <> 'Pilihan bulan ini' then
     raise exception 'Public highlight is wrong: %', v_public;
   end if;
   begin

@@ -15,10 +15,6 @@ interface Props {
   products: CatalogProduct[]
   formatter: Intl.NumberFormat
   onOpen: (productId: string) => void
-  /** Products to badge as this month's picks. */
-  monthPickIds?: ReadonlySet<string>
-  /** One short line under the title. */
-  note?: string | null
 }
 
 interface GridProps extends Props {
@@ -36,8 +32,6 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
   products,
   formatter,
   onOpen,
-  monthPickIds,
-  note,
 }) => {
   const railRef = useRef<HTMLDivElement | null>(null)
   const introTimersRef = useRef<number[]>([])
@@ -220,7 +214,6 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
   return (
     <section aria-label={`${title} products`} className="space-y-3.5 lg:space-y-5">
       <h2 className={sectionTitleClass}>{title}</h2>
-      {note && <p className="sf-type-2 -mt-2 text-black/60">{note}</p>}
 
       <div className="featured-products-shell relative left-1/2 w-screen -translate-x-1/2">
         <div
@@ -240,19 +233,15 @@ export const StorefrontProductRail: FC<Props & { title: string }> = ({
               data-featured-index={productIndex}
               className="featured-product-item relative shrink-0 snap-start"
             >
-              {/* A month pick carries its own, louder mark instead of the Featured star. */}
-              {!monthPickIds?.has(product.id) && (
-                <span aria-hidden="true" className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[#7050a8] text-sm text-white shadow-sm">
-                  ★
-                </span>
-              )}
+              <span aria-hidden="true" className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[#7050a8] text-sm text-white shadow-sm">
+                ★
+              </span>
               <StorefrontProductCard
                 product={product}
                 formatter={formatter}
                 onOpenDetail={() => onOpen(product.id)}
                 tabIndex={shouldLoop && copyIndex !== 1 ? -1 : undefined}
                 ariaHidden={shouldLoop && copyIndex !== 1 ? true : undefined}
-                monthPick={monthPickIds?.has(product.id)}
               />
             </div>
           ))}
@@ -269,7 +258,6 @@ export const StorefrontProductGrid: FC<GridProps> = ({
   onOpen,
   hasMore = false,
   onLoadMore,
-  monthPickIds,
 }) => (
   <section
     aria-label={title ?? 'Products'}
@@ -299,7 +287,6 @@ export const StorefrontProductGrid: FC<GridProps> = ({
               formatter={formatter}
               onOpenDetail={() => onOpen(product.id)}
               presentation="collection"
-              monthPick={monthPickIds?.has(product.id)}
             />
           ))}
         </div>

@@ -33,6 +33,7 @@ import { toast } from "../hooks/use-toast";
 import { useScrollThresholdCartBar } from "../hooks/useScrollThresholdCartBar";
 import { useElementInViewport } from "../hooks/useElementInViewport";
 import { fetchFlowerOfTheMonth } from "../data/flowerOfTheMonth";
+import { FlowerOfTheMonthBanner } from "../components/storefront/FlowerOfTheMonthBanner";
 import { pickHighlightedProducts, type MonthlyHighlight } from "../domain/monthlyHighlightDomain";
 import { StorefrontHome } from "./StorefrontHome";
 import { StorefrontProductDetailPage } from "./StorefrontProductDetailPage";
@@ -195,10 +196,14 @@ export const StorefrontPage: FC = () => {
     () => (monthlyHighlight ? pickHighlightedProducts(storefrontProducts, monthlyHighlight.productIds) : []),
     [monthlyHighlight, storefrontProducts],
   );
-  const monthPickIds = useMemo(() => new Set(monthPickProducts.map((product) => product.id)), [monthPickProducts]);
-  // The rail belongs to the unfiltered shop; the badge stays on the cards everywhere.
-  const showMonthPickRail =
-    monthPickProducts.length > 0 &&
+  // There is a single Flower of the Month; the banner belongs to the unfiltered shop.
+  const monthPickProduct = monthPickProducts[0] ?? null
+  const monthPickIds = useMemo(
+    () => new Set(monthPickProduct ? [monthPickProduct.id] : []),
+    [monthPickProduct],
+  );
+  const showMonthPick =
+    monthPickProduct !== null &&
     categoryFilter === "all" &&
     subCategoryFilter === "all" &&
     arrangementFilter === "all" &&
@@ -206,19 +211,19 @@ export const StorefrontPage: FC = () => {
     query.trim() === "";
 
   const featuredProducts = useMemo(() => {
-    const candidates = showMonthPickRail
+    const candidates = showMonthPick
       ? filteredProducts.filter((product) => !monthPickIds.has(product.id))
       : filteredProducts;
     const markedFeatured = candidates.filter((product) => product.isFeatured);
     return (markedFeatured.length > 0 ? markedFeatured : candidates).slice(0, 6);
-  }, [filteredProducts, monthPickIds, showMonthPickRail]);
+  }, [filteredProducts, monthPickIds, showMonthPick]);
 
   const regularProducts = useMemo(() => {
     const featuredIds = new Set(featuredProducts.map((product) => product.id));
     return filteredProducts.filter(
-      (product) => !featuredIds.has(product.id) && !(showMonthPickRail && monthPickIds.has(product.id)),
+      (product) => !featuredIds.has(product.id) && !(showMonthPick && monthPickIds.has(product.id)),
     );
-  }, [filteredProducts, featuredProducts, monthPickIds, showMonthPickRail]);
+  }, [filteredProducts, featuredProducts, monthPickIds, showMonthPick]);
 
   const gridProducts = regularProducts.length > 0 ? regularProducts : filteredProducts;
   const visibleGridProducts = gridProducts.slice(0, visibleProductCount);
@@ -699,15 +704,13 @@ export const StorefrontPage: FC = () => {
               availableSubCategories={availableSubCategories}
             />
 
-            {showMonthPickRail && (
-              <StorefrontProductRail
-                key={`month-pick-${monthlyHighlight?.month ?? ""}`}
-                title="Flower of the Month"
+            {showMonthPick && monthPickProduct && (
+              <FlowerOfTheMonthBanner
+                key={`fotm-${monthlyHighlight?.month ?? ""}`}
+                product={monthPickProduct}
                 note={monthlyHighlight?.note}
-                products={monthPickProducts}
                 formatter={currencyFormatter}
                 onOpen={navigateProduct}
-                monthPickIds={monthPickIds}
               />
             )}
 
@@ -727,7 +730,6 @@ export const StorefrontPage: FC = () => {
               products={visibleGridProducts}
               formatter={currencyFormatter}
               onOpen={navigateProduct}
-              monthPickIds={monthPickIds}
               hasMore={hasMoreGridProducts}
               onLoadMore={handleLoadMoreProducts}
             />

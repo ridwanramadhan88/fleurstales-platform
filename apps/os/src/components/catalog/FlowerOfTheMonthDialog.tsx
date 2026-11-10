@@ -1,17 +1,17 @@
 /**
  * @file FlowerOfTheMonthDialog.tsx
- * @description Catalog editors pick up to six active products as the
+ * @description Catalog editors pick one active product as the
  * storefront's "Flower of the Month", for this month or next month.
  */
 
 import { useEffect, useMemo, useState, type FC } from 'react'
-import { ArrowDown, ArrowUp, Check, Search, X } from 'lucide-react'
+import { Check, Search, X } from 'lucide-react'
 import { useCatalogStore } from '../../store/catalogStore'
 import { useUiLanguage } from '../../i18n/uiLanguage'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { fetchMonthlyHighlights, saveMonthlyHighlight } from '../../data/monthlyHighlightSupabase'
 import {
-  formatHighlightMonth, MONTHLY_HIGHLIGHT_LIMIT, MONTHLY_HIGHLIGHT_NOTE_LIMIT, moveHighlightProduct,
+  formatHighlightMonth, MONTHLY_HIGHLIGHT_NOTE_LIMIT,
   pickHighlightedProducts, toggleHighlightProduct, type MonthlyHighlight,
 } from '../../domain/monthlyHighlightDomain'
 import { Button } from '../ui/button'
@@ -64,7 +64,6 @@ export const FlowerOfTheMonthDialog: FC<FlowerOfTheMonthDialogProps> = ({ open, 
     setMonths((rows) => rows.map((row, index) => (index === monthIndex ? { ...row, ...patch } : row)))
   }
 
-  const full = (current?.productIds.length ?? 0) >= MONTHLY_HIGHLIGHT_LIMIT
 
   const handleSave = async () => {
     if (!current || saving) return
@@ -88,8 +87,7 @@ export const FlowerOfTheMonthDialog: FC<FlowerOfTheMonthDialogProps> = ({ open, 
         <DialogHeader>
           <DialogTitle data-no-translate>Flower of the Month</DialogTitle>
           <DialogDescription>
-            {tr(`Pick up to ${MONTHLY_HIGHLIGHT_LIMIT} products to highlight at the top of the online shop. The list switches by itself when the month changes.`,
-              `Pilih maksimal ${MONTHLY_HIGHLIGHT_LIMIT} produk untuk disorot di bagian atas toko online. Daftar berganti sendiri saat bulan berganti.`)}
+            {tr('Pick the one product to feature as a banner at the top of the online shop. It switches by itself when the month changes.', 'Pilih satu produk untuk ditampilkan sebagai banner di atas toko online. Berganti sendiri saat bulan berganti.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,19 +108,16 @@ export const FlowerOfTheMonthDialog: FC<FlowerOfTheMonthDialogProps> = ({ open, 
 
             <div>
               <p className="text-xs font-semibold text-muted-foreground">
-                {tr('Chosen', 'Terpilih')} ({chosen.length}/{MONTHLY_HIGHLIGHT_LIMIT})
+                {tr('Chosen', 'Terpilih')}
               </p>
               {chosen.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">{tr('Nothing chosen yet. The shop shows no Flower of the Month for this month.', 'Belum ada yang dipilih. Toko tidak menampilkan Flower of the Month untuk bulan ini.')}</p>
               ) : (
                 <ol className="mt-2 space-y-2">
-                  {chosen.map((product, index) => (
+                  {chosen.map((product) => (
                     <li key={product.id} className="flex items-center gap-2 rounded-xl border border-border p-2">
-                      <span className="w-5 text-center text-xs font-semibold text-muted-foreground">{index + 1}</span>
                       {product.thumbnail ? <img src={product.thumbnail} alt="" className="size-10 shrink-0 rounded-lg object-cover" /> : <span className="size-10 shrink-0 rounded-lg bg-surface-panel" />}
                       <p className="min-w-0 flex-1 truncate text-sm font-medium">{product.name}</p>
-                      <button type="button" disabled={index === 0} onClick={() => patchCurrent({ productIds: moveHighlightProduct(current.productIds, product.id, -1) })} aria-label={`${tr('Move up', 'Naikkan')} ${product.name}`} className="flex size-11 items-center justify-center rounded-full border border-border disabled:opacity-40"><ArrowUp className="size-4" /></button>
-                      <button type="button" disabled={index === chosen.length - 1} onClick={() => patchCurrent({ productIds: moveHighlightProduct(current.productIds, product.id, 1) })} aria-label={`${tr('Move down', 'Turunkan')} ${product.name}`} className="flex size-11 items-center justify-center rounded-full border border-border disabled:opacity-40"><ArrowDown className="size-4" /></button>
                       <button type="button" onClick={() => patchCurrent({ productIds: toggleHighlightProduct(current.productIds, product.id) })} aria-label={`${tr('Remove', 'Hapus')} ${product.name}`} className="flex size-11 items-center justify-center rounded-full border border-border text-destructive"><X className="size-4" /></button>
                     </li>
                   ))}
@@ -149,7 +144,7 @@ export const FlowerOfTheMonthDialog: FC<FlowerOfTheMonthDialogProps> = ({ open, 
                   const selected = current.productIds.includes(product.id)
                   return (
                     <li key={product.id}>
-                      <button type="button" disabled={!selected && full} aria-pressed={selected} onClick={() => patchCurrent({ productIds: toggleHighlightProduct(current.productIds, product.id) })}
+                      <button type="button" aria-pressed={selected} onClick={() => patchCurrent({ productIds: toggleHighlightProduct(current.productIds, product.id) })}
                         className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left disabled:opacity-40 ${selected ? 'bg-primary/10' : 'hover:bg-accent'}`}>
                         {product.thumbnail ? <img src={product.thumbnail} alt="" loading="lazy" className="size-9 shrink-0 rounded-lg object-cover" /> : <span className="size-9 shrink-0 rounded-lg bg-surface-panel" />}
                         <span className="min-w-0 flex-1 truncate text-sm">{product.name}</span>
@@ -159,7 +154,6 @@ export const FlowerOfTheMonthDialog: FC<FlowerOfTheMonthDialogProps> = ({ open, 
                   )
                 })}
               </ul>
-              {full && <p className="mt-1 text-xs text-muted-foreground">{tr('The list is full. Remove one to add another.', 'Daftar sudah penuh. Hapus satu untuk menambah yang lain.')}</p>}
             </div>
 
             <div className="flex items-center justify-end gap-3">

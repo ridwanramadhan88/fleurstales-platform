@@ -1,17 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { formatHighlightMonth, MONTHLY_HIGHLIGHT_LIMIT, moveHighlightProduct, pickHighlightedProducts, toggleHighlightProduct } from './monthlyHighlightDomain'
+import { formatHighlightMonth, MONTHLY_HIGHLIGHT_LIMIT, pickHighlightedProducts, toggleHighlightProduct } from './monthlyHighlightDomain'
 
 describe('flower of the month', () => {
-  it('adds, removes and stops at the limit', () => {
-    expect(toggleHighlightProduct(['a'], 'b')).toEqual(['a', 'b'])
-    expect(toggleHighlightProduct(['a', 'b'], 'a')).toEqual(['b'])
-    const full = Array.from({ length: MONTHLY_HIGHLIGHT_LIMIT }, (_, index) => `p${index}`)
-    expect(toggleHighlightProduct(full, 'extra')).toEqual(full)
-  })
-
-  it('reorders within bounds', () => {
-    expect(moveHighlightProduct(['a', 'b', 'c'], 'c', -1)).toEqual(['a', 'c', 'b'])
-    expect(moveHighlightProduct(['a', 'b', 'c'], 'a', -1)).toEqual(['a', 'b', 'c'])
+  it('keeps a single pick: choosing replaces, choosing again clears', () => {
+    expect(MONTHLY_HIGHLIGHT_LIMIT).toBe(1)
+    expect(toggleHighlightProduct([], 'a')).toEqual(['a'])
+    expect(toggleHighlightProduct(['a'], 'b')).toEqual(['b'])
+    expect(toggleHighlightProduct(['a'], 'a')).toEqual([])
   })
 
   it('keeps the chosen order and skips products that are gone', () => {

@@ -1,12 +1,12 @@
 -- M3: "Flower of the Month" — a small, hand-picked monthly highlight for the
 -- storefront, separate from products.is_featured (which most products carry).
--- Catalog editors (Owner, Admin, Manager) choose up to 6 products per month.
+-- Catalog editors (Owner, Admin, Manager) choose one product per month.
 
 begin;
 
 create table if not exists public.catalog_monthly_highlights (
   highlight_month date primary key check (extract(day from highlight_month) = 1),
-  product_ids text[] not null check (cardinality(product_ids) between 1 and 6),
+  product_ids text[] not null check (cardinality(product_ids) = 1),
   note text check (note is null or char_length(note) <= 160),
   updated_by uuid,
   updated_at timestamptz not null default now()
@@ -110,7 +110,7 @@ begin
     group by picked.product_id
   ) chosen;
 
-  if cardinality(v_ids) > 6 then
+  if cardinality(v_ids) > 1 then
     raise exception 'HIGHLIGHT_TOO_MANY_PRODUCTS' using errcode = '22023';
   end if;
   if exists (
