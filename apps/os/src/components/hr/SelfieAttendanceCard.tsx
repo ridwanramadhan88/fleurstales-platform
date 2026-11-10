@@ -86,7 +86,7 @@ export const SelfieAttendanceCard: FC = () => {
     else if (todayRecord?.checkInAt && !checkOutWindow) setExpanded(false)
   }, [checkOutWindow, shouldForceExpanded, todayRecord?.checkInAt, todayRecord?.checkOutAt])
 
-  if (role !== 'admin' && role !== 'florist' && role !== 'courier') return null
+  if (role !== 'admin' && role !== 'florist' && role !== 'courier' && role !== 'manager') return null
 
   const openCamera = async (nextAction: AttendanceAction) => {
     stopStream(streamRef.current)

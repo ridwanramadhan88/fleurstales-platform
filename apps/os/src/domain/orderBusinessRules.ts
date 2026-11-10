@@ -34,6 +34,9 @@ export const canCreateOrderForBranch = ({
   if (actor.role === 'florist') {
     return { allowed: false, reason: 'Florists cannot create orders.' }
   }
+  if (actor.role === 'manager') {
+    return { allowed: false, reason: 'Managers can view orders but cannot create them.' }
+  }
 
   if (!canEditSection(actor.role, 'orders', permissions)) {
     return { allowed: false, reason: 'You do not have permission to create orders.' }

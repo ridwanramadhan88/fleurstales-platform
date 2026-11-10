@@ -45,7 +45,7 @@ export interface OrderAuthorizationResult {
  * scoped, so an intentional cross-branch assignment remains visible.
  */
 export const isOrderInActorRowScope = (order: OrderTableRow, actor: OrderActor): boolean => {
-  if (actor.role === 'owner' || actor.role === 'admin' || actor.role === 'finance' || actor.role === 'hr') {
+  if (actor.role === 'owner' || actor.role === 'admin' || actor.role === 'finance' || actor.role === 'hr' || actor.role === 'manager') {
     return true
   }
   if (actor.role === 'florist') {
@@ -138,6 +138,7 @@ export const authorizeOrderMutation = ({
   if (kind === 'status') {
     if (actor.role === 'florist') return { allowed: false, reason: 'Florists can view assigned work but cannot change order status.' }
     if (actor.role === 'courier') return { allowed: false, reason: 'Couriers use the delivery task buttons to change delivery status.' }
+    if (actor.role === 'manager') return { allowed: false, reason: 'Managers can view every order but cannot change order status.' }
     const canOperateStatus = actor.role === 'owner' || actor.role === 'admin'
     if (!canOperateStatus || !hasSectionEdit) return { allowed: false, reason: 'Only Owner or Admin can advance active order statuses.' }
     if (isOrderLocked(order)) return { allowed: false, reason: 'This finished order requires Finance review or an approved change request.' }

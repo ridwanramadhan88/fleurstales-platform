@@ -11,7 +11,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.110.8'
 // Responses carry the new HR revision so the OS adopts the server copy instead
 // of saving its own (which is how logins and HR records used to drift apart).
 
-type StaffRole = 'admin' | 'finance' | 'hr' | 'florist' | 'courier'
+type StaffRole = 'admin' | 'finance' | 'hr' | 'florist' | 'courier' | 'manager'
 type EmployeePatchKey = 'name' | 'phone' | 'hireDate' | 'systemRole' | 'username' | 'email' | 'status'
 type EmployeePatch = Partial<Record<EmployeePatchKey, string>>
 
@@ -107,7 +107,7 @@ const parseSecretKey = (): string => {
 }
 
 const isEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-const validRoles = new Set<StaffRole>(['admin', 'finance', 'hr', 'florist', 'courier'])
+const validRoles = new Set<StaffRole>(['admin', 'finance', 'hr', 'florist', 'courier', 'manager'])
 const usernamePattern = /^[a-z][a-z0-9._-]*$/
 const MIN_STAFF_PASSWORD_LENGTH = 6
 const isStrongPassword = (value: string): boolean => value.length >= MIN_STAFF_PASSWORD_LENGTH

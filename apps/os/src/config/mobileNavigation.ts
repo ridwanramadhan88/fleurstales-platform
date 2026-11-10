@@ -15,6 +15,7 @@ const ROLE_PRIMARY_PRIORITY: Record<UserRole, readonly MobileNavigationDestinati
   hr: ['dashboard', 'hr', 'orders', 'customers'],
   florist: ['dashboard', 'orders', 'catalog', 'customers'],
   courier: ['dashboard'],
+  manager: ['dashboard', 'orders', 'catalog', 'customers'],
 }
 
 export const MOBILE_DESTINATION_ORDER = NAVIGATION_DESTINATION_ORDER

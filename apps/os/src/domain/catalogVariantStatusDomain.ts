@@ -2,7 +2,7 @@ import type { CatalogProduct, CatalogVariantStatus } from '../store/catalogStore
 import type { UserRole } from '../store/userStore'
 export type CatalogVariantStatusResult = { ok: true } | { ok: false; reason: string }
 export const canSetCatalogVariantStatus = (params: { products: CatalogProduct[]; productId: string; variantId: string; status: CatalogVariantStatus; role: UserRole }): CatalogVariantStatusResult => {
-  if (params.role !== 'owner' && params.role !== 'admin') return { ok: false, reason: 'Catalog edit permission required.' }
+  if (params.role !== 'owner' && params.role !== 'admin' && params.role !== 'manager') return { ok: false, reason: 'Catalog edit permission required.' }
   const product = params.products.find((item) => item.id === params.productId)
   if (!product) return { ok: false, reason: 'Product not found.' }
   const variant = product.variants.find((item) => item.id === params.variantId)

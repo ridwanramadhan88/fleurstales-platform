@@ -1,6 +1,6 @@
 import { test, expect, signIn, signOut, expectNoAlert, visitAllSections, type StaffRole } from './fixtures'
 
-const roles: StaffRole[] = ['owner', 'admin', 'finance', 'hr', 'florist']
+const roles: StaffRole[] = ['owner', 'admin', 'finance', 'hr', 'florist', 'manager']
 
 for (const role of roles) {
   test(`${role}: every section opens without errors and without English copy`, async ({ page, problems }) => {
@@ -33,4 +33,13 @@ test('reloading a non-catalog role does not call admin-only catalog RPCs (403 re
   await expect(page.getByRole('navigation').first()).toContainText('Staf')
   // Give the post-sign-in hydration time to issue every request it is going to make.
   await page.waitForTimeout(3_000)
+})
+
+test('manager: sees every order, the catalog and customers, but not Finance, Staff or Settings', async ({ page, problems }) => {
+  void problems
+  await signIn(page, 'manager')
+  await expectNoAlert(page)
+  const nav = page.getByRole('navigation').first()
+  for (const label of ['Pesanan', 'Katalog', 'Pelanggan']) await expect(nav).toContainText(label)
+  for (const label of ['Keuangan', 'Staf', 'Pengaturan']) await expect(nav).not.toContainText(label)
 })

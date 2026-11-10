@@ -22,7 +22,9 @@ const getRoleLabel = (
             ? "Florist"
             : role === "courier"
               ? "Kurir"
-              : "Florist";
+              : role === "manager"
+                ? "Manajer"
+                : "Florist";
 
 const getInitials = (name: string) =>
   name

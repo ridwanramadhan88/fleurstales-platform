@@ -23,6 +23,8 @@ const getRoleLabel = (role: ReturnType<typeof useUserStore.getState>['role']) =>
             ? 'Florist'
             : role === 'courier'
               ? 'Kurir'
+            : role === 'manager'
+              ? 'Manajer'
               : 'Florist'
 
 const getInitials = (name: string) =>

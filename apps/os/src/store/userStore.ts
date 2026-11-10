@@ -2,7 +2,7 @@
 import { create } from 'zustand'
 import { emitUserUpdated } from '../core/events/eventService'
 
-export type UserRole = 'owner' | 'admin' | 'finance' | 'hr' | 'florist' | 'courier'
+export type UserRole = 'owner' | 'admin' | 'finance' | 'hr' | 'florist' | 'courier' | 'manager'
 
 export interface BranchOverrideRecord {
   scheduledBranchId?: string
@@ -32,7 +32,7 @@ interface UserState extends SessionAccount {
 }
 
 const ROLE_NAMES: Record<UserRole, string> = {
-  owner: 'Budi', admin: 'Sari', finance: 'Dewi', hr: 'Star', florist: 'Agus', courier: 'Rudi',
+  owner: 'Budi', admin: 'Sari', finance: 'Dewi', hr: 'Star', florist: 'Agus', courier: 'Rudi', manager: 'Maya',
 }
 
 export const useUserStore = create<UserState>((set) => ({

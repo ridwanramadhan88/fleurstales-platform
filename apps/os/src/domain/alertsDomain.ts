@@ -266,7 +266,7 @@ export const getSystemAlerts = (context: SystemAlertsContext): AlertItem[] => {
     return attendanceProblems
   }
 
-  if ((role === 'florist' || role === 'courier') && currentEmployeeId) {
+  if ((role === 'florist' || role === 'courier' || role === 'manager') && currentEmployeeId) {
     return schedulePublications
       .slice()
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))

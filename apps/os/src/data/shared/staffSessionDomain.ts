@@ -36,7 +36,7 @@ export type SharedDataCapability =
   | 'orders:read'
   | 'orders:write'
 
-const VALID_STAFF_ROLES = new Set<StaffRole>(['owner', 'admin', 'finance', 'hr', 'florist', 'courier'])
+const VALID_STAFF_ROLES = new Set<StaffRole>(['owner', 'admin', 'finance', 'hr', 'florist', 'courier', 'manager'])
 
 export const isStaffRole = (value: unknown): value is StaffRole =>
   typeof value === 'string' && VALID_STAFF_ROLES.has(value as StaffRole)
@@ -77,7 +77,7 @@ export const canSharedSession = (session: SharedSession, capability: SharedDataC
   if (session.kind !== 'staff' || !session.isActive) return false
 
   switch (capability) {
-    case 'catalog:write': return session.role === 'owner' || session.role === 'admin'
+    case 'catalog:write': return session.role === 'owner' || session.role === 'admin' || session.role === 'manager'
     case 'catalog:cost:read': return session.role === 'owner' || session.role === 'finance'
     case 'store:write': return session.role === 'owner'
     case 'customers:read': return session.role === 'owner' || session.role === 'admin' || session.role === 'finance'

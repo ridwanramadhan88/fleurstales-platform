@@ -37,7 +37,7 @@ export const ReviewPromoSettings: FC = () => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!open || (role !== 'owner' && role !== 'admin')) return
+    if (!open || (role !== 'owner' && role !== 'admin' && role !== 'manager')) return
     let active = true
     setLoading(true)
     setError(null)
@@ -49,7 +49,7 @@ export const ReviewPromoSettings: FC = () => {
     return () => { active = false }
   }, [open, role])
 
-  if (role !== 'owner' && role !== 'admin') return null
+  if (role !== 'owner' && role !== 'admin' && role !== 'manager') return null
 
   const updateQuestion = (id: string, value: string) => {
     setConfig((current) => current ? {

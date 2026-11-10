@@ -21,11 +21,11 @@ export type AppSection =
 export type AccessLevel = 'none' | 'view' | 'edit'
 
 export const SECTION_ALLOWED_ROLES: Record<AppSection, UserRole[]> = {
-  dashboard: ['owner','admin','finance','hr','florist','courier'],
-  orders: ['owner','admin','finance','hr'],
-  stock: ['owner','admin','finance'],
-  catalog: ['owner','admin','finance'],
-  customers: ['owner','admin','finance','hr','florist'],
+  dashboard: ['owner','admin','finance','hr','florist','courier','manager'],
+  orders: ['owner','admin','finance','hr','manager'],
+  stock: ['owner','admin','finance','manager'],
+  catalog: ['owner','admin','finance','manager'],
+  customers: ['owner','admin','finance','hr','florist','manager'],
   revenue: ['owner','finance'],
   finance: ['finance'],
   hr: ['owner','hr'],
@@ -103,6 +103,19 @@ export const DEFAULT_ROLE_SECTION_ACCESS: Record<UserRole, Record<AppSection, Ac
     stock: 'none',
     catalog: 'none',
     customers: 'none',
+    revenue: 'none',
+    finance: 'none',
+    hr: 'none',
+    scheduling: 'none',
+    settings: 'none',
+  },
+  // Operations manager: fixed access. Florist work + read every order + catalog.
+  manager: {
+    dashboard: 'view',
+    orders: 'view',
+    stock: 'edit',
+    catalog: 'edit',
+    customers: 'view',
     revenue: 'none',
     finance: 'none',
     hr: 'none',

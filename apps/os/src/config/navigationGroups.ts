@@ -98,6 +98,7 @@ export const getNavigationDestinationLabel = (
   if (id === 'dashboard') {
     if (role === 'florist') return 'My Work'
     if (role === 'courier') return 'Tugas antar'
+    if (role === 'manager') return 'Today'
     if (role === 'admin') return 'Today'
     return 'Overview'
   }

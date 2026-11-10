@@ -24,7 +24,8 @@ insert into e2e_staff values
   ('admin',   'e2e-admin',   'E2E Admin',   'e2e00000-0000-4000-8000-000000000002', 'e2e-emp-admin'),
   ('finance', 'e2e-finance', 'E2E Finance', 'e2e00000-0000-4000-8000-000000000003', 'e2e-emp-finance'),
   ('hr',      'e2e-hr',      'E2E HR',      'e2e00000-0000-4000-8000-000000000004', 'e2e-emp-hr'),
-  ('florist', 'e2e-florist', 'E2E Florist', 'e2e00000-0000-4000-8000-000000000005', 'e2e-emp-florist');
+  ('florist', 'e2e-florist', 'E2E Florist', 'e2e00000-0000-4000-8000-000000000005', 'e2e-emp-florist'),
+  ('manager', 'e2e-manager', 'E2E Manajer', 'e2e00000-0000-4000-8000-000000000006', 'e2e-emp-manager');
 
 insert into auth.users(
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,

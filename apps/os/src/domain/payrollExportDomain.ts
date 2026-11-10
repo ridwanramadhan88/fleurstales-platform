@@ -17,7 +17,7 @@ export const PAYROLL_STATUS_ID: Record<EmployeePayrollStatus, string> = {
 }
 
 const PAYEE_ID: Record<PayrollManualPayeeType, string> = { owner: 'Owner', part_time: 'Paruh waktu', contractor: 'Kontraktor / freelance', other: 'Lainnya' }
-const ROLE_ID: Record<string, string> = { owner: 'Owner', admin: 'Admin', florist: 'Florist', finance: 'Finance', hr: 'HR', courier: 'Kurir', driver: 'Kurir' }
+const ROLE_ID: Record<string, string> = { owner: 'Owner', admin: 'Admin', florist: 'Florist', finance: 'Finance', hr: 'HR', courier: 'Kurir', manager: 'Manajer', driver: 'Kurir' }
 const ADDITION_KINDS: PayrollAdditionKind[] = ['overtime', 'fee', 'allowance', 'bonus', 'meal_transport', 'deduction', 'adjustment']
 
 export interface PayrollExportInput {

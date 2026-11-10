@@ -88,7 +88,7 @@ export const DEFAULT_OWNER_SETTINGS: OwnerSettingsStateValue = {
       'Please complete payment within 1 hour and keep your receipt. Our team will verify your payment and confirm the order shortly after.',
   },
   staffRoles: {
-    roles: ['owner', 'admin', 'finance', 'hr', 'florist', 'courier'],
+    roles: ['owner', 'admin', 'finance', 'hr', 'florist', 'courier', 'manager'],
     defaultRole: 'florist',
     hrManagedRoles: {
       employees: ['admin', 'florist'],
