@@ -11,6 +11,7 @@ export interface StorefrontProductCardProps {
   presentation?: 'default' | 'collection'
   tabIndex?: number
   ariaHidden?: boolean
+  /** Marks this month's hand-picked products. */
 }
 
 export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({

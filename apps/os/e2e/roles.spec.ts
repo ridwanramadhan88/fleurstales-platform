@@ -50,3 +50,15 @@ test('manager: sees every order, the catalog and customers, but not Finance, Sta
   await expect(board).toContainText('E2E Florist')
   await expect(board).toContainText('E2E Admin')
 })
+
+test('manager: opens the Flower of the Month picker from the catalog', async ({ page, problems }) => {
+  void problems
+  await signIn(page, 'manager')
+  await page.getByRole('navigation').first().getByText('Katalog', { exact: true }).click()
+  await page.getByRole('button', { name: /catalog lainnya|katalog lainnya|More catalog actions/i }).click()
+  await page.getByRole('menuitem', { name: 'Flower of the Month' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('Flower of the Month')
+  await expect(dialog).toContainText('Terpilih')
+  await expectNoAlert(page)
+})
