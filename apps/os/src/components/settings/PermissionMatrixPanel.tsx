@@ -31,7 +31,7 @@ interface Props {
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
-  owner: 'Owner', admin: 'Admin', finance: 'Finance', hr: 'HR', florist: 'Florist', courier: 'Kurir',
+  owner: 'Owner', admin: 'Admin', finance: 'Finance', hr: 'HR', florist: 'Florist', courier: 'Kurir', manager: 'Manajer',
 }
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
@@ -41,7 +41,10 @@ const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   admin: 'Runs daily operations.',
   florist: 'Handles floral work and assigned operational duties.',
   courier: 'Delivers assigned orders. Access is fixed (Tugas antar only).',
+  manager: 'Operations manager. Access is fixed: florist work, all orders (read-only), catalog, and customer reviews.',
 }
+
+type EditableMatrixRole = Exclude<UserRole, 'courier' | 'manager'>
 
 type Sector = 'Store Management' | 'Sales & Finance' | 'Operations' | 'People & HR'
 type WorkspaceDefinition = {
@@ -176,9 +179,9 @@ export const PermissionMatrixPanel: FC<Props> = ({
   isEditing,
   validationErrors,
 }) => {
-  // Courier access is fixed (Tugas antar only), so it is not part of the editable matrix.
-  const roles = allRoles.filter((item): item is Exclude<UserRole, 'courier'> => item !== 'courier')
-  const [selectedRole, setSelectedRole] = useState<Exclude<UserRole, 'courier'>>(roles[0] ?? 'owner')
+  // Courier and Manager access is fixed, so they are not part of the editable matrix.
+  const roles = allRoles.filter((item): item is EditableMatrixRole => item !== 'courier' && item !== 'manager')
+  const [selectedRole, setSelectedRole] = useState<EditableMatrixRole>(roles[0] ?? 'owner')
   const [activeSector, setActiveSector] = useState<Sector | 'summary'>('Store Management')
   const [showAdvanced, setShowAdvanced] = useState(false)
 
@@ -381,7 +384,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
             <label className="space-y-1.5">
               <span className="text-xs font-semibold">Configure role</span>
               <div className="relative">
-                <select value={role} onChange={(event) => setSelectedRole(event.target.value as Exclude<UserRole, 'courier'>)} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20">
+                <select value={role} onChange={(event) => setSelectedRole(event.target.value as EditableMatrixRole)} className="h-10 w-full rounded-full border border-border bg-background px-3 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20">
                   {roles.map((item) => <option key={item} value={item}>{ROLE_LABELS[item]}</option>)}
                 </select>
               </div>

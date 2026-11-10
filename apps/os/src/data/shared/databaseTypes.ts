@@ -15,7 +15,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type StaffRole = 'owner' | 'admin' | 'finance' | 'hr' | 'florist' | 'courier'
+export type StaffRole = 'owner' | 'admin' | 'finance' | 'hr' | 'florist' | 'courier' | 'manager'
 export type CatalogMaterial = 'fresh' | 'artificial'
 export type CatalogVariantStatus = 'active' | 'inactive'
 export type PricingType = 'Fixed' | 'Starts From'

@@ -31,6 +31,10 @@ const ROLE_COPY: Record<UserRole, { title: string; description: string }> = {
     title: 'Tugas antar',
     description: 'Pesanan yang harus Anda antar hari ini.',
   },
+  manager: {
+    title: 'Operasional hari ini',
+    description: 'Pekerjaan Anda dan semua pesanan hari ini.',
+  },
 }
 
 export interface DashboardHeaderProps {

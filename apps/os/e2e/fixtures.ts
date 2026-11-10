@@ -1,6 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test'
 
-export type StaffRole = 'owner' | 'admin' | 'finance' | 'hr' | 'florist'
+export type StaffRole = 'owner' | 'admin' | 'finance' | 'hr' | 'florist' | 'manager'
 
 const password = process.env.E2E_STAFF_PASSWORD
 if (!password) throw new Error('E2E_STAFF_PASSWORD is required (the throwaway password used by e2e/seed.sql).')

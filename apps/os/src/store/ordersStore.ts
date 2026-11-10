@@ -378,7 +378,7 @@ export const useOrdersStore = create<OrdersStoreState>()(
           const matchedEmployee = useHrStore.getState().employees.find(
             (employee) =>
               employee.status === 'active' &&
-              employee.systemRole === 'florist' &&
+              (employee.systemRole === 'florist' || employee.systemRole === 'manager') &&
               employee.name.trim().toLowerCase() ===
                 (patch.florist ?? '').trim().toLowerCase(),
           )

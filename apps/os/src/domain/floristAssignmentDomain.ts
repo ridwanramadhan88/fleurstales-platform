@@ -78,7 +78,7 @@ export const getFloristAssignmentOptionsForOrder = (params: {
   const assignmentMinute = moment.time ? toMinutes(moment.time) : null
 
   return params.employees
-    .filter((employee) => employee.status === 'active' && employee.systemRole === 'florist')
+    .filter((employee) => employee.status === 'active' && (employee.systemRole === 'florist' || employee.systemRole === 'manager'))
     .map((employee): FloristAssignmentOption => {
       const effective = getEffectiveScheduleForDate({
         employee,

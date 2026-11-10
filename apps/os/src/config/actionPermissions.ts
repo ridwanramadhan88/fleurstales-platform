@@ -110,11 +110,12 @@ export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
   hr: withEnabled('orders.read_all','hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
   courier: withEnabled(),
+  manager: withEnabled('orders.read_all','orders.read_assigned'),
 }
 
 export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
-  'orders.read_all': ['owner','admin','finance','hr'],
-  'orders.read_assigned': ['owner','florist'],
+  'orders.read_all': ['owner','admin','finance','hr','manager'],
+  'orders.read_assigned': ['owner','florist','manager'],
   'orders.create': ['owner','admin'],
   'orders.edit': ['owner','admin'],
   'orders.assign': ['owner','admin'],

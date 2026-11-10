@@ -16,6 +16,7 @@ const ROLE_ALERT_KINDS: Record<UserRole, readonly AlertKind[]> = {
   hr: ['hr_attendance_problem', 'payroll_rejected', 'payroll_approved', 'payroll_paid', 'authorization_changed'],
   florist: ['schedule_published', 'order_assigned', 'authorization_changed'],
   courier: ['delivery_assigned', 'schedule_published', 'authorization_changed'],
+  manager: ['schedule_published', 'order_assigned', 'authorization_changed'],
 }
 
 const isNotificationRelevantToRole = (

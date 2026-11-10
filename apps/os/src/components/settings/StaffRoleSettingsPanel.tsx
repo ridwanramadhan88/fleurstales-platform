@@ -29,10 +29,10 @@ interface Props {
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
-  owner: 'Owner', admin: 'Admin', finance: 'Finance', hr: 'HR', florist: 'Florist', courier: 'Kurir',
+  owner: 'Owner', admin: 'Admin', finance: 'Finance', hr: 'HR', florist: 'Florist', courier: 'Kurir', manager: 'Manajer',
 }
-const ASSIGNABLE_ROLES: UserRole[] = ['admin', 'finance', 'hr', 'florist', 'courier']
-const HR_SCOPE_ROLES: UserRole[] = ['admin', 'finance', 'hr', 'florist', 'courier']
+const ASSIGNABLE_ROLES: UserRole[] = ['admin', 'finance', 'hr', 'florist', 'courier', 'manager']
+const HR_SCOPE_ROLES: UserRole[] = ['admin', 'finance', 'hr', 'florist', 'courier', 'manager']
 const HR_AREAS = ['employees', 'attendance', 'scheduling', 'points', 'payroll'] as const
 const DEFAULT_HR_MANAGED_ROLES: UserRole[] = ['admin', 'florist']
 const FIELD_CLASS = 'h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/30 dark:focus:ring-primary/40'

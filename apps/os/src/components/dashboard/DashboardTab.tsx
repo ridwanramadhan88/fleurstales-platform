@@ -86,6 +86,13 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         </>
       )}
 
+      {userRole === 'manager' && (
+        <>
+          <MyDayStrip />
+          <FloristAssignedOrders onGoToOrders={onGoToOrders} />
+        </>
+      )}
+
       {userRole === 'courier' && (
         <>
           <MyDayStrip />

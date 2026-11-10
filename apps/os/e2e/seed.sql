@@ -24,7 +24,8 @@ insert into e2e_staff values
   ('admin',   'e2e-admin',   'E2E Admin',   'e2e00000-0000-4000-8000-000000000002', 'e2e-emp-admin'),
   ('finance', 'e2e-finance', 'E2E Finance', 'e2e00000-0000-4000-8000-000000000003', 'e2e-emp-finance'),
   ('hr',      'e2e-hr',      'E2E HR',      'e2e00000-0000-4000-8000-000000000004', 'e2e-emp-hr'),
-  ('florist', 'e2e-florist', 'E2E Florist', 'e2e00000-0000-4000-8000-000000000005', 'e2e-emp-florist');
+  ('florist', 'e2e-florist', 'E2E Florist', 'e2e00000-0000-4000-8000-000000000005', 'e2e-emp-florist'),
+  ('manager', 'e2e-manager', 'E2E Manajer', 'e2e00000-0000-4000-8000-000000000006', 'e2e-emp-manager');
 
 insert into auth.users(
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -63,7 +64,8 @@ select 'hr', 1, jsonb_build_object(
       'hireDate', '2026-01-01',
       'email', s.username || '@fleurstales.test',
       'username', s.username
-    ) order by s.username)
+      -- The manager has no role salary default, so payroll needs an individual salary.
+    ) || case when s.role = 'manager' then jsonb_build_object('baseSalaryIdr', 5000000) else '{}'::jsonb end order by s.username)
     from e2e_staff s
   ) || jsonb_build_array(jsonb_build_object(
     -- An employee without a login (older "profile only" records exist in production).

@@ -40,7 +40,8 @@ describe('Catalog Orders Cart Audit permission integration', () => {
   })
 
   it('keeps Catalog hard role eligibility aligned with the server role family', () => {
-    expect(SECTION_ALLOWED_ROLES.catalog).toEqual(['owner', 'admin', 'finance'])
+    expect(SECTION_ALLOWED_ROLES.catalog).toEqual(['owner', 'admin', 'finance', 'manager'])
+    expect(DEFAULT_ROLE_SECTION_ACCESS.manager.catalog).toBe('edit')
     expect(DEFAULT_ROLE_SECTION_ACCESS.owner.catalog).toBe('edit')
     expect(DEFAULT_ROLE_SECTION_ACCESS.admin.catalog).toBe('edit')
     expect(DEFAULT_ROLE_SECTION_ACCESS.finance.catalog).toBe('view')
@@ -53,8 +54,8 @@ describe('Catalog Orders Cart Audit permission integration', () => {
   })
 
   it('keeps Orders role-family capabilities aligned with the authoritative registry contract', () => {
-    expect(CAPABILITY_ALLOWED_ROLES['orders.read_all']).toEqual(['owner', 'admin', 'finance', 'hr'])
-    expect(CAPABILITY_ALLOWED_ROLES['orders.read_assigned']).toEqual(['owner', 'florist'])
+    expect(CAPABILITY_ALLOWED_ROLES['orders.read_all']).toEqual(['owner', 'admin', 'finance', 'hr', 'manager'])
+    expect(CAPABILITY_ALLOWED_ROLES['orders.read_assigned']).toEqual(['owner', 'florist', 'manager'])
     expect(CAPABILITY_ALLOWED_ROLES['orders.create']).toEqual(['owner', 'admin'])
     expect(CAPABILITY_ALLOWED_ROLES['orders.edit']).toEqual(['owner', 'admin'])
     expect(CAPABILITY_ALLOWED_ROLES['orders.resolve_change_request']).toEqual(['owner', 'finance'])
