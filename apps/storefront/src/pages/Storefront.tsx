@@ -707,7 +707,6 @@ export const StorefrontPage: FC = () => {
                 products={monthPickProducts}
                 formatter={currencyFormatter}
                 onOpen={navigateProduct}
-                monthPickIds={monthPickIds}
               />
             )}
 
