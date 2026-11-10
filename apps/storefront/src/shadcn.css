@@ -1482,6 +1482,26 @@ input:-webkit-autofill:active {
   text-align: center;
 }
 
+.sf-month-seal {
+  display: block;
+  width: 5.25rem;
+  height: 5.25rem;
+  transform: rotate(10deg);
+}
+
+.sf-month-seal__shadow { fill: rgb(0 0 0 / 0.2); }
+.sf-month-seal__body { fill: #ffc21a; }
+.sf-month-seal__ring { fill: none; stroke: #000; stroke-width: 1.25; opacity: 0.85; }
+.sf-month-seal__word { font-size: 17px; font-weight: 800; letter-spacing: 0.01em; fill: #000; }
+.sf-month-seal__small { font-size: 8px; font-weight: 800; letter-spacing: 0.2em; fill: #000; }
+
+@media (min-width: 1024px) {
+  .sf-month-seal {
+    width: 6.5rem;
+    height: 6.5rem;
+  }
+}
+
 .sf-card-price {
   font-size: var(--sf-type-2);
   font-weight: 500;

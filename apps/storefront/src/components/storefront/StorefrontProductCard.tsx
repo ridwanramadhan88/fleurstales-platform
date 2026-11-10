@@ -3,6 +3,7 @@ import type { CatalogProduct } from '../../store/catalogStoreTypes'
 import { getDisplayPriceIdr, getPromoPercentLabel } from '../../domain/catalogDomain'
 import { getStorefrontProductThumbnail } from './storefrontProductImages'
 import { formatIdr } from '../../lib/currency'
+import { FlowerOfTheMonthSeal } from './FlowerOfTheMonthSeal'
 
 export interface StorefrontProductCardProps {
   product: CatalogProduct
@@ -81,11 +82,7 @@ export const StorefrontProductCard: FC<StorefrontProductCardProps> = ({
             </span>
           )}
 
-          {monthPick && (
-            <span data-no-translate className="sf-promo-badge absolute bottom-3 left-3 z-[1] max-w-[85%] bg-black text-white sm:bottom-4 sm:left-4">
-              Flower of the Month
-            </span>
-          )}
+          {monthPick && <FlowerOfTheMonthSeal className="absolute right-1.5 top-1.5 z-[2] sm:right-2.5 sm:top-2.5" />}
         </div>
 
         <div
