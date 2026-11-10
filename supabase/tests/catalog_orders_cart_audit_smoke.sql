@@ -112,8 +112,8 @@ begin
   if not exists (
     select 1 from private.action_capability_registry
     where capability='orders.read_assigned'
-      and allowed_roles @> array['owner','florist']::text[]
-      and cardinality(allowed_roles)=2
+      and allowed_roles @> array['owner','florist','manager']::text[]
+      and cardinality(allowed_roles)=3
   ) then
     raise exception 'Assigned-work role eligibility drifted';
   end if;
