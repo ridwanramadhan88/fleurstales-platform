@@ -55,7 +55,7 @@ test('manager: opens the Flower of the Month picker from the catalog', async ({ 
   void problems
   await signIn(page, 'manager')
   await page.getByRole('navigation').first().getByText('Katalog', { exact: true }).click()
-  await page.getByRole('button', { name: /More catalog actions|lainnya/i }).click()
+  await page.getByRole('button', { name: /catalog lainnya|katalog lainnya|More catalog actions/i }).click()
   await page.getByRole('menuitem', { name: 'Flower of the Month' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('Flower of the Month')
