@@ -42,6 +42,24 @@ describe('SelfieAttendanceCard', () => {
     expect(useHrStore.getState().attendance[0].source).toBe('selfie')
     expect(useHrStore.getState().attendance[0].checkInAt).toBeTruthy()
   })
+  it('explains a blocked camera and points to the phone camera instead', async () => {
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: () => Promise.reject(Object.assign(new Error('blocked'), { name: 'NotAllowedError' })) } })
+    render(<SelfieAttendanceCard />)
+    fireEvent.click(screen.getByRole('button', { name: 'Verify location' }))
+    expect(await screen.findByText('Location verified')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Open camera' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Akses kamera untuk situs ini diblokir')
+    expect(screen.getByText('Pakai kamera HP')).toBeInTheDocument()
+    expect(screen.getByLabelText('Upload check-in selfie photo')).toBeEnabled()
+  })
+
+  it('says the phone could not find the location instead of blaming permissions', async () => {
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (_success: PositionCallback, failure: PositionErrorCallback) => failure({ code: 3 } as GeolocationPositionError) } })
+    render(<SelfieAttendanceCard />)
+    fireEvent.click(screen.getByRole('button', { name: 'Verify location' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('HP terlalu lama mencari lokasi')
+  })
+
   it('does not unlock the selfie step when the employee is outside the branch radius', async () => {
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition: (success: PositionCallback) => success({ coords: { latitude:-6.2, longitude:106.8, accuracy:10 } } as GeolocationPosition) } })
     render(<SelfieAttendanceCard />)

@@ -15,6 +15,15 @@ import { surfaceCardClass } from '../ui/card'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
 import { formatHumanDate } from '../../lib/humanDates'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
+import { cameraFailureCopy, classifyLocationError, locationFailureCopy, openSelfieCameraStream, type CameraFailureKind, type LocationFailureKind } from '../../domain/selfieCameraDomain'
+
+/** How long the live preview may stay black before we send the person to the phone camera. */
+const CAMERA_PREVIEW_TIMEOUT_MS = 6000
+
+class LocationFailure extends Error {
+  kind: LocationFailureKind
+  constructor(kind: LocationFailureKind) { super(kind); this.kind = kind }
+}
 
 const stopStream = (stream: MediaStream | null) => stream?.getTracks().forEach((track) => track.stop())
 const formatTime = (iso?: string) => iso ? new Date(iso).toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit' }) : '—'
@@ -53,6 +62,7 @@ export const SelfieAttendanceCard: FC = () => {
   const [locationStatus, setLocationStatus] = useState<string | null>(null)
   const [verifiedLocation, setVerifiedLocation] = useState<GeoPoint | null>(null)
   const [verifiedAction, setVerifiedAction] = useState<AttendanceAction | null>(null)
+  const [cameraFailed, setCameraFailed] = useState(false)
   const [locationFailures, setLocationFailures] = useState<Record<AttendanceAction, number>>({ 'check-in': 0, 'check-out': 0 })
 
   const employee = useMemo(
@@ -81,6 +91,38 @@ export const SelfieAttendanceCard: FC = () => {
     return () => { window.clearInterval(timer); stopStream(streamRef.current) }
   }, [])
 
+  // Attach the stream only once React has mounted the <video>. Doing it from the
+  // click handler raced the render and left some phones with a black box.
+  useEffect(() => {
+    if (!cameraOpen) return
+    const video = videoRef.current
+    const stream = streamRef.current
+    if (!video || !stream) return
+    let settled = false
+    const fail = (kind: CameraFailureKind) => {
+      if (settled) return
+      settled = true
+      stopStream(streamRef.current)
+      streamRef.current = null
+      setCameraOpen(false)
+      setCameraFailed(true)
+      const copy = cameraFailureCopy(kind)
+      setError(tr(copy.en, copy.id))
+    }
+    video.srcObject = stream
+    void video.play().catch(() => { /* the watchdog below decides whether a picture arrived */ })
+    const watchdog = window.setTimeout(() => { if (video.videoWidth === 0) fail('no_preview') }, CAMERA_PREVIEW_TIMEOUT_MS)
+    const track = stream.getVideoTracks?.()[0]
+    const onEnded = () => fail('busy')
+    track?.addEventListener('ended', onEnded)
+    return () => {
+      settled = true
+      window.clearTimeout(watchdog)
+      track?.removeEventListener('ended', onEnded)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraOpen])
+
   useEffect(() => {
     if (shouldForceExpanded) setExpanded(true)
     else if (todayRecord?.checkInAt && !checkOutWindow) setExpanded(false)
@@ -96,23 +138,16 @@ export const SelfieAttendanceCard: FC = () => {
     setAction(nextAction)
     setError(null)
     setSuccess(null)
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError('Camera access is unavailable. Use the photo upload option below.')
+    setCameraFailed(false)
+    const result = await openSelfieCameraStream(navigator.mediaDevices)
+    if (!result.ok) {
+      const copy = cameraFailureCopy(result.kind)
+      setCameraFailed(true)
+      setError(tr(copy.en, copy.id))
       return
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', aspectRatio: 1 }, audio: false })
-      streamRef.current = stream
-      setCameraOpen(true)
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          void videoRef.current.play()
-        }
-      })
-    } catch {
-      setError('Camera permission was denied. Allow camera access or upload a selfie photo.')
-    }
+    streamRef.current = result.stream
+    setCameraOpen(true)
   }
 
   const compressSource = async (source: string | File) => {
@@ -134,7 +169,7 @@ export const SelfieAttendanceCard: FC = () => {
     const video = videoRef.current
     const canvas = canvasRef.current
     if (!video || !canvas || video.videoWidth === 0 || video.videoHeight === 0) {
-      setError('Camera is not ready yet. Try again in a moment.')
+      setError(tr('The camera is not ready yet. Wait a moment and try again.', 'Kamera belum siap. Tunggu sebentar lalu coba lagi.'))
       return
     }
     canvas.width = video.videoWidth
@@ -142,7 +177,8 @@ export const SelfieAttendanceCard: FC = () => {
     const context = canvas.getContext('2d')
     // Saved photo = what the person saw in the (mirrored) live preview.
     if (context) drawMirroredVideoFrame(context, video, canvas.width)
-    const raw = canvas.toDataURL('image/png')
+    // JPEG keeps the full-resolution frame small enough for low-memory phones.
+    const raw = canvas.toDataURL('image/jpeg', 0.92)
     stopStream(streamRef.current)
     streamRef.current = null
     setCameraOpen(false)
@@ -160,17 +196,31 @@ export const SelfieAttendanceCard: FC = () => {
     stopStream(streamRef.current)
     streamRef.current = null
     setCameraOpen(false)
+    setCameraFailed(false)
     await compressSource(file)
   }
 
-  const getCurrentLocation = (): Promise<GeoPoint> => new Promise((resolve, reject) => {
-    if (!navigator.geolocation) { reject(new Error('Location services are unavailable on this device.')); return }
+  const readLocation = (options: PositionOptions): Promise<GeoPoint> => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new LocationFailure('unsupported')); return }
     navigator.geolocation.getCurrentPosition(
       (position) => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracyMeters: position.coords.accuracy }),
-      () => reject(new Error('Location permission is required. Allow precise location and try again.')),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      (failure) => reject(new LocationFailure(classifyLocationError(failure?.code))),
+      options,
     )
   })
+
+  // A cold GPS start indoors often needs more than one try. Retry once with a
+  // longer wait before telling the person it failed; a blocked permission is final.
+  const getCurrentLocation = async (): Promise<GeoPoint> => {
+    try {
+      return await readLocation({ enableHighAccuracy: true, timeout: 15000, maximumAge: 0 })
+    } catch (failure) {
+      if (failure instanceof LocationFailure && (failure.kind === 'timeout' || failure.kind === 'unavailable')) {
+        return readLocation({ enableHighAccuracy: true, timeout: 25000, maximumAge: 30000 })
+      }
+      throw failure
+    }
+  }
 
   const verifyLocation = async (captureAction: AttendanceAction) => {
     if (!employee) {
@@ -205,7 +255,8 @@ export const SelfieAttendanceCard: FC = () => {
       setLocationStatus(`Location verified · ${nearest.distanceMeters} m from ${nearest.branch.name} · limit ${attendanceSettings.locationRadiusMeters} m${mismatch ? ` · branch difference will be sent to HR review` : ''}`)
     } catch (caught) {
       setLocationFailures((previous) => ({ ...previous, [captureAction]: previous[captureAction] + 1 }))
-      setError(caught instanceof Error ? caught.message : 'Location could not be verified.')
+      const copy = locationFailureCopy(caught instanceof LocationFailure ? caught.kind : 'unavailable')
+      setError(tr(copy.en, copy.id))
       setLocationStatus(null)
     } finally {
       setProcessing(false)
@@ -296,7 +347,7 @@ export const SelfieAttendanceCard: FC = () => {
             <p className="text-sm font-semibold leading-5">2. Take selfie</p>
             {cameraOpen && action === captureAction && (
               <div className="mx-auto aspect-square max-w-sm overflow-hidden rounded-xl bg-black">
-                <video ref={videoRef} playsInline muted className="h-full w-full -scale-x-100 object-cover" />
+                <video ref={videoRef} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover" />
               </div>
             )}
             {photo && !cameraOpen && action === captureAction && (
@@ -313,8 +364,8 @@ export const SelfieAttendanceCard: FC = () => {
                 </button>
               )}
               {cameraOpen && action === captureAction && <button type="button" onClick={capturePhoto} disabled={processing} className="rounded-full bg-primary text-sm font-medium text-white rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Capture selfie</button>}
-              <label className="cursor-pointer rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-accent">
-                {processing ? 'Compressing…' : 'Upload photo'}
+              <label className={`flex h-11 cursor-pointer items-center rounded-full px-[18px] text-sm font-medium ${cameraFailed ? 'bg-primary text-white' : 'border border-border hover:bg-accent'}`}>
+                {processing ? tr('Processing…', 'Memproses…') : tr('Use phone camera', 'Pakai kamera HP')}
                 <input aria-label={`Upload ${captureAction} selfie photo`} type="file" accept="image/*" capture="user" onChange={(event) => { setAction(captureAction); void handleUpload(event) }} disabled={processing} className="sr-only" />
               </label>
               {photo && action === captureAction && <button type="button" onClick={submit} disabled={processing || (captureAction === 'check-out' && checkOutAfterShift && !checkOutReason)} className="rounded-full bg-foreground text-sm font-medium text-background rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap">Submit {captureAction}</button>}
