@@ -25,23 +25,6 @@ alter table private.role_action_permissions drop constraint if exists role_actio
 alter table private.role_action_permissions add constraint role_action_permissions_role_check
   check (role in ('owner','admin','finance','hr','florist','courier','manager'));
 
-insert into private.role_section_permissions(role, section, access_level) values
-  ('manager','dashboard','view'),('manager','orders','view'),('manager','stock','edit'),
-  ('manager','catalog','edit'),('manager','customers','view'),('manager','revenue','none'),
-  ('manager','finance','none'),('manager','hr','none'),('manager','scheduling','none'),
-  ('manager','settings','none')
-on conflict (role, section) do update set access_level = excluded.access_level, updated_at = now();
-
-update private.action_capability_registry
-set allowed_roles = array_append(allowed_roles, 'manager')
-where capability in ('orders.read_all','orders.read_assigned')
-  and not ('manager' = any(allowed_roles));
-
-insert into private.role_action_permissions(role, capability, enabled)
-select 'manager', capability, capability in ('orders.read_all','orders.read_assigned')
-from private.action_capability_registry
-on conflict (role, capability) do update set enabled = excluded.enabled, updated_at = now();
-
 -- Make the role available in Settings > Staff roles and let HR manage the
 -- manager like any other employee (attendance, schedule, points, payroll).
 update private.internal_settings_state
@@ -175,5 +158,38 @@ begin
   end loop;
 end
 $migration$;
+
+-- ---------------------------------------------------------------------------
+-- Fixed access rows. These come AFTER the patches above: the
+-- guard_role_section_domain trigger clamps a row to 'none' unless
+-- private.section_role_eligible already knows the role.
+-- ---------------------------------------------------------------------------
+insert into private.role_section_permissions(role, section, access_level) values
+  ('manager','dashboard','view'),('manager','orders','view'),('manager','stock','edit'),
+  ('manager','catalog','edit'),('manager','customers','view'),('manager','revenue','none'),
+  ('manager','finance','none'),('manager','hr','none'),('manager','scheduling','none'),
+  ('manager','settings','none')
+on conflict (role, section) do update set access_level = excluded.access_level, updated_at = now();
+
+update private.action_capability_registry
+set allowed_roles = array_append(allowed_roles, 'manager')
+where capability in ('orders.read_all','orders.read_assigned')
+  and not ('manager' = any(allowed_roles));
+
+insert into private.role_action_permissions(role, capability, enabled)
+select 'manager', capability, capability in ('orders.read_all','orders.read_assigned')
+from private.action_capability_registry
+on conflict (role, capability) do update set enabled = excluded.enabled, updated_at = now();
+
+do $verify$
+begin
+  if not private.has_section_access_for_role('manager', 'catalog', 'edit')
+     or not private.has_section_access_for_role('manager', 'orders', 'view')
+     or not private.has_action_permission_for_role('manager', 'orders.read_all')
+     or not private.has_action_permission_for_role('manager', 'orders.read_assigned') then
+    raise exception 'Manager access rows were not stored as intended';
+  end if;
+end
+$verify$;
 
 commit;

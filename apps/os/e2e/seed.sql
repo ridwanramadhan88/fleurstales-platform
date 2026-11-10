@@ -64,7 +64,8 @@ select 'hr', 1, jsonb_build_object(
       'hireDate', '2026-01-01',
       'email', s.username || '@fleurstales.test',
       'username', s.username
-    ) order by s.username)
+      -- The manager has no role salary default, so payroll needs an individual salary.
+    ) || case when s.role = 'manager' then jsonb_build_object('baseSalaryIdr', 5000000) else '{}'::jsonb end order by s.username)
     from e2e_staff s
   ) || jsonb_build_array(jsonb_build_object(
     -- An employee without a login (older "profile only" records exist in production).
