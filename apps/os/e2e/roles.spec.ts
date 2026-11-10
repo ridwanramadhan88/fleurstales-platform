@@ -42,4 +42,11 @@ test('manager: sees every order, the catalog and customers, but not Finance, Sta
   const nav = page.getByRole('navigation').first()
   for (const label of ['Pesanan', 'Katalog', 'Pelanggan']) await expect(nav).toContainText(label)
   for (const label of ['Keuangan', 'Staf', 'Pengaturan']) await expect(nav).not.toContainText(label)
+
+  // M2: the daily attendance photo board lists every scheduled-or-not staff member.
+  const board = page.getByTestId('attendance-photo-board')
+  await expect(board).toBeVisible()
+  await board.getByRole('button').first().click()
+  await expect(board).toContainText('E2E Florist')
+  await expect(board).toContainText('E2E Admin')
 })
