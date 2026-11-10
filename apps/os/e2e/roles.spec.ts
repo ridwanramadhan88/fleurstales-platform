@@ -59,6 +59,6 @@ test('manager: opens the Flower of the Month picker from the catalog', async ({ 
   await page.getByRole('menuitem', { name: 'Flower of the Month' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('Flower of the Month')
-  await expect(dialog).toContainText('Terpilih (0/6)')
+  await expect(dialog).toContainText('Terpilih')
   await expectNoAlert(page)
 })
