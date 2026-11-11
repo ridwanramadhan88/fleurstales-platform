@@ -99,7 +99,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: command -v psql >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y postgresql-client)
       - name: Replay all migrations and smoke tests on disposable Supabase
         run: ./scripts/run-local-supabase-database-gate.sh
 
@@ -117,10 +117,12 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: command -v psql >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y postgresql-client)
       - run: npm ci
       - name: Install Chromium for Playwright
-        run: npx playwright install --with-deps chromium
+        run: |
+          npx playwright install chromium
+          npx playwright install-deps chromium || echo "install-deps failed (apt mirror unreachable?); using the system libraries already on the runner"
         working-directory: apps/os
       - name: Run role-based end-to-end suite on disposable Supabase
         run: ./scripts/run-os-e2e.sh
@@ -215,7 +217,7 @@ jobs:
           echo "Business OS staged: $deployment_url"
 
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: command -v psql >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y postgresql-client)
 
       - name: Link production Supabase
         run: npx -y supabase@2.109.1 link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
