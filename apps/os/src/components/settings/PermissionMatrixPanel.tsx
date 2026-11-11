@@ -112,7 +112,7 @@ const ACCESS_DESCRIPTIONS: Record<AccessLevel, string> = {
 
 const capabilitySector = (capability: ActionCapability): Sector => {
   if (capability.startsWith('settings.')) return 'Store Management'
-  if (capability.startsWith('orders.')) return 'Operations'
+  if (capability.startsWith('orders.') || capability.startsWith('operations.') || capability.startsWith('inventory.')) return 'Operations'
   if (capability === 'finance.view_order_verification' || capability === 'finance.verify_order') return 'Operations'
   if (capability.startsWith('finance.')) return 'Sales & Finance'
   return 'People & HR'

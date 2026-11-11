@@ -45,6 +45,8 @@ export type ActionCapability =
   | 'settings.edit_payroll'
   | 'operations.edit_settings'
   | 'operations.manage_issues'
+  | 'inventory.manage'
+  | 'inventory.confirm_purchase'
 
 export type ActionPermissionMatrix = Record<UserRole, Record<ActionCapability, boolean>>
 
@@ -99,6 +101,8 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'settings.edit_payroll', label:'Edit Payroll Rules', description:'Edit payroll rules.', parentSection:'settings', group:'Settings' },
   { id:'operations.edit_settings', label:'Edit Operational Settings', description:'Edit branch pickup/delivery hours, delivery fees, minimum staff coverage and the VIP rule.', parentSection:'dashboard', group:'Operations' },
   { id:'operations.manage_issues', label:'Manage Order Issues', description:'See late orders and reported order problems, and close reported problems.', parentSection:'dashboard', group:'Operations' },
+  { id:'inventory.manage', label:'Manage Inventory', description:'Add stock items and suppliers, and record stock purchases and waste.', parentSection:'dashboard', group:'Operations' },
+  { id:'inventory.confirm_purchase', label:'Confirm Stock Purchases', description:'Confirm or reject stock purchases recorded by the manager.', parentSection:'dashboard', group:'Operations' },
 ]
 
 const allFalse = () => Object.fromEntries(CAPABILITY_REGISTRY.map(({id}) => [id, false])) as Record<ActionCapability, boolean>
@@ -110,11 +114,11 @@ const OWNER_DEFAULT_CAPABILITIES = CAPABILITY_REGISTRY
 export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
   owner: withEnabled(...OWNER_DEFAULT_CAPABILITIES),
   admin: withEnabled('orders.read_all','orders.create','orders.edit','orders.assign','orders.advance_status','orders.submit_change_request'),
-  finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.verify_order','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry','finance.close_period'),
+  finance: withEnabled('orders.read_all','orders.resolve_change_request','finance.view_order_verification','finance.verify_order','finance.view_payroll','finance.approve_employee_payroll','finance.approve_all_payroll','finance.reject_employee_payroll','finance.record_final_payment','finance.adjust_payroll_schedule','finance.view_refunds','finance.approve_refund','finance.view_ledger','finance.create_ledger_entry','finance.edit_ledger_entry','finance.close_period','inventory.confirm_purchase'),
   hr: withEnabled('orders.read_all','hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
   courier: withEnabled(),
-  manager: withEnabled('orders.read_all','orders.read_assigned','operations.edit_settings','operations.manage_issues'),
+  manager: withEnabled('orders.read_all','orders.read_assigned','operations.edit_settings','operations.manage_issues','inventory.manage'),
 }
 
 export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
@@ -160,6 +164,8 @@ export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
   'settings.edit_payroll': ['owner'],
   'operations.edit_settings': ['owner','manager'],
   'operations.manage_issues': ['owner','manager'],
+  'inventory.manage': ['owner','manager'],
+  'inventory.confirm_purchase': ['owner','finance'],
 }
 
 export const isCapabilityEligibleForRole = (role: UserRole, capability: ActionCapability): boolean =>

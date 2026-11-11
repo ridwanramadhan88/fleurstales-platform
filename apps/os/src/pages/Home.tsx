@@ -24,7 +24,7 @@ import type { OrdersSubTabId } from '../components/orders/OrdersSubTabs'
 import { OrdersTableViewContainer } from '../components/orders/OrdersTableViewContainer'
 import { OrdersTabHeader } from '../components/orders/OrdersTabHeader'
 import { DesktopSidebarContainer } from '../components/layout/DesktopSidebarContainer'
-import { StockTabContentContainer } from '../components/stock/StockTabContentContainer'
+import { InventoryScreen } from '../components/inventory/InventoryScreen'
 import { CatalogTabContentContainer } from '../components/catalog/CatalogTabContentContainer'
 import { CustomersTabContentContainer } from '../components/customers/CustomersTabContentContainer'
 import { RevenueDashboardContainer } from '../components/dashboard/RevenueDashboardContainer'
@@ -646,11 +646,7 @@ const HomePage: FC<HomePageProps> = ({
           )}
 
           {activeTab === 'stock' && inventoryEnabled && canAccessSection(userRole, 'stock', permissions) && (
-            <StockTabContentContainer
-              activeBranch={activeBranch}
-              searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
-            />
+            <InventoryScreen activeBranch={activeBranch} searchQuery={searchQuery} />
           )}
 
           {activeTab === 'customers' && canAccessSection(userRole, 'customers', permissions) && (

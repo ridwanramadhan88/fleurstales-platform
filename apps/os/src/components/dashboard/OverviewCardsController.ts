@@ -1,9 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getOrderAlerts } from '../../domain/alertsDomain'
 import { getTodaySummary } from '../../domain/revenueDomain'
-import { getLowStockItems } from '../../domain/stockDomain'
+import { fetchInventoryOverview } from '../../data/inventorySupabase'
+import { summarizeInventory } from '../../domain/inventoryDomain'
 import { useOrdersStore } from '../../store/ordersStore'
-import { useStockStore } from '../../store/stockStore'
 import { formatIdrCurrency as formatIdr } from '../../lib/formatters'
 import { useSettingsStore } from '../../store/settingsStore'
 
@@ -31,15 +31,23 @@ export interface OverviewCardsViewModel {
 
 export const useOverviewCardsController = (): OverviewCardsViewModel => {
   const orders = useOrdersStore((state) => state.orders)
-  const stockItems = useStockStore((state) => state.items)
   const inventoryEnabled = useSettingsStore((state) => state.storeProfile.inventoryEnabled)
+  const [lowStockTotal, setLowStockTotal] = useState(0)
+
+  useEffect(() => {
+    if (!inventoryEnabled) return
+    let cancelled = false
+    void fetchInventoryOverview().then((overview) => {
+      if (cancelled) return
+      const summary = summarizeInventory(overview.items)
+      setLowStockTotal(summary.low + summary.out)
+    }).catch(() => { if (!cancelled) setLowStockTotal(0) })
+    return () => { cancelled = true }
+  }, [inventoryEnabled])
 
   const todaySummary = useMemo(() => getTodaySummary(orders), [orders])
   const orderAlerts = useMemo(() => getOrderAlerts(orders), [orders])
-  const lowStockCount = useMemo(
-    () => getLowStockItems(stockItems).length,
-    [stockItems],
-  )
+  const lowStockCount = lowStockTotal
 
   const atRiskCount = orderAlerts.late.length + orderAlerts.dueSoon.length
   const revenueGrowthPercent = todaySummary.revenueGrowthPercent
