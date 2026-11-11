@@ -1,5 +1,8 @@
-import type { FC } from 'react'
-import { MoreVertical, Pencil, RotateCcw, XCircle } from 'lucide-react'
+import { useState, type FC } from 'react'
+import { Flag, MoreVertical, Pencil, RotateCcw, XCircle } from 'lucide-react'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
+import { canReportOrderIssue } from '../../domain/orderIssueDomain'
+import { ReportOrderIssueDialog } from './ReportOrderIssueDialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,8 +13,8 @@ import type { OrderDetailsViewModel } from './OrderDetailsController'
 
 /** Whether the order window has anything to put in the "more actions" menu. */
 export const hasOrderMoreActions = (viewModel: OrderDetailsViewModel): boolean => {
-  const { order, canEdit, canRequestChange, canManageRefund, isEditing } = viewModel
-  return !isEditing && (canEdit || canRequestChange || (canManageRefund && order.paymentStatus === 'paid'))
+  const { order, canEdit, canRequestChange, canManageRefund, isEditing, currentUserRole } = viewModel
+  return !isEditing && (canEdit || canRequestChange || (canManageRefund && order.paymentStatus === 'paid') || canReportOrderIssue(currentUserRole))
 }
 
 /** Refund, edit, cancel and change requests: the less frequent order actions. */
@@ -27,10 +30,14 @@ export const OrderMoreActionsMenu: FC<{ viewModel: OrderDetailsViewModel }> = ({
     onOpenRequestModal,
     canManageRefund,
     onOpenInitiateRefund,
+    currentUserRole,
   } = viewModel
+  const tr = useBilingualCopy()
+  const [reportOpen, setReportOpen] = useState(false)
   const canInitiateRefund = canManageRefund && order.paymentStatus === 'paid'
 
   return (
+    <>
 <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -78,7 +85,15 @@ export const OrderMoreActionsMenu: FC<{ viewModel: OrderDetailsViewModel }> = ({
               Request cancellation
             </DropdownMenuItem>
           )}
+          {canReportOrderIssue(currentUserRole) && (
+            <DropdownMenuItem onClick={() => setReportOpen(true)}>
+              <Flag className="size-3.5" />
+              {tr('Report an issue', 'Laporkan kendala')}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
+      {order.id && <ReportOrderIssueDialog open={reportOpen} orderId={order.id} orderNumber={order.orderNumber ?? order.id} onClose={() => setReportOpen(false)} />}
+    </>
   )
 }

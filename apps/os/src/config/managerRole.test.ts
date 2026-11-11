@@ -20,7 +20,7 @@ describe('manager role (operations manager)', () => {
     const enabled = CAPABILITY_REGISTRY
       .filter((definition) => hasActionPermission('manager', definition.id, DEFAULT_ACTION_PERMISSIONS, DEFAULT_ROLE_SECTION_ACCESS))
       .map((definition) => definition.id)
-    expect(enabled).toEqual(['orders.read_all', 'orders.read_assigned', 'operations.edit_settings'])
+    expect(enabled).toEqual(['orders.read_all', 'orders.read_assigned', 'operations.edit_settings', 'operations.manage_issues'])
   })
 
   it('sees orders of every florist and branch', () => {
@@ -34,6 +34,7 @@ describe('operational settings capability', () => {
   it('is limited to the owner and the manager, and never a settings.* capability', () => {
     for (const role of ['admin', 'finance', 'hr', 'florist', 'courier'] as const) {
       expect(hasActionPermission(role, 'operations.edit_settings', DEFAULT_ACTION_PERMISSIONS, DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    expect(hasActionPermission(role, 'operations.manage_issues', DEFAULT_ACTION_PERMISSIONS, DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
     }
     expect(hasActionPermission('owner', 'operations.edit_settings', DEFAULT_ACTION_PERMISSIONS, DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
   })
