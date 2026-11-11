@@ -15,6 +15,7 @@ import { FloristAssignedOrders } from './FloristAssignedOrders'
 import { CourierDeliveryTasks } from './CourierDeliveryTasks'
 import { AdminFinishedMetrics } from './AdminFinishedMetrics'
 import { AttendancePhotoBoard } from './AttendancePhotoBoard'
+import { OperationsIssuesBoard } from './OperationsIssuesBoard'
 import { OperationsSettingsEntry } from './OperationsSettingsEntry'
 import { MyDayStrip } from './MyDayStrip'
 import { FinanceHomeWork, HrHomeWork } from './HomeWorkCards'
@@ -92,6 +93,7 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         <>
           <MyDayStrip />
           <OperationsSettingsEntry />
+          <OperationsIssuesBoard />
           <AttendancePhotoBoard />
           <FloristAssignedOrders onGoToOrders={onGoToOrders} />
         </>

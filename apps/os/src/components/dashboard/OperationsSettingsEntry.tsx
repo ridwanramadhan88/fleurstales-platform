@@ -15,7 +15,7 @@ export const OperationsSettingsEntry: FC = () => {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} data-testid="operations-settings-entry"
-        className={`${surfaceCardClass} flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-accent`}>
+        className={`${surfaceCardClass('standard')} flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-accent`}>
         <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface-panel"><SlidersHorizontal className="size-4" /></span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-foreground">{tr('Operational settings', 'Pengaturan operasional')}</span>

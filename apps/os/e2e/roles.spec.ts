@@ -73,3 +73,13 @@ test('manager: opens the operational settings from Home', async ({ page, problem
   await expect(dialog.getByRole('button', { name: /Simpan|Save/ })).toBeDisabled()
   await expectNoAlert(page)
 })
+
+test('manager: opens the late orders and issues board on Home', async ({ page, problems }) => {
+  void problems
+  await signIn(page, 'manager')
+  const board = page.getByTestId('operations-issues-board')
+  await expect(board).toBeVisible()
+  await board.getByRole('button', { expanded: false }).first().click()
+  await expect(board.getByRole('button', { name: /Kendala|Issues/ }).first()).toBeVisible()
+  await expectNoAlert(page)
+})

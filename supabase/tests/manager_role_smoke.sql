@@ -22,7 +22,7 @@ begin
   if not private.has_action_permission_for_role('manager', 'orders.read_assigned') then raise exception 'Manager must read assigned work'; end if;
   if exists (
     select 1 from private.action_capability_registry r
-    where r.capability not in ('orders.read_all', 'orders.read_assigned', 'operations.edit_settings')
+    where r.capability not in ('orders.read_all', 'orders.read_assigned', 'operations.edit_settings', 'operations.manage_issues')
       and private.has_action_permission_for_role('manager', r.capability)
   ) then
     raise exception 'Manager holds a capability beyond order reads and operational settings';

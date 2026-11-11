@@ -5,6 +5,7 @@ import { URGENCY_CHIP } from './orderTableLabels'
 import { formatOrderCreatedAtLabel, getDisplayScheduleLabel } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { OrderMoreActionsMenu } from './OrderMoreActionsMenu'
+import { canReportOrderIssue } from '../../domain/orderIssueDomain'
 import { InfoHint } from '../ui/info-hint'
 import { ORDER_PRODUCT_FALLBACK_NAME } from '../../domain/catalogDomain'
 
@@ -33,7 +34,7 @@ export const OrderDetailsHeader: FC<OrderDetailsHeaderProps> = ({ viewModel, pro
   const canInitiateRefund = canManageRefund && order.paymentStatus === 'paid'
   const hasMenuActions =
     !isEditing &&
-    (canEdit || canRequestChange || canInitiateRefund)
+    (canEdit || canRequestChange || canInitiateRefund || canReportOrderIssue(currentUserRole))
 
   return (
     <header

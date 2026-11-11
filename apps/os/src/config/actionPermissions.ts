@@ -44,6 +44,7 @@ export type ActionCapability =
   | 'settings.edit_scheduling'
   | 'settings.edit_payroll'
   | 'operations.edit_settings'
+  | 'operations.manage_issues'
 
 export type ActionPermissionMatrix = Record<UserRole, Record<ActionCapability, boolean>>
 
@@ -97,6 +98,7 @@ export const CAPABILITY_REGISTRY: CapabilityDefinition[] = [
   { id:'settings.edit_scheduling', label:'Edit Scheduling Rules', description:'Edit scheduling rules.', parentSection:'settings', group:'Settings' },
   { id:'settings.edit_payroll', label:'Edit Payroll Rules', description:'Edit payroll rules.', parentSection:'settings', group:'Settings' },
   { id:'operations.edit_settings', label:'Edit Operational Settings', description:'Edit branch pickup/delivery hours, delivery fees, minimum staff coverage and the VIP rule.', parentSection:'dashboard', group:'Operations' },
+  { id:'operations.manage_issues', label:'Manage Order Issues', description:'See late orders and reported order problems, and close reported problems.', parentSection:'dashboard', group:'Operations' },
 ]
 
 const allFalse = () => Object.fromEntries(CAPABILITY_REGISTRY.map(({id}) => [id, false])) as Record<ActionCapability, boolean>
@@ -112,7 +114,7 @@ export const DEFAULT_ACTION_PERMISSIONS: ActionPermissionMatrix = {
   hr: withEnabled('orders.read_all','hr.view_employees','hr.create_employee','hr.edit_employee','hr.review_attendance','hr.correct_attendance','hr.manage_points','hr.create_payroll_proposal','hr.edit_payroll_proposal','hr.resolve_rejected_employee'),
   florist: withEnabled('orders.read_assigned'),
   courier: withEnabled(),
-  manager: withEnabled('orders.read_all','orders.read_assigned','operations.edit_settings'),
+  manager: withEnabled('orders.read_all','orders.read_assigned','operations.edit_settings','operations.manage_issues'),
 }
 
 export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
@@ -157,6 +159,7 @@ export const CAPABILITY_ALLOWED_ROLES: Record<ActionCapability, UserRole[]> = {
   'settings.edit_scheduling': ['owner'],
   'settings.edit_payroll': ['owner'],
   'operations.edit_settings': ['owner','manager'],
+  'operations.manage_issues': ['owner','manager'],
 }
 
 export const isCapabilityEligibleForRole = (role: UserRole, capability: ActionCapability): boolean =>
