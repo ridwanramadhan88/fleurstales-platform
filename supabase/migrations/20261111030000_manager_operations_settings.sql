@@ -185,8 +185,9 @@ begin
     raise exception 'INTERNAL_SETTINGS_NOT_INITIALIZED' using errcode = '55000';
   end if;
   if v_state.revision <> coalesce(p_expected_revision, 0) then
+    -- PT409 (HTTP 409) rather than 40001: PostgREST retries 40001 server-side.
     raise exception 'REVISION_CONFLICT:internal_settings:expected=%:actual=%', p_expected_revision, v_state.revision
-      using errcode = '40001';
+      using errcode = 'PT409';
   end if;
 
   v_next := v_state.revision + 1;

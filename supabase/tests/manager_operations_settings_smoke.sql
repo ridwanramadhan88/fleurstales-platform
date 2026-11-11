@@ -108,7 +108,8 @@ begin
   begin
     perform public.save_operations_settings(v_revision, '{"admin":1,"florist":1}', null);
     raise exception 'Stale revision was accepted';
-  exception when serialization_failure then null;
+  exception when others then
+    if sqlstate <> 'PT409' then raise; end if;
   end;
   begin
     perform public.save_operations_settings(v_revision + 1, '{"admin":-1,"florist":1}', null);
