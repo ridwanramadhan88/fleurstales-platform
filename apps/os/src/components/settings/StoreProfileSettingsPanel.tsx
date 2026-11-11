@@ -80,15 +80,13 @@ export const StoreProfileSettingsPanel: FC<Props> = ({ profile, onUpdate, isEdit
             <InfoField label="Timezone" value={profile.timezone} />
           </div>
 
-          {profile.inventoryEnabled && (
-            <div className="flex items-center justify-between gap-4 rounded-xl bg-surface-panel px-4 py-3 ring-1 ring-border/60">
-              <div>
-                <p className="text-sm font-semibold leading-5 text-foreground">Inventory</p>
-                <p className="text-xs text-muted-foreground">Stock tracking and inventory tools across the app.</p>
-              </div>
-              <span className="rounded-full bg-success/10 px-2.5 py-1 text-2xs font-semibold text-success">Enabled</span>
+          <div className="flex items-center justify-between gap-4 rounded-xl bg-surface-panel px-4 py-3 ring-1 ring-border/60">
+            <div>
+              <p className="text-sm font-semibold leading-5 text-foreground">Inventory</p>
+              <p className="text-xs text-muted-foreground">Stock tracking and inventory tools across the app.</p>
             </div>
-          )}
+            <span className={`rounded-full px-2.5 py-1 text-2xs font-semibold ${profile.inventoryEnabled ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>{profile.inventoryEnabled ? 'Enabled' : 'Disabled'}</span>
+          </div>
         </SettingsCard>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -125,12 +123,10 @@ export const StoreProfileSettingsPanel: FC<Props> = ({ profile, onUpdate, isEdit
             {(logoError || validationErrors.logoUrl) && <p className="text-2xs font-medium text-destructive">{logoError ?? validationErrors.logoUrl}</p>}
           </div>
 
-          {profile.inventoryEnabled && (
-            <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 bg-surface-panel p-3 sm:col-span-2">
-              <div><p className="text-sm font-semibold leading-5 text-foreground">Inventory</p><p className="text-xs text-muted-foreground">Turn off to hide and pause inventory while preserving saved data.</p></div>
-              <Switch checked onCheckedChange={(checked) => onUpdate({ inventoryEnabled: checked })} aria-label="Inventory enabled" />
-            </div>
-          )}
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 bg-surface-panel p-3 sm:col-span-2">
+            <div><p className="text-sm font-semibold leading-5 text-foreground">Inventory</p><p className="text-xs text-muted-foreground">Turn on to show the Stock menu. Turn off to hide it while preserving saved data.</p></div>
+            <Switch checked={profile.inventoryEnabled} onCheckedChange={(checked) => onUpdate({ inventoryEnabled: checked })} aria-label="Inventory enabled" />
+          </div>
 
           <InfoField label="Currency" value={profile.currency} />
           <InfoField label="Timezone" value={profile.timezone} />
