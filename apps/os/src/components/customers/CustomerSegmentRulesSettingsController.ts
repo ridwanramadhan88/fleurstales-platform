@@ -15,7 +15,7 @@ export interface CustomerSegmentRulesSettingsViewModel {
 export const useCustomerSegmentRulesSettingsController =
   (): CustomerSegmentRulesSettingsViewModel => {
     const role = useUserStore((state) => state.role)
-    const isOwner = role === 'owner'
+    const isOwner = role === 'owner' || role === 'manager'
     const segmentRules = useCustomerStore((state) => state.segmentRules)
     const setSegmentRules = useCustomerStore((state) => state.setSegmentRules)
     const [isEditing, setIsEditing] = useState(false)

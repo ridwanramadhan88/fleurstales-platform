@@ -1,6 +1,6 @@
 /**
  * @file CustomerSegmentRulesSettings.tsx
- * @description Owner-editable settings for what makes a customer "VIP" in
+ * @description Owner- and Manager-editable settings for what makes a customer "VIP" in
  * the Customers CRM tab — e.g. a minimum number of orders and/or a minimum
  * lifetime spend. Mirrors the collapsed "Edit / Done" settings pattern used
  * by PaymentMethodSettings (Finance tab) for a consistent page design.

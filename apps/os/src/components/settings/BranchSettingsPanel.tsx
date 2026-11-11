@@ -183,7 +183,7 @@ const OpeningHoursSummary: FC<{ branch: BranchSettings }> = ({ branch }) => {
  * opening hours as fulfillmentStartsAt / fulfillmentEndsAt; when off, orders
  * use the opening hours as before.
  */
-const FulfillmentHoursEditor: FC<{
+export const FulfillmentHoursEditor: FC<{
   branch: BranchSettings
   onUpdateBranch: Props['onUpdateBranch']
 }> = ({ branch, onUpdateBranch }) => {
@@ -299,7 +299,7 @@ const FulfillmentHoursSummary: FC<{ branch: BranchSettings }> = ({ branch }) => 
   )
 }
 
-const OpeningHoursEditor: FC<{
+export const OpeningHoursEditor: FC<{
   branch: BranchSettings
   onUpdateBranch: Props['onUpdateBranch']
 }> = ({ branch, onUpdateBranch }) => {
