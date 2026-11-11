@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react'
 import { ExternalLink, LocateFixed, MapPin, X } from 'lucide-react'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { usePlaceSearch } from '../../hooks/usePlaceSearch'
+import { createGoogleMapPin, type PinMapHandle } from '../../lib/googleMapPin'
 import {
   formatDeliveryPin,
   googleMapsUrlForPin,
@@ -47,7 +48,7 @@ interface Props {
 
 /**
  * Delivery pin for Admin: paste the location the customer shared on WhatsApp,
- * or tap / drag on the map (Leaflet is loaded by index.html for attendance).
+ * or tap / drag on the map (Google Maps when the browser key is set, otherwise Leaflet from index.html).
  */
 export const DeliveryPinPicker: FC<Props> = ({ id, value, onChange, center, invalid, onAddressPicked }) => {
   const copy = useBilingualCopy()
@@ -56,6 +57,7 @@ export const DeliveryPinPicker: FC<Props> = ({ id, value, onChange, center, inva
   const mapRef = useRef<LeafletMap | null>(null)
   const markerRef = useRef<LeafletMarker | null>(null)
   const leafletRef = useRef<LeafletLike | null>(null)
+  const googleRef = useRef<PinMapHandle | null>(null)
   const onChangeRef = useRef(onChange)
   const [mapReady, setMapReady] = useState(false)
   const [pasted, setPasted] = useState('')
@@ -87,32 +89,70 @@ export const DeliveryPinPicker: FC<Props> = ({ id, value, onChange, center, inva
   }
 
   useEffect(() => {
-    const L = (window as unknown as { L?: LeafletLike }).L
     const element = mapElement.current
-    if (!L || !element) return
-    leafletRef.current = L
-    const start = value ?? center ?? FALLBACK_CENTER
-    const map = L.map(element, { zoomControl: true, attributionControl: true, scrollWheelZoom: false })
-      .setView([start.latitude, start.longitude], value ? 17 : 14)
-    L.tileLayer(TILES, { maxZoom: 20, subdomains: 'abcd', attribution: ATTRIBUTION }).addTo(map)
-    map.on('click', (event) => {
-      const next = toDeliveryPin(event.latlng.lat, event.latlng.lng)
-      if (next) onChangeRef.current(next)
+    if (!element) return
+    let cancelled = false
+    let stopLeaflet: (() => void) | undefined
+
+    const startLeaflet = (): (() => void) | undefined => {
+      const L = (window as unknown as { L?: LeafletLike }).L
+      if (!L) return undefined
+      leafletRef.current = L
+      const start = value ?? center ?? FALLBACK_CENTER
+      const map = L.map(element, { zoomControl: true, attributionControl: true, scrollWheelZoom: false })
+        .setView([start.latitude, start.longitude], value ? 17 : 14)
+      L.tileLayer(TILES, { maxZoom: 20, subdomains: 'abcd', attribution: ATTRIBUTION }).addTo(map)
+      map.on('click', (event) => {
+        const next = toDeliveryPin(event.latlng.lat, event.latlng.lng)
+        if (next) onChangeRef.current(next)
+      })
+      mapRef.current = map
+      if (value) placeMarker(value)
+      setMapReady(true)
+      const timer = window.setTimeout(() => map.invalidateSize(), 80)
+      return () => {
+        window.clearTimeout(timer)
+        map.remove()
+        mapRef.current = null
+        markerRef.current = null
+      }
+    }
+
+    void createGoogleMapPin(element, {
+      start: value ?? center ?? FALLBACK_CENTER,
+      zoom: value ? 17 : 14,
+      pin: value,
+      onPick: (point) => { const next = toDeliveryPin(point.latitude, point.longitude); if (next) onChangeRef.current(next) },
+      onFailure: () => {
+        googleRef.current?.destroy()
+        googleRef.current = null
+        if (!cancelled) stopLeaflet = startLeaflet()
+      },
+    }).then((handle) => {
+      if (cancelled) { handle?.destroy(); return }
+      if (handle) {
+        googleRef.current = handle
+        setMapReady(true)
+        window.setTimeout(() => handle.refresh(), 80)
+      } else {
+        stopLeaflet = startLeaflet()
+      }
     })
-    mapRef.current = map
-    if (value) placeMarker(value)
-    setMapReady(true)
-    const timer = window.setTimeout(() => map.invalidateSize(), 80)
+
     return () => {
-      window.clearTimeout(timer)
-      map.remove()
-      mapRef.current = null
-      markerRef.current = null
+      cancelled = true
+      googleRef.current?.destroy()
+      googleRef.current = null
+      stopLeaflet?.()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
+    if (googleRef.current) {
+      googleRef.current.setPin(value)
+      return
+    }
     if (!value) {
       markerRef.current?.remove()
       markerRef.current = null

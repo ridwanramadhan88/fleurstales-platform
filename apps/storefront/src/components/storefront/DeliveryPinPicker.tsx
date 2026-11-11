@@ -8,6 +8,7 @@ import {
   type DeliveryPin,
 } from '../../domain/deliveryDetailsDomain'
 import { usePlaceSearch } from '../../hooks/usePlaceSearch'
+import { createGoogleMapPin, type PinMapHandle } from '../../lib/googleMapPin'
 
 interface LeafletLatLng { lat: number; lng: number }
 interface LeafletMap {
@@ -79,6 +80,7 @@ export const DeliveryPinPicker: FC<Props> = ({ value, onChange, center, onAddres
   const mapRef = useRef<LeafletMap | null>(null)
   const markerRef = useRef<LeafletMarker | null>(null)
   const leafletRef = useRef<LeafletGlobal | null>(null)
+  const googleRef = useRef<PinMapHandle | null>(null)
   const onChangeRef = useRef(onChange)
   const [mapState, setMapState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const [pasted, setPasted] = useState('')
@@ -111,36 +113,72 @@ export const DeliveryPinPicker: FC<Props> = ({ value, onChange, center, onAddres
   }
 
   useEffect(() => {
+    const element = mapElement.current
+    if (!element) { setMapState('unavailable'); return }
     let cancelled = false
-    void loadLeaflet().then((L) => {
-      if (cancelled) return
-      const element = mapElement.current
-      if (!L || !element) { setMapState('unavailable'); return }
-      leafletRef.current = L
-      const start = value ?? center ?? FALLBACK_CENTER
-      const map = L.map(element, { zoomControl: true, attributionControl: true, scrollWheelZoom: false })
-        .setView([start.latitude, start.longitude], value ? 17 : 14)
-      L.tileLayer(TILES, { maxZoom: 20, subdomains: 'abcd', attribution: ATTRIBUTION }).addTo(map)
-      map.on('click', (event) => {
-        const next = toDeliveryPin(event.latlng.lat, event.latlng.lng)
-        if (next) onChangeRef.current(next)
+    let stopLeaflet: (() => void) | undefined
+
+    const startLeaflet = () => {
+      void loadLeaflet().then((L) => {
+        if (cancelled) return
+        if (!L) { setMapState('unavailable'); return }
+        leafletRef.current = L
+        const start = value ?? center ?? FALLBACK_CENTER
+        const map = L.map(element, { zoomControl: true, attributionControl: true, scrollWheelZoom: false })
+          .setView([start.latitude, start.longitude], value ? 17 : 14)
+        L.tileLayer(TILES, { maxZoom: 20, subdomains: 'abcd', attribution: ATTRIBUTION }).addTo(map)
+        map.on('click', (event) => {
+          const next = toDeliveryPin(event.latlng.lat, event.latlng.lng)
+          if (next) onChangeRef.current(next)
+        })
+        mapRef.current = map
+        if (value) placeMarker(value)
+        setMapState('ready')
+        window.setTimeout(() => map.invalidateSize(), 80)
+        stopLeaflet = () => {
+          map.remove()
+          mapRef.current = null
+          markerRef.current = null
+        }
       })
-      mapRef.current = map
-      if (value) placeMarker(value)
-      setMapState('ready')
-      window.setTimeout(() => map.invalidateSize(), 80)
+    }
+
+    void createGoogleMapPin(element, {
+      start: value ?? center ?? FALLBACK_CENTER,
+      zoom: value ? 17 : 14,
+      pin: value,
+      onPick: (point) => { const next = toDeliveryPin(point.latitude, point.longitude); if (next) onChangeRef.current(next) },
+      onFailure: () => {
+        googleRef.current?.destroy()
+        googleRef.current = null
+        if (!cancelled) startLeaflet()
+      },
+    }).then((handle) => {
+      if (cancelled) { handle?.destroy(); return }
+      if (handle) {
+        googleRef.current = handle
+        setMapState('ready')
+        window.setTimeout(() => handle.refresh(), 80)
+      } else {
+        startLeaflet()
+      }
     })
+
     return () => {
       cancelled = true
-      mapRef.current?.remove()
-      mapRef.current = null
-      markerRef.current = null
+      googleRef.current?.destroy()
+      googleRef.current = null
+      stopLeaflet?.()
     }
     // The map is created once; pin updates are applied below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
+    if (googleRef.current) {
+      googleRef.current.setPin(value)
+      return
+    }
     if (!value) {
       markerRef.current?.remove()
       markerRef.current = null
