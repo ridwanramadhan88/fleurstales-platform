@@ -230,7 +230,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: command -v psql >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y postgresql-client)
       - name: Replay migrations and run every SQL smoke test
         run: ./scripts/run-local-supabase-database-gate.sh
 
@@ -250,7 +250,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: command -v psql >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y postgresql-client)
       - run: npm ci
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
