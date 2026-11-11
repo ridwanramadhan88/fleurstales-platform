@@ -16,16 +16,25 @@ describe('manager role (operations manager)', () => {
     }
   })
 
-  it('only holds the two read capabilities', () => {
+  it('holds the two read capabilities and the operational settings editor', () => {
     const enabled = CAPABILITY_REGISTRY
       .filter((definition) => hasActionPermission('manager', definition.id, DEFAULT_ACTION_PERMISSIONS, DEFAULT_ROLE_SECTION_ACCESS))
       .map((definition) => definition.id)
-    expect(enabled).toEqual(['orders.read_all', 'orders.read_assigned'])
+    expect(enabled).toEqual(['orders.read_all', 'orders.read_assigned', 'operations.edit_settings'])
   })
 
   it('sees orders of every florist and branch', () => {
     const order = { floristAssignedEmployeeId: 'emp-other', branch: 'Pahoman' } as OrderTableRow
     expect(isOrderInActorRowScope(order, { role: 'manager', employeeId: 'emp-manager', name: 'Manajer' })).toBe(true)
     expect(isOrderInActorRowScope(order, { role: 'florist', employeeId: 'emp-florist', name: 'Florist' })).toBe(false)
+  })
+})
+
+describe('operational settings capability', () => {
+  it('is limited to the owner and the manager, and never a settings.* capability', () => {
+    for (const role of ['admin', 'finance', 'hr', 'florist', 'courier'] as const) {
+      expect(hasActionPermission(role, 'operations.edit_settings', DEFAULT_ACTION_PERMISSIONS, DEFAULT_ROLE_SECTION_ACCESS)).toBe(false)
+    }
+    expect(hasActionPermission('owner', 'operations.edit_settings', DEFAULT_ACTION_PERMISSIONS, DEFAULT_ROLE_SECTION_ACCESS)).toBe(true)
   })
 })

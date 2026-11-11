@@ -62,3 +62,14 @@ test('manager: opens the Flower of the Month picker from the catalog', async ({ 
   await expect(dialog).toContainText('Terpilih')
   await expectNoAlert(page)
 })
+
+test('manager: opens the operational settings from Home', async ({ page, problems }) => {
+  void problems
+  await signIn(page, 'manager')
+  await page.getByTestId('operations-settings-entry').click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText(/Pengaturan operasional|Operational settings/)
+  await expect(dialog.getByTestId('fulfillment-hours-editor')).toBeVisible()
+  await expect(dialog.getByRole('button', { name: /Simpan|Save/ })).toBeDisabled()
+  await expectNoAlert(page)
+})

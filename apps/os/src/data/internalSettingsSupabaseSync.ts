@@ -38,6 +38,7 @@ let syncing = false
 let stopSubscription: (() => void) | undefined
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 let lastSerialized = ''
+let lastOperationsSerialized = ''
 let lastHydrationError: string | undefined
 
 const client = () => bootstrapSharedData(browserSupabaseTokenProvider)
@@ -60,6 +61,17 @@ const localPayload = (): InternalSettingsPayload => {
 
 const serialize = (value: InternalSettingsPayload): string => JSON.stringify(value)
 
+/** The only settings the Manager may change from here. */
+type OperationsSettingsPatch = {
+  minimumCoverage?: { admin: number; florist: number }
+  customerSegments?: CustomerSegmentRules
+}
+
+const operationsSnapshot = (): Required<OperationsSettingsPatch> => ({
+  minimumCoverage: useSettingsStore.getState().scheduling.minimumCoverage ?? { admin: 1, florist: 2 },
+  customerSegments: useCustomerStore.getState().segmentRules,
+})
+
 const applyRemote = (remote: InternalSettingsResponse): void => {
   syncing = true
   try {
@@ -74,6 +86,7 @@ const applyRemote = (remote: InternalSettingsResponse): void => {
     if (remote.customerSegments) useCustomerStore.setState({ segmentRules: remote.customerSegments })
     revision = Math.max(1, Number(remote.revision) || 1)
     lastSerialized = serialize(localPayload())
+    lastOperationsSerialized = JSON.stringify(operationsSnapshot())
   } finally {
     syncing = false
   }
@@ -100,7 +113,43 @@ export const hydrateInternalSettingsFromSupabase = async (): Promise<boolean> =>
   return true
 }
 
+/**
+ * Manager-safe save: only minimum coverage and the VIP rule travel, through a
+ * server function that cannot touch roles, attendance or payroll.
+ */
+export const saveOperationsSettings = async (patch: OperationsSettingsPatch): Promise<void> => {
+  if (!getSupabaseBrowserSession()) throw new Error('Session expired. Sign in again.')
+  const boot = client()
+  if (!boot.enabled) throw new Error('Supabase is not configured.')
+  try {
+    const remote = await boot.repositories.client.rpc<InternalSettingsResponse>('save_operations_settings', {
+      p_expected_revision: revision,
+      p_minimum_coverage: (patch.minimumCoverage ?? null) as unknown as Json,
+      p_customer_segments: (patch.customerSegments ?? null) as unknown as Json,
+    })
+    applyRemote(remote)
+  } catch (error) {
+    if (isRevisionConflict(error)) {
+      await hydrateInternalSettingsFromSupabase().catch(() => undefined)
+      throw new Error('Settings changed in another session. The latest values were reloaded; reapply your change.')
+    }
+    throw error
+  }
+}
+
+const persistOperationsSettings = async (): Promise<void> => {
+  if (syncing || !getSupabaseBrowserSession()) return
+  const snapshot = operationsSnapshot()
+  if (JSON.stringify(snapshot) === lastOperationsSerialized) return
+  try {
+    await saveOperationsSettings(snapshot)
+  } catch (error) {
+    toast({ title: 'Settings not saved', description: error instanceof Error ? error.message : 'Unable to save settings.' })
+  }
+}
+
 const persistInternalSettings = async (): Promise<void> => {
+  if (useUserStore.getState().role === 'manager') return persistOperationsSettings()
   if (syncing || useUserStore.getState().role !== 'owner' || !getSupabaseBrowserSession()) return
   const boot = client()
   if (!boot.enabled) return
@@ -144,8 +193,13 @@ const persistInternalSettings = async (): Promise<void> => {
   }
 }
 
+const canSyncRole = (): boolean => {
+  const role = useUserStore.getState().role
+  return role === 'owner' || role === 'manager'
+}
+
 const scheduleSave = (): void => {
-  if (syncing || useUserStore.getState().role !== 'owner') return
+  if (syncing || !canSyncRole()) return
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
     saveTimer = undefined
@@ -154,8 +208,9 @@ const scheduleSave = (): void => {
 }
 
 export const startInternalSettingsSupabaseSync = (): void => {
-  if (stopSubscription || useUserStore.getState().role !== 'owner') return
+  if (stopSubscription || !canSyncRole()) return
   lastSerialized = serialize(localPayload())
+  lastOperationsSerialized = JSON.stringify(operationsSnapshot())
   const stopSettings = useSettingsStore.subscribe(scheduleSave)
   const stopCustomer = useCustomerStore.subscribe(scheduleSave)
   stopSubscription = () => { stopSettings(); stopCustomer() }
