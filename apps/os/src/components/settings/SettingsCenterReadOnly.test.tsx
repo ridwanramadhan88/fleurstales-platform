@@ -42,7 +42,7 @@ describe('Owner Settings read-only presentation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
 
     expect(screen.getAllByRole('textbox').length).toBeGreaterThan(0)
-    expect(screen.queryByRole('switch', { name: 'Inventory enabled' })).not.toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Inventory enabled' })).toBeInTheDocument()
   })
 })
 
