@@ -175,13 +175,13 @@ begin
   if (v_res->>'valueIdr')::bigint <> 25000 or (v_res->>'quantityAfter')::numeric <> 40 then
     raise exception 'Waste result wrong: %', v_res;
   end if;
-  v_report := public.get_inventory_waste_report(current_date - 1, current_date, 'Kedamaian');
+  v_report := public.get_inventory_waste_report(((now() at time zone 'Asia/Jakarta')::date) - 1, (now() at time zone 'Asia/Jakarta')::date, 'Kedamaian');
   if (v_report->>'totalValueIdr')::bigint <> 25000 or jsonb_array_length(v_report->'rows') <> 1
      or jsonb_array_length(v_report->'byReason') <> 1 then
     raise exception 'Waste report wrong: %', v_report;
   end if;
   begin
-    perform public.get_inventory_waste_report(current_date - 400, current_date, null);
+    perform public.get_inventory_waste_report(((now() at time zone 'Asia/Jakarta')::date) - 400, (now() at time zone 'Asia/Jakarta')::date, null);
     raise exception 'A range over a year must be rejected';
   exception when invalid_parameter_value then null; end;
 end
@@ -197,7 +197,7 @@ begin
     raise exception 'Admin must not record waste';
   exception when insufficient_privilege then null; end;
   begin
-    perform public.get_inventory_waste_report(current_date - 1, current_date, null);
+    perform public.get_inventory_waste_report(((now() at time zone 'Asia/Jakarta')::date) - 1, (now() at time zone 'Asia/Jakarta')::date, null);
     raise exception 'Admin must not read the waste report';
   exception when insufficient_privilege then null; end;
 end
