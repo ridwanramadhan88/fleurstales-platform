@@ -4,7 +4,7 @@ begin;
 do $static$
 declare t text;
 begin
-  foreach t in array array['inventory_items', 'inventory_suppliers', 'inventory_purchases', 'inventory_movements'] loop
+  foreach t in array array['inventory_items', 'inventory_suppliers', 'inventory_purchases', 'inventory_movements', 'inventory_waste'] loop
     if has_table_privilege('authenticated', 'public.' || t, 'SELECT')
        or has_table_privilege('authenticated', 'public.' || t, 'INSERT')
        or has_table_privilege('anon', 'public.' || t, 'SELECT') then
@@ -16,7 +16,9 @@ begin
      or has_function_privilege('anon', 'public.record_inventory_purchase(uuid,uuid,numeric,bigint,text,date,text)', 'EXECUTE')
      or has_function_privilege('anon', 'public.decide_inventory_purchase(uuid,text,text)', 'EXECUTE')
      or has_function_privilege('anon', 'public.get_inventory_overview(text)', 'EXECUTE')
-     or has_function_privilege('anon', 'public.get_inventory_purchases(text,integer)', 'EXECUTE') then
+     or has_function_privilege('anon', 'public.get_inventory_purchases(text,integer)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.record_inventory_waste(uuid,numeric,text,text)', 'EXECUTE')
+     or has_function_privilege('anon', 'public.get_inventory_waste_report(date,date,text)', 'EXECUTE') then
     raise exception 'Inventory functions must not be anonymous';
   end if;
   if not private.has_action_permission_for_role('manager', 'inventory.manage')
@@ -152,6 +154,56 @@ end
 $finance$;
 reset role;
 
+-- Manager: waste lowers stock and is valued at the average cost (50 left, avg 2500).
+select set_config('request.jwt.claims', '{"sub":"a7000000-0000-4000-8000-0000000000c1","role":"authenticated"}', true);
+set local role authenticated;
+do $waste$
+declare
+  v_item uuid := current_setting('app.test_item')::uuid;
+  v_res jsonb;
+  v_report jsonb;
+begin
+  begin
+    perform public.record_inventory_waste(v_item, 500, 'wilted', null);
+    raise exception 'Waste above stock must be rejected';
+  exception when invalid_parameter_value then null; end;
+  begin
+    perform public.record_inventory_waste(v_item, 1, 'other', null);
+    raise exception 'Reason Other needs a note';
+  exception when invalid_parameter_value then null; end;
+  v_res := public.record_inventory_waste(v_item, 10, 'wilted', 'Layu pagi');
+  if (v_res->>'valueIdr')::bigint <> 25000 or (v_res->>'quantityAfter')::numeric <> 40 then
+    raise exception 'Waste result wrong: %', v_res;
+  end if;
+  v_report := public.get_inventory_waste_report(current_date - 1, current_date, 'Kedamaian');
+  if (v_report->>'totalValueIdr')::bigint <> 25000 or jsonb_array_length(v_report->'rows') <> 1
+     or jsonb_array_length(v_report->'byReason') <> 1 then
+    raise exception 'Waste report wrong: %', v_report;
+  end if;
+  begin
+    perform public.get_inventory_waste_report(current_date - 400, current_date, null);
+    raise exception 'A range over a year must be rejected';
+  exception when invalid_parameter_value then null; end;
+end
+$waste$;
+reset role;
+
+select set_config('request.jwt.claims', '{"sub":"a7000000-0000-4000-8000-0000000000c3","role":"authenticated"}', true);
+set local role authenticated;
+do $adminwaste$
+begin
+  begin
+    perform public.record_inventory_waste(current_setting('app.test_item')::uuid, 1, 'wilted', null);
+    raise exception 'Admin must not record waste';
+  exception when insufficient_privilege then null; end;
+  begin
+    perform public.get_inventory_waste_report(current_date - 1, current_date, null);
+    raise exception 'Admin must not read the waste report';
+  exception when insufficient_privilege then null; end;
+end
+$adminwaste$;
+reset role;
+
 do $after$
 declare
   v_qty numeric;
@@ -159,9 +211,9 @@ declare
 begin
   select quantity into v_qty from public.inventory_items where id = current_setting('app.test_item')::uuid;
   -- 100 bought, one 50-stem purchase rejected -> 50 left.
-  if v_qty <> 50 then raise exception 'Rejected purchase must be taken back out of stock, qty=%', v_qty; end if;
+  if v_qty <> 40 then raise exception 'Expected 40 after rejection and waste, qty=%', v_qty; end if;
   select count(*) into v_moves from public.inventory_movements where item_id = current_setting('app.test_item')::uuid;
-  if v_moves <> 3 then raise exception 'Expected 3 movements, got %', v_moves; end if;
+  if v_moves <> 4 then raise exception 'Expected 4 movements, got %', v_moves; end if;
   if (select count(*) from public.business_activities where kind like 'inventory_purchase%') < 4 then
     raise exception 'Purchase activity was not logged';
   end if;

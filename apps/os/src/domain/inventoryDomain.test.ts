@@ -39,3 +39,21 @@ describe('purchases', () => {
     expect(summarizePendingPurchases([purchase('pending_finance', 100), purchase('confirmed', 500), purchase('pending_finance', 50)])).toEqual({ count: 2, totalIdr: 150 })
   })
 })
+
+import { validateWasteDraft, wasteSharePercent } from './inventoryDomain'
+
+describe('waste', () => {
+  it('validates quantity, stock on hand and the note for "other"', () => {
+    expect(validateWasteDraft({ quantity: 2, reason: 'wilted', note: '' }, 5)).toBeNull()
+    expect(validateWasteDraft({ quantity: 0, reason: 'wilted', note: '' }, 5)).toBe('quantity')
+    expect(validateWasteDraft({ quantity: 6, reason: 'wilted', note: '' }, 5)).toBe('over')
+    expect(validateWasteDraft({ quantity: 1, reason: 'other', note: '  ' }, 5)).toBe('note')
+    expect(validateWasteDraft({ quantity: 1, reason: 'other', note: 'Jatuh' }, 5)).toBeNull()
+  })
+
+  it('computes the share of the total', () => {
+    expect(wasteSharePercent(25, 100)).toBe(25)
+    expect(wasteSharePercent(1, 3)).toBe(33)
+    expect(wasteSharePercent(10, 0)).toBe(0)
+  })
+})

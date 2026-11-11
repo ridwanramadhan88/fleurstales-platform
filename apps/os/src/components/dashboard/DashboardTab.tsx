@@ -16,6 +16,8 @@ import { CourierDeliveryTasks } from './CourierDeliveryTasks'
 import { AdminFinishedMetrics } from './AdminFinishedMetrics'
 import { AttendancePhotoBoard } from './AttendancePhotoBoard'
 import { OperationsIssuesBoard } from './OperationsIssuesBoard'
+import { useSettingsStore } from '../../store/settingsStore'
+import { PurchaseConfirmationQueue } from '../inventory/PurchaseConfirmationQueue'
 import { OperationsSettingsEntry } from './OperationsSettingsEntry'
 import { MyDayStrip } from './MyDayStrip'
 import { FinanceHomeWork, HrHomeWork } from './HomeWorkCards'
@@ -45,6 +47,7 @@ export const DashboardTab: FC<DashboardTabProps> = ({
   onGoToOrders,
   onGoToFinishedOrders,
 }) => {
+  const inventoryEnabled = useSettingsStore((state) => state.storeProfile.inventoryEnabled)
   return (
     <section className="space-y-6">
       <DashboardHeader
@@ -59,6 +62,7 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         <>
           <OverviewCardsContainer />
           <OwnerAttentionQueue onNavigate={onNavigate} />
+          {inventoryEnabled && <PurchaseConfirmationQueue />}
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start">
             <AdminTodayQueue
               activeBranch={activeBranch}
@@ -106,7 +110,12 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         </>
       )}
 
-      {userRole === 'finance' && <FinanceHomeWork onNavigate={onNavigate} />}
+      {userRole === 'finance' && (
+        <>
+          <FinanceHomeWork onNavigate={onNavigate} />
+          <PurchaseConfirmationQueue />
+        </>
+      )}
 
       {userRole === 'hr' && <HrHomeWork onNavigate={onNavigate} />}
     </section>

@@ -1,5 +1,5 @@
 import { getSupabaseAuthClient } from '../api/supabaseAuth'
-import type { InventoryCategory, InventoryOverview, InventoryPurchase, PurchaseStatus } from '../domain/inventoryDomain'
+import type { InventoryCategory, InventoryOverview, InventoryPurchase, PurchaseStatus, WasteReason, WasteReport } from '../domain/inventoryDomain'
 
 const requireClient = () => {
   const client = getSupabaseAuthClient()
@@ -61,4 +61,17 @@ export const decideInventoryPurchase = async (purchaseId: string, decision: 'con
   const { data, error } = await requireClient().rpc('decide_inventory_purchase', { p_purchase_id: purchaseId, p_decision: decision, p_note: note ?? null })
   if (error) throw new Error(error.message)
   return data as PurchaseDecision
+}
+
+export const recordInventoryWaste = async (input: { itemId: string; quantity: number; reason: WasteReason; note?: string }): Promise<{ id: string; valueIdr: number; quantityAfter: number }> => {
+  const { data, error } = await requireClient().rpc('record_inventory_waste', { p_item_id: input.itemId, p_quantity: input.quantity, p_reason: input.reason, p_note: input.note?.trim() || null })
+  if (error) throw new Error(error.message)
+  return data as { id: string; valueIdr: number; quantityAfter: number }
+}
+
+export const fetchWasteReport = async (from: string, to: string, branchId?: string): Promise<WasteReport> => {
+  const { data, error } = await requireClient().rpc('get_inventory_waste_report', { p_from: from, p_to: to, p_branch_id: branchId ?? null })
+  if (error) throw new Error(error.message)
+  const raw = (data ?? {}) as Partial<WasteReport>
+  return { from: raw.from ?? from, to: raw.to ?? to, totalValueIdr: raw.totalValueIdr ?? 0, byReason: raw.byReason ?? [], byBranch: raw.byBranch ?? [], rows: raw.rows ?? [] }
 }

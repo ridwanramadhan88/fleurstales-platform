@@ -99,3 +99,55 @@ export const summarizePendingPurchases = (purchases: InventoryPurchase[]): { cou
   const pending = purchases.filter((purchase) => purchase.status === 'pending_finance')
   return { count: pending.length, totalIdr: pending.reduce((sum, purchase) => sum + purchase.totalIdr, 0) }
 }
+
+export type WasteReason = 'wilted' | 'damaged' | 'wrong_cut' | 'arrangement_leftover' | 'other'
+
+export const WASTE_REASONS: ReadonlyArray<{ id: WasteReason; en: string; id_: string }> = [
+  { id: 'wilted', en: 'Wilted', id_: 'Layu' },
+  { id: 'damaged', en: 'Damaged', id_: 'Rusak' },
+  { id: 'wrong_cut', en: 'Wrong cut', id_: 'Salah potong' },
+  { id: 'arrangement_leftover', en: 'Arrangement leftover', id_: 'Sisa rangkaian' },
+  { id: 'other', en: 'Other', id_: 'Lainnya' },
+]
+
+export const getWasteReasonLabel = (reason: WasteReason, language: 'en' | 'id'): string => {
+  const entry = WASTE_REASONS.find((item) => item.id === reason)
+  return entry ? (language === 'id' ? entry.id_ : entry.en) : reason
+}
+
+export interface WasteRow {
+  id: string
+  itemName: string
+  unit: string
+  branchId: string
+  branchName: string | null
+  quantity: number
+  reason: WasteReason
+  note: string | null
+  valueIdr: number
+  recordedByName: string
+  createdAt: string
+}
+
+export interface WasteReport {
+  from: string
+  to: string
+  totalValueIdr: number
+  byReason: Array<{ reason: WasteReason; count: number; valueIdr: number }>
+  byBranch: Array<{ branchId: string; branchName: string | null; count: number; valueIdr: number }>
+  rows: WasteRow[]
+}
+
+/** Waste needs a note only when the reason is "other"; quantity cannot exceed what is on hand. */
+export const validateWasteDraft = (draft: { quantity: number; reason: WasteReason; note: string }, onHand: number): 'quantity' | 'over' | 'note' | null => {
+  if (!Number.isFinite(draft.quantity) || draft.quantity <= 0) return 'quantity'
+  if (draft.quantity > onHand) return 'over'
+  if (draft.reason === 'other' && draft.note.trim().length === 0) return 'note'
+  return null
+}
+
+/** Share of the total waste value, rounded to a whole percent. */
+export const wasteSharePercent = (valueIdr: number, totalIdr: number): number => (totalIdr <= 0 ? 0 : Math.round((valueIdr / totalIdr) * 100))
+
+/** Money in plain Indonesian format, e.g. "Rp 25.000". */
+export const formatRupiah = (value: number): string => `Rp ${Math.round(value).toLocaleString('id-ID')}`
