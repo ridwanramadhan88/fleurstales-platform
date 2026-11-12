@@ -9,6 +9,7 @@
  * — see components/dashboard/DashboardTab.tsx — rather than inline here.
  */
 
+import { OPEN_MY_DAY_EVENT } from '../components/dashboard/MyDayStrip'
 import type { FC } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { TopBarContainer } from '../components/dashboard/TopBarContainer'
@@ -115,7 +116,7 @@ export interface HomePageProps {
 }
 
 const getDefaultTabForRole = (role: ReturnType<typeof useUserStore.getState>['role']): AppTabId =>
-  role === 'finance' ? 'finance' : role === 'hr' ? 'hr' : 'dashboard'
+  role === 'finance' ? 'finance' : role === 'hr' ? 'hr' : role === 'admin' ? 'orders' : 'dashboard'
 
 const HomePage: FC<HomePageProps> = ({
   onSignOut,
@@ -348,7 +349,7 @@ const HomePage: FC<HomePageProps> = ({
           : item.target === 'hr_payroll'
             ? navigate(toHrSection('payroll', item.targetId))
           : item.target === 'my_schedule'
-            ? navigate(toAppTab('dashboard'))
+            ? (window.dispatchEvent(new Event(OPEN_MY_DAY_EVENT)), true)
           : item.target === 'customers'
             ? navigate(toAppTab('customers'))
             : false

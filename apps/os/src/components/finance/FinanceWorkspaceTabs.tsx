@@ -188,7 +188,6 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
       <div className="space-y-3">
         <header className="space-y-1">
           <h1 className="font-display text-2xl font-semibold leading-tight">{item.label}</h1>
-          <p className="text-sm leading-5 text-muted-foreground">{item.description}</p>
         </header>
         {activeGroup === 'reconciliation' && (
           <ReconciliationTabs modules={modules} activeModule={activeModule} onChange={onChange} />

@@ -33,7 +33,6 @@ export const CourierDeliveryTasks: FC = () => {
     <section className={surfaceCardClass('standard', 'border border-border ring-0')} aria-label={copy('Delivery tasks', 'Tugas antar')}>
       <header className="mb-3">
         <h2 className="text-base font-semibold leading-6">{copy('Delivery tasks', 'Tugas antar')}</h2>
-        <p className="text-sm text-muted-foreground">{copy('Earliest schedule first.', 'Jadwal paling awal di atas.')}</p>
       </header>
 
       {tasks.length === 0 ? (

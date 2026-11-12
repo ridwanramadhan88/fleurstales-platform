@@ -19,7 +19,6 @@ import { OperationsIssuesBoard } from './OperationsIssuesBoard'
 import { useSettingsStore } from '../../store/settingsStore'
 import { PurchaseConfirmationQueue } from '../inventory/PurchaseConfirmationQueue'
 import { OperationsSettingsEntry } from './OperationsSettingsEntry'
-import { MyDayStrip } from './MyDayStrip'
 import { FinanceHomeWork, HrHomeWork } from './HomeWorkCards'
 import { RevenueTrendCard } from './RevenueTrendCard'
 
@@ -74,9 +73,9 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         </>
       )}
 
+      {/* Admin lands on Orders; this stays only if the Owner opens Today for them. */}
       {userRole === 'admin' && (
         <>
-          <MyDayStrip />
           <AdminTodayQueue
             activeBranch={activeBranch}
             onGoToOrders={onGoToOrders}
@@ -86,29 +85,20 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         </>
       )}
 
-      {userRole === 'florist' && (
-        <>
-          <MyDayStrip />
-          <FloristAssignedOrders onGoToOrders={onGoToOrders} />
-        </>
-      )}
+      {userRole === 'florist' && <FloristAssignedOrders onGoToOrders={onGoToOrders} />}
 
+      {/* Manager: own florist work first (only when assigned), then what
+          needs attention, then staff attendance. Settings are rarely changed. */}
       {userRole === 'manager' && (
         <>
-          <MyDayStrip />
-          <OperationsSettingsEntry />
+          <FloristAssignedOrders onGoToOrders={onGoToOrders} hideWhenEmpty />
           <OperationsIssuesBoard />
           <AttendancePhotoBoard />
-          <FloristAssignedOrders onGoToOrders={onGoToOrders} />
+          <OperationsSettingsEntry />
         </>
       )}
 
-      {userRole === 'courier' && (
-        <>
-          <MyDayStrip />
-          <CourierDeliveryTasks />
-        </>
-      )}
+      {userRole === 'courier' && <CourierDeliveryTasks />}
 
       {userRole === 'finance' && (
         <>

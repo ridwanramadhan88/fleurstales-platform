@@ -1,23 +1,20 @@
 import { useState, type FC, type ReactNode } from 'react'
 import type { BranchFilter } from '../../types/orders'
 import type { AttendanceStatus } from '../../store/hrStoreTypes'
-import { useUserStore } from '../../store/userStore'
 import { useHrStore } from '../../store/hrStore'
-import { useOrdersStore } from '../../store/ordersStore'
 import type { EmployeeStatusFilter } from '../../domain/hrDomain'
-import { getEmployeeOrderPerformance } from '../../domain/employeeOrderPerformanceDomain'
 import { DatePickerField } from '../ui/date-time-field'
 import type { HrSection, HrTabContentViewModel } from './HrTabContentController'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { HrSchedulingSection } from './HrSchedulingSection'
 import { AttendanceReviewQueue } from './AttendanceReviewQueue'
+import { AttendanceCalendar } from './AttendanceCalendar'
 import { AttendanceExportButton } from './AttendanceExportButton'
 import { HrPayrollSection } from './HrPayrollSection'
 import { FieldLabel, ValidationSummary } from '../ui/form-patterns'
 import { ChevronRight, UserPlus } from 'lucide-react'
 import { FilterChip } from '../ui/chip'
-import { InfoHint } from '../ui/info-hint'
 import { getDateLocale } from '../../i18n/uiLanguage'
 import { CreateStaffSheet, PeopleListCard, PeoplePageHeader, PeoplePageShell, PeopleSummaryCard, PeopleSummaryGrid, PeopleTabs } from './PeopleWorkspaceUI'
 import { EmployeeRemovalControl } from './EmployeeRemovalControl'
@@ -50,24 +47,24 @@ const STATUS_FILTER_LABELS: Record<EmployeeStatusFilter, string> = {
 
 export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
   const tr = useStaffCopy()
-  const signedInRole = useUserStore((state) => state.role)
   const attendanceReviewCases = useHrStore((state) => state.attendanceReviewCases)
-  const orders = useOrdersStore((state) => state.orders)
   const {
     activeBranch, activeSection, availableSections, canEdit, canCreateEmployee, canManageEmployeeStatus, canManageEmployeeDetails, canEditCredentials, canCreateAccounts, usesProductionPassword,
     pendingStatusEmployee, statusActionError, attendanceEditor, attendanceActionError, attendanceHistory,
     statusFilter, employeeSearch, employeeRoleFilter, isAddOpen, form, formErrors, detailsEmployee, detailsForm, profileErrors, accessErrors, detailsError, detailsMessage, pendingAccessConfirmation, pendingDetailsCloseConfirmation, pendingAddCloseConfirmation, hasUnsavedEmployeeDetails,
-    summary, employeeRows, assignableRoles,
+    employeeRows, assignableRoles,
   } = vm
 
   const selectedAccountEditable = canManageEmployeeDetails && detailsEmployee?.systemRole !== 'owner'
   const [detailsSection,setDetailsSection] = useState<'profile'|'access'>('profile')
+  const [attendanceView,setAttendanceView] = useState<'calendar'|'review'>('calendar')
+  const pendingReviewCount = attendanceReviewCases.filter((item) => item.status === 'pending' || item.status === 'problem').length
   const readyCount = employeeRows.filter((item)=>item.readiness.state==='active' && item.readiness.setupComplete).length
   const setupRequiredCount = employeeRows.filter((item)=>item.readiness.state==='active' && !item.readiness.setupComplete).length
   const inactiveCount = employeeRows.filter((item)=>item.readiness.state==='inactive').length
 
   return <PeoplePageShell>
-    <PeopleTabs sections={availableSections} activeSection={activeSection} onChange={vm.onSectionChange} />
+    <PeopleTabs sections={availableSections} activeSection={activeSection} onChange={vm.onSectionChange} badges={{ attendance: pendingReviewCount }} />
 
     <div className="space-y-5">
     {activeSection === 'scheduling' ? <HrSchedulingSection activeBranch={activeBranch} searchQuery={employeeSearch} /> : activeSection === 'payroll' ? <HrPayrollSection searchQuery={employeeSearch} /> : activeSection === 'employees' ? <>
@@ -90,9 +87,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       </section>
 
       <section aria-label="Employees" className="space-y-3 pb-4">
-        <header><h3 className="text-sm font-semibold leading-5 text-foreground">{signedInRole === 'owner' ? 'Staff account management' : 'Employee directory'}</h3></header>
-
-        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">{employeeSearch.trim() || employeeRoleFilter !== 'all' || statusFilter !== 'all' ? 'No employees match the selected filters.' : 'No employees yet.'}</p> : employeeRows.map(({ employee, readiness }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); const performance = getEmployeeOrderPerformance(employee.id, orders); return <PeopleListCard key={employee.id} density="dense">
+        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">{employeeSearch.trim() || employeeRoleFilter !== 'all' || statusFilter !== 'all' ? 'No employees match the selected filters.' : 'No employees yet.'}</p> : employeeRows.map(({ employee, readiness }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); return <PeopleListCard key={employee.id} density="dense">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{employee.name}</p><p className="mt-0.5 text-xs font-medium text-muted-foreground">{roleLabel(employee.systemRole)}</p></div>
             <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
@@ -103,8 +98,6 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
           <p className="mt-3 text-xs text-muted-foreground">{`${employee.phone || 'No WhatsApp'} · Since ${formatBusinessDate(employee.hireDate, { month:'short', year:'numeric' })}`}</p>
           {readiness.state === 'inactive' && <p className="mt-1 text-xs text-muted-foreground">{employee.employmentEndDate ? `Employment ended ${formatBusinessDate(employee.employmentEndDate)}` : 'Inactive · separation date not recorded (legacy)'}</p>}
           {readiness.state === 'active' && readiness.missing.length > 0 && <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">{`${tr('Missing', 'Belum lengkap')}: ${readiness.missing.map((item) => tr(...READINESS_LABELS[item])).join(', ')}`}</p>}
-          {employee.systemRole === 'florist' && <div className="mt-3 rounded-lg bg-muted/40 p-2.5"><p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All-time order performance</p><div className="grid grid-cols-3 gap-2 text-center"><div><p className="text-sm font-semibold leading-5">{performance.floristAssigned}</p><p className="text-2xs text-muted-foreground">Assigned</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristCompleted}</p><p className="text-2xs text-muted-foreground">Completed</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristProcessing}</p><p className="text-2xs text-muted-foreground">Processing</p></div></div></div>}
-          {employee.systemRole === 'admin' && <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs"><span className="mr-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All time</span><span className="font-semibold">{performance.adminStartedProcessing}</span> orders moved to Processing</div>}
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-4">
             <span className={`rounded-full px-2 py-1 text-2xs font-medium ${hasLogin ? 'bg-info/10 text-info' : 'bg-surface-neutral text-muted-foreground ring-1 ring-border/70'}`}>{hasLogin ? 'Account · Login enabled' : readiness.state === 'active' ? 'Account · Profile only' : 'Account · Inactive'}</span>
             <button type="button" onClick={() => vm.onOpenEmployeeDetails(employee)} className="inline-flex h-9 items-center gap-1 rounded-full border border-border bg-background px-3 text-xs font-medium text-foreground">Details <ChevronRight className="size-3.5" /></button>
@@ -112,31 +105,18 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
         </PeopleListCard>})}</div>
       </section>
     </> : <>
-      <PeoplePageHeader section="attendance" action={<AttendanceExportButton activeBranch={activeBranch} />} />
-      <PeopleSummaryGrid className="grid-cols-2 gap-3 sm:grid-cols-3">
-        <PeopleSummaryCard className="md:min-h-[76px]" label="Present today" value={summary.presentToday.toString()} tone="success" />
-        <PeopleSummaryCard className="md:min-h-[76px]" label="Late / absent" value={(summary.lateToday + summary.absentToday).toString()} tone={summary.lateToday + summary.absentToday > 0 ? 'warning' : 'default'} />
-        <PeopleSummaryCard className="md:min-h-[76px]" label="Scheduled · no record" value={summary.notMarkedToday.toString()} tone="default" />
-      </PeopleSummaryGrid>
-      <AttendanceReviewQueue onOpenOrder={vm.onOpenOrder} onCorrectAttendance={vm.onOpenAttendanceCorrection} searchQuery={employeeSearch} />
-      <section aria-label="Employee attendance" className="space-y-3">
-        <header className="flex items-center gap-1.5"><h3 className="text-sm font-semibold leading-5 text-foreground">Employee attendance</h3><InfoHint label="About employee attendance">Create today&apos;s record or review previous entries.</InfoHint></header>
-        {attendanceActionError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{attendanceActionError}</p>}
-        {/* Never a heading with nothing under it. */}
-        {!employeeRows.some(({ readiness }) => readiness.state === 'active') && <p className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">No active employees yet. Add them in the Employees tab.</p>}
-        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.filter(({ readiness }) => readiness.state === 'active').map(({ employee, todayRecord }) => {
-          const reviewCases = attendanceReviewCases.filter((item) => item.employeeId === employee.id && item.date === (todayRecord?.date ?? vm.today) && ['pending', 'problem'].includes(item.status))
-          const needsReview = reviewCases.length > 0
-          return <PeopleListCard key={employee.id} density="dense" className="flex min-h-[68px] flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold leading-5">{employee.name}</p>
-              <p className="text-xs text-muted-foreground">{roleLabel(employee.systemRole)} · {todayRecord ? `${roleLabel(todayRecord.status)}${todayRecord.checkInAt ? ` · ${formatBusinessTime(todayRecord.checkInAt)}` : ''}` : 'No attendance record today'}</p>
-              {needsReview && <div className="mt-1.5"><span className="rounded-full bg-warning/10 px-2 py-0.5 text-2xs font-semibold text-warning">Needs review · {reviewCases.length}</span></div>}
-            </div>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">{canEdit && !todayRecord && <button type="button" onClick={() => vm.onOpenAttendanceEditor(employee)} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-medium text-background">Add record</button>}{canEdit && todayRecord && <button type="button" onClick={() => vm.onOpenAttendanceEditor(employee)} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-medium text-background">Correct today</button>}<button type="button" onClick={() => vm.onOpenAttendanceEditor(employee)} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium">History</button></div>
-          </PeopleListCard>
-        })}</div>
-      </section>
+      {/* Calendar first: a week (or month) of everyone at a glance. The list
+          view keeps every open review item reachable in one place. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div role="tablist" aria-label={tr('Attendance view', 'Tampilan absensi')} className="inline-flex h-11 rounded-full bg-muted/60 p-1 ring-1 ring-border/70">
+          {(['calendar', 'review'] as const).map((value) => <button key={value} type="button" role="tab" aria-selected={attendanceView === value} onClick={() => setAttendanceView(value)} className={`rounded-full px-4 text-sm font-medium ${attendanceView === value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>{value === 'calendar' ? tr('Calendar', 'Kalender') : `${tr('Review list', 'Daftar cek')}${pendingReviewCount ? ` · ${pendingReviewCount}` : ''}`}</button>)}
+        </div>
+        <AttendanceExportButton activeBranch={activeBranch} />
+      </div>
+      {attendanceActionError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{attendanceActionError}</p>}
+      {attendanceView === 'calendar'
+        ? <AttendanceCalendar employees={employeeRows.filter(({ employee }) => employee.status === 'active').map(({ employee }) => employee)} canEdit={canEdit} onOpenRecord={vm.onOpenAttendanceEditor} onOpenOrder={vm.onOpenOrder} onCorrectAttendance={vm.onOpenAttendanceCorrection} />
+        : <AttendanceReviewQueue onOpenOrder={vm.onOpenOrder} onCorrectAttendance={vm.onOpenAttendanceCorrection} searchQuery={employeeSearch} />}
     </>}
     </div>
 

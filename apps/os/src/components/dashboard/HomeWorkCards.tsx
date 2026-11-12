@@ -17,7 +17,7 @@ import { getMondayForDate, getWeekDates, toIsoDate } from '../../domain/hrSchedu
 import { requestFinanceWorkspaceNavigation } from '../finance/financeWorkspaceNavigation'
 import { surfaceCardClass } from '../ui/card'
 
-const WorkCard: FC<{ icon: ReactNode; label: string; value: string | number; helper: string; urgent: boolean; onOpen: () => void }> = ({ icon, label, value, helper, urgent, onOpen }) => (
+const WorkCard: FC<{ icon: ReactNode; label: string; value: string | number; urgent: boolean; onOpen: () => void }> = ({ icon, label, value, urgent, onOpen }) => (
   <button type="button" onClick={onOpen} className={`${surfaceCardClass('standard')} flex w-full flex-col gap-2 p-4 text-left transition hover:bg-accent/40`}>
     <span className="flex items-center justify-between gap-2">
       <span className={`flex size-9 items-center justify-center rounded-full ${urgent ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'}`}>{icon}</span>
@@ -25,7 +25,6 @@ const WorkCard: FC<{ icon: ReactNode; label: string; value: string | number; hel
     </span>
     <span className="text-2xl font-semibold tabular-nums text-foreground">{value}</span>
     <span className="text-sm font-semibold text-foreground">{label}</span>
-    <span className="text-xs text-muted-foreground">{helper}</span>
   </button>
 )
 
@@ -40,10 +39,10 @@ export const FinanceHomeWork: FC<{ onNavigate: (target: AppNavigationRequest) =>
   }
   return (
     <section aria-label="Finance work" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <WorkCard icon={<ClipboardCheck className="size-4" />} value={attention.awaiting} label="Awaiting reconciliation" helper="Paid orders to check" urgent={attention.awaiting > 0} onOpen={() => open({ module: 'order_verification', view: 'all' })} />
-      <WorkCard icon={<AlertTriangle className="size-4" />} value={attention.correction} label="Needs correction" helper="Sent back to Admin" urgent={attention.correction > 0} onOpen={() => open({ module: 'order_verification', view: 'needs_correction' })} />
-      <WorkCard icon={<RotateCcw className="size-4" />} value={attention.refunds} label="Refunds" helper="Waiting to be paid back" urgent={attention.refunds > 0} onOpen={() => open({ module: 'refunds', view: 'pending' })} />
-      <WorkCard icon={<Wallet className="size-4" />} value={attention.payrollReview + attention.payrollReady} label="Payroll" helper="To review or pay" urgent={attention.payrollReview + attention.payrollReady > 0} onOpen={() => open({ module: 'payroll', view: attention.payrollReview > 0 ? 'review' : 'ready' })} />
+      <WorkCard icon={<ClipboardCheck className="size-4" />} value={attention.awaiting} label="Awaiting reconciliation" urgent={attention.awaiting > 0} onOpen={() => open({ module: 'order_verification', view: 'all' })} />
+      <WorkCard icon={<AlertTriangle className="size-4" />} value={attention.correction} label="Needs correction" urgent={attention.correction > 0} onOpen={() => open({ module: 'order_verification', view: 'needs_correction' })} />
+      <WorkCard icon={<RotateCcw className="size-4" />} value={attention.refunds} label="Refunds" urgent={attention.refunds > 0} onOpen={() => open({ module: 'refunds', view: 'pending' })} />
+      <WorkCard icon={<Wallet className="size-4" />} value={attention.payrollReview + attention.payrollReady} label="Payroll" urgent={attention.payrollReview + attention.payrollReady > 0} onOpen={() => open({ module: 'payroll', view: attention.payrollReview > 0 ? 'review' : 'ready' })} />
     </section>
   )
 }
@@ -66,9 +65,9 @@ export const HrHomeWork: FC<{ onNavigate: (target: AppNavigationRequest) => void
   const work = getHrHomeWork({ reviewCases: reviewCases ?? [], employees, overrides, weekDates, payrollProposals })
   return (
     <section aria-label="HR work" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-      <WorkCard icon={<UserRoundCheck className="size-4" />} value={work.attendanceToReview} label="Attendance to review" helper="Open attendance cases" urgent={work.attendanceToReview > 0} onOpen={() => onNavigate(toHrSection('attendance'))} />
-      <WorkCard icon={<CalendarDays className="size-4" />} value={work.unscheduledStaff} label="Staff without a schedule" helper="Missing days this week" urgent={work.unscheduledStaff > 0} onOpen={() => onNavigate(toHrSection('scheduling'))} />
-      <WorkCard icon={<Wallet className="size-4" />} value={work.payrollStatus ? PAYROLL_STATUS_LABEL[work.payrollStatus] : 'Not created'} label="Payroll" helper="This period" urgent={work.payrollStatus === null || work.payrollStatus === 'returned_to_hr' || work.payrollStatus === 'draft'} onOpen={() => onNavigate(toHrSection('payroll'))} />
+      <WorkCard icon={<UserRoundCheck className="size-4" />} value={work.attendanceToReview} label="Attendance to review" urgent={work.attendanceToReview > 0} onOpen={() => onNavigate(toHrSection('attendance'))} />
+      <WorkCard icon={<CalendarDays className="size-4" />} value={work.unscheduledStaff} label="Staff without a schedule" urgent={work.unscheduledStaff > 0} onOpen={() => onNavigate(toHrSection('scheduling'))} />
+      <WorkCard icon={<Wallet className="size-4" />} value={work.payrollStatus ? PAYROLL_STATUS_LABEL[work.payrollStatus] : 'Not created'} label="Payroll" urgent={work.payrollStatus === null || work.payrollStatus === 'returned_to_hr' || work.payrollStatus === 'draft'} onOpen={() => onNavigate(toHrSection('payroll'))} />
     </section>
   )
 }

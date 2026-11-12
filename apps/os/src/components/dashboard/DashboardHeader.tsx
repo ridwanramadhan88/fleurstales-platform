@@ -6,34 +6,27 @@
 import type { FC } from 'react'
 import type { UserRole } from '../../store/userStore'
 
-const ROLE_COPY: Record<UserRole, { title: string; description: string }> = {
+const ROLE_COPY: Record<UserRole, { title: string }> = {
   owner: {
     title: 'Business overview',
-    description: 'Business health and key actions.',
   },
   admin: {
     title: "Today's operations",
-    description: 'Today’s orders and issues.',
   },
   finance: {
     title: 'Finance workspace',
-    description: 'Payments, payroll, refunds, and ledger.',
   },
   hr: {
     title: 'People & attendance',
-    description: 'Staff, attendance, schedules, and payroll.',
   },
   florist: {
     title: 'My work',
-    description: 'Your orders and next task.',
   },
   courier: {
     title: 'Tugas antar',
-    description: 'Pesanan yang harus Anda antar hari ini.',
   },
   manager: {
     title: 'Operasional hari ini',
-    description: 'Pekerjaan Anda dan semua pesanan hari ini.',
   },
 }
 
@@ -64,7 +57,6 @@ export const DashboardHeader: FC<DashboardHeaderProps> = ({
         <h1 className="mt-1 font-display text-2xl font-semibold leading-tight text-foreground">
           {copy.title}
         </h1>
-        <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">{copy.description}</p>
       </div>
     </header>
   )

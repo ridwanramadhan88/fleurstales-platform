@@ -79,7 +79,8 @@ describe('critical application workflows', () => {
     render(<App />)
     await chooseRole('Admin')
 
-    expect(screen.getByText(/Good (morning|afternoon|evening)/i)).toBeInTheDocument()
+    // Admin starts on the order list, not a separate Home.
+    expect(screen.getAllByText(/Needs action/i).length).toBeGreaterThan(0)
     expect(useUserStore.getState()).toMatchObject({
       role: 'admin',
       employeeId: 'emp-akbar',

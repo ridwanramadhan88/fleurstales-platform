@@ -128,7 +128,7 @@ export const getAccessibleNavigationDestinationIds = ({
   includeDashboard = true,
 }: NavigationAccessContext): NavigationDestinationId[] =>
   NAVIGATION_DESTINATIONS.filter((destination) => {
-    if (role === 'admin' && (destination.id === 'finance' || destination.id === 'revenue')) return false
+    if (role === 'admin' && (destination.id === 'finance' || destination.id === 'revenue' || destination.id === 'dashboard')) return false
     if (destination.id === 'dashboard' && !includeDashboard) return false
     if (destination.requiresInventory && !inventoryEnabled) return false
 

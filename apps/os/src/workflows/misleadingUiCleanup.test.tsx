@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { OrderDetailsActionsSection } from '../components/orders/OrderDetailsActionsSection'
 import type { OrderDetailsViewModel } from '../components/orders/OrderDetailsController'
@@ -59,7 +59,7 @@ describe('misleading UI cleanup', () => {
     expect(screen.queryByText('Low stock alerts')).not.toBeInTheDocument()
   })
 
-  it('expands assigned florist orders in place instead of navigating to a blocked workspace', () => {
+  it('shows every assigned order with what the florist needs to make it, without navigating away', () => {
     useUserStore.setState({ employeeId: 'florist-1', role: 'florist', name: 'Florist' })
     useOrdersStore.setState({
       orders: Array.from({ length: 5 }, (_, index) => ({
@@ -68,14 +68,15 @@ describe('misleading UI cleanup', () => {
         orderNumber: `ORD-${index}`,
         floristAssignedEmployeeId: 'florist-1',
         status: 'processing',
+        orderNote: index === 4 ? 'Pink wrap, no lilies' : undefined,
+        greetingMessage: index === 4 ? 'Happy birthday, Mom' : undefined,
       })) as OrderTableRow[],
     })
 
     render(<FloristAssignedOrders onGoToOrders={() => { throw new Error('must not navigate') }} />)
-    expect(screen.queryByText('ORD-4')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /view all/i }))
     expect(screen.getByText('ORD-4')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument()
+    expect(screen.getByText('Pink wrap, no lilies')).toBeInTheDocument()
+    expect(screen.getByText('Happy birthday, Mom')).toBeInTheDocument()
   })
 
   it('lets a florist upload a finish photo for processing orders only', () => {
@@ -87,6 +88,6 @@ describe('misleading UI cleanup', () => {
       ] as OrderTableRow[],
     })
     render(<FloristAssignedOrders onGoToOrders={() => undefined} />)
-    expect(screen.getAllByRole('button', { name: /upload finish photo/i })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: /upload finish photo|unggah foto hasil/i })).toHaveLength(1)
   })
 })

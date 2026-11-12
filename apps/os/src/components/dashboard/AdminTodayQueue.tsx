@@ -31,7 +31,6 @@ export function AdminTodayQueue({
     ).filter((item) => item.priority.needsAdmin),
     [activeBranch, orders],
   )
-  const activeOrders = prioritized.map((item) => item.order)
 
   const visibleItems = prioritized.slice(0, 4)
   const visibleOrders = visibleItems.map((item) => item.order)
@@ -41,14 +40,6 @@ export function AdminTodayQueue({
       <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold leading-6">Today&apos;s order priority</h2>
-          <p className="text-sm text-muted-foreground">
-            Work from the top. Open an order to perform its single next action.
-          </p>
-          {activeOrders.length > 0 && (
-            <p className="mt-1 text-xs font-medium text-muted-foreground">
-              {`Showing ${Math.min(visibleOrders.length, activeOrders.length)} of ${activeOrders.length} active order${activeOrders.length === 1 ? '' : 's'}.`}
-            </p>
-          )}
         </div>
         <button
           type="button"

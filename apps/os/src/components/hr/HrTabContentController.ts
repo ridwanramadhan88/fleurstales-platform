@@ -107,7 +107,7 @@ export interface HrTabContentViewModel {
   onHireDateChange: (value: string) => void
   onCreateEmployee: (event: FormEvent) => void
   onOpenAttendanceCorrection: (caseId: string, employeeId: string, date: string) => void
-  onOpenAttendanceEditor: (employee: Employee) => void
+  onOpenAttendanceEditor: (employee: Employee, date?: string) => void
   onCloseAttendanceEditor: () => void
   onAttendanceDateChange: (value: string) => void
   onAttendanceStatusChange: (value: AttendanceStatus) => void
@@ -155,18 +155,20 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
   const canPreparePayroll = hasActionPermission(role, 'hr.create_payroll_proposal', actionPermissions, permissions) || hasActionPermission(role, 'hr.edit_payroll_proposal', actionPermissions, permissions) || hasActionPermission(role, 'hr.resolve_rejected_employee', actionPermissions, permissions)
   const canEdit = canEditSectionLevel && canCorrectAttendance
   const canAccessScheduling = canViewScheduling(role, permissions)
+  // Daily work first: attendance, then the weekly schedule and payroll.
+  // Employee records change rarely, so they come last.
   const availableSections: HrSection[] = [
-    ...(canAccessHrCore && canViewEmployees ? ['employees'] as HrSection[] : []),
-    ...(canAccessScheduling ? ['scheduling'] as HrSection[] : []),
     ...(canAccessHrCore && (canReviewAttendance || canCorrectAttendance) ? ['attendance'] as HrSection[] : []),
+    ...(canAccessScheduling ? ['scheduling'] as HrSection[] : []),
     ...(canAccessHrCore && canPreparePayroll ? ['payroll'] as HrSection[] : []),
+    ...(canAccessHrCore && canViewEmployees ? ['employees'] as HrSection[] : []),
   ]
   const canEditCredentials = role === 'owner' && canManageEmployeeDetails
   const canCreateAccounts = ['owner', 'hr'].includes(role) && canCreateEmployee
   const creatableRoleSet = new Set(getCreatableAccountRoles(role, hrManagedRoles))
   const assignableRoles = staffRoles.roles.filter((candidate) => creatableRoleSet.has(candidate))
 
-  const [activeSection, setActiveSection] = useState<HrSection>(() => canAccessHrCore ? 'employees' : 'scheduling')
+  const [activeSection, setActiveSection] = useState<HrSection>(() => availableSections[0] ?? 'scheduling')
   const [statusFilter, setStatusFilter] = useState<EmployeeStatusFilter>('all')
   const [internalEmployeeSearch, setInternalEmployeeSearch] = useState('')
   const employeeSearch = searchQuery ?? internalEmployeeSearch
@@ -376,9 +378,9 @@ export const useHrTabContentController = ({ activeBranch, onOpenOrder, searchQue
     onFormFieldChange: handleFormFieldChange,
     onHireDateChange: (value) => { setForm((previous) => ({ ...previous, hireDate: value })); setFormErrors((current) => ({ ...current, hireDate: undefined })) },
     onCreateEmployee: handleCreateEmployee,
-    onOpenAttendanceEditor: (employee) => {
-      const existing = getAttendanceForEmployeeOnDate(attendance, employee.id, today)
-      setAttendanceActionError(null); setAttendanceEditor({ employee, date: today, status: existing?.status ?? '', note: '' })
+    onOpenAttendanceEditor: (employee, date = today) => {
+      const existing = getAttendanceForEmployeeOnDate(attendance, employee.id, date)
+      setAttendanceActionError(null); setAttendanceEditor({ employee, date, status: existing?.status ?? '', note: '' })
     },
     onOpenAttendanceCorrection: (caseId, employeeId, date) => {
       const employee = employees.find((item) => item.id === employeeId)

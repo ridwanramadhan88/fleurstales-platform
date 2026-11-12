@@ -6,7 +6,6 @@ import type { AttendanceReviewCase } from '../../store/hrStoreTypes'
 import { isHrManagedEmployee } from '../../domain/hrManagedEmployeeDomain'
 import { useSettingsStore } from '../../store/settingsStore'
 import { AppDialog } from '../ui/app-dialog'
-import { InfoHint } from '../ui/info-hint'
 import { openAttendanceEvidence } from '../../data/attendanceEvidenceSupabase'
 import { getDateLocale } from '../../i18n/uiLanguage'
 import { usePayrollStore } from '../../store/payrollStore'
@@ -33,9 +32,11 @@ export interface AttendanceReviewQueueProps {
   onOpenOrder?: (orderNumber: string) => void
   onCorrectAttendance?: (caseId: string, employeeId: string, date: string) => void
   searchQuery?: string
+  /** One employee on one day: used by the attendance calendar's day sheet. */
+  scope?: { employeeId: string; date: string }
 }
 
-export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, searchQuery = '' }: AttendanceReviewQueueProps) => {
+export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, searchQuery = '', scope }: AttendanceReviewQueueProps) => {
   const role = useUserStore((state) => state.role)
   const actorName = useUserStore((state) => state.name)
   const hrManagedRoles = useSettingsStore((state) => state.staffRoles.hrManagedRoles)
@@ -73,10 +74,11 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
 
   const managedCases = useMemo(
     () => cases.filter((item) => {
+      if (scope && (item.employeeId !== scope.employeeId || item.date !== scope.date)) return false
       const employee = employees.find((entry) => entry.id === item.employeeId)
       return Boolean(employee && (role === 'owner' ? employee.systemRole !== 'owner' : isHrManagedEmployee(employee, 'attendance', hrManagedRoles)))
     }),
-    [cases, employees, role, hrManagedRoles],
+    [cases, employees, role, hrManagedRoles, scope?.employeeId, scope?.date],
   )
 
   const filteredManagedCases = useMemo(() => {
@@ -99,7 +101,8 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
     [filteredManagedCases],
   )
 
-  const visible = view === 'pending' ? pendingCases : resolvedCases
+  // The day sheet shows everything for that day: open items first.
+  const visible = scope ? [...pendingCases, ...resolvedCases] : view === 'pending' ? pendingCases : resolvedCases
 
   const openReview = (item: AttendanceReviewCase) => {
     setSelected(item)
@@ -184,31 +187,28 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
   }
 
   return <section aria-label="Attendance review" className="space-y-3">
-    <div className="flex items-start justify-between gap-3">
+    {!scope && <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 items-center gap-1.5">
         <h3 className="text-sm font-semibold leading-5">Attendance review</h3>
-        <InfoHint label="About attendance review">
-          Review exceptions here. Confirm the record as correct or open a correction with a required reason.
-        </InfoHint>
       </div>
       {pendingCases.length > 0 && (
         <span className="shrink-0 rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">
           {`${pendingCases.length} to review`}
         </span>
       )}
-    </div>
+    </div>}
 
     {evidenceError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{evidenceError}</p>}
 
-    <nav className="flex gap-6 border-b border-border/60" aria-label="Attendance review status">
+    {!scope && <nav className="flex gap-6 border-b border-border/60" aria-label="Attendance review status">
       <button type="button" onClick={() => setView('pending')} aria-current={view === 'pending' ? 'page' : undefined} className={`relative h-9 whitespace-nowrap px-1 text-sm font-medium after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-current ${view === 'pending' ? 'text-foreground after:scale-x-100' : 'text-muted-foreground after:scale-x-0'}`}>Needs review{pendingCases.length > 0 ? ` · ${pendingCases.length}` : ''}</button>
       <button type="button" onClick={() => setView('resolved')} aria-current={view === 'resolved' ? 'page' : undefined} className={`relative h-9 whitespace-nowrap px-1 text-sm font-medium after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-current ${view === 'resolved' ? 'text-foreground after:scale-x-100' : 'text-muted-foreground after:scale-x-0'}`}>Resolved</button>
-    </nav>
+    </nav>}
 
     {notice && <p role="status" className="rounded-xl bg-success/10 px-3 py-2 text-sm text-success">{notice}</p>}
     <div className="space-y-3">
       {visible.length === 0
-        ? <div className="py-5"><p className="text-sm text-muted-foreground">{emptyCopy[view]}</p></div>
+        ? (scope ? null : <div className="py-5"><p className="text-sm text-muted-foreground">{emptyCopy[view]}</p></div>)
         : visible.map((item) => {
           const employee = employees.find((entry) => entry.id === item.employeeId)
           const record = attendance.find((entry) => entry.id === item.attendanceId)
@@ -225,8 +225,8 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
                       : <span className="rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success">Resolved</span>
                     : null}
                 </div>
-                <div>
-                  <p className="text-base font-semibold leading-6">{employee?.name ?? 'Unknown employee'}</p>
+                <div className={scope && !item.orderNumber ? 'hidden' : undefined}>
+                  <p className={scope ? 'hidden' : 'text-base font-semibold leading-6'}>{employee?.name ?? 'Unknown employee'}</p>
                   <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
                     {new Date(`${item.date}T12:00:00+07:00`).toLocaleDateString(getDateLocale(),{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Jakarta'})}
                     {item.orderNumber ? <> · Order <button type="button" onClick={() => onOpenOrder?.(item.orderNumber!)} className="font-semibold text-primary hover:underline">{item.orderNumber}</button></> : ''}

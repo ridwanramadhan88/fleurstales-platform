@@ -169,9 +169,6 @@ export const CatalogTabContent: FC<CatalogTabContentViewModel> = ({
         <header className="space-y-3 sm:flex sm:items-start sm:justify-between sm:gap-4 sm:space-y-0">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">Catalog</h1>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Manage products, availability, featured items, and promotions.
-            </p>
           </div>
 
           {canEdit && (

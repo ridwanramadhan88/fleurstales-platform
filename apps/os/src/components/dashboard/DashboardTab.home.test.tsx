@@ -26,22 +26,21 @@ const renderHome = (role: UserRole) => {
 const regionsInOrder = () => Array.from(document.querySelectorAll('section[aria-label], section[aria-labelledby], h2')).map((node) => node.getAttribute('aria-label') ?? node.textContent ?? '')
 
 describe('home screens show each role its own work', () => {
-  it('admin: a one-line "my day" status, then the priority orders', () => {
+  it('admin: the priority orders, with attendance moved to the top bar', () => {
     renderHome('admin')
-    const order = regionsInOrder()
-    const myDay = order.indexOf('My day')
-    const priority = order.findIndex((label) => /priority/i.test(label))
-    expect(myDay).toBeGreaterThanOrEqual(0)
-    expect(priority).toBeGreaterThan(myDay)
-    // Attendance and schedule cards stay folded until tapped.
+    expect(regionsInOrder().some((label) => /priority/i.test(label))).toBe(true)
+    expect(screen.queryByRole('region', { name: 'My day' })).toBeNull()
+  })
+
+  it('florist: only the orders to make, nothing above them', () => {
+    renderHome('florist')
+    expect(regionsInOrder()[0]).toMatch(/My assigned orders|Pesanan saya/)
     expect(screen.queryByText('My schedule')).toBeNull()
   })
 
-  it('florist: a one-line "my day" status, then the assigned orders', () => {
-    renderHome('florist')
-    const strip = screen.getByRole('region', { name: 'My day' })
-    expect(within(strip).getByRole('button', { expanded: false })).toBeInTheDocument()
-    expect(screen.queryByText('My schedule')).toBeNull()
+  it('manager: own florist work is hidden when nothing is assigned', () => {
+    renderHome('manager')
+    expect(screen.queryByRole('region', { name: /My assigned orders|Pesanan saya/ })).toBeNull()
   })
 
   it('finance: work cards that open their queues, no Customers or Catalog shortcuts', () => {
