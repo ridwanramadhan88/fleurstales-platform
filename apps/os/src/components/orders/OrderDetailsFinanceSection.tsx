@@ -84,7 +84,6 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
             <section className="flex items-center justify-between gap-3 rounded-2xl bg-surface-card p-4 ring-1 ring-border/60">
               <div>
                 <p className="text-sm font-semibold text-foreground">Finance decision</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Payment evidence is ready for reconciliation.</p>
               </div>
               <button
                 type="button"
@@ -168,12 +167,6 @@ export const OrderDetailsFinanceSection: FC<OrderDetailsFinanceSectionProps> = (
                 {showPendingPayment && (
                   <div className="flex min-w-0 items-center gap-1.5 text-warning">
                     <span className="shrink-0 text-xs font-semibold">Pembayaran belum diterima</span>
-                    <InfoHint
-                      label="Status pembayaran"
-                      className="size-6 text-current hover:text-current"
-                    >
-                      Belum dikonfirmasi
-                    </InfoHint>
                     <span aria-hidden="true" className="mx-1 min-w-4 flex-1 border-t border-dashed border-border/70" />
                     <span className="shrink-0 text-xs font-semibold">
                       Rp {formatter.format(order.paidAmountIdr ?? 0)}

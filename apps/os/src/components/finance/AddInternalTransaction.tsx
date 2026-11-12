@@ -14,7 +14,6 @@ import type { UserRole } from '../../store/userStore'
 import type { BranchId } from '../../types/orders'
 import { AppDialog } from '../ui/app-dialog'
 import { ActionFooter } from '../ui/action-footer'
-import { InfoHint } from '../ui/info-hint'
 import { FinanceModuleHeader } from './FinanceModuleHeader'
 import type {
   FinanceCategory,
@@ -299,11 +298,6 @@ export const AddInternalTransaction: FC<AddInternalTransactionProps> = ({
     <section aria-label="Transactions" className="space-y-3">
       <FinanceModuleHeader
         title="Transactions"
-        hint={
-          <InfoHint label="About transactions">
-            Record company-wide or branch Money In and Money Out to a real account or cash source. Every manual entry keeps a transaction code and private proof. Category configuration lives in Settings → Finance.
-          </InfoHint>
-        }
         actions={(
           <button type="button" onClick={() => { reset(); setEditingTransactionId(null); setOpen(true); setSuccess(null) }} className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground">
             <Plus className="size-4" /> Add transaction

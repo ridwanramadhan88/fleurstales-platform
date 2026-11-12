@@ -585,7 +585,7 @@ const HomePage: FC<HomePageProps> = ({
                 <>
                   <FinanceModuleHeader
                     title="Payroll"
-                    description="Review monthly payroll proposals"
+                   
                   />
                   {/* One schedule card: dates plus "Edit schedule". */}
                   <FinancePayrollScheduleAdjustment />

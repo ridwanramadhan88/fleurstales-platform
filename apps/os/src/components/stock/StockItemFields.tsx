@@ -11,7 +11,7 @@ const inputClass = 'h-10 w-full rounded-lg border border-border bg-card px-3 tex
 export const StockItemFields: FC<Props> = ({ form, setForm, showSubCategory }) => {
   const update = <K extends keyof StockFormState>(field: K, value: StockFormState[K]) => setForm((previous) => ({ ...previous, [field]: value }))
   return <div className="space-y-4">
-    <FormSection title="Item information" description="Use a clear item name and unit.">
+    <FormSection title="Item information">
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Name" required><input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="e.g. Red rose" className={inputClass} autoFocus /></Field>
         <Field label="Unit" required><input value={form.unit} onChange={(e) => update('unit', e.target.value)} placeholder="stems, pieces, rolls..." className={inputClass} /></Field>
@@ -20,7 +20,7 @@ export const StockItemFields: FC<Props> = ({ form, setForm, showSubCategory }) =
       </div>
     </FormSection>
 
-    <FormSection title="Quantity and alerts" description="Reserved stock is committed. Set the low-stock alert.">
+    <FormSection title="Quantity and alerts" >
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Available quantity" required><input type="number" min={0} value={form.availableQty} onChange={(e)=>update('availableQty',e.target.value)} placeholder="0" className={inputClass} /></Field>
         <Field label="Reserved quantity"><input type="number" min={0} value={form.reservedQty} onChange={(e)=>update('reservedQty',e.target.value)} placeholder="0" className={inputClass} /></Field>
@@ -28,7 +28,7 @@ export const StockItemFields: FC<Props> = ({ form, setForm, showSubCategory }) =
       </div>
     </FormSection>
 
-    <FormSection title="Freshness" description="Add expiry only for perishable items." optional>
+    <FormSection title="Freshness" optional>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Perishable"><Select value={form.isPerishable} onValueChange={(value)=>update('isPerishable',value as 'yes'|'no')}><SelectTrigger className={inputClass}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="yes">Yes</SelectItem><SelectItem value="no">No</SelectItem></SelectContent></Select></Field>
         {form.isPerishable === 'yes' ? <Field label="Expiry date"><DatePickerField value={form.expiryDate} onChange={(value)=>update('expiryDate',value)} className="h-10 rounded-lg bg-card text-sm" /></Field> : <div className="flex items-end"><p className="w-full rounded-lg bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">No expiry date is required.</p></div>}

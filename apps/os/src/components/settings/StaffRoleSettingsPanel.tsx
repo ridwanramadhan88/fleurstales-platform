@@ -89,7 +89,6 @@ export const StaffRoleSettingsPanel: FC<Props> = ({
       <section className="rounded-2xl border border-border bg-card p-4 shadow-ios-sm ring-1 ring-black/[0.02] sm:p-5">
         <div>
           <h3 className="text-sm font-semibold leading-5">Staff roles</h3>
-          <p className="mt-1 text-xs text-muted-foreground">Roles available for staff accounts.</p>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -140,7 +139,6 @@ export const StaffRoleSettingsPanel: FC<Props> = ({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2"><UserPlus className="size-4" /><h3 className="text-sm font-semibold leading-5">Create staff account</h3></div>
-              <p className="mt-1 text-xs text-muted-foreground">Add a staff login and basic employment details.</p>
             </div>
             {!staffAccountDraft && <button type="button" onClick={onStartStaffAccountDraft} className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-primary px-[18px] text-xs font-semibold text-primary-foreground"><Plus className="size-3.5" /> Add account draft</button>}
           </div>

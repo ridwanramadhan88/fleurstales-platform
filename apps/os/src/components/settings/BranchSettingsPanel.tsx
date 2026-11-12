@@ -511,7 +511,7 @@ export const BranchSettingsPanel: FC<Props> = ({
         <SettingsSectionHeader
           icon={Building2}
           title="Branch operations"
-          description="Manage branch details, availability, and operating schedules."
+         
           action={isEditing ? <button type="button" onClick={onAddBranch} className="inline-flex items-center bg-primary text-sm font-semibold text-primary-foreground shadow-sm rounded-full px-[18px] whitespace-nowrap h-11 rounded-full px-[18px] gap-2 whitespace-nowrap"><Plus className="size-4" /> Add branch</button> : undefined}
         />
 
@@ -591,7 +591,6 @@ export const BranchSettingsPanel: FC<Props> = ({
                   <div id={`branch-details-${branch.id}`} className="space-y-4 border-t border-border/70 bg-surface-card p-3 sm:p-4">
                     <div>
                       <h4 className="text-xs font-semibold text-foreground">Branch information</h4>
-                      <p className="text-xs text-muted-foreground">Identity, customer contact, and storefront delivery settings.</p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

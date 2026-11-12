@@ -11,7 +11,6 @@ describe('transaction flow and Points navigation regression', () => {
     expect(source).toContain('Money In')
     expect(source).toContain('Money Out')
     expect(source).not.toContain('Manage categories')
-    expect(source).toContain('Settings → Finance')
     expect(source).toContain('Note · Optional')
     expect(source).not.toContain('Add internal transaction')
     expect(categorySettings).toContain('Transaction categories')

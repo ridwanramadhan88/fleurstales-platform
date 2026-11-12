@@ -79,7 +79,6 @@ export const NotificationCenter: FC<NotificationCenterProps> = ({
         {items.length === 0 ? (
           <div className="rounded-2xl bg-surface-panel px-4 py-8 text-center ring-1 ring-border/60">
             <p className="text-sm font-medium text-foreground">Nothing needs attention</p>
-            <p className="mt-1 text-xs text-muted-foreground">Important updates will appear here.</p>
           </div>
         ) : (
           <ul className="space-y-2">

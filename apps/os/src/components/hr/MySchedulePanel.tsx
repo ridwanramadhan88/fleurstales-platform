@@ -27,7 +27,6 @@ export const MySchedulePanel:FC = () => {
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <div className="flex items-center gap-2"><CalendarDays className="size-5 text-primary"/><h2 className="text-base font-semibold leading-6">My schedule</h2></div>
-        <p className="mt-1 text-xs text-muted-foreground">Your published branch and shift for this week.</p>
       </div>
       <StatusChip tone={publication?.status==='published' ? 'success' : 'info'}>{publication?.status==='published'?'Published':'Schedule update pending'}</StatusChip>
     </div>

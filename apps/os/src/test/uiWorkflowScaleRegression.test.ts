@@ -158,7 +158,7 @@ describe('mobile workflow UI scale regressions', () => {
 
     expect(people).toContain('PEOPLE_SECTION_META')
     expect(people).toContain('Icon className="hidden size-4 shrink-0 sm:block"')
-    expect(people).toContain('flex size-10 shrink-0')
+    expect(people).toContain("<h2 className=\"sr-only\">")
     expect(periods).toContain('max-w-[520px]')
     expect(points).toContain('aria-label="Point sections"')
     expect(points).toContain("settingsTabButtonClass({ active:view === item, level:'primary'")

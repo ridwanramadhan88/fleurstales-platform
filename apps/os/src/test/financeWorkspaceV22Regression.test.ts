@@ -14,7 +14,8 @@ describe('Finance workspace v2.2 regressions', () => {
 
     expect(transactions).not.toContain('Manage categories')
     expect(transactions).not.toContain('title="Expense categories"')
-    expect(transactions).toContain('Settings → Finance')
+    // Categories are configured in Finance settings, not on the daily screen.
+    expect(transactions).not.toContain('<FinanceCategorySettingsPanel')
     expect(overview).toContain('Finance settings')
     expect(overview).toContain('<FinanceCategorySettingsPanel />')
     expect(financeSettings).toContain('Transaction categories')
@@ -60,7 +61,7 @@ describe('Finance workspace v2.2 regressions', () => {
 
     expect(ledger).toContain("if (transaction.status === 'pending') return 'Pending'")
     expect(ledger).toContain("if (transaction.status === 'rejected') return 'Needs correction'")
-    expect(ledger).toContain('Adjust the source, account, branch, date, category, or search filters')
+    expect(ledger).toContain('No transactions in this view')
     expect(payroll).toContain('HR-submitted proposals that need Finance review will appear here.')
     expect(payroll).toContain('Approved proposals waiting for final payment will appear here.')
     expect(payroll).toContain('Paid and resolved payroll proposals will appear here.')

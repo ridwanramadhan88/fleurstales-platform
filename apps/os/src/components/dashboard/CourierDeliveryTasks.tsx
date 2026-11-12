@@ -39,7 +39,6 @@ export const CourierDeliveryTasks: FC = () => {
         <div className="rounded-lg border border-dashed border-border px-4 py-7 text-center">
           <PackageCheck className="mx-auto size-8 text-muted-foreground" />
           <p className="mt-2 text-sm font-medium">{copy('No deliveries right now', 'Belum ada tugas antar')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{copy('New tasks appear here when the admin assigns you.', 'Tugas baru muncul di sini saat admin menugaskan Anda.')}</p>
         </div>
       ) : (
         <ul className="space-y-3">

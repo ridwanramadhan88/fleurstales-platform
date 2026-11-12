@@ -177,7 +177,7 @@ export const FinanceCashFlowOverview: FC = () => {
     <section className="space-y-5" aria-label="Finance overview">
       <FinanceModuleHeader
         title="Overview"
-        description="Cash position, current-month movement, and Finance work that needs attention."
+       
         actions={<><button type="button" onClick={() => open('opening_balance')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"><PlusCircle className="size-4" />Opening Balance</button><button type="button" onClick={() => open('adjustment')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"><SlidersHorizontal className="size-4" />Adjust</button><button type="button" onClick={() => open('transfer')} className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"><ArrowLeftRight className="size-4" />Transfer</button></>}
       />
 
@@ -185,7 +185,6 @@ export const FinanceCashFlowOverview: FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold">Needs Attention</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">Work queues and data-quality items that still need a Finance action.</p>
           </div>
           {attention.total > 0 && (
             <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">{`${attention.total} open`}</span>
@@ -197,7 +196,6 @@ export const FinanceCashFlowOverview: FC = () => {
             <CheckCircle2 className="size-5 shrink-0 text-success" />
             <div>
               <p className="text-sm font-semibold">All caught up</p>
-              <p className="text-xs text-muted-foreground">No reconciliation, refund, payroll, or account-cleanup items are waiting.</p>
             </div>
           </div>
         ) : (
@@ -271,7 +269,7 @@ export const FinanceCashFlowOverview: FC = () => {
         side="responsiveRight"
         size="wide"
         title="Finance settings"
-        description="Advanced Finance configuration. Owner can also manage these categories from Settings → Finance."
+       
       >
         <div className="overflow-y-auto px-4 pb-6 pt-4 sm:px-5">
           <FinanceCategorySettingsPanel />

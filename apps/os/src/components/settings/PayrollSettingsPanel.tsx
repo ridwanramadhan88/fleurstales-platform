@@ -35,7 +35,7 @@ const ReadDay: FC<{ label: string; value: string }> = ({ label, value }) => (
 
 export const PayrollSettingsPanel: FC<Props> = ({ isEditing, settings, validationErrors, onUpdate, effectiveFrom, minimumEffectiveDate, changeReason, revisions, onEffectiveFromChange, onChangeReasonChange }) => (
   <section className="space-y-5">
-    <SettingsSectionHeader icon={CalendarDays} title="Payroll cycle rules" description="Defaults for future monthly payroll periods. Generated periods keep their original dates." />
+    <SettingsSectionHeader icon={CalendarDays} title="Payroll cycle rules" />
 
     {isEditing && (
       <section className="rounded-xl border border-primary/20 bg-primary/5 p-4">

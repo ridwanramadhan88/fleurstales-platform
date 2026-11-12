@@ -220,7 +220,6 @@ export const FinancePayrollReview = () => {
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="text-lg font-semibold">Monthly payroll proposals</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Review employee payrolls, return corrections to HR, and record final payment.</p>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
             <Metric label="Review" value={counts.review} />

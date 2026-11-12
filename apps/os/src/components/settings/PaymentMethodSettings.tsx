@@ -36,7 +36,7 @@ export const PaymentMethodSettings: FC<Props> = ({
 }) => (
   <section className="space-y-8">
     <div className="space-y-5">
-      <SettingsSectionHeader icon={CreditCard} title="Payment accounts" description="Accounts used for customer payments and Finance money movement, plus checkout instructions." />
+      <SettingsSectionHeader icon={CreditCard} title="Payment accounts" />
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">

@@ -390,7 +390,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
         {pendingPoints.length > 0 && (
           <section aria-label="Pending point adjustments" className="rounded-xl border border-warning/25 bg-warning/[0.035] p-3.5">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><h3 className="text-sm font-semibold">Point adjustments to review</h3><p className="mt-1 text-xs text-muted-foreground">Only manual pending adjustments appear here. Automatic order points are already final.</p></div>
+              <div><h3 className="text-sm font-semibold">Point adjustments to review</h3></div>
               <span className="rounded-full bg-warning/10 px-2.5 py-1 text-xs font-semibold text-warning">{pendingPoints.length} pending</span>
             </div>
             <div className="mt-3 space-y-2">

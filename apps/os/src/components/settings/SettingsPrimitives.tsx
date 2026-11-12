@@ -6,7 +6,7 @@ import { cn } from "../../lib/utils";
 export const SettingsSectionHeader: FC<{
   icon: LucideIcon;
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
   tone?: "primary" | "neutral";
 }> = ({ icon: Icon, title, description, action, tone = "primary" }) => (
@@ -25,9 +25,11 @@ export const SettingsSectionHeader: FC<{
         <h2 className="font-display text-base font-semibold leading-5 text-foreground">
           {title}
         </h2>
-        <p className="mt-0.5 max-w-2xl text-sm leading-5 text-muted-foreground">
-          {description}
-        </p>
+        {description && (
+          <p className="mt-0.5 max-w-2xl text-sm leading-5 text-muted-foreground">
+            {description}
+          </p>
+        )}
       </div>
     </div>
     {action && <div className="shrink-0">{action}</div>}

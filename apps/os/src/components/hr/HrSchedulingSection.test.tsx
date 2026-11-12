@@ -21,8 +21,6 @@ describe('HR Scheduling UI', () => {
     render(<HrTabContentContainer activeBranch="All" />)
     openScheduling()
     expect(screen.getByRole('heading', { name:'Schedule' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name:'About this People section' }))
-    expect(screen.getByText('Copy, adjust, validate, and publish weekly branch assignments.')).toBeInTheDocument()
     expect(screen.queryByText('Staff defaults')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name:'Copy previous week' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name:'More scheduling actions' }))

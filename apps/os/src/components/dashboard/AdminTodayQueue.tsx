@@ -54,7 +54,6 @@ export function AdminTodayQueue({
       {visibleOrders.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border px-4 py-7 text-center">
           <p className="text-sm font-medium">No active orders need attention</p>
-          <p className="mt-1 text-xs text-muted-foreground">New and active orders will appear here.</p>
         </div>
       ) : (
         <div className="divide-y divide-border rounded-lg border border-border">

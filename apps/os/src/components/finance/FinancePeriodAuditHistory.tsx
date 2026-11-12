@@ -79,7 +79,6 @@ export const FinancePeriodAuditHistory: FC = () => {
           <History className="size-4 text-muted-foreground" />
           <div>
             <h3 className="text-sm font-semibold">Period audit history</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">Status changes, actors, reasons, and Jakarta timestamps for the last six accounting months.</p>
           </div>
         </div>
         <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground">Read only</span>
