@@ -24,4 +24,9 @@ describe('attendance review warnings',()=>{
   expect(buildCheckoutWarnings({record:early,employee,defaults,overrides:[],settings})).toEqual([])
   expect(buildCheckoutWarnings({record:overtime,employee,defaults,overrides:[],settings})[0]?.warningType).toBe('overtime')
  })
+ it('does not flag check-in at a different branch than scheduled',()=>{
+  const record:AttendanceRecord={id:'a4',employeeId:'e1',date:'2026-07-13',status:'present',actor:'Agus',createdAt:'x',checkInAt:'2026-07-13T02:00:00.000Z',source:'selfie',checkInLocation:{latitude:0,longitude:0,detectedBranchId:'Kedamaian',detectedBranchName:'Kedamaian'} as AttendanceRecord['checkInLocation']}
+  const warnings=buildAttendanceWarnings({record,employee,defaults,overrides:[],settings})
+  expect(warnings.some(item=>item.warningType==='wrong_branch')).toBe(false)
+ })
 })

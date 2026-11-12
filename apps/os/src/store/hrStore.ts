@@ -806,11 +806,11 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
       const wrongBranch = scheduledBranch.id !== nearest.branch.id
       const outsideScheduledTime = effectiveSchedule.shift.isWorking && (currentTime < effectiveSchedule.shift.startTime || currentTime > effectiveSchedule.shift.endTime)
       const poorLocationAccuracy = (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4
-      const scheduleMismatch = !effectiveSchedule.shift.isWorking || wrongBranch || outsideScheduledTime || poorLocationAccuracy
+      // A different branch than scheduled is allowed for every role and is not an exception.
+      const scheduleMismatch = !effectiveSchedule.shift.isWorking || outsideScheduledTime || poorLocationAccuracy
       const branchMismatch = wrongBranch
       const warningReasons = [
         !effectiveSchedule.shift.isWorking ? 'Checked in on a scheduled day off.' : null,
-        wrongBranch ? `Checked in at ${nearest.branch.name}; scheduled branch is ${scheduledBranch?.name}.` : null,
         outsideScheduledTime ? `Checked in at ${currentTime}; scheduled shift is ${effectiveSchedule.shift.startTime}–${effectiveSchedule.shift.endTime}.` : null,
         poorLocationAccuracy ? 'GPS could not be verified after repeated attempts; attendance requires HR review.' : null,
       ].filter(Boolean)
@@ -885,7 +885,7 @@ export const useHrStore = create<HrStoreState>((set, get) => ({
         checkOutSelfieDataUrl: selfieDataUrl,
         checkOutAt: nowIso(),
         actor: actor.name,
-        checkOutLocation: { ...location, branchLatitude: nearest.branch.location!.latitude, branchLongitude: nearest.branch.location!.longitude, distanceMeters: nearest.distanceMeters, withinRange: nearest.withinRange, acceptedRadiusMeters: settings.attendance.locationRadiusMeters, accuracyMeters: location.accuracyMeters ?? 0, detectedBranchId: nearest.branch.id, detectedBranchName: nearest.branch.name, scheduledBranchId: scheduledBranch.id, scheduledBranchName: scheduledBranch.name, scheduledStartTime: effectiveSchedule.shift.startTime, scheduledEndTime: effectiveSchedule.shift.endTime, scheduleMismatch: scheduledBranch.id !== nearest.branch.id || (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4, branchMismatch: scheduledBranch.id !== nearest.branch.id, reviewStatus: scheduledBranch.id !== nearest.branch.id || (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4 ? 'pending_review' : 'not_required', reviewReason: (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4 ? 'GPS accuracy requires HR review.' : scheduledBranch.id !== nearest.branch.id ? `Checked out at ${nearest.branch.name}; scheduled branch is ${scheduledBranch.name}.` : undefined },
+        checkOutLocation: { ...location, branchLatitude: nearest.branch.location!.latitude, branchLongitude: nearest.branch.location!.longitude, distanceMeters: nearest.distanceMeters, withinRange: nearest.withinRange, acceptedRadiusMeters: settings.attendance.locationRadiusMeters, accuracyMeters: location.accuracyMeters ?? 0, detectedBranchId: nearest.branch.id, detectedBranchName: nearest.branch.name, scheduledBranchId: scheduledBranch.id, scheduledBranchName: scheduledBranch.name, scheduledStartTime: effectiveSchedule.shift.startTime, scheduledEndTime: effectiveSchedule.shift.endTime, scheduleMismatch: (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4, branchMismatch: scheduledBranch.id !== nearest.branch.id, reviewStatus: (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4 ? 'pending_review' : 'not_required', reviewReason: (location.accuracyMeters ?? 0) > settings.attendance.locationRadiusMeters * 4 ? 'GPS accuracy requires HR review.' : undefined },
       }
       return { attendance: next }
     })
