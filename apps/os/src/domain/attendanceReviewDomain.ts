@@ -13,7 +13,6 @@ export const buildAttendanceWarnings = (params:{ record:AttendanceRecord; employ
   const result:AttendanceReviewCase[]=[]
   const add=(type:AttendanceWarningType, reason:string, actualTime?:string, minutesDifference?:number)=>result.push({ id:`review-${record.id}-${type}`, warningType:type, reason, actualTime, minutesDifference, ...base })
   if (!effective.shift.isWorking) add('scheduled_day_off','Employee checked in on a scheduled day off.', localTimeFromIso(record.checkInAt))
-  if (record.checkInLocation?.detectedBranchId && effective.shift.branchId && record.checkInLocation.detectedBranchId !== effective.shift.branchId) add('wrong_branch',`Detected at ${record.checkInLocation.detectedBranchName ?? 'another branch'} instead of scheduled branch ${base.scheduledBranchName ?? effective.shift.branchId}.`,localTimeFromIso(record.checkInAt))
   const checkIn = localTimeFromIso(record.checkInAt)
   if (effective.shift.isWorking && checkIn) {
     const late = minutesFromTime(checkIn)-minutesFromTime(effective.shift.startTime)-settings.attendance.lateGraceMinutes

@@ -251,8 +251,7 @@ export const SelfieAttendanceCard: FC = () => {
       setVerifiedLocation(location)
       setVerifiedAction(captureAction)
       setLocationFailures((previous) => ({ ...previous, [captureAction]: 0 }))
-      const mismatch = Boolean(attendanceBranch && attendanceBranch.id !== nearest.branch.id)
-      setLocationStatus(`Location verified · ${nearest.distanceMeters} m from ${nearest.branch.name} · limit ${attendanceSettings.locationRadiusMeters} m${mismatch ? ` · branch difference will be sent to HR review` : ''}`)
+      setLocationStatus(`Location verified · ${nearest.distanceMeters} m from ${nearest.branch.name} · limit ${attendanceSettings.locationRadiusMeters} m`)
     } catch (caught) {
       setLocationFailures((previous) => ({ ...previous, [captureAction]: previous[captureAction] + 1 }))
       const copy = locationFailureCopy(caught instanceof LocationFailure ? caught.kind : 'unavailable')
