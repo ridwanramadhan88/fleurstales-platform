@@ -35,8 +35,11 @@ test('cash order: admin confirms payment and assigns florist, florist uploads th
   await test.step('florist sees the order and uploads the finish photo', async () => {
     await signOut(page)
     await signIn(page, 'florist')
-    const card = page.locator('main').getByText(customerName).locator('xpath=ancestor::*[.//button][1]')
-    await expect(card).toContainText('Diproses')
+    // Orders being made are listed under "Dikerjakan" with what to arrange.
+    const work = page.locator('main').getByRole('region', { name: 'Pesanan saya' })
+    await expect(work.getByRole('heading', { name: /^Dikerjakan/ })).toBeVisible()
+    const card = work.getByText(customerName).locator('xpath=ancestor::article[1]')
+    await expect(card).toContainText('Ambil')
     await expectNoEnglish(page, 'florist work list')
     await card.getByRole('button', { name: 'Unggah foto hasil' }).click()
     const photo = page.getByRole('dialog', { name: /Foto pesanan selesai/ })

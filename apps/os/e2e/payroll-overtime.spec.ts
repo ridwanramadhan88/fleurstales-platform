@@ -15,6 +15,9 @@ test('HR approves claimed overtime and it becomes a payroll addition', async ({ 
   await page.getByRole('navigation').first().getByRole('button', { name: 'Staf', exact: true }).click()
   const main = page.locator('main')
   await main.getByRole('button', { name: 'Kehadiran', exact: true }).click()
+  // Attendance opens on the calendar; the full review list is one tab away.
+  await expect(main.getByRole('region', { name: 'Kalender absensi' })).toBeVisible()
+  await main.getByRole('tab', { name: /^Daftar cek/ }).click()
 
   const reviews = main.getByRole('region', { name: 'Tinjauan kehadiran' })
   const overtimeCase = reviews.locator('article').filter({ hasText: 'E2E Florist' }).filter({ hasText: 'Lembur' }).first()
