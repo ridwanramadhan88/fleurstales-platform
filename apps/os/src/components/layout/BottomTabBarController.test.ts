@@ -31,7 +31,6 @@ describe('bottom navigation context', () => {
   it('builds the Finance mobile tabs with Revenue included', () => {
     expect(
       getVisibleBottomNavigationDestinationIds('finance', [
-        'dashboard',
         'orders',
         'customers',
         'catalog',
@@ -39,6 +38,6 @@ describe('bottom navigation context', () => {
         'finance',
         'revenue',
       ]),
-    ).toEqual(['dashboard', 'finance', 'revenue', 'orders'])
+    ).toEqual(['finance', 'revenue', 'orders', 'customers'])
   })
 })

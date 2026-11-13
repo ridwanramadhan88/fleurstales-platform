@@ -36,10 +36,11 @@ describe('one menu (UX plan PR 8)', () => {
     }
   })
 
-  it('Finance can open its home screen on desktop too', () => {
+  it('Finance starts in its workspace: no separate Home in the menu', () => {
     useUserStore.getState().setRole('finance')
     render(<HomePage initialBranch="All" />)
-    expect(menuLabels('Primary')[0]).toBe('Overview')
+    expect(menuLabels('Primary')).not.toContain('Overview')
+    expect(menuLabels('Primary')).toContain('Finance')
   })
 
   it('phone: every page the bar cannot hold is under "More" (UX audit)', () => {
@@ -49,7 +50,7 @@ describe('one menu (UX plan PR 8)', () => {
     fireEvent.click(within(bar).getByRole('button', { name: 'More' }))
     const sheet = screen.getByRole('dialog')
     const labels = within(sheet).getAllByRole('button').map((button) => button.textContent?.trim()).filter(Boolean)
-    expect(labels).toEqual(expect.arrayContaining(['Catalog', 'Revenue', 'Settings']))
+    expect(labels).toEqual(expect.arrayContaining(['Catalog', 'Customers', 'Settings']))
     fireEvent.click(within(sheet).getByRole('button', { name: 'Settings' }))
     expect(within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-current', 'page')
   })

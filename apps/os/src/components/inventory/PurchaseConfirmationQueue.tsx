@@ -14,7 +14,8 @@ import { useFinanceStore } from '../../store/financeStore'
 import { useUserStore } from '../../store/userStore'
 import { surfaceCardClass } from '../ui/card'
 
-export const PurchaseConfirmationQueue: FC = () => {
+/** `hideWhenEmpty`: show nothing until there is a purchase to confirm. */
+export const PurchaseConfirmationQueue: FC<{ hideWhenEmpty?: boolean }> = ({ hideWhenEmpty = false }) => {
   const tr = useBilingualCopy()
   const addTransaction = useFinanceStore((state) => state.addTransaction)
   const actorName = useUserStore((state) => state.name)
@@ -64,6 +65,8 @@ export const PurchaseConfirmationQueue: FC = () => {
     catch (caught) { setError(caught instanceof Error ? caught.message : tr('Could not reject.', 'Gagal menolak.')) }
     finally { setBusyId(null) }
   }
+
+  if (hideWhenEmpty && !error && purchases.length === 0) return null
 
   return (
     <section aria-label={tr('Stock purchases to confirm', 'Pembelian stok untuk dikonfirmasi')} data-testid="purchase-confirmation-queue" className={surfaceCardClass('standard')}>

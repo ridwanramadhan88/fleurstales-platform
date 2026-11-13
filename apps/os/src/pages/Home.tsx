@@ -56,6 +56,7 @@ import { canViewScheduling } from '../domain/hrSchedulingDomain'
 import { FinanceWorkspaceTabs } from '../components/finance/FinanceWorkspaceTabs'
 import { FinanceModuleHeader } from '../components/finance/FinanceModuleHeader'
 import { FinanceCashFlowOverview } from '../components/finance/FinanceCashFlowOverview'
+import { PurchaseConfirmationQueue } from '../components/inventory/PurchaseConfirmationQueue'
 import { requestFinanceWorkspaceNavigation } from '../components/finance/financeWorkspaceNavigation'
 import { getDefaultFinanceWorkspaceModule, getFinanceWorkspaceModules, type FinanceWorkspaceModule } from '../domain/financeWorkspaceDomain'
 import { toast } from '../hooks/use-toast'
@@ -622,6 +623,8 @@ const HomePage: FC<HomePageProps> = ({
                 </>
               )}
 
+              {/* Finance has no Home: stock purchases to confirm show on Balances. */}
+              {financeModule === 'balance' && userRole === 'finance' && inventoryEnabled && <PurchaseConfirmationQueue hideWhenEmpty />}
               {financeModule === 'balance' && hasActionPermission(userRole, 'finance.view_ledger', actionPermissions, permissions) && (
                 <FinanceCashFlowOverview />
               )}

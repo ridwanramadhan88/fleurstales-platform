@@ -16,11 +16,12 @@ const financeAccessible = [
 
 describe('Finance mobile navigation reachability', () => {
   it('puts Revenue in the four direct bottom destinations', () => {
-    expect(getPrimaryMobileDestinationIds('finance', financeAccessible)).toEqual([
-      'dashboard',
+    // Finance has no Home in practice; with it granted it fills the last slot.
+    expect(getPrimaryMobileDestinationIds('finance', financeAccessible.filter((id) => id !== 'dashboard'))).toEqual([
       'finance',
       'revenue',
       'orders',
+      'customers',
     ])
   })
 
