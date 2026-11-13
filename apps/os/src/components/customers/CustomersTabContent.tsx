@@ -172,7 +172,6 @@ export const CustomersTabContent: FC<CustomersTabContentViewModel> = ({
                 {searchQuery.trim() || segmentFilter !== 'all' ? (
                   <>
                     <p className="text-sm font-semibold leading-5 text-foreground">No matching customers</p>
-                    <p className="text-xs text-muted-foreground">Try another name or segment.</p>
                   </>
                 ) : (
                   <>

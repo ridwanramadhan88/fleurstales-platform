@@ -513,7 +513,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
             {isDirty ? <span className="rounded-full bg-warning/10 px-2 py-1 text-2xs font-semibold text-warning">Belum disimpan</span> : null}
           </span>
         }
-        description="Informasi umum, ukuran yang dipakai produk, foto, dan resep diedit sebagai draft. Data baru tersimpan saat tombol Simpan dipilih."
+        description="Data baru tersimpan saat tombol Simpan dipilih."
         contentClassName="h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[92vh]"
         headerClassName="shrink-0 border-b border-border/70 pb-4"
       >
@@ -540,7 +540,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
               <ValidationSummary errors={errors} summaryRef={validationSummaryRef} onErrorClick={focusValidationIssue} />
 
               <TabsContent value="info" className="mt-0">
-                <FormSection title="Informasi produk" description="Data umum produk dan 1 foto katalog default. Foto setiap ukuran diatur terpisah pada tab Varian & Ukuran.">
+                <FormSection title="Informasi produk">
                   <CatalogProductDetailsSection
                     form={form}
                     product={product}
@@ -557,7 +557,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
               <TabsContent value="variants" className="mt-0">
                 <FormSection
                   title="Varian & ukuran"
-                  description="Pilih template ukuran (size chart), lalu tambahkan ukuran yang dijual produk ini. Foto per ukuran opsional; tanpa foto, Storefront memakai foto katalog produk."
+                  description="Pilih template ukuran, lalu tambahkan ukuran yang dijual."
                 >
                   <label className="mb-4 block space-y-1.5">
                     <span className={labelClass}>Template ukuran</span>

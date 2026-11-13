@@ -109,7 +109,6 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
       onOpenChange={(open) => { if (!open && !busy) onCancel() }}
       size="compact"
       title="Konfirmasi Pembayaran"
-      description="Select receiving account and attach bukti transfer. This marks the order PAID only; florist assignment stays in Process Order."
     >
       <div className="space-y-4">
         <div className="flex items-start gap-3">

@@ -20,6 +20,7 @@ import type { Theme } from "../../hooks/useTheme";
 import { ThemeToggle } from "../ui/theme-toggle";
 import { LanguageToggle } from "../ui/language-toggle";
 import type { TopBarViewModel } from "./TopBarController";
+import { MyDayChip } from "./MyDayStrip";
 
 export interface TopBarProps {
   activeBranch?: BranchFilter;
@@ -155,6 +156,7 @@ export const TopBar: FC<TopBarViewModel> = ({
       )}
 
       <div className="flex shrink-0 items-center justify-self-end gap-1.5">
+        <MyDayChip />
         <button
           type="button"
           aria-label={

@@ -15,7 +15,7 @@ const FIELD_CLASS = 'h-10 w-full rounded-lg border border-border bg-background p
 
 export const AttendanceSettingsPanel: FC<Props> = ({ settings, isEditing, onUpdate, validationErrors: errors = {} }) => (
   <section className="space-y-5">
-    <SettingsSectionHeader icon={MapPinCheck} title="Attendance rules" description="Location validation and grace windows used to create HR review warnings." />
+    <SettingsSectionHeader icon={MapPinCheck} title="Attendance rules" />
 
     {!isEditing ? (
       <SettingsCard emphasis="primary">

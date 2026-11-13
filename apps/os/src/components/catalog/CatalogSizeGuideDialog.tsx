@@ -270,7 +270,6 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
               Template ukuran
               {isDirty ? <span className="rounded-full bg-warning/10 px-2 py-1 text-2xs font-semibold text-warning">Belum disimpan</span> : null}
             </DialogTitle>
-            <p className="text-sm text-muted-foreground">Kelompok ukuran beserta gambar panduannya. Dipilih per produk di editor produk.</p>
           </DialogHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">

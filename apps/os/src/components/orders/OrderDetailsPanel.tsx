@@ -278,7 +278,7 @@ export const OrderDetailsPanel: FC<OrderDetailsViewModel> = (viewModel) => {
                     </summary>
                     <div className="space-y-4 border-t border-border/60 p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-xs text-muted-foreground">Request or resend the completed-order review link.</p>
+                        
                         <button
                           type="button"
                           onClick={onOpenReviewRequest}

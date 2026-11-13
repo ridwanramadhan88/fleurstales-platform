@@ -53,10 +53,12 @@ describe('HR consistency and warning cleanup', () => {
   it('keeps attendance exception severity in the review queue instead of duplicating it on staff cards', () => {
     const people = read('src/components/hr/HrTabContent.tsx')
     const queue = read('src/components/hr/AttendanceReviewQueue.tsx')
-    expect(people).toContain('Scheduled · no record')
-    expect(people).toContain('Needs review · {reviewCases.length}')
+    const calendar = read('src/components/hr/AttendanceCalendar.tsx')
+    // Review severity lives on the calendar cell ring and in the review list,
+    // never as a second badge on staff cards.
+    expect(calendar).toContain('ring-2 ring-inset ring-warning')
     expect(people).not.toContain('Missing checkout</span>')
-    expect(people).toContain("timeZone:'Asia/Jakarta'")
+    expect(calendar).toContain("timeZone: 'Asia/Jakarta'")
     expect(queue).toContain('Attendance review')
     expect(queue).toContain('Resolved')
     expect(queue).toContain("needsReview ? 'bg-warning/10 text-warning' : 'bg-surface-neutral")

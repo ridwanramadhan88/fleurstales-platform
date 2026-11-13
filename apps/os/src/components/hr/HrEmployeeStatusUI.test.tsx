@@ -12,6 +12,7 @@ beforeEach(() => { useUserStore.setState({ employeeId:'hr-1', username:'hr', rol
 describe('employee details UI', () => {
   it('moves employee status action into details', async () => {
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
+    fireEvent(window, new CustomEvent('hr-open-section', { detail:{ section:'employees' } }))
     const staffRow = screen.getByText('Rina').closest('article')!
     fireEvent.click(within(staffRow).getByRole('button', { name:'Details' }))
     fireEvent.click(screen.getByRole('button', { name:'Deactivate' }))
@@ -21,12 +22,14 @@ describe('employee details UI', () => {
   it('keeps protected Owner records out of the HR employee editor', () => {
     useHrStore.setState({ employees:[owner], attendance:[] })
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
+    fireEvent(window, new CustomEvent('hr-open-section', { detail:{ section:'employees' } }))
     expect(screen.queryByRole('button', { name:'Details' })).not.toBeInTheDocument()
     expect(screen.getByText('No employees yet.')).toBeInTheDocument()
   })
   it('lets owner edit role and keeps position equal to role', async () => {
     useUserStore.setState({ employeeId:'owner-1', username:'owner', role:'owner', name:'Titi' })
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
+    fireEvent(window, new CustomEvent('hr-open-section', { detail:{ section:'employees' } }))
     const staffRow = screen.getByText('Rina').closest('article')!
     fireEvent.click(within(staffRow).getByRole('button', { name:'Details' }))
     fireEvent.change(screen.getByLabelText('Role / position'), { target:{ value:'admin' } })
@@ -37,6 +40,7 @@ describe('employee details UI', () => {
   })
   it('shows field validation beside invalid profile fields', () => {
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
+    fireEvent(window, new CustomEvent('hr-open-section', { detail:{ section:'employees' } }))
     const staffRow = screen.getByText('Rina').closest('article')!
     fireEvent.click(within(staffRow).getByRole('button', { name:'Details' }))
     fireEvent.change(screen.getByLabelText('Name'), { target:{ value:'' } })
@@ -45,6 +49,7 @@ describe('employee details UI', () => {
   })
   it('protects unsaved employee detail changes before closing', () => {
     render(<HrTabContentContainer activeBranch="Kedamaian" />)
+    fireEvent(window, new CustomEvent('hr-open-section', { detail:{ section:'employees' } }))
     const staffRow = screen.getByText('Rina').closest('article')!
     fireEvent.click(within(staffRow).getByRole('button', { name:'Details' }))
     fireEvent.change(screen.getByLabelText('Name'), { target:{ value:'Rina Updated' } })

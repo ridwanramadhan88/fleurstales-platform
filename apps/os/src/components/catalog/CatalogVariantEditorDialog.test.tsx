@@ -63,7 +63,7 @@ describe('Variant editor linear steps', () => {
     await user.click(screen.getByRole('button', { name: 'Lanjut' }))
 
     // Step 2: the photo is optional, so the primary action reads "Lewati".
-    expect(screen.getByText(/Opsional\. Setiap ukuran dapat memiliki maksimal 1 foto/)).toBeInTheDocument()
+    expect(screen.getByText(/Opsional, maks\. 1 foto/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Lewati' }))
 
     // Step 3: saving needs at least one recipe item.

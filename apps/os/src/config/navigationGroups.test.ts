@@ -62,7 +62,8 @@ describe('navigation grouping', () => {
         permissions,
         inventoryEnabled: true,
       }),
-    ).toEqual(['dashboard', 'orders', 'customers', 'catalog', 'stock'])
+    // Admin has no Home: the order list is where Admin starts.
+    ).toEqual(['orders', 'customers', 'catalog', 'stock'])
   })
 
   it('keeps Inventory controlled by its feature toggle without changing stock access', () => {
@@ -137,11 +138,11 @@ describe('navigation grouping', () => {
   })
 
   it('does not reintroduce inaccessible or disabled destinations', () => {
-    const accessible = ['dashboard', 'orders', 'catalog', 'customers'] as const
+    const accessible = ['orders', 'catalog', 'customers'] as const
     const primary = getPrimaryMobileDestinationIds('admin', accessible)
     const secondary = getSecondaryMobileDestinationIds('admin', accessible)
 
-    expect(primary).toEqual(['dashboard', 'orders', 'customers', 'catalog'])
+    expect(primary).toEqual(['orders', 'customers', 'catalog'])
     expect(secondary).toEqual([])
     expect([...primary, ...secondary]).not.toContain('stock')
     expect([...primary, ...secondary]).not.toContain('settings')

@@ -99,8 +99,7 @@ describe('Catalog Product Editor UX regressions', () => {
 
   it('keeps photo and flower recipe owned by the selected size variant', () => {
     expect(variantDialogSource).toContain('Resep bunga ukuran ini')
-    expect(variantDialogSource).toContain('Resep tersimpan khusus untuk ukuran ini')
-    expect(variantDialogSource).toContain('dipakai saat ukuran ini dipilih di Storefront')
+    expect(variantDialogSource).toContain('Tanpa foto, dipakai foto katalog.')
   })
 
   it('requires price, recipe and a chart size for active variants, with the size photo optional', () => {

@@ -299,7 +299,6 @@ export const PermissionMatrixPanel: FC<Props> = ({
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <div>
                           <p className="text-xs font-semibold">Section Access</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">Choose whether this role can open, view, or manage this section.</p>
                         </div>
                       </div>
                       {isEditing ? (
@@ -336,7 +335,6 @@ export const PermissionMatrixPanel: FC<Props> = ({
                       <div className="flex items-center justify-between gap-3 bg-surface-panel px-4 py-2.5">
                         <div>
                           <p className="text-xs font-semibold">Detailed Feature Access</p>
-                          <p className="text-xs text-muted-foreground">Toggle only the actions this role needs.</p>
                         </div>
                         <span className="text-2xs font-semibold text-muted-foreground">Detailed Feature Access · {workspaceActions.filter((item) => actionPermissions[role]?.[item.id]).length}/{workspaceActions.length} on</span>
                       </div>
@@ -356,7 +354,7 @@ export const PermissionMatrixPanel: FC<Props> = ({
               <AccordionItem value={`actions-${group}`} className="overflow-hidden rounded-xl border border-border/70 bg-surface-card px-0">
                 <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <div className="flex min-w-0 flex-1 items-center justify-between gap-3 pr-2 text-left">
-                    <div><p className="text-sm font-semibold leading-5">{group}</p><p className="mt-0.5 text-xs font-normal text-muted-foreground">Detailed action permissions</p></div>
+                    <div><p className="text-sm font-semibold leading-5">{group}</p></div>
                     <span className="rounded-full bg-surface-neutral px-2 py-0.5 text-xs text-foreground ring-1 ring-border/80">{groupItems.filter((item) => actionPermissions[role]?.[item.id]).length}/{groupItems.length} on</span>
                   </div>
                 </AccordionTrigger>

@@ -55,7 +55,7 @@ export const StoreProfileSettingsPanel: FC<Props> = ({ profile, onUpdate, isEdit
 
   return (
     <section className="space-y-5">
-      <SettingsSectionHeader icon={Store} title="Store identity" description="Name, contact details, and store-wide defaults." />
+      <SettingsSectionHeader icon={Store} title="Store identity" />
 
       {!isEditing ? (
         <SettingsCard className="space-y-5" emphasis="primary">
@@ -83,7 +83,6 @@ export const StoreProfileSettingsPanel: FC<Props> = ({ profile, onUpdate, isEdit
           <div className="flex items-center justify-between gap-4 rounded-xl bg-surface-panel px-4 py-3 ring-1 ring-border/60">
             <div>
               <p className="text-sm font-semibold leading-5 text-foreground">Inventory</p>
-              <p className="text-xs text-muted-foreground">Stock tracking and inventory tools across the app.</p>
             </div>
             <span className={`rounded-full px-2.5 py-1 text-2xs font-semibold ${profile.inventoryEnabled ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>{profile.inventoryEnabled ? 'Enabled' : 'Disabled'}</span>
           </div>

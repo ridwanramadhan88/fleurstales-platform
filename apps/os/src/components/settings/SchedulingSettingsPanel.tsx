@@ -30,7 +30,7 @@ export const SchedulingSettingsPanel: FC<Props> = ({ isEditing, settings, onUpda
 
   return (
     <section className="space-y-5">
-      <SettingsSectionHeader icon={CalendarClock} title="Default scheduling rules" description="Company fallback week and minimum staffing coverage." />
+      <SettingsSectionHeader icon={CalendarClock} title="Default scheduling rules" />
 
       {isEditing && (
         <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
@@ -44,7 +44,7 @@ export const SchedulingSettingsPanel: FC<Props> = ({ isEditing, settings, onUpda
       )}
 
       <SettingsCard className="space-y-4" emphasis="primary">
-        <div><h3 className="text-sm font-semibold leading-5">Minimum daily coverage</h3><p className="text-xs text-muted-foreground">Used by HR to spot understaffed branches before publishing a week.</p></div>
+        <div><h3 className="text-sm font-semibold leading-5">Minimum daily coverage</h3></div>
         <div className="grid gap-3 sm:grid-cols-2">
           <CoverageSetting
             label="Admin per open branch"

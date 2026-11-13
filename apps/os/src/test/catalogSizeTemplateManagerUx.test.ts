@@ -13,7 +13,6 @@ describe('Catalog Size Template manager regressions', () => {
     expect(guideSource).not.toContain('Default Jenis rangkaian')
     expect(guideSource).not.toContain("target.scope === 'product_type'")
     expect(guideSource).not.toContain('state.arrangementTypes')
-    expect(guideSource).toContain('Dipilih per produk di editor produk.')
     expect(guideSource).toContain('{templateProductCount(template.id)} produk')
   })
 

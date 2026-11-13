@@ -172,7 +172,7 @@ export const FinanceRefundQueue: FC<FinanceRefundQueueProps> = ({
     <>
       <FinanceModuleHeader
         title="Refund queue"
-        description="Track initiated refunds and confirm when funds have been returned."
+       
       />
       <section aria-label="Finance refund queue" className="space-y-4 rounded-xl bg-card p-4 ring-1 ring-border/60">
       <span className="sr-only">{pendingOrders.length} pending</span>

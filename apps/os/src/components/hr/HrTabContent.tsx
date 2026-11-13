@@ -1,23 +1,20 @@
 import { useState, type FC, type ReactNode } from 'react'
 import type { BranchFilter } from '../../types/orders'
 import type { AttendanceStatus } from '../../store/hrStoreTypes'
-import { useUserStore } from '../../store/userStore'
 import { useHrStore } from '../../store/hrStore'
-import { useOrdersStore } from '../../store/ordersStore'
 import type { EmployeeStatusFilter } from '../../domain/hrDomain'
-import { getEmployeeOrderPerformance } from '../../domain/employeeOrderPerformanceDomain'
 import { DatePickerField } from '../ui/date-time-field'
 import type { HrSection, HrTabContentViewModel } from './HrTabContentController'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import { HrSchedulingSection } from './HrSchedulingSection'
 import { AttendanceReviewQueue } from './AttendanceReviewQueue'
+import { AttendanceCalendar } from './AttendanceCalendar'
 import { AttendanceExportButton } from './AttendanceExportButton'
 import { HrPayrollSection } from './HrPayrollSection'
 import { FieldLabel, ValidationSummary } from '../ui/form-patterns'
 import { ChevronRight, UserPlus } from 'lucide-react'
 import { FilterChip } from '../ui/chip'
-import { InfoHint } from '../ui/info-hint'
 import { getDateLocale } from '../../i18n/uiLanguage'
 import { CreateStaffSheet, PeopleListCard, PeoplePageHeader, PeoplePageShell, PeopleSummaryCard, PeopleSummaryGrid, PeopleTabs } from './PeopleWorkspaceUI'
 import { EmployeeRemovalControl } from './EmployeeRemovalControl'
@@ -50,24 +47,24 @@ const STATUS_FILTER_LABELS: Record<EmployeeStatusFilter, string> = {
 
 export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
   const tr = useStaffCopy()
-  const signedInRole = useUserStore((state) => state.role)
   const attendanceReviewCases = useHrStore((state) => state.attendanceReviewCases)
-  const orders = useOrdersStore((state) => state.orders)
   const {
     activeBranch, activeSection, availableSections, canEdit, canCreateEmployee, canManageEmployeeStatus, canManageEmployeeDetails, canEditCredentials, canCreateAccounts, usesProductionPassword,
     pendingStatusEmployee, statusActionError, attendanceEditor, attendanceActionError, attendanceHistory,
     statusFilter, employeeSearch, employeeRoleFilter, isAddOpen, form, formErrors, detailsEmployee, detailsForm, profileErrors, accessErrors, detailsError, detailsMessage, pendingAccessConfirmation, pendingDetailsCloseConfirmation, pendingAddCloseConfirmation, hasUnsavedEmployeeDetails,
-    summary, employeeRows, assignableRoles,
+    employeeRows, assignableRoles,
   } = vm
 
   const selectedAccountEditable = canManageEmployeeDetails && detailsEmployee?.systemRole !== 'owner'
   const [detailsSection,setDetailsSection] = useState<'profile'|'access'>('profile')
+  const [attendanceView,setAttendanceView] = useState<'calendar'|'review'>('calendar')
+  const pendingReviewCount = attendanceReviewCases.filter((item) => item.status === 'pending' || item.status === 'problem').length
   const readyCount = employeeRows.filter((item)=>item.readiness.state==='active' && item.readiness.setupComplete).length
   const setupRequiredCount = employeeRows.filter((item)=>item.readiness.state==='active' && !item.readiness.setupComplete).length
   const inactiveCount = employeeRows.filter((item)=>item.readiness.state==='inactive').length
 
   return <PeoplePageShell>
-    <PeopleTabs sections={availableSections} activeSection={activeSection} onChange={vm.onSectionChange} />
+    <PeopleTabs sections={availableSections} activeSection={activeSection} onChange={vm.onSectionChange} badges={{ attendance: pendingReviewCount }} />
 
     <div className="space-y-5">
     {activeSection === 'scheduling' ? <HrSchedulingSection activeBranch={activeBranch} searchQuery={employeeSearch} /> : activeSection === 'payroll' ? <HrPayrollSection searchQuery={employeeSearch} /> : activeSection === 'employees' ? <>
@@ -90,9 +87,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       </section>
 
       <section aria-label="Employees" className="space-y-3 pb-4">
-        <header><h3 className="text-sm font-semibold leading-5 text-foreground">{signedInRole === 'owner' ? 'Staff account management' : 'Employee directory'}</h3></header>
-
-        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">{employeeSearch.trim() || employeeRoleFilter !== 'all' || statusFilter !== 'all' ? 'No employees match the selected filters.' : 'No employees yet.'}</p> : employeeRows.map(({ employee, readiness }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); const performance = getEmployeeOrderPerformance(employee.id, orders); return <PeopleListCard key={employee.id} density="dense">
+        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.length === 0 ? <p className="rounded-xl bg-muted/40 p-5 text-sm text-muted-foreground lg:col-span-2">{employeeSearch.trim() || employeeRoleFilter !== 'all' || statusFilter !== 'all' ? 'No employees match the selected filters.' : 'No employees yet.'}</p> : employeeRows.map(({ employee, readiness }) => { const hasLogin = Boolean(employee.username && (usesProductionPassword || employee.pin)); return <PeopleListCard key={employee.id} density="dense">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{employee.name}</p><p className="mt-0.5 text-xs font-medium text-muted-foreground">{roleLabel(employee.systemRole)}</p></div>
             <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
@@ -103,8 +98,6 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
           <p className="mt-3 text-xs text-muted-foreground">{`${employee.phone || 'No WhatsApp'} · Since ${formatBusinessDate(employee.hireDate, { month:'short', year:'numeric' })}`}</p>
           {readiness.state === 'inactive' && <p className="mt-1 text-xs text-muted-foreground">{employee.employmentEndDate ? `Employment ended ${formatBusinessDate(employee.employmentEndDate)}` : 'Inactive · separation date not recorded (legacy)'}</p>}
           {readiness.state === 'active' && readiness.missing.length > 0 && <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">{`${tr('Missing', 'Belum lengkap')}: ${readiness.missing.map((item) => tr(...READINESS_LABELS[item])).join(', ')}`}</p>}
-          {employee.systemRole === 'florist' && <div className="mt-3 rounded-lg bg-muted/40 p-2.5"><p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All-time order performance</p><div className="grid grid-cols-3 gap-2 text-center"><div><p className="text-sm font-semibold leading-5">{performance.floristAssigned}</p><p className="text-2xs text-muted-foreground">Assigned</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristCompleted}</p><p className="text-2xs text-muted-foreground">Completed</p></div><div><p className="text-sm font-semibold leading-5">{performance.floristProcessing}</p><p className="text-2xs text-muted-foreground">Processing</p></div></div></div>}
-          {employee.systemRole === 'admin' && <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs"><span className="mr-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">All time</span><span className="font-semibold">{performance.adminStartedProcessing}</span> orders moved to Processing</div>}
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-4">
             <span className={`rounded-full px-2 py-1 text-2xs font-medium ${hasLogin ? 'bg-info/10 text-info' : 'bg-surface-neutral text-muted-foreground ring-1 ring-border/70'}`}>{hasLogin ? 'Account · Login enabled' : readiness.state === 'active' ? 'Account · Profile only' : 'Account · Inactive'}</span>
             <button type="button" onClick={() => vm.onOpenEmployeeDetails(employee)} className="inline-flex h-9 items-center gap-1 rounded-full border border-border bg-background px-3 text-xs font-medium text-foreground">Details <ChevronRight className="size-3.5" /></button>
@@ -112,31 +105,18 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
         </PeopleListCard>})}</div>
       </section>
     </> : <>
-      <PeoplePageHeader section="attendance" action={<AttendanceExportButton activeBranch={activeBranch} />} />
-      <PeopleSummaryGrid className="grid-cols-2 gap-3 sm:grid-cols-3">
-        <PeopleSummaryCard className="md:min-h-[76px]" label="Present today" value={summary.presentToday.toString()} tone="success" />
-        <PeopleSummaryCard className="md:min-h-[76px]" label="Late / absent" value={(summary.lateToday + summary.absentToday).toString()} tone={summary.lateToday + summary.absentToday > 0 ? 'warning' : 'default'} />
-        <PeopleSummaryCard className="md:min-h-[76px]" label="Scheduled · no record" value={summary.notMarkedToday.toString()} tone="default" />
-      </PeopleSummaryGrid>
-      <AttendanceReviewQueue onOpenOrder={vm.onOpenOrder} onCorrectAttendance={vm.onOpenAttendanceCorrection} searchQuery={employeeSearch} />
-      <section aria-label="Employee attendance" className="space-y-3">
-        <header className="flex items-center gap-1.5"><h3 className="text-sm font-semibold leading-5 text-foreground">Employee attendance</h3><InfoHint label="About employee attendance">Create today&apos;s record or review previous entries.</InfoHint></header>
-        {attendanceActionError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{attendanceActionError}</p>}
-        {/* Never a heading with nothing under it. */}
-        {!employeeRows.some(({ readiness }) => readiness.state === 'active') && <p className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">No active employees yet. Add them in the Employees tab.</p>}
-        <div className="grid gap-3 lg:grid-cols-2">{employeeRows.filter(({ readiness }) => readiness.state === 'active').map(({ employee, todayRecord }) => {
-          const reviewCases = attendanceReviewCases.filter((item) => item.employeeId === employee.id && item.date === (todayRecord?.date ?? vm.today) && ['pending', 'problem'].includes(item.status))
-          const needsReview = reviewCases.length > 0
-          return <PeopleListCard key={employee.id} density="dense" className="flex min-h-[68px] flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold leading-5">{employee.name}</p>
-              <p className="text-xs text-muted-foreground">{roleLabel(employee.systemRole)} · {todayRecord ? `${roleLabel(todayRecord.status)}${todayRecord.checkInAt ? ` · ${formatBusinessTime(todayRecord.checkInAt)}` : ''}` : 'No attendance record today'}</p>
-              {needsReview && <div className="mt-1.5"><span className="rounded-full bg-warning/10 px-2 py-0.5 text-2xs font-semibold text-warning">Needs review · {reviewCases.length}</span></div>}
-            </div>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">{canEdit && !todayRecord && <button type="button" onClick={() => vm.onOpenAttendanceEditor(employee)} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-medium text-background">Add record</button>}{canEdit && todayRecord && <button type="button" onClick={() => vm.onOpenAttendanceEditor(employee)} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-medium text-background">Correct today</button>}<button type="button" onClick={() => vm.onOpenAttendanceEditor(employee)} className="h-11 rounded-full border border-border px-[18px] text-sm font-medium">History</button></div>
-          </PeopleListCard>
-        })}</div>
-      </section>
+      {/* Calendar first: a week (or month) of everyone at a glance. The list
+          view keeps every open review item reachable in one place. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div role="tablist" aria-label={tr('Attendance view', 'Tampilan absensi')} className="inline-flex h-11 rounded-full bg-muted/60 p-1 ring-1 ring-border/70">
+          {(['calendar', 'review'] as const).map((value) => <button key={value} type="button" role="tab" aria-selected={attendanceView === value} onClick={() => setAttendanceView(value)} className={`rounded-full px-4 text-sm font-medium ${attendanceView === value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>{value === 'calendar' ? tr('Calendar', 'Kalender') : `${tr('Review list', 'Daftar cek')}${pendingReviewCount ? ` · ${pendingReviewCount}` : ''}`}</button>)}
+        </div>
+        <AttendanceExportButton activeBranch={activeBranch} />
+      </div>
+      {attendanceActionError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{attendanceActionError}</p>}
+      {attendanceView === 'calendar'
+        ? <AttendanceCalendar employees={employeeRows.filter(({ employee }) => employee.status === 'active').map(({ employee }) => employee)} canEdit={canEdit} onOpenRecord={vm.onOpenAttendanceEditor} onOpenOrder={vm.onOpenOrder} onCorrectAttendance={vm.onOpenAttendanceCorrection} />
+        : <AttendanceReviewQueue onOpenOrder={vm.onOpenOrder} onCorrectAttendance={vm.onOpenAttendanceCorrection} searchQuery={employeeSearch} />}
     </>}
     </div>
 
@@ -153,7 +133,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
     >
       <ValidationSummary errors={[...new Set(Object.values(formErrors).filter((value): value is string => Boolean(value)))]} title="Complete the required staff details" />
       <section className="space-y-5 rounded-xl bg-card p-4 ring-1 ring-border/70">
-        <div className="space-y-1"><h3 className="text-sm font-semibold leading-5">Account and employment</h3><p className="text-sm leading-5 text-muted-foreground">Required fields are marked with *. Daily branch assignments remain managed in Scheduling.</p></div>
+        <div className="space-y-1"><h3 className="text-sm font-semibold leading-5">Account and employment</h3></div>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Name" required error={formErrors.name}><input required value={form.name} onChange={vm.onFormFieldChange('name')} className={createStaffFieldInputClass(formErrors.name)} /></Field>
           <Field label="Role / position" required error={formErrors.systemRole}><select value={form.systemRole} onChange={vm.onFormFieldChange('systemRole')} className={createStaffFieldInputClass(formErrors.systemRole)}>{assignableRoles.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}</select></Field>
@@ -162,7 +142,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
         </div>
       </section>
       {canCreateAccounts ? <section className="space-y-5 rounded-xl bg-card p-4 ring-1 ring-border/70">
-        <div className="space-y-1"><h3 className="text-sm font-semibold leading-5">Login access</h3><p className="text-sm leading-5 text-muted-foreground">Email is used for secure password recovery. Staff can sign in with their username or email.</p></div>
+        <div className="space-y-1"><h3 className="text-sm font-semibold leading-5">Login access</h3></div>
         <div className="grid gap-5 sm:grid-cols-2"><Field label="Recovery email" required error={formErrors.email}><input required type="email" autoComplete="email" value={form.email} onChange={vm.onFormFieldChange('email')} className={createStaffFieldInputClass(formErrors.email)} placeholder="name@example.com" /></Field><Field label="Username" required error={formErrors.username}><input required value={form.username} onChange={vm.onFormFieldChange('username')} className={createStaffFieldInputClass(formErrors.username)} placeholder="lowercase" /></Field><Field label="Password" required error={formErrors.pin}><input required type="password" autoComplete="new-password" value={form.pin} onChange={vm.onFormFieldChange('pin')} className={createStaffFieldInputClass(formErrors.pin)} placeholder="6+ characters" /></Field></div>
       </section> : <p className="rounded-xl bg-surface-info p-4 text-sm text-info ring-1 ring-info/30">This creates an employee profile only. No login account will be generated.</p>}
       {canCreateAccounts && (() => {
@@ -185,7 +165,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
     </AlertDialog>
 
     <Dialog open={Boolean(detailsEmployee)} onOpenChange={(open) => { if (!open) vm.onCloseEmployeeDetails() }}>
-      <DialogContent className="mobile-focus-workflow max-w-5xl overflow-hidden p-0"><div className="border-b border-border px-5 py-4"><DialogHeader><DialogTitle>Employee details</DialogTitle><DialogDescription>Review one employee area at a time.</DialogDescription></DialogHeader><div className="no-scrollbar -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 py-1">{(['profile','access'] as const).map((section)=><button key={section} type="button" onClick={()=>setDetailsSection(section)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${detailsSection===section?'bg-foreground text-background':'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{section==='access'?'Access & Work':'Profile'}</button>)}</div></div>
+      <DialogContent className="mobile-focus-workflow max-w-5xl overflow-hidden p-0"><div className="border-b border-border px-5 py-4"><DialogHeader><DialogTitle>Employee details</DialogTitle><DialogDescription className="sr-only">{detailsEmployee?.name}</DialogDescription></DialogHeader><div className="no-scrollbar -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 py-1">{(['profile','access'] as const).map((section)=><button key={section} type="button" onClick={()=>setDetailsSection(section)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${detailsSection===section?'bg-foreground text-background':'bg-surface-neutral text-foreground ring-1 ring-border/80'}`}>{section==='access'?'Access & Work':'Profile'}</button>)}</div></div>
         {detailsEmployee && detailsForm && <div className="max-h-[70dvh] space-y-4 overflow-y-auto px-5 py-4">
           <section className={`${detailsSection==='profile'?'block':'hidden'} rounded-xl bg-muted/35 p-4 ring-1 ring-border/60`}>
             <div className="mb-3"><h3 className="text-sm font-semibold leading-5">Profile</h3><p className="text-xs text-muted-foreground">Personal and employment information. This does not change login access.</p></div>
@@ -231,7 +211,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
     </AlertDialog>
 
     <Dialog open={Boolean(attendanceEditor)} onOpenChange={(open) => { if (!open) vm.onCloseAttendanceEditor() }}>
-      <DialogContent className="max-w-5xl"><DialogHeader><DialogTitle>{attendanceEditor?.reviewCaseId ? 'Correct attendance' : 'Attendance'} · {attendanceEditor?.employee.name}</DialogTitle><DialogDescription>Manual records and corrections require a reason. Original selfie, location, and timestamps remain unchanged.</DialogDescription></DialogHeader>
+      <DialogContent className="max-w-5xl"><DialogHeader><DialogTitle>{attendanceEditor?.reviewCaseId ? 'Correct attendance' : 'Attendance'} · {attendanceEditor?.employee.name}</DialogTitle><DialogDescription>{tr('A reason is required.', 'Alasan wajib diisi.')}</DialogDescription></DialogHeader>
         {attendanceEditor && <div className="space-y-4"><div className="grid gap-3 sm:grid-cols-3"><Field label="Date"><DatePickerField value={attendanceEditor.date} onChange={vm.onAttendanceDateChange} className="h-10 rounded-full bg-card text-sm" /></Field><Field label="Status"><select aria-label="Attendance status" value={attendanceEditor.status} onChange={(e) => vm.onAttendanceStatusChange(e.target.value as AttendanceStatus)} className={inputClass}><option value="">Select</option>{ATTENDANCE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field><Field label="Reason" required><input required aria-label="Attendance reason" value={attendanceEditor.note} onChange={(e) => vm.onAttendanceNoteChange(e.target.value)} placeholder="Why is this record being added or corrected?" className={inputClass} /></Field></div>{attendanceActionError && <p role="alert" className="text-xs text-destructive">{attendanceActionError}</p>}
           <div className="max-h-72 space-y-2 overflow-y-auto"><p className="text-xs font-semibold text-muted-foreground">History</p>{attendanceHistory.length === 0 ? <p className="text-xs text-muted-foreground">No attendance history.</p> : attendanceHistory.map((record) => <article key={record.id} className="rounded-lg bg-muted/60 p-3 text-xs"><div className="flex justify-between gap-2"><strong>{record.date} · {roleLabel(record.status)}</strong><span className="text-muted-foreground">{record.actor}</span></div><p className="mt-1 text-muted-foreground">{record.checkInAt ? `Check-in ${formatBusinessTime(record.checkInAt)}` : 'Manual record'}{record.checkOutAt ? ` · Check-out ${formatBusinessTime(record.checkOutAt)}` : ''}</p>{record.note && <p className="mt-1">{record.note}</p>}<div className="mt-2 flex flex-wrap gap-2">{record.selfieDataUrl && <button type="button" onClick={() => vm.onOpenAttendanceEvidence(record.selfieDataUrl)} className="text-primary underline">Check-in selfie</button>}{record.checkOutSelfieDataUrl && <button type="button" onClick={() => vm.onOpenAttendanceEvidence(record.checkOutSelfieDataUrl)} className="text-primary underline">Check-out selfie</button>}{record.checkInLocation && <a href={`https://www.openstreetmap.org/?mlat=${record.checkInLocation.latitude}&mlon=${record.checkInLocation.longitude}`} target="_blank" rel="noreferrer" className="text-primary underline">Check-in · {record.checkInLocation.detectedBranchName ?? 'branch'} · {record.checkInLocation.distanceMeters}m</a>}{record.checkOutLocation && <a href={`https://www.openstreetmap.org/?mlat=${record.checkOutLocation.latitude}&mlon=${record.checkOutLocation.longitude}`} target="_blank" rel="noreferrer" className="text-primary underline">Check-out · {record.checkOutLocation.detectedBranchName ?? 'branch'} · {record.checkOutLocation.distanceMeters}m</a>}{record.checkInLocation?.scheduledBranchName && <span className="rounded-full bg-info/10 px-2 py-1 text-info">Scheduled {record.checkInLocation.scheduledBranchName} · {record.checkInLocation.scheduledStartTime}–{record.checkInLocation.scheduledEndTime}</span>}{record.checkInLocation?.reviewStatus === 'pending_review' && <span className="rounded-full bg-warning/10 px-2 py-1 font-medium text-warning">Schedule mismatch · review pending</span>}{record.checkOutLocation?.reviewStatus === 'pending_review' && <span className="rounded-full bg-warning/10 px-2 py-1 font-medium text-warning">Checkout branch mismatch</span>}</div></article>)}</div></div>}
         <DialogFooter><button type="button" onClick={vm.onCloseAttendanceEditor} className="h-11 rounded-full border border-border px-[18px] text-sm">Close</button>{canEdit && <button type="button" onClick={vm.onSaveAttendance} className="h-11 rounded-full bg-primary px-[18px] text-sm font-semibold text-primary-foreground hover:bg-primary/90">{attendanceEditor?.reviewCaseId ? 'Save correction' : 'Save attendance'}</button>}</DialogFooter>

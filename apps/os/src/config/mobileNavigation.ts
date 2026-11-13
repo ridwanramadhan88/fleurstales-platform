@@ -9,13 +9,14 @@ export type MobileNavigationDestination = NavigationDestinationId
 
 const ROLE_PRIMARY_PRIORITY: Record<UserRole, readonly MobileNavigationDestination[]> = {
   owner: ['dashboard', 'orders', 'hr', 'customers'],
-  admin: ['dashboard', 'orders', 'customers', 'catalog'],
+  // Admin works from the order list; there is no separate Home.
+  admin: ['orders', 'customers', 'catalog', 'stock'],
   // Overview must stay reachable because it hosts secondary Workspace links.
   finance: ['dashboard', 'finance', 'revenue', 'orders'],
   hr: ['dashboard', 'hr', 'orders', 'customers'],
   florist: ['dashboard', 'orders', 'catalog', 'customers'],
   courier: ['dashboard'],
-  manager: ['dashboard', 'orders', 'catalog', 'customers'],
+  manager: ['dashboard', 'orders', 'stock', 'catalog'],
 }
 
 export const MOBILE_DESTINATION_ORDER = NAVIGATION_DESTINATION_ORDER

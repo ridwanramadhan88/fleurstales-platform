@@ -351,12 +351,8 @@ export const RevenueDashboard: FC<RevenueDashboardViewModel> = ({
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1 className="font-display text-2xl font-semibold leading-tight text-foreground">Revenue</h1>
-          <p className="mt-1 text-sm leading-5 text-muted-foreground sm:hidden">
-            Confirmed revenue and finished-order estimates · {activeBranch === 'All' ? 'All branches' : activeBranch}
-          </p>
-          <p className="hidden text-xs text-muted-foreground sm:block">
-            Revenue confirmed by Finance. Estimate includes finished Orders still pending. Branch:{' '}
-            {activeBranch === 'All' ? 'all branches' : activeBranch}.
+          <p className="text-xs text-muted-foreground">
+            {activeBranch === 'All' ? 'All branches' : activeBranch}
           </p>
         </div>
 

@@ -140,7 +140,6 @@ export const FinancePeriodReport: FC<{ period: FinancePeriodSummary }> = ({ peri
         <div className="flex items-center justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold">By account / cash</h4>
-            <p className="mt-0.5 text-xs text-muted-foreground">Full ledger movement, including transfers and balance utilities, reconciled per account.</p>
           </div>
         </div>
         <div className="mt-3 overflow-x-auto">
@@ -183,7 +182,6 @@ export const FinancePeriodReport: FC<{ period: FinancePeriodSummary }> = ({ peri
 
       <div className="rounded-xl border border-border/70 bg-card p-4">
         <h4 className="text-sm font-semibold">By source</h4>
-        <p className="mt-0.5 text-xs text-muted-foreground">Orders, refunds, payroll, manual entries, and internal transfers are kept distinct.</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
           {report.sources.map((source) => (
             <div key={source.source} className="rounded-xl bg-surface-panel px-3 py-3 ring-1 ring-border/60">

@@ -15,39 +15,32 @@ import {
 import { OverviewStatCard, OverviewStatGrid } from '../ui/overview-card'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import type { HrSection } from './HrTabContentController'
-import { InfoHint } from '../ui/info-hint'
 
 
-export const PEOPLE_SECTION_META: Record<HrSection, { label: string; description: string; icon: LucideIcon }> = {
+export const PEOPLE_SECTION_META: Record<HrSection, { label: string; icon: LucideIcon }> = {
   employees: {
     // Not "People": that is the name of the whole workspace in the main menu.
     label: 'Employees',
-    description: 'Create staff, finish setup, manage access, and deactivate or remove unused records.',
     icon: UsersRound,
   },
   attendance: {
     label: 'Attendance',
-    description: 'Review daily attendance, warnings, and corrections.',
     icon: ClipboardCheck,
   },
   scheduling: {
     label: 'Schedule',
-    description: 'Copy, adjust, validate, and publish weekly branch assignments.',
     icon: CalendarDays,
   },
   reports: {
     label: 'Reports',
-    description: 'Review workforce performance and operational problems.',
     icon: FileBarChart,
   },
   points: {
     label: 'Points',
-    description: 'Review employee points, pending activity, and rules.',
     icon: BadgeCent,
   },
   payroll: {
     label: 'Payroll',
-    description: 'Prepare, review, and submit monthly payroll.',
     icon: WalletCards,
   },
 }
@@ -102,44 +95,26 @@ export const PeopleTabs = ({
   )
 }
 
+/**
+ * The People tabs already name the page, so the header shows only the
+ * page's status/action. The title stays for screen readers.
+ */
 export const PeoplePageHeader = ({
   section,
   title,
-  description,
   action,
-  icon,
   className,
 }: {
   section?: HrSection
   title?: ReactNode
-  description?: ReactNode
   action?: ReactNode
-  icon?: LucideIcon
   className?: string
 }) => {
-  const meta = section ? PEOPLE_SECTION_META[section] : undefined
-  const Icon = icon ?? meta?.icon
-  const resolvedTitle = title ?? meta?.label
-  const resolvedDescription = description ?? meta?.description
-
+  const resolvedTitle = title ?? (section ? PEOPLE_SECTION_META[section].label : undefined)
   return (
-    <header className={cn('flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between', className)}>
-      <div className="flex min-w-0 items-start gap-3">
-        {Icon && (
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted/65 text-foreground ring-1 ring-border/70">
-            <Icon className="size-[18px]" strokeWidth={1.9} />
-          </span>
-        )}
-        <div className="min-w-0 pt-0.5">
-          <div className="flex items-center gap-1.5">
-            <h2 className="font-display text-xl font-semibold leading-tight text-foreground">{resolvedTitle}</h2>
-            {resolvedDescription && (
-              <InfoHint label="About this People section">{resolvedDescription}</InfoHint>
-            )}
-          </div>
-        </div>
-      </div>
-      {action && <div className="shrink-0 sm:pt-0.5">{action}</div>}
+    <header className={cn('flex items-center justify-end gap-3', !action && 'sr-only', className)}>
+      {resolvedTitle && <h2 className="sr-only">{resolvedTitle}</h2>}
+      {action && <div className="shrink-0">{action}</div>}
     </header>
   )
 }

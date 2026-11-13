@@ -33,14 +33,12 @@ export const CourierDeliveryTasks: FC = () => {
     <section className={surfaceCardClass('standard', 'border border-border ring-0')} aria-label={copy('Delivery tasks', 'Tugas antar')}>
       <header className="mb-3">
         <h2 className="text-base font-semibold leading-6">{copy('Delivery tasks', 'Tugas antar')}</h2>
-        <p className="text-sm text-muted-foreground">{copy('Earliest schedule first.', 'Jadwal paling awal di atas.')}</p>
       </header>
 
       {tasks.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border px-4 py-7 text-center">
           <PackageCheck className="mx-auto size-8 text-muted-foreground" />
           <p className="mt-2 text-sm font-medium">{copy('No deliveries right now', 'Belum ada tugas antar')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{copy('New tasks appear here when the admin assigns you.', 'Tugas baru muncul di sini saat admin menugaskan Anda.')}</p>
         </div>
       ) : (
         <ul className="space-y-3">

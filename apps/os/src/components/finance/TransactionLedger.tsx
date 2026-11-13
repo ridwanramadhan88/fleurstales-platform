@@ -362,7 +362,6 @@ export const TransactionLedger: FC<TransactionLedgerViewModel> = ({
         <div className="flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-border px-5 text-center">
           <ReceiptText className="size-5 text-muted-foreground" />
           <p className="mt-2 font-semibold">No transactions in this view</p>
-          <p className="mt-1 max-w-md text-xs text-muted-foreground">Adjust the source, account, branch, date, category, or search filters to see other ledger entries.</p>
         </div>
       ) : (
         <div className="space-y-2">

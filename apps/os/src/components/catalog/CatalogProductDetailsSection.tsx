@@ -57,7 +57,6 @@ export const CatalogProductDetailsSection: FC<Props> = ({
           <div className="space-y-1.5 sm:col-span-2">
             <label className={labelClass}>Product ID</label>
             <input value={product.productId} disabled className={readOnlyInputClass} />
-            <p className="text-xs text-muted-foreground">Generated automatically by the system and never changes.</p>
           </div>
         ) : null}
 

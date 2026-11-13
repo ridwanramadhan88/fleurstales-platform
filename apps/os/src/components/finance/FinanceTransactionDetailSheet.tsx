@@ -90,7 +90,7 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
       side="responsiveRight"
       size="compact"
       title="Transaction details"
-      description="Ledger detail and audit context for this Finance entry."
+     
       contentClassName="gap-0"
     >
       <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-5">

@@ -102,7 +102,8 @@ describe('browser runtime behavior', () => {
     expect(ordersHeader).toContain('GuardedAction')
     expect(ordersHeader).toContain('InfoHint')
     expect(ordersFilters).not.toContain('Showing {displayedOrderCount}')
-    expect(peopleUi).toContain('<InfoHint')
+    // The People tabs name the page; no repeated title or info hint.
+    expect(peopleUi).not.toContain('<InfoHint')
     expect(attendance).toContain('pendingCases.length > 0')
     expect(orderController).toContain('itemDisplays')
     expect(orderItems).toContain('itemDisplay?.imageUrl')

@@ -20,12 +20,10 @@ describe('People workspace shared UI', () => {
   })
 
 
-  it('uses the same icon, heading and description system for each People page', () => {
+  it('keeps the page title for screen readers only, since the tab already names the page', () => {
     render(<PeoplePageHeader section="points" />)
-    expect(screen.getByRole('heading', { name: 'Points' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'About this People section' }))
-    expect(screen.getByText('Review employee points, pending activity, and rules.')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Points' }).closest('header')?.querySelector('svg')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Points' })).toHaveClass('sr-only')
+    expect(screen.queryByRole('button', { name: 'About this People section' })).toBeNull()
   })
 
   it('combines the reporting month and calculated payroll period into compact navigation', () => {
