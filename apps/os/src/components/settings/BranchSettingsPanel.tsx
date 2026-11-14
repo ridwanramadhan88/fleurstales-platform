@@ -350,7 +350,7 @@ export const OpeningHoursEditor: FC<{
           <div>
             <p className="text-xs font-semibold text-foreground">Opening hours</p>
             <p className="text-xs text-muted-foreground">
-              {tr('Controls staff attendance and check-out, and pickup/delivery unless separate hours are set below.', 'Mengatur absensi dan check-out staf, juga ambil/antar bila jam ambil & antar di bawah tidak diatur.')}
+              {tr('Controls staff attendance and check-out, and pickup/delivery unless separate hours are set below.', 'Mengatur absensi dan absen pulang staf, juga ambil/antar bila jam ambil & antar di bawah tidak diatur.')}
             </p>
           </div>
         </div>

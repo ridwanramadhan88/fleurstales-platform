@@ -278,7 +278,7 @@ export const CatalogSizeGuideDialog: FC<CatalogSizeGuideDialogProps> = ({ open, 
                 <AlertCircle className="mt-0.5 size-5 shrink-0 text-warning" />
                 <div>
                   <p className="text-sm font-semibold">Data berubah di sesi lain</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Draft ini tidak ditimpa otomatis. Tutup dan buka ulang pengelola Template ukuran sebelum menyimpan.</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Draf ini tidak ditimpa otomatis. Tutup dan buka ulang pengelola Template ukuran sebelum menyimpan.</p>
                 </div>
               </div>
             ) : null}

@@ -53,7 +53,7 @@ export const MyDayChip: FC = () => {
         ? tr(`Checked in ${clock(status.checkInTime)}`, `Masuk ${clock(status.checkInTime)}`)
         : status.shift
           ? tr('Not checked in', 'Belum absen')
-          : tr('No shift today', 'Tidak ada shift hari ini')
+          : tr('No shift today', 'Tidak ada sif hari ini')
   const shiftLabel = status.shift ? `${status.shift.startTime}–${status.shift.endTime} · ${status.shift.branchId}` : ''
 
   return (

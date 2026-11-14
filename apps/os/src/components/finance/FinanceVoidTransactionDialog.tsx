@@ -45,16 +45,16 @@ export const FinanceVoidTransactionDialog: FC = () => {
     event.preventDefault()
     if (!transaction || busy) return
     if (reason.trim().length < 3) {
-      toast({ title: tr('Reason required', 'Alasan wajib diisi'), description: tr('Explain why this transaction is voided.', 'Jelaskan kenapa transaksi ini di-void.'), variant: 'destructive' })
+      toast({ title: tr('Reason required', 'Alasan wajib diisi'), description: tr('Explain why this transaction is voided.', 'Jelaskan kenapa transaksi ini dibatalkan.'), variant: 'destructive' })
       return
     }
     setBusy(true)
     try {
       await voidFinanceTransaction({ transactionId: transaction.id, reason })
-      toast({ title: tr('Transaction voided', 'Transaksi di-void'), description: tr('It stays in the ledger for the audit trail and no longer counts.', 'Transaksi tetap tercatat untuk jejak audit dan tidak lagi dihitung.') })
+      toast({ title: tr('Transaction voided', 'Transaksi dibatalkan'), description: tr('It stays in the ledger for the audit trail and no longer counts.', 'Transaksi tetap tercatat untuk jejak audit dan tidak lagi dihitung.') })
       setTransactionId(null)
     } catch (error) {
-      toast({ title: tr('Transaction was not voided', 'Transaksi tidak di-void'), description: error instanceof Error ? error.message : tr('Please try again.', 'Silakan coba lagi.'), variant: 'destructive' })
+      toast({ title: tr('Transaction was not voided', 'Transaksi tidak dibatalkan'), description: error instanceof Error ? error.message : tr('Please try again.', 'Silakan coba lagi.'), variant: 'destructive' })
     } finally {
       setBusy(false)
     }

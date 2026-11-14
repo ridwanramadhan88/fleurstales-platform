@@ -154,7 +154,7 @@ export const buildFinanceLkXlsx = (report: LkReport, accountLabel: (accountId?: 
       ['Penjualan diambil dari pesanan menurut tanggal pesanan (WIB); pesanan batal dan yang belum dibayar sama sekali tidak dihitung.'],
       ['FleurCake = pesanan yang semua produknya berjenis Flower Cake.'],
       ['Retur, beban, pendapatan & pengeluaran lainnya diambil dari ledger Keuangan menurut tanggal transaksi. Transaksi void tidak dihitung (lihat sheet Koreksi & Void).'],
-      ['Kurang bayar = pesanan yang sudah selesai tetapi dibayar kurang dari totalnya. Lebih bayar = dibayar melebihi total (setelah refund).'],
+      ['Kurang bayar = pesanan yang sudah selesai tetapi dibayar kurang dari totalnya. Lebih bayar = dibayar melebihi total (setelah pengembalian dana).'],
       ['Setoran modal Owner, transfer antar rekening, saldo awal dan penyesuaian saldo tidak masuk laba rugi.'],
       ['* Belum dicatat di OS: Packing, Money Bouquet, Penjualan Instalasi, Retur Delivery, dan rincian akun HPP/Beban sesuai LK. Akan terisi setelah fitur pencatatannya tersedia.'],
     ],

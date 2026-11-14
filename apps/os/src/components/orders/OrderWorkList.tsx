@@ -49,7 +49,7 @@ const getTimeLabel = (row: OrderWorkRow, copy: Copy): { main: string; sub: strin
 const getPaymentLine = (order: OrderTableRow, stage: OrderWorkRow['priority']['stage'], copy: Copy): { text: string; className: string } => {
   if (isOrderFullyPaid(order)) return { text: copy('Paid', 'Lunas'), className: 'text-success' }
   if (order.paymentStatus === 'refund_pending' || order.paymentStatus === 'refunded') {
-    return { text: order.paymentStatus === 'refunded' ? copy('Refunded', 'Dikembalikan') : copy('Refund pending', 'Menunggu refund'), className: 'text-muted-foreground' }
+    return { text: order.paymentStatus === 'refunded' ? copy('Refunded', 'Dikembalikan') : copy('Refund pending', 'Menunggu pengembalian dana'), className: 'text-muted-foreground' }
   }
   if (stage === 'confirm') {
     const method = order.paymentChannel === 'qris' ? 'QRIS' : order.paymentMethod === 'cash' ? copy('Cash', 'Tunai') : order.paymentMethod === 'transfer' ? 'Transfer' : ''

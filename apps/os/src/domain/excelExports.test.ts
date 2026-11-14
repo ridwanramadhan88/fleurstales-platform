@@ -98,7 +98,7 @@ describe('attendance export', () => {
     expect(sheets.map((s) => s.name)).toEqual(['Ringkasan', 'Absensi harian', 'Peringatan & lembur', 'Info'])
     expect(table(sheets[0])[0]).toMatchObject({ Nama: 'Vero', 'Hari hadir': 1, 'Lembur disetujui': '1 jam 30 menit', 'Nominal lembur (Rp)': 45000 })
     const day = table(sheets[1]).find((r) => r.Tanggal === '2026-11-07')
-    expect(day).toMatchObject({ Hari: 'Sabtu', Status: 'Hadir', 'Check-in': '08:00', 'Check-out': '17:35', 'Alasan check-out': 'Lembur', 'Peringatan': 'Lembur (Disetujui)', 'Nominal lembur (Rp)': 45000 })
+    expect(day).toMatchObject({ Hari: 'Sabtu', Status: 'Hadir', 'Absen masuk': '08:00', 'Absen pulang': '17:35', 'Alasan check-out': 'Lembur', 'Peringatan': 'Lembur (Disetujui)', 'Nominal lembur (Rp)': 45000 })
     expect(table(sheets[2])[0]).toMatchObject({ Jenis: 'Lembur', Status: 'Disetujui', 'Selisih (menit)': 95, 'Keterangan sistem': 'Check-out 1 jam 35 menit setelah jam shift selesai.' })
     expect(attendanceExportFilename('2026-11', 'Kedamaian')).toBe('Absensi_2026-11_kedamaian.xlsx')
   })

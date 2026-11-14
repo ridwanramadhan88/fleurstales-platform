@@ -16,7 +16,7 @@ export const createCashPickupOrder = async (page: Page, customerName: string, wh
   await form.getByRole('combobox', { name: 'Pilih produk dari katalog' }).click()
   await page.getByRole('option', { name: /^Pink Lily/ }).click()
   await form.getByRole('group', { name: 'Sumber pesanan' }).getByRole('button', { name: 'WhatsApp' }).click()
-  await form.getByRole('group', { name: 'Pemenuhan' }).getByRole('button', { name: 'Pengambilan di Toko' }).click()
+  await form.getByRole('group', { name: 'Pemenuhan' }).getByRole('button', { name: 'Ambil di toko' }).click()
   await form.getByRole('button', { name: 'Tanggal pengambilan' }).click()
   await page.getByRole('button', { name: 'Bulan berikutnya' }).click()
   // Days 10–24 never repeat in the previous/next-month filler cells, and

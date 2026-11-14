@@ -64,7 +64,7 @@ const reasonMessage = (
         : `${label} kept conflicting with other changes, so auto-save is paused to protect the data. Reload the latest data before editing again.`
     case 'finance_server_owned':
       return id
-        ? 'Catatan keuangan otomatis dikelola dari alurnya masing-masing. Muat ulang data Keuangan, lalu ubah pesanan, refund, atau penggajian terkait.'
+        ? 'Catatan keuangan otomatis dikelola dari alurnya masing-masing. Muat ulang data Keuangan, lalu ubah pesanan, pengembalian dana, atau penggajian terkait.'
         : 'Automatic finance entries are managed from their source workflow. Reload Finance and update the related order, refund, or payroll record.'
     case 'finance_delete_blocked':
       return id

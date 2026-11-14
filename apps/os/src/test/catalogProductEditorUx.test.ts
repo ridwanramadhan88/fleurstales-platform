@@ -29,7 +29,7 @@ describe('Catalog Product Editor UX regressions', () => {
     expect(controllerSource).toContain('const sheetProduct =')
     expect(tabContentSource).toContain('product={sheetProduct}')
     expect(formSource).toContain('const sourceChanged =')
-    expect(formSource).toContain('Draft ini tidak ditimpa otomatis')
+    expect(formSource).toContain('Draf ini tidak ditimpa otomatis')
     expect(formSource).toContain('disabled={isSaving || sourceChanged}')
   })
 
@@ -104,7 +104,7 @@ describe('Catalog Product Editor UX regressions', () => {
 
   it('requires price, recipe and a chart size for active variants, with the size photo optional', () => {
     expect(variantDialogSource).toContain('Varian aktif wajib memiliki minimal 1 item Resep Bunga.')
-    expect(variantDialogSource).toContain('Varian aktif harus memakai ukuran dari Size Template.')
+    expect(variantDialogSource).toContain('Varian aktif harus memakai ukuran dari template ukuran.')
     expect(variantDialogSource).toContain("setStep('resep')")
     expect(variantDialogSource).not.toContain('wajib memiliki tepat 1 foto ukuran')
     expect(variantDialogSource).not.toContain("setStep('foto')")

@@ -41,19 +41,19 @@ export const StorefrontCompletedReviewSection: FC<StorefrontCompletedReviewSecti
             {rewardAvailable
               ? `Diskon ${formatReviewRewardValue(reward)} untuk pesanan berikutnya sudah aktif`
               : rewardRedeemed
-                ? 'Terima kasih, reward review sudah digunakan'
+                ? 'Terima kasih, hadiah ulasan sudah digunakan'
                 : details.reviewSubmitted
-                  ? 'Terima kasih untuk review-nya'
+                  ? 'Terima kasih untuk ulasannya'
                   : 'Dapatkan diskon untuk pesanan berikutnya'}
           </h2>
           <p className="mt-2 max-w-2xl sf-type-2 leading-6 text-black/58">
             {details.reviewSubmitted
               ? rewardAvailable
-                ? `Gunakan reward ini untuk order berikutnya dengan minimum belanja ${currencyFormatter.format(reward.minOrderIdr)}.`
+                ? `Gunakan hadiah ini untuk pesanan berikutnya dengan minimum belanja ${currencyFormatter.format(reward.minOrderIdr)}.`
                 : rewardRedeemed
-                  ? 'Reward dari review ini sudah dipakai pada pesanan berikutnya.'
-                  : 'Review kamu sudah tersimpan. Terima kasih sudah membantu Fleurstales jadi lebih baik.'
-              : 'Isi review singkat tentang pesanan ini. Setelah dikirim, diskon akan otomatis aktif untuk pesanan berikutnya.'}
+                  ? 'Hadiah dari ulasan ini sudah dipakai pada pesanan berikutnya.'
+                  : 'Ulasan kamu sudah tersimpan. Terima kasih sudah membantu Fleurstales jadi lebih baik.'
+              : 'Isi ulasan singkat tentang pesanan ini. Setelah dikirim, diskon akan otomatis aktif untuk pesanan berikutnya.'}
           </p>
         </div>
       </div>

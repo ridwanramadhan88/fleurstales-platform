@@ -21,7 +21,7 @@ test('HR approves claimed overtime and it becomes a payroll addition', async ({ 
 
   const reviews = main.getByRole('region', { name: 'Tinjauan kehadiran' })
   const overtimeCase = reviews.locator('article').filter({ hasText: 'E2E Florist' }).filter({ hasText: 'Lembur' }).first()
-  await expect(overtimeCase).toContainText('Karyawan mengajukan lembur: check-out 1 jam 35 menit setelah jam shift selesai.')
+  await expect(overtimeCase).toContainText('Karyawan mengajukan lembur: absen pulang 1 jam 35 menit setelah jam sif selesai.')
   await expect(overtimeCase).toContainText('Merangkai pesanan wedding')
   await overtimeCase.getByRole('button', { name: 'Tinjau' }).click()
 

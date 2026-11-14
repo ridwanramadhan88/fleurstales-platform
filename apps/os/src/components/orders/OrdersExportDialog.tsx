@@ -136,7 +136,7 @@ export const OrdersExportButton: FC<OrdersExportDialogProps> = ({ orders, branch
                 <span className="block font-medium">{tr('Complete order data', 'Data pesanan lengkap')}</span>
                 <span className="block text-xs text-muted-foreground">{tr(
                   'Discount, voucher, delivery fee, payment method, Finance verification, admin, florist, address, notes, greeting card, cancellation and refund. Adds Item and Payment sheets.',
-                  'Diskon, voucher, ongkir, metode bayar, verifikasi Finance, admin, florist, alamat, catatan, kartu ucapan, pembatalan & refund. Ditambah sheet Item dan Pembayaran.',
+                  'Diskon, voucher, ongkir, metode bayar, verifikasi Keuangan, admin, florist, alamat, catatan, kartu ucapan, pembatalan & pengembalian dana. Ditambah sheet Item dan Pembayaran.',
                 )}</span>
               </span>
             </label>

@@ -13,7 +13,7 @@ export const createCatalogArrangementTypeActions = (
   get: CatalogStoreGet,
 ): ArrangementTypeActions => ({
   addArrangementType: (name) => {
-    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengedit Catalog.' }
+    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengubah Katalog.' }
     const nextName = normalizedName(name)
     if (!nextName) return { ok: false, reason: 'Nama Jenis rangkaian wajib diisi.' }
     if (nextName.length > 80) return { ok: false, reason: 'Nama Jenis rangkaian maksimal 80 karakter.' }
@@ -25,7 +25,7 @@ export const createCatalogArrangementTypeActions = (
   },
 
   renameArrangementType: (currentName, nextValue) => {
-    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengedit Catalog.' }
+    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengubah Katalog.' }
     const nextName = normalizedName(nextValue)
     if (!nextName) return { ok: false, reason: 'Nama Jenis rangkaian wajib diisi.' }
     if (nextName.length > 80) return { ok: false, reason: 'Nama Jenis rangkaian maksimal 80 karakter.' }
@@ -47,7 +47,7 @@ export const createCatalogArrangementTypeActions = (
   },
 
   deleteArrangementType: (name) => {
-    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengedit Catalog.' }
+    if (!isSectionEditAuthorized('catalog')) return { ok: false, reason: 'Akun ini tidak dapat mengubah Katalog.' }
     const usageCount = get().products.filter((product) => product.productType === name).length
     if (usageCount > 0) {
       return { ok: false, reason: `Jenis rangkaian ini masih dipakai oleh ${usageCount} produk.` }

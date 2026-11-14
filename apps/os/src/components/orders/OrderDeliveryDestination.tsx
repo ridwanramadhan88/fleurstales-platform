@@ -69,7 +69,7 @@ export const OrderDeliveryDestination: FC<Props> = ({ order, canEdit }) => {
             rel="noreferrer"
             className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-background px-3.5 text-sm font-semibold text-primary ring-1 ring-border/80 hover:bg-primary/5"
           >
-            {copy('Open in Maps', 'Buka di Maps')} <ExternalLink className="size-3.5" />
+            {copy('Open in Google Maps', 'Buka di Google Maps')} <ExternalLink className="size-3.5" />
           </a>
         ) : (
           <span className="inline-flex min-h-10 items-center gap-1.5 text-sm text-muted-foreground">

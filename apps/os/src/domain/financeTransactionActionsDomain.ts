@@ -64,7 +64,7 @@ export const financeActionCopy = (transaction: FinanceTransaction): FinanceActio
         },
         voidConsequence: {
           en: `Order${order} will be cancelled. Other payments still held for it go to the refund queue, and a review reward used on it is returned to the customer.`,
-          id: `Pesanan${order} akan dibatalkan. Pembayaran lain yang masih tersimpan untuk pesanan ini masuk antrean refund, dan hadiah ulasan yang terpakai dikembalikan ke pelanggan.`,
+          id: `Pesanan${order} akan dibatalkan. Pembayaran lain yang masih tersimpan untuk pesanan ini masuk antrean pengembalian dana, dan hadiah ulasan yang terpakai dikembalikan ke pelanggan.`,
         },
       }
     case 'order_refund':
@@ -75,7 +75,7 @@ export const financeActionCopy = (transaction: FinanceTransaction): FinanceActio
         },
         voidConsequence: {
           en: `The refund is treated as not paid out: order${order} returns to the refund queue.`,
-          id: `Refund dianggap belum dibayarkan: pesanan${order} kembali ke antrean refund.`,
+          id: `Pengembalian dana dianggap belum dibayarkan: pesanan${order} kembali ke antrean pengembalian dana.`,
         },
       }
     case 'transfer':
@@ -86,18 +86,18 @@ export const financeActionCopy = (transaction: FinanceTransaction): FinanceActio
         },
         voidConsequence: {
           en: 'Both sides of this transfer are voided together.',
-          id: 'Kedua sisi transfer ini di-void bersamaan.',
+          id: 'Kedua sisi transfer ini dibatalkan bersamaan.',
         },
       }
     case 'payroll':
       return {
         editWarning: {
           en: 'Only the Finance ledger changes; the payroll record keeps its status.',
-          id: 'Hanya catatan Keuangan yang berubah; status di Payroll tetap.',
+          id: 'Hanya catatan Keuangan yang berubah; status di Penggajian tetap.',
         },
         voidConsequence: {
           en: 'Only the Finance ledger row is voided; the payroll record keeps its paid status.',
-          id: 'Hanya baris Keuangan yang di-void; status di Payroll tetap dibayar.',
+          id: 'Hanya baris Keuangan yang dibatalkan; status di Penggajian tetap dibayar.',
         },
       }
     default:

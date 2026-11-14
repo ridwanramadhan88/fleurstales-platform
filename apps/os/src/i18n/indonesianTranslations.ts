@@ -54,7 +54,7 @@ const termReplacements: Array<[RegExp, string]> = [
   [/\bfeatured\b/gi, 'unggulan'],
   [/\bpoints?\b/gi, 'poin'],
   [/\bworkspaces?\b/gi, 'ruang kerja'],
-  [/\bqueues?\b/gi, 'antrian'],
+  [/\bqueues?\b/gi, 'antrean'],
   [/\bassignments?\b/gi, 'penugasan'],
   [/\bassigned\b/gi, 'ditugaskan'],
   [/\bpending\b/gi, 'menunggu'],
@@ -121,9 +121,9 @@ const polishLegacyCopy = (value: string, source = value): string => {
 }
 
 const POLISHED_TRANSLATION_OVERRIDES: Record<string, string> = {
-  'Branch vs Branch': 'Cabang vs Cabang',
-  'Period vs Previous Period': 'Periode vs Periode Sebelumnya',
-  'Revenue vs Expense': 'Pendapatan vs Pengeluaran',
+  'Branch vs Branch': 'Cabang vs cabang',
+  'Period vs Previous Period': 'Periode vs periode sebelumnya',
+  'Revenue vs Expense': 'Pendapatan vs pengeluaran',
   'Single view': 'Tampilan tunggal',
   'Publish anyway': 'Tetap terbitkan',
   'Review schedule': 'Periksa jadwal',
@@ -154,7 +154,7 @@ const POLISHED_TRANSLATION_OVERRIDES: Record<string, string> = {
   'New entries always start as pending.': 'Transaksi baru selalu berstatus menunggu.',
   'Record company income or expenses for Finance verification.':
     'Catat pendapatan atau pengeluaran perusahaan untuk diverifikasi tim Keuangan.',
-  'Finance refund queue': 'Antrian pengembalian dana Keuangan',
+  'Finance refund queue': 'Antrean pengembalian dana Keuangan',
   'Finance can approve the whole monthly proposal or review employees individually. Rejected employees return to HR without reopening accepted employees.':
     'Tim Keuangan dapat menyetujui seluruh proposal bulanan atau meninjau tiap staf. Staf yang ditolak kembali ke HR tanpa membuka kembali staf yang sudah diterima.',
   'Rejected employees can be corrected or resolved by HR. Employee payrolls already approved by Finance remain locked and accepted.':
@@ -180,13 +180,13 @@ const POLISHED_TRANSLATION_OVERRIDES: Record<string, string> = {
     'Buat proposal penggajian untuk meninjau gaji, poin, dan penyesuaian HR.',
   'Positive rewards or negative penalties. Pending until reviewed.':
     'Imbalan positif atau penalti negatif. Menunggu peninjauan.',
-  'Schedule warning · HR review pending': 'Peringatan jadwal · menunggu peninjauan HR',
-  'Your published branch and shift for this week.': 'Cabang dan Shift yang diterbitkan untuk minggu ini.',
+  'Schedule warning · HR review pending': 'Peringatan jadwal · menunggu peninjauan SDM',
+  'Your published branch and shift for this week.': 'Cabang dan Sif yang diterbitkan untuk minggu ini.',
   'Crop to 1:1 before upload': 'Potong ke rasio 1:1 sebelum unggah',
 
   'Finance order verification date scope': 'Rentang tanggal verifikasi pesanan oleh Keuangan',
   'Finance payroll review': 'Peninjauan penggajian oleh Keuangan',
-  'Attendance review queue': 'Antrian peninjauan kehadiran',
+  'Attendance review queue': 'Antrean peninjauan kehadiran',
   'Finance review deadline': 'Batas waktu peninjauan Keuangan',
   'Check-out branch warning': 'Peringatan cabang saat absen pulang',
 
@@ -213,7 +213,7 @@ const POLISHED_TRANSLATION_OVERRIDES: Record<string, string> = {
     'Diajukan Admin/Owner pada pesanan terkunci yang sudah selesai. Persetujuan pembatalan langsung membatalkan pesanan; persetujuan perubahan hanya membuka kunci agar mereka dapat mengubahnya.',
   'Orders appear after delivery or pickup is complete. Finished orders stay locked from direct edits; Finance or Owner can verify, reject, or flag them for review.':
     'Pesanan muncul setelah pengiriman atau pengambilan selesai. Pesanan selesai tetap terkunci dari perubahan langsung; Keuangan atau Owner dapat memverifikasi, menolak, atau menandainya untuk ditinjau.',
-  'Continue for HR review': 'Lanjutkan untuk peninjauan HR',
+  'Continue for HR review': 'Lanjutkan untuk peninjauan SDM',
   'request submitted — awaiting Finance/Owner review.':
     'permintaan diajukan — menunggu peninjauan Keuangan/Owner.',
   'Review and restock soon': 'Perlu ditinjau dan segera isi ulang stok',
@@ -244,7 +244,7 @@ const POLISHED_TRANSLATION_OVERRIDES: Record<string, string> = {
   'Unscheduled attendance': 'Kehadiran di hari libur',
   'Delivery late': 'Pengiriman terlambat',
   'Delivery passed the scheduled time.': 'Pengiriman melewati waktu yang dijadwalkan.',
-  'Source: Delivery Order': 'Sumber: Pesanan Pengiriman',
+  'Source: Delivery Order': 'Sumber: pesanan antar',
 
   'Propose ready': 'Ajukan status Siap',
   'Revenue (confirmed) uses Finance-verified collections.':
