@@ -13,7 +13,7 @@ test('admin: new order only offers pickup times inside the pickup & delivery hou
   await page.getByRole('navigation').first().getByText('Pesanan', { exact: true }).click()
   await page.getByRole('button', { name: /Pesanan baru/ }).first().click()
   const form = page.getByRole('dialog', { name: 'Pesanan baru' })
-  await form.getByRole('group', { name: 'Pemenuhan' }).getByRole('button', { name: 'Pengambilan di Toko' }).click()
+  await form.getByRole('group', { name: 'Pemenuhan' }).getByRole('button', { name: 'Ambil di toko' }).click()
   await form.getByRole('button', { name: 'Tanggal pengambilan' }).click()
   await page.getByRole('button', { name: 'Bulan berikutnya' }).click()
   await page.getByRole('gridcell', { name: '12', exact: true }).click()
