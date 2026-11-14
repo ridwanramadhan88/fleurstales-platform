@@ -129,6 +129,8 @@ export const getAccessibleNavigationDestinationIds = ({
 }: NavigationAccessContext): NavigationDestinationId[] =>
   NAVIGATION_DESTINATIONS.filter((destination) => {
     if (role === 'admin' && (destination.id === 'finance' || destination.id === 'revenue' || destination.id === 'dashboard')) return false
+    // Finance and HR start in their own workspace; its tabs carry the counts.
+    if ((role === 'finance' || role === 'hr') && destination.id === 'dashboard') return false
     if (destination.id === 'dashboard' && !includeDashboard) return false
     if (destination.requiresInventory && !inventoryEnabled) return false
 

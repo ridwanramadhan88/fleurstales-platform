@@ -1,7 +1,9 @@
-import { useState, type FC, type ReactNode } from 'react'
+import { useMemo, useState, type FC, type ReactNode } from 'react'
 import type { BranchFilter } from '../../types/orders'
 import type { AttendanceStatus } from '../../store/hrStoreTypes'
-import { useHrStore } from '../../store/hrStore'
+import { todayIsoDate, useHrStore } from '../../store/hrStore'
+import { getHrHomeWork } from '../../domain/homeWorkDomain'
+import { getMondayForDate, getWeekDates, toIsoDate } from '../../domain/hrSchedulingDomain'
 import type { EmployeeStatusFilter } from '../../domain/hrDomain'
 import { DatePickerField } from '../ui/date-time-field'
 import type { HrSection, HrTabContentViewModel } from './HrTabContentController'
@@ -59,12 +61,22 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
   const [detailsSection,setDetailsSection] = useState<'profile'|'access'>('profile')
   const [attendanceView,setAttendanceView] = useState<'calendar'|'review'>('calendar')
   const pendingReviewCount = attendanceReviewCases.filter((item) => item.status === 'pending' || item.status === 'problem').length
+  // HR has no Home: staff missing a schedule this week shows on the Schedule tab.
+  const scheduleOverrides = useHrStore((state) => state.scheduleOverrides)
+  const allEmployees = useHrStore((state) => state.employees)
+  const unscheduledCount = useMemo(() => getHrHomeWork({
+    reviewCases: [],
+    employees: allEmployees,
+    overrides: scheduleOverrides,
+    weekDates: getWeekDates(toIsoDate(getMondayForDate(todayIsoDate()))),
+    payrollProposals: [],
+  }).unscheduledStaff, [allEmployees, scheduleOverrides])
   const readyCount = employeeRows.filter((item)=>item.readiness.state==='active' && item.readiness.setupComplete).length
   const setupRequiredCount = employeeRows.filter((item)=>item.readiness.state==='active' && !item.readiness.setupComplete).length
   const inactiveCount = employeeRows.filter((item)=>item.readiness.state==='inactive').length
 
   return <PeoplePageShell>
-    <PeopleTabs sections={availableSections} activeSection={activeSection} onChange={vm.onSectionChange} badges={{ attendance: pendingReviewCount }} />
+    <PeopleTabs sections={availableSections} activeSection={activeSection} onChange={vm.onSectionChange} badges={{ attendance: pendingReviewCount, scheduling: unscheduledCount }} />
 
     <div className="space-y-5">
     {activeSection === 'scheduling' ? <HrSchedulingSection activeBranch={activeBranch} searchQuery={employeeSearch} /> : activeSection === 'payroll' ? <HrPayrollSection searchQuery={employeeSearch} /> : activeSection === 'employees' ? <>

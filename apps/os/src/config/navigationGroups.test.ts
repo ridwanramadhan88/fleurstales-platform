@@ -113,28 +113,20 @@ describe('navigation grouping', () => {
     const primary = getPrimaryMobileDestinationIds('owner', accessible)
     const secondary = getSecondaryMobileDestinationIds('owner', accessible)
 
-    expect(primary).toEqual(['dashboard', 'orders', 'hr', 'customers'])
+    expect(primary).toEqual(['dashboard', 'orders', 'revenue', 'hr'])
     expect(primary).toHaveLength(4)
     expect(secondary.some((id) => primary.includes(id))).toBe(false)
     expect([...primary, ...secondary].sort()).toEqual([...accessible].sort())
   })
 
 
-  it('keeps Overview reachable for specialist roles that depend on Workspace links', () => {
-    const accessible = [...NAVIGATION_DESTINATION_ORDER]
+  it('starts Finance and HR in their workspace, not on a separate Home', () => {
+    const accessible = NAVIGATION_DESTINATION_ORDER.filter((id) => id !== 'dashboard')
 
-    expect(getPrimaryMobileDestinationIds('finance', accessible)).toEqual([
-      'dashboard',
-      'finance',
-      'revenue',
-      'orders',
-    ])
-    expect(getPrimaryMobileDestinationIds('hr', accessible)).toEqual([
-      'dashboard',
-      'hr',
-      'orders',
-      'customers',
-    ])
+    expect(getPrimaryMobileDestinationIds('finance', accessible).slice(0, 3)).toEqual(['finance', 'revenue', 'orders'])
+    expect(getPrimaryMobileDestinationIds('hr', accessible).slice(0, 3)).toEqual(['hr', 'orders', 'customers'])
+    expect(getAccessibleNavigationDestinationIds({ role: 'finance', permissions: clonePermissions(), inventoryEnabled: true })).not.toContain('dashboard')
+    expect(getAccessibleNavigationDestinationIds({ role: 'hr', permissions: clonePermissions(), inventoryEnabled: true })).not.toContain('dashboard')
   })
 
   it('does not reintroduce inaccessible or disabled destinations', () => {

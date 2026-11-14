@@ -11,6 +11,8 @@ import { useActiveItemScroll } from '../../hooks/useActiveItemScroll'
 import { useFinanceStore } from '../../store/financeStore'
 import { useOrdersStore } from '../../store/ordersStore'
 import { cn } from '../../lib/utils'
+import { getFinanceAttention } from '../../domain/financeAttentionDomain'
+import { usePayrollStore } from '../../store/payrollStore'
 import { subscribeFinanceWorkspaceNavigation } from './financeWorkspaceNavigation'
 import { FinancePeriodControls } from './FinancePeriodControls'
 
@@ -177,6 +179,15 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
   const activeGroup = groupForModule(activeModule)
   const groups = GROUP_ORDER.filter((group) => hasGroup(modules, group))
   const navRef = useActiveItemScroll<HTMLElement>(activeGroup, '[aria-current="page"]')
+  // Work waiting per module, shown on the tab (Finance has no Home cards).
+  const orders = useOrdersStore((state) => state.orders)
+  const transactions = useFinanceStore((state) => state.transactions)
+  const payrollProposals = usePayrollStore((state) => state.payrollProposals)
+  const attention = getFinanceAttention({ orders, transactions, payrollProposals })
+  const badges: Partial<Record<FinanceWorkspaceGroup, number>> = {
+    reconciliation: attention.awaiting + attention.correction + attention.refunds,
+    payroll: attention.payrollReview + attention.payrollReady,
+  }
 
   useEffect(() => subscribeFinanceWorkspaceNavigation((module) => {
     if (modules.includes(module)) onChange(module)
@@ -227,6 +238,9 @@ export const FinanceWorkspaceTabs: FC<FinanceWorkspaceTabsProps> = ({
             >
               <Icon className="size-4 shrink-0" />
               <span className="whitespace-nowrap">{item.label}</span>
+              {(badges[group] ?? 0) > 0 && (
+                <span className={cn('rounded-md px-1.5 text-[11px] tabular-nums', active ? 'bg-primary-foreground/20' : 'bg-warning/15 text-warning')}>{badges[group]}</span>
+              )}
             </button>
           )
         })}

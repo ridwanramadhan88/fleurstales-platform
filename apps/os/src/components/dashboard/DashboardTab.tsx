@@ -61,15 +61,10 @@ export const DashboardTab: FC<DashboardTabProps> = ({
         <>
           <OverviewCardsContainer />
           <OwnerAttentionQueue onNavigate={onNavigate} />
-          {inventoryEnabled && <PurchaseConfirmationQueue />}
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:items-start">
-            <AdminTodayQueue
-              activeBranch={activeBranch}
-              onGoToOrders={onGoToOrders}
-              onOpenOrder={(orderNumber) => onNavigate(toOrders({ orderNumber }))}
-            />
-            <RevenueTrendCard activeBranch={activeBranch} onOpenRevenue={() => onNavigate(toAppTab('revenue'))} />
-          </div>
+          {/* Owner decides, Admin executes: the order queue lives in Orders;
+              late orders are counted in the cards above. */}
+          {inventoryEnabled && <PurchaseConfirmationQueue hideWhenEmpty />}
+          <RevenueTrendCard activeBranch={activeBranch} onOpenRevenue={() => onNavigate(toAppTab('revenue'))} />
         </>
       )}
 
@@ -100,6 +95,7 @@ export const DashboardTab: FC<DashboardTabProps> = ({
 
       {userRole === 'courier' && <CourierDeliveryTasks />}
 
+      {/* Finance and HR normally start in their workspace; kept for an Owner-granted Home. */}
       {userRole === 'finance' && (
         <>
           <FinanceHomeWork onNavigate={onNavigate} />

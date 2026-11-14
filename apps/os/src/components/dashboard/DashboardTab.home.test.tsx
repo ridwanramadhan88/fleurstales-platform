@@ -69,9 +69,10 @@ describe('home screens show each role its own work', () => {
     expect(onNavigate.mock.calls.map(([target]) => target.hrSection)).toEqual(['attendance', 'scheduling', 'payroll'])
   })
 
-  it('owner: priority orders and a 7-day revenue trend, not an empty page', () => {
+  it('owner: today numbers and a 7-day revenue trend; the order queue stays in Orders', () => {
     renderHome('owner')
-    expect(regionsInOrder().some((label) => /priority/i.test(label))).toBe(true)
+    expect(regionsInOrder().some((label) => /priority/i.test(label))).toBe(false)
+    expect(screen.getByRole('region', { name: 'Today dashboard overview' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Revenue last 7 days' })).toBeInTheDocument()
   })
 })
