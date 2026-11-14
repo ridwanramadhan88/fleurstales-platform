@@ -46,9 +46,9 @@ describe('natural Indonesian UI copy', () => {
   })
 
   it('uses the reviewed source only as a polished lowest-priority fallback', () => {
-    expect(translateUiText('Branch vs Branch', 'id')).toBe('Cabang vs Cabang')
-    expect(translateUiText('Period vs Previous Period', 'id')).toBe('Periode vs Periode Sebelumnya')
-    expect(translateUiText('Revenue vs Expense', 'id')).toBe('Pendapatan vs Pengeluaran')
+    expect(translateUiText('Branch vs Branch', 'id')).toBe('Cabang vs cabang')
+    expect(translateUiText('Period vs Previous Period', 'id')).toBe('Periode vs periode sebelumnya')
+    expect(translateUiText('Revenue vs Expense', 'id')).toBe('Pendapatan vs pengeluaran')
     expect(translateUiText('Single view', 'id')).toBe('Tampilan tunggal')
   })
 
@@ -92,12 +92,12 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('Future', 'id')).toBe('Mendatang')
     expect(translateUiText('Custom', 'id')).toBe('Kustom')
     expect(translateUiText('All', 'id')).toBe('Semua')
-    expect(translateUiText('Assign Florists', 'id')).toBe('Tugaskan Perangkai Bunga')
+    expect(translateUiText('Assign Florists', 'id')).toBe('Tugaskan perangkai bunga')
     expect(translateUiText('Return to HR', 'id')).toBe('Kembalikan ke SDM')
     expect(translateUiText('Finance modules', 'id')).toBe('Modul Keuangan')
     expect(translateUiText('Customer reviews', 'id')).toBe('Ulasan pelanggan')
     expect(translateUiText('Review order', 'id')).toBe('Tinjau Pesanan')
-    expect(translateUiText('Refund queue', 'id')).toBe('Antrian pengembalian dana')
+    expect(translateUiText('Refund queue', 'id')).toBe('Antrean pengembalian dana')
     expect(translateUiText('Needs confirmation', 'id')).toBe('Perlu konfirmasi')
   })
 
@@ -262,7 +262,7 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('Search order #, customer, phone…', 'id')).toBe('Cari nomor pesanan, pelanggan, telepon…')
     expect(translateUiText('Search orders…', 'id')).toBe('Cari pesanan…')
     expect(translateUiText('New order', 'id')).toBe('Pesanan baru')
-    expect(translateUiText('Save draft', 'id')).toBe('Simpan draft')
+    expect(translateUiText('Save draft', 'id')).toBe('Simpan draf')
     expect(translateUiText('Review order', 'id')).toBe('Tinjau Pesanan')
     expect(translateUiText('Confirm & create', 'id')).toBe('Konfirmasi & buat')
     expect(translateUiText('Customer name is required.', 'id')).toBe('Nama pelanggan wajib diisi.')

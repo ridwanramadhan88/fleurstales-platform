@@ -182,10 +182,10 @@ export const InventoryScreen: FC<{ activeBranch: BranchFilter; searchQuery?: str
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tr('Suppliers', 'Supplier')}</h3>
-              {canManage && <button type="button" onClick={() => setSupplierDialog({ supplier: null })} className="min-h-10 text-sm font-medium text-primary underline">{tr('Add supplier', 'Tambah supplier')}</button>}
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tr('Suppliers', 'Pemasok')}</h3>
+              {canManage && <button type="button" onClick={() => setSupplierDialog({ supplier: null })} className="min-h-10 text-sm font-medium text-primary underline">{tr('Add supplier', 'Tambah pemasok')}</button>}
             </div>
-            {overview.suppliers.length === 0 && <p className="text-sm text-muted-foreground">{tr('No suppliers yet.', 'Belum ada supplier.')}</p>}
+            {overview.suppliers.length === 0 && <p className="text-sm text-muted-foreground">{tr('No suppliers yet.', 'Belum ada pemasok.')}</p>}
             <ul className="flex flex-wrap gap-2">
               {overview.suppliers.map((supplier) => (
                 <li key={supplier.id}>
@@ -201,7 +201,7 @@ export const InventoryScreen: FC<{ activeBranch: BranchFilter; searchQuery?: str
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold">{purchase.itemName} · {purchase.quantity} {purchase.unit}</p>
                   <StatusChip tone={purchase.status === 'confirmed' ? 'success' : purchase.status === 'rejected' ? 'danger' : 'warning'}>
-                    {purchase.status === 'confirmed' ? tr('Confirmed', 'Dikonfirmasi') : purchase.status === 'rejected' ? tr('Rejected', 'Ditolak') : tr('Waiting for Finance', 'Menunggu Finance')}
+                    {purchase.status === 'confirmed' ? tr('Confirmed', 'Dikonfirmasi') : purchase.status === 'rejected' ? tr('Rejected', 'Ditolak') : tr('Waiting for Finance', 'Menunggu Keuangan')}
                   </StatusChip>
                 </div>
                 <p className="text-xs text-muted-foreground">{formatRupiah(purchase.totalIdr)} · {branchName(purchase.branchId)}{purchase.supplierName ? ` · ${purchase.supplierName}` : ''} · {purchase.purchasedOn}</p>
@@ -235,7 +235,7 @@ export const InventoryScreen: FC<{ activeBranch: BranchFilter; searchQuery?: str
                   {report.byBranch.map((entry) => <li key={entry.branchId} className="flex justify-between gap-2"><span>{entry.branchName ?? entry.branchId}</span><span className="text-muted-foreground">{entry.count}× · {formatRupiah(entry.valueIdr)}</span></li>)}
                 </ul>
               )}
-              {report.rows.length === 0 && !loading && <p className="text-sm text-muted-foreground">{tr('No waste recorded in this period.', 'Tidak ada waste pada periode ini.')}</p>}
+              {report.rows.length === 0 && !loading && <p className="text-sm text-muted-foreground">{tr('No waste recorded in this period.', 'Tidak ada barang terbuang pada periode ini.')}</p>}
               <ul className="space-y-2">
                 {report.rows.map((row) => (
                   <li key={row.id} className={surfaceCardClass('standard')}>

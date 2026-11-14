@@ -210,7 +210,7 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (!formComplete || busy) {
-      setMessage('Lengkapi semua kolom wajib dan rating terlebih dahulu.')
+      setMessage('Lengkapi semua kolom wajib dan penilaian terlebih dahulu.')
       return
     }
     setBusy(true)
@@ -236,11 +236,11 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
       setMessage(
         result.reward
           ? `Terima kasih! Diskon ${formatReviewRewardValue(result.reward)} untuk pesanan berikutnya sudah aktif.`
-          : 'Terima kasih untuk review-nya!',
+          : 'Terima kasih untuk ulasannya!',
       )
       await onSubmitted()
     } catch (cause) {
-      setMessage(cause instanceof Error ? cause.message : 'Review belum berhasil dikirim. Coba lagi ya.')
+      setMessage(cause instanceof Error ? cause.message : 'Ulasan belum berhasil dikirim. Coba lagi ya.')
     } finally {
       setBusy(false)
     }
@@ -268,7 +268,7 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
         <SectionHeading
           index="01"
           title="Nilai pengalaman kamu"
-          description="Tap bintang untuk setiap bagian. Semua rating wajib diisi."
+          description="Ketuk bintang untuk setiap bagian. Semua penilaian wajib diisi."
         />
         <div>
           {questions.map((question) => (
@@ -314,7 +314,7 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
               <span className="sf-type-1 font-semibold text-black/48">WhatsApp pesanan</span>
               <span className="sf-type-2 font-medium text-black/72">{details.customerWhatsapp || '—'}</span>
             </div>
-            <p className="mt-1 sf-type-1 text-black/36">Nomor ini mengikuti data pesanan dan tidak bisa diubah dari form review.</p>
+            <p className="mt-1 sf-type-1 text-black/36">Nomor ini mengikuti data pesanan dan tidak bisa diubah dari formulir ulasan.</p>
           </div>
         </div>
       </section>
@@ -431,13 +431,13 @@ export const StorefrontReviewForm: FC<Props> = ({ trackingId, details, onSubmitt
       ) : null}
 
       <div className="border-t border-black/10 pt-5">
-        <p className="mb-3 sf-type-1 text-black/40">Semua kolom wajib diisi sebelum review bisa dikirim dan diskon aktif.</p>
+        <p className="mb-3 sf-type-1 text-black/40">Semua kolom wajib diisi sebelum ulasan bisa dikirim dan diskon aktif.</p>
         <button
           type="submit"
           disabled={busy || !formComplete}
           className="sf-primary-action tap-scale min-h-12 w-full px-6 disabled:cursor-not-allowed disabled:opacity-35"
         >
-          {busy ? 'Mengirim…' : 'Kirim review & aktifkan diskon'}
+          {busy ? 'Mengirim…' : 'Kirim ulasan & aktifkan diskon'}
         </button>
       </div>
     </form>

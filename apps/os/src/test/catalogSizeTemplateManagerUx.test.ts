@@ -32,7 +32,7 @@ describe('Catalog Size Template manager regressions', () => {
 
   it('blocks stale draft saves instead of silently overwriting a refreshed source', () => {
     expect(guideSource).toContain('const sourceChanged =')
-    expect(guideSource).toContain('Draft ini tidak ditimpa otomatis')
+    expect(guideSource).toContain('Draf ini tidak ditimpa otomatis')
     expect(guideSource).toContain('disabled={!isDirty || isSaving || sourceChanged}')
   })
 

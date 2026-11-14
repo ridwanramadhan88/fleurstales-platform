@@ -58,10 +58,10 @@ describe('StorefrontReviewForm', () => {
     await user.click(within(rating).getByRole('button', { name: 'Nilai 4 dari 5' }))
     expect(within(rating).getByText('4/5')).toBeInTheDocument()
     // Every field is required (Owner decision 6 Nov 2026): the note too.
-    expect(screen.getByRole('button', { name: 'Kirim review & aktifkan diskon' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Kirim ulasan & aktifkan diskon' })).toBeDisabled()
     await user.type(screen.getByLabelText(/Saran atau catatan/), 'Bunganya segar.')
-    expect(screen.getByRole('button', { name: 'Kirim review & aktifkan diskon' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Kirim ulasan & aktifkan diskon' })).toBeEnabled()
     await user.clear(screen.getByLabelText(/^Email/))
-    expect(screen.getByRole('button', { name: 'Kirim review & aktifkan diskon' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Kirim ulasan & aktifkan diskon' })).toBeDisabled()
   })
 })

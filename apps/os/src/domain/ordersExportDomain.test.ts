@@ -66,7 +66,7 @@ describe('buildOrdersExportSheets', () => {
     expect(sheets.map((s) => s.name)).toEqual(['Pesanan', 'Item', 'Pembayaran', 'Info'])
     const head = sheets[0].rows[0].map(value) as string[]
     const row = Object.fromEntries(head.map((h, i) => [h, value(sheets[0].rows[1][i])]))
-    expect(row).toMatchObject({ 'Metode bayar': 'QRIS', 'Diskon (Rp)': 10000, 'Kode voucher': 'ULANG10', 'Ongkir (Rp)': 30000, 'Referensi bayar': 'QR-77', 'Verifikasi Finance': 'Terverifikasi', 'Alamat kirim': 'Jl. Kenanga 1', 'Nama di kartu': 'Budi', 'Pesan kartu ucapan': 'Selamat ulang tahun' })
+    expect(row).toMatchObject({ 'Metode bayar': 'QRIS', 'Diskon (Rp)': 10000, 'Kode voucher': 'ULANG10', 'Ongkir (Rp)': 30000, 'Referensi bayar': 'QR-77', 'Verifikasi Keuangan': 'Terverifikasi', 'Alamat kirim': 'Jl. Kenanga 1', 'Nama di kartu': 'Budi', 'Pesan kartu ucapan': 'Selamat ulang tahun' })
     const cancelled = Object.fromEntries(head.map((h, i) => [h, value(sheets[0].rows[2][i])]))
     expect(cancelled['Alasan batal']).toBe('Pelanggan batal')
     expect(head).not.toContain('Email')

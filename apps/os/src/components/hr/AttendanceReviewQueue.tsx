@@ -138,8 +138,8 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
         : synced.reason)
     } else {
       setNotice(lock === 'locked'
-        ? tr('Overtime confirmed. This period\'s payroll is already with Finance, so it is added if Finance returns the payroll.', 'Lembur disetujui. Gaji periode ini sudah di Finance, jadi lembur masuk bila Finance mengembalikan payroll.')
-        : tr('Overtime confirmed. It is added automatically when payroll for this period is generated.', 'Lembur disetujui. Lembur otomatis masuk saat payroll periode ini dibuat.'))
+        ? tr('Overtime confirmed. This period\'s payroll is already with Finance, so it is added if Finance returns the payroll.', 'Lembur disetujui. Gaji periode ini sudah di Keuangan, jadi lembur masuk bila Keuangan mengembalikan penggajian.')
+        : tr('Overtime confirmed. It is added automatically when payroll for this period is generated.', 'Lembur disetujui. Lembur otomatis masuk saat penggajian periode ini dibuat.'))
     }
     setSelected(null)
     setNote('')
@@ -148,7 +148,7 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
 
   const revokeCaseOvertime = (item: AttendanceReviewCase) => {
     if (payrollLock(item.employeeId, item.date) === 'locked') {
-      setNotice(tr('This overtime is already in payroll sent to Finance and cannot be changed.', 'Lembur ini sudah masuk payroll yang dikirim ke Finance dan tidak bisa diubah.'))
+      setNotice(tr('This overtime is already in payroll sent to Finance and cannot be changed.', 'Lembur ini sudah masuk penggajian yang dikirim ke Keuangan dan tidak bisa diubah.'))
       return
     }
     const actor = { name: actorName, role }
@@ -234,8 +234,8 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
                 </div>
                 <p className="max-w-3xl text-sm leading-5 text-muted-foreground">{item.warningType === 'overtime' && item.minutesDifference !== undefined
                   ? item.reason.startsWith('Employee claimed overtime')
-                    ? tr(`Employee claimed overtime: checked out ${item.minutesDifference} minutes after the shift end.`, `Karyawan mengajukan lembur: check-out ${formatOvertimeDuration(item.minutesDifference)} setelah jam shift selesai.`)
-                    : tr(`Checked out ${item.minutesDifference} minutes after the shift end.`, `Check-out ${formatOvertimeDuration(item.minutesDifference)} setelah jam shift selesai.`)
+                    ? tr(`Employee claimed overtime: checked out ${item.minutesDifference} minutes after the shift end.`, `Karyawan mengajukan lembur: absen pulang ${formatOvertimeDuration(item.minutesDifference)} setelah jam sif selesai.`)
+                    : tr(`Checked out ${item.minutesDifference} minutes after the shift end.`, `Absen pulang ${formatOvertimeDuration(item.minutesDifference)} setelah jam sif selesai.`)
                   : item.reason}</p>
                 {item.employeeNote && <p className="max-w-3xl text-sm leading-5">{tr('Employee note', 'Catatan karyawan')}: {item.employeeNote}</p>}
               </div>
@@ -273,7 +273,7 @@ export const AttendanceReviewQueue = ({ onOpenOrder, onCorrectAttendance, search
       onOpenChange={(open) => { if (!open) setSelected(null) }}
       size="standard"
       title="Review attendance"
-      description={selected ? (selected.warningType === 'overtime' ? tr(`Overtime · ${selected.minutesDifference ?? 0} minutes after the shift end`, `Lembur · ${formatOvertimeDuration(selected.minutesDifference ?? 0)} setelah jam shift`) : `${LABELS[selected.warningType]} · ${selected.reason}`) : undefined}
+      description={selected ? (selected.warningType === 'overtime' ? tr(`Overtime · ${selected.minutesDifference ?? 0} minutes after the shift end`, `Lembur · ${formatOvertimeDuration(selected.minutesDifference ?? 0)} setelah jam sif`) : `${LABELS[selected.warningType]} · ${selected.reason}`) : undefined}
     >
       {selected && <div className="space-y-4">
         {selected.warningType === 'overtime' && (

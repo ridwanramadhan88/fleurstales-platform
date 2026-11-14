@@ -81,7 +81,7 @@ export const InventoryItemDialog: FC<DialogBase & { item: InventoryItem | null; 
 
   return (
     <Shell open={open} onClose={onClose} testId="inventory-item-dialog" title={item ? tr('Edit item', 'Ubah item') : tr('New item', 'Item baru')}
-      description={tr('Stock quantity changes only through purchases and waste.', 'Jumlah stok hanya berubah lewat pembelian dan waste.')}>
+      description={tr('Stock quantity changes only through purchases and waste.', 'Jumlah stok hanya berubah lewat pembelian dan barang terbuang.')}>
       <Field label={tr('Name', 'Nama')}><input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} className={inputClass} /></Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label={tr('Category', 'Kategori')}>
@@ -116,11 +116,11 @@ export const InventorySupplierDialog: FC<DialogBase & { supplier: InventorySuppl
   const save = async () => {
     setSaving(true); setError(null)
     try { await saveInventorySupplier({ id: supplier?.id, name, phone, note, isActive: active }); onSaved(); onClose() }
-    catch (caught) { setError(errorText(caught, tr('Could not save the supplier.', 'Supplier gagal disimpan.'))) } finally { setSaving(false) }
+    catch (caught) { setError(errorText(caught, tr('Could not save the supplier.', 'Pemasok gagal disimpan.'))) } finally { setSaving(false) }
   }
 
   return (
-    <Shell open={open} onClose={onClose} testId="inventory-supplier-dialog" title={supplier ? tr('Edit supplier', 'Ubah supplier') : tr('New supplier', 'Supplier baru')}>
+    <Shell open={open} onClose={onClose} testId="inventory-supplier-dialog" title={supplier ? tr('Edit supplier', 'Ubah pemasok') : tr('New supplier', 'Pemasok baru')}>
       <Field label={tr('Name', 'Nama')}><input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} className={inputClass} /></Field>
       <Field label={tr('Phone', 'Telepon')}><input value={phone} onChange={(event) => setPhone(event.target.value)} maxLength={30} className={inputClass} /></Field>
       <Field label={tr('Note', 'Catatan')}><input value={note} onChange={(event) => setNote(event.target.value)} maxLength={300} className={inputClass} /></Field>
@@ -165,14 +165,14 @@ export const InventoryPurchaseDialog: FC<DialogBase & { items: InventoryItem[]; 
 
   return (
     <Shell open={open} onClose={onClose} testId="inventory-purchase-dialog" title={tr('Record a purchase', 'Catat pembelian')}
-      description={tr('Stock is added now. Finance confirms the expense afterwards.', 'Stok langsung bertambah. Finance mengonfirmasi pengeluarannya setelah itu.')}>
+      description={tr('Stock is added now. Finance confirms the expense afterwards.', 'Stok langsung bertambah. Keuangan mengonfirmasi pengeluarannya setelah itu.')}>
       <Field label={tr('Item', 'Item')}>
         <select value={itemId} onChange={(event) => setItemId(event.target.value)} className={inputClass}>
           <option value="">{tr('Choose an item', 'Pilih item')}</option>
           {items.filter((item) => !item.isArchived).map((item) => <option key={item.id} value={item.id}>{item.name} ({item.unit})</option>)}
         </select>
       </Field>
-      <Field label={tr('Supplier (optional)', 'Supplier (opsional)')}>
+      <Field label={tr('Supplier (optional)', 'Pemasok (opsional)')}>
         <select value={supplierId} onChange={(event) => setSupplierId(event.target.value)} className={inputClass}>
           <option value="">—</option>
           {suppliers.filter((supplier) => supplier.isActive).map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
@@ -213,11 +213,11 @@ export const InventoryWasteDialog: FC<DialogBase & { item: InventoryItem | null 
     if (!item) return
     setSaving(true); setError(null)
     try { await recordInventoryWaste({ itemId: item.id, quantity: Number(quantity), reason, note }); onSaved(); onClose() }
-    catch (caught) { setError(errorText(caught, tr('Could not record the waste.', 'Waste gagal dicatat.'))) } finally { setSaving(false) }
+    catch (caught) { setError(errorText(caught, tr('Could not record the waste.', 'Barang terbuang gagal dicatat.'))) } finally { setSaving(false) }
   }
 
   return (
-    <Shell open={open && item !== null} onClose={onClose} testId="inventory-waste-dialog" title={tr('Record waste', 'Catat waste')}
+    <Shell open={open && item !== null} onClose={onClose} testId="inventory-waste-dialog" title={tr('Record waste', 'Catat barang terbuang')}
       description={item ? `${item.name} · ${tr('on hand', 'tersedia')} ${item.quantity} ${item.unit}` : undefined}>
       <Field label={tr('Quantity', 'Jumlah')}><input type="number" min={0} step="any" inputMode="decimal" value={quantity} onChange={(event) => setQuantity(event.target.value)} className={inputClass} /></Field>
       <div role="radiogroup" aria-label={tr('Reason', 'Alasan')} className="flex flex-wrap gap-1.5">

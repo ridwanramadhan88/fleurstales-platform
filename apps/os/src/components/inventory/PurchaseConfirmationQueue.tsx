@@ -52,7 +52,7 @@ export const PurchaseConfirmationQueue: FC<{ hideWhenEmpty?: boolean }> = ({ hid
           note: `${purchase.quantity} ${purchase.unit}${purchase.supplierName ? ` · ${purchase.supplierName}` : ''} · ${purchase.fundingAccountId}`,
           transactionDate: purchase.purchasedOn, actor: { name: actorName, role },
         })
-        if (!result.allowed) setError(tr(`Confirmed, but the ledger entry failed: ${result.reason ?? ''}. Add it manually in Finance.`, `Terkonfirmasi, tetapi catatan buku gagal: ${result.reason ?? ''}. Tambahkan manual di Finance.`))
+        if (!result.allowed) setError(tr(`Confirmed, but the ledger entry failed: ${result.reason ?? ''}. Add it manually in Finance.`, `Terkonfirmasi, tetapi catatan buku gagal: ${result.reason ?? ''}. Tambahkan manual di Keuangan.`))
       }
       await load()
     } catch (caught) { setError(caught instanceof Error ? caught.message : tr('Could not confirm.', 'Gagal mengonfirmasi.')) }

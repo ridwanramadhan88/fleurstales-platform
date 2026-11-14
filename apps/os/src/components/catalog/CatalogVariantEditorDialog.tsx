@@ -95,7 +95,7 @@ export const CatalogVariantEditorDialog: FC<Props> = ({
     if (!Number.isFinite(price) || price <= 0) nextErrors.push('Harga jual harus lebih dari Rp0.')
     if (draft.sizeOptionId && reservedSizeOptionIds.has(draft.sizeOptionId)) nextErrors.push('Ukuran template ini sudah digunakan varian lain.')
     if (draft.status === 'active' && selectedSizeArchived) nextErrors.push('Ukuran yang diarsipkan tidak dapat dijual.')
-    if (draft.status === 'active' && sizeTemplate && !draft.sizeOptionId) nextErrors.push('Varian aktif harus memakai ukuran dari Size Template.')
+    if (draft.status === 'active' && sizeTemplate && !draft.sizeOptionId) nextErrors.push('Varian aktif harus memakai ukuran dari template ukuran.')
     const cost = draft.cost.trim() ? Number.parseInt(draft.cost, 10) : undefined
     if (cost !== undefined && (!Number.isFinite(cost) || cost < 0)) nextErrors.push('Cost tidak valid.')
     return nextErrors

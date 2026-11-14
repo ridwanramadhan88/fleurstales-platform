@@ -283,7 +283,7 @@ let saveRequestedWhileSaving = false
 // separate from bridgeStatus.phase, which other code paths overwrite.
 let conflictLocked = false
 const CATALOG_CONFLICT_MESSAGE =
-  'Catalog berubah di sesi lain. Draft lokal tidak ditimpa; muat ulang data terbaru sebelum mencoba menyimpan lagi.'
+  'Katalog berubah di sesi lain. Draf lokal tidak ditimpa; muat ulang data terbaru sebelum mencoba menyimpan lagi.'
 const remoteImagePaths = new Set<string>()
 
 const collectRemoteImagePaths = (products: CatalogProduct[]): Set<string> => new Set(

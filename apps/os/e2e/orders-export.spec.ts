@@ -43,7 +43,7 @@ test('admin downloads orders with complete order and customer data', async ({ pa
   const complete = await downloadOrders(page, { fullOrder: true, fullCustomer: true })
   expect(complete.name).toMatch(/^Pesanan_.*_semua-tanggal_lengkap\.xlsx$/)
   for (const sheet of ['Pesanan', 'Item', 'Pembayaran', 'Pelanggan', 'Info']) expect(complete.workbook).toContain(`name="${sheet}"`)
-  for (const text of [customerName, 'No. pesanan', 'Metode bayar', 'Tunai', 'Verifikasi Finance', 'Email', 'Ulang tahun', 'Total belanja terverifikasi (Rp)']) {
+  for (const text of [customerName, 'No. pesanan', 'Metode bayar', 'Tunai', 'Verifikasi Keuangan', 'Email', 'Ulang tahun', 'Total belanja terverifikasi (Rp)']) {
     expect(complete.pesanan).toContain(text)
   }
   expect(strFromU8(complete.files['xl/worksheets/sheet3.xml'])).toContain('Pembayaran diterima')

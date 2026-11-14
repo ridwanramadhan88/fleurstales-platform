@@ -124,7 +124,7 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
           ) : !editable && (
             <div className="mt-4 flex gap-2 rounded-xl bg-muted/55 p-3 text-xs text-muted-foreground">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              <p>{tr('Only Finance can correct or void posted transactions.', 'Hanya Finance yang bisa mengoreksi atau mem-void transaksi.')}</p>
+              <p>{tr('Only Finance can correct or void posted transactions.', 'Hanya Keuangan yang bisa mengoreksi atau membatalkan transaksi.')}</p>
             </div>
           )}
 

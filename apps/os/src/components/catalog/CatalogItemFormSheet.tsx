@@ -490,7 +490,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         ? await onUpdate({ productId: product.id, ...common }, sizeChart)
         : await onCreate(common, sizeChart)
       if (result === false) {
-        setErrors(['Perubahan belum tersimpan. Periksa pesan sinkronisasi Catalog, lalu coba lagi.'])
+        setErrors(['Perubahan belum tersimpan. Periksa pesan sinkronisasi Katalog, lalu coba lagi.'])
         return
       }
       onClose()
@@ -534,7 +534,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
               {sourceChanged ? (
                 <div className="mb-4 rounded-xl border border-warning/25 bg-warning/5 px-4 py-3">
                   <p className="text-sm font-semibold text-foreground">Data produk berubah di sesi lain</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Draft ini tidak ditimpa otomatis. Tutup dan buka ulang editor sebelum menyimpan agar perubahan terbaru tidak tertimpa.</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Draf ini tidak ditimpa otomatis. Tutup dan buka ulang editor sebelum menyimpan agar perubahan terbaru tidak tertimpa.</p>
                 </div>
               ) : null}
               <ValidationSummary errors={errors} summaryRef={validationSummaryRef} onErrorClick={focusValidationIssue} />
@@ -615,7 +615,7 @@ export const CatalogItemFormSheet: FC<CatalogItemFormSheetProps> = ({
         open={confirmClose}
         onOpenChange={setConfirmClose}
         title="Buang perubahan?"
-        description="Perubahan draft produk yang belum disimpan akan hilang. Foto yang baru dipilih belum diunggah ke server."
+        description="Perubahan draf produk yang belum disimpan akan hilang. Foto yang baru dipilih belum diunggah ke server."
         confirmLabel="Buang perubahan"
         cancelLabel="Lanjut edit"
         destructive

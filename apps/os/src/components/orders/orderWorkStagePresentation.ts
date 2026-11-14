@@ -47,7 +47,7 @@ export const getOrderWorkStageLabel = (
     case 'handover': return order.fulfillment === 'delivery' ? copy('Ready to send', 'Siap dikirim') : copy('Ready for pickup', 'Siap diambil')
     case 'arranging': return copy('Being arranged', 'Sedang dirangkai')
     case 'delivering': return copy('Out for delivery', 'Dalam pengiriman')
-    case 'refunding': return copy('Refund pending', 'Menunggu refund')
+    case 'refunding': return copy('Refund pending', 'Menunggu pengembalian dana')
     case 'done': return order.status === 'picked_up' ? copy('Picked up', 'Sudah diambil') : copy('Delivered', 'Terkirim')
     case 'cancelled': return order.status === 'failed' ? copy('Failed', 'Gagal') : copy('Cancelled', 'Dibatalkan')
   }
@@ -112,7 +112,7 @@ export const getOrderWorkReason = (
     case 'delivering':
       return copy('With the courier', 'Sedang dibawa kurir')
     case 'refunding':
-      return copy('Finance is returning the money; the order is cancelled once it is done', 'Finance sedang mengembalikan uang; pesanan batal setelah selesai')
+      return copy('Finance is returning the money; the order is cancelled once it is done', 'Keuangan sedang mengembalikan uang; pesanan batal setelah selesai')
     default:
       return ''
   }
