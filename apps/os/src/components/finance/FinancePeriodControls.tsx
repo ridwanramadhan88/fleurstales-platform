@@ -269,11 +269,11 @@ export const FinancePeriodControls: FC = () => {
                   ) : null}
 
                   {period.status !== 'closed' && !canClose && (
-                    <p className="mt-3 text-xs text-muted-foreground">Changing accounting-period status requires the <span className="font-medium text-foreground">Close Accounting Period</span> permission.</p>
+                    <p className="mt-3 text-xs text-muted-foreground">Requires the Close Accounting Period permission.</p>
                   )}
 
                   {period.status === 'closed' && !canReopen && (
-                    <p className="mt-3 text-xs text-muted-foreground">Reopening requires the separately granted <span className="font-medium text-foreground">Reopen Accounting Period</span> permission and an audit reason. Owner can grant this sensitive Finance capability from Permissions.</p>
+                    <p className="mt-3 text-xs text-muted-foreground">Requires the Reopen Accounting Period permission and an audit reason. Owner grants it from Permissions.</p>
                   )}
                 </article>
               )

@@ -332,7 +332,7 @@ export const StorefrontOrderTrackingPage: FC<StorefrontOrderTrackingPageProps> =
                                 {details.deliveryLandmark ? <div><dt className="text-black/42">Patokan</dt><dd className="mt-0.5 font-medium">{details.deliveryLandmark}</dd></div> : null}
                                 {details.deliveryInstructions ? <div><dt className="text-black/42">Catatan pengiriman</dt><dd className="mt-0.5 font-medium">{details.deliveryInstructions}</dd></div> : null}
                               </>
-                            ) : details.branchAddress ? <div><dt className="text-black/42">Alamat pickup</dt><dd className="mt-0.5 font-medium">{details.branchAddress}</dd></div> : null}
+                            ) : details.branchAddress ? <div><dt className="text-black/42">Alamat pengambilan</dt><dd className="mt-0.5 font-medium">{details.branchAddress}</dd></div> : null}
                           </dl>
                         </section>
 
