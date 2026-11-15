@@ -50,7 +50,7 @@ describe('Finance v3.4 accounting period audit and permission polish', () => {
     const permissions = read('src/config/actionPermissions.ts')
 
     expect(controls).toContain("isActionAuthorized(role, 'finance.reopen_period')")
-    expect(controls).toContain('Owner can grant this sensitive Finance capability from Permissions.')
+    expect(controls).toContain('Requires the Reopen Accounting Period permission and an audit reason.')
     expect(controls).toContain('Reopening makes this month’s Finance ledger editable again')
     expect(controls).toContain('Later edits can change balances and reports for this period.')
     expect(controls).toContain('The reopen actor, time, and reason stay in read-only audit history.')

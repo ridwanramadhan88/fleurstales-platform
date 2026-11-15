@@ -80,7 +80,7 @@ export const OrderFinanceReviewSheetDetails: FC<OrderFinanceReviewSheetDetailsPr
           )
         ) : (
           <div className="rounded-xl bg-surface-panel px-3 py-3 text-sm text-foreground/90">
-            Tidak ada bukti transfer untuk pembayaran cash.
+            Tidak ada bukti transfer untuk pembayaran tunai.
           </div>
         )}
 

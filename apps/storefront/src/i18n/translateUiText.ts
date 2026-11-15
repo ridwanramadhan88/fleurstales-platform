@@ -38,13 +38,14 @@ export const translateUiText = (value: string, language: UiLanguage): string => 
     return preserveBoundaryWhitespace(value, finalizeIndonesianStaticCopy(strictExact))
   }
 
-  const strictPatterned = applyPatterns(normalized, ID_STRICT_PATTERN_TRANSLATIONS)
-  if (strictPatterned !== undefined) return preserveBoundaryWhitespace(value, strictPatterned)
-
+  // A reviewed exact sentence wins over generic patterns such as "View …".
   const exact = ID_TRANSLATIONS[normalized]
   if (exact !== undefined) {
     return preserveBoundaryWhitespace(value, finalizeIndonesianStaticCopy(exact))
   }
+
+  const strictPatterned = applyPatterns(normalized, ID_STRICT_PATTERN_TRANSLATIONS)
+  if (strictPatterned !== undefined) return preserveBoundaryWhitespace(value, strictPatterned)
 
   const patterned = applyPatterns(normalized, ID_PATTERN_TRANSLATIONS)
   if (patterned !== undefined) return preserveBoundaryWhitespace(value, patterned)

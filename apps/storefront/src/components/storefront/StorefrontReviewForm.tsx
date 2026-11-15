@@ -111,7 +111,7 @@ const RatingRow: FC<{
       <span className="sf-type-2 font-semibold leading-5 text-black">{question}</span>
     </legend>
     <div className="mt-3 flex items-center justify-between gap-2">
-      <div className="flex items-center gap-0.5 sm:gap-1" aria-label="Rating 1 sampai 5">
+      <div className="flex items-center gap-0.5 sm:gap-1" aria-label="Penilaian 1 sampai 5">
         {[1, 2, 3, 4, 5].map((value) => {
           const active = value <= score
           return (

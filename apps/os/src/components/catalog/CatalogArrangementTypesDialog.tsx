@@ -42,7 +42,7 @@ export const CatalogArrangementTypesDialog: FC<Props> = ({ open, onClose }) => {
           <DialogHeader className="border-b border-border/70 px-5 py-5 sm:px-6">
             <DialogTitle>Kelola Jenis rangkaian</DialogTitle>
             <DialogDescription>
-              Jaga penamaan Jenis rangkaian tetap konsisten di Catalog dan Storefront.
+              Jaga penamaan Jenis rangkaian tetap konsisten di Katalog dan Storefront.
             </DialogDescription>
           </DialogHeader>
 
