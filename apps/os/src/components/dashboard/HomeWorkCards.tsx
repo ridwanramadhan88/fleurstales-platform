@@ -14,7 +14,7 @@ import { useHrStore, todayIsoDate } from '../../store/hrStore'
 import { getFinanceAttention } from '../../domain/financeAttentionDomain'
 import { getHrHomeWork } from '../../domain/homeWorkDomain'
 import { getMondayForDate, getWeekDates, toIsoDate } from '../../domain/hrSchedulingDomain'
-import { requestFinanceWorkspaceNavigation } from '../finance/financeWorkspaceNavigation'
+import { useFinanceUiStore, type FinanceFocus } from '../finance/financeUiStore'
 import { surfaceCardClass } from '../ui/card'
 
 const WorkCard: FC<{ icon: ReactNode; label: string; value: string | number; urgent: boolean; onOpen: () => void }> = ({ icon, label, value, urgent, onOpen }) => (
@@ -33,15 +33,15 @@ export const FinanceHomeWork: FC<{ onNavigate: (target: AppNavigationRequest) =>
   const transactions = useFinanceStore((state) => state.transactions)
   const payrollProposals = usePayrollStore((state) => state.payrollProposals)
   const attention = getFinanceAttention({ orders, transactions, payrollProposals })
-  const open = (target: Parameters<typeof requestFinanceWorkspaceNavigation>[0]) => {
-    onNavigate(toFinanceModule(target.module))
-    requestFinanceWorkspaceNavigation(target)
+  const open = (focus: FinanceFocus) => {
+    onNavigate(toFinanceModule(focus.module))
+    useFinanceUiStore.getState().requestFocus(focus)
   }
   return (
     <section aria-label="Finance work" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <WorkCard icon={<ClipboardCheck className="size-4" />} value={attention.awaiting} label="Awaiting reconciliation" urgent={attention.awaiting > 0} onOpen={() => open({ module: 'order_verification', view: 'all' })} />
-      <WorkCard icon={<AlertTriangle className="size-4" />} value={attention.correction} label="Needs correction" urgent={attention.correction > 0} onOpen={() => open({ module: 'order_verification', view: 'needs_correction' })} />
-      <WorkCard icon={<RotateCcw className="size-4" />} value={attention.refunds} label="Refunds" urgent={attention.refunds > 0} onOpen={() => open({ module: 'refunds', view: 'pending' })} />
+      <WorkCard icon={<ClipboardCheck className="size-4" />} value={attention.awaiting} label="Awaiting reconciliation" urgent={attention.awaiting > 0} onOpen={() => open({ module: 'tasks', filter: 'reconciliation' })} />
+      <WorkCard icon={<AlertTriangle className="size-4" />} value={attention.correction} label="Needs correction" urgent={attention.correction > 0} onOpen={() => open({ module: 'tasks', filter: 'reconciliation' })} />
+      <WorkCard icon={<RotateCcw className="size-4" />} value={attention.refunds} label="Refunds" urgent={attention.refunds > 0} onOpen={() => open({ module: 'tasks', filter: 'refunds' })} />
       <WorkCard icon={<Wallet className="size-4" />} value={attention.payrollReview + attention.payrollReady} label="Payroll" urgent={attention.payrollReview + attention.payrollReady > 0} onOpen={() => open({ module: 'payroll', view: attention.payrollReview > 0 ? 'review' : 'ready' })} />
     </section>
   )

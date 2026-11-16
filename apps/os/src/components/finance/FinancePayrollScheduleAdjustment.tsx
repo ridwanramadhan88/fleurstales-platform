@@ -8,6 +8,7 @@ import { useSettingsStore } from '../../store/settingsStore'
 import { hasActionPermission } from '../../config/actionPermissions'
 import type { PayrollScheduleSnapshot } from '../../domain/payrollScheduleDomain'
 import { formatHumanDate } from '../../lib/humanDates'
+import { useBilingualCopy } from '../../i18n/bilingualCopy'
 
 // Same readable dates as the rest of the app ("24 Okt 2026").
 const formatDate = (value: string) => formatHumanDate(value)
@@ -30,6 +31,8 @@ export const FinancePayrollScheduleAdjustment = () => {
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string,string>>({})
   const [message, setMessage] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const tr = useBilingualCopy()
 
   useEffect(() => { const period = ensureCurrentPeriod(); setPeriodId((current) => current || period.id) }, [ensureCurrentPeriod])
   const period = periods.find((item) => item.id === periodId) ?? periods.slice().sort((a,b) => b.paymentDate.localeCompare(a.paymentDate))[0]
@@ -42,17 +45,21 @@ export const FinancePayrollScheduleAdjustment = () => {
     setEditing(false); setError(null); setFieldErrors({}); setMessage('Payroll schedule updated.')
   }
   if (!period) return null
-  return <section aria-label="Payroll schedule" className="rounded-2xl bg-card p-5 ring-1 ring-border/60 sm:p-6">
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><CalendarClock className="size-5" /></span>
-        <div className="min-w-0"><h2 className="text-base font-semibold leading-6">Payroll schedule</h2><p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">Active payroll cycle and operational deadlines.</p></div>
-      </div>
-      {canEdit && <button type="button" onClick={openEditor} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-semibold text-background">Edit schedule</button>}
+  // One line: the next payment date and the review deadline; details on demand.
+  return <section aria-label="Payroll schedule" className="rounded-xl bg-card px-4 py-3 ring-1 ring-border/60">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <button type="button" aria-expanded={detailsOpen} onClick={() => setDetailsOpen((value) => !value)} className="flex min-w-0 items-center gap-3 text-left">
+        <CalendarClock className="size-5 shrink-0 text-primary" aria-hidden="true" />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold">{tr('Payday', 'Gajian')} {formatDate(period.paymentDate)}</span>
+          <span className="block truncate text-xs text-muted-foreground">{tr('Finance review by', 'Review Finance paling lambat')} {formatDate(period.financeReviewDeadline)}</span>
+        </span>
+      </button>
+      {canEdit && <button type="button" onClick={openEditor} className="h-10 rounded-full border border-border px-4 text-sm font-semibold">{tr('Edit schedule', 'Ubah jadwal')}</button>}
     </div>
-    <dl className="mt-5 grid gap-2 sm:grid-cols-2">{fields.map(({ key,label }, index) => <div key={key} className={`flex min-h-14 items-center justify-between gap-4 rounded-xl bg-muted/25 px-4 py-3 ${index === fields.length - 1 ? 'sm:col-span-2' : ''}`}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="shrink-0 text-sm font-semibold sm:text-base">{formatDate(period[key])}</dd></div>)}</dl>
-    {period.lastAdjustedAt && <p className="mt-3 text-xs text-muted-foreground">Last updated by {period.lastAdjustedBy} · {new Date(period.lastAdjustedAt).toLocaleString('id-ID')}</p>}
-    {message && <p className="mt-4 rounded-lg bg-success/10 p-3 text-sm text-success">{message}</p>}
+    {detailsOpen && <dl className="mt-3 grid gap-2 sm:grid-cols-2">{fields.map(({ key,label }) => <div key={key} className="flex min-h-11 items-center justify-between gap-4 rounded-lg bg-muted/25 px-3 py-2"><dt className="text-xs text-muted-foreground">{label}</dt><dd className="shrink-0 text-sm font-semibold">{formatDate(period[key])}</dd></div>)}</dl>}
+    {detailsOpen && period.lastAdjustedAt && <p className="mt-2 text-xs text-muted-foreground">Last updated by {period.lastAdjustedBy} · {new Date(period.lastAdjustedAt).toLocaleString('id-ID')}</p>}
+    {message && <p className="mt-3 rounded-lg bg-success/10 p-2.5 text-xs text-success">{message}</p>}
     <Sheet open={editing} onOpenChange={setEditing}>
       <SheetContent side="right" className="flex w-full flex-col sm:w-[min(40rem,88vw)] sm:max-w-none md:w-[min(44rem,72vw)]">
         <SheetHeader><SheetTitle>Edit payroll schedule</SheetTitle><SheetDescription>Changes apply immediately after validation and are kept in the audit history.</SheetDescription></SheetHeader>

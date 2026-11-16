@@ -13,10 +13,10 @@ import {
   lkGrowth,
   lkMonthLabel,
   lkTotal,
-  previousMonth,
   type LkPnlLine,
 } from '../../domain/financeLkReportDomain'
-import { jakartaMonthKey } from '../../domain/financePeriodReportDomain'
+import { recentMonthKeys } from '../../domain/financeDates'
+import { formatIdrCurrency } from '../../lib/formatters'
 import { buildFinanceLkXlsx } from '../../lib/financeLkXlsxExport'
 import { downloadFinancePeriodXlsx } from '../../lib/financePeriodXlsxExport'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
@@ -24,28 +24,25 @@ import { toast } from '../../hooks/use-toast'
 import { cn } from '../../lib/utils'
 
 const SUMMARY_KEYS = ['net_revenue', 'hpp_total', 'gross_profit', 'expense_total', 'operating_profit', 'net_profit']
-const formatIdr = (value: number): string => `${value < 0 ? '-' : ''}Rp ${Math.abs(Math.round(value)).toLocaleString('id-ID')}`
+const formatIdr = formatIdrCurrency
 const formatGrowth = (value: number | null): string => value === null ? '–' : `${value >= 0 ? '+' : ''}${(value * 100).toLocaleString('id-ID', { maximumFractionDigits: 1 })}%`
 
 /** Last 12 months, newest first, as YYYY-MM in WIB. */
-const recentMonths = (): string[] => {
-  const months: string[] = []
-  let month = jakartaMonthKey(new Date().toISOString())
-  for (let index = 0; index < 12; index += 1) {
-    months.push(month)
-    month = previousMonth(month)
-  }
-  return months
-}
+const recentMonths = (): string[] => recentMonthKeys(12)
 
-export const FinanceLkReportPanel: FC<{ showHeading?: boolean }> = ({ showHeading = false }) => {
+/**
+ * `month`: when the Finance workspace already picks the month, pass it here
+ * and the panel hides its own month selector.
+ */
+export const FinanceLkReportPanel: FC<{ showHeading?: boolean; month?: string }> = ({ showHeading = false, month: controlledMonth }) => {
   const tr = useBilingualCopy()
   const orders = useOrdersStore((state) => state.orders)
   const products = useCatalogStore((state) => state.products)
   const branchSettings = useSettingsStore((state) => state.branches)
   const bankAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
   const months = useMemo(recentMonths, [])
-  const [month, setMonth] = useState(months[1] ?? months[0])
+  const [ownMonth, setMonth] = useState(months[1] ?? months[0])
+  const month = controlledMonth ?? ownMonth
   const [ledger, setLedger] = useState<FinanceReportLedger | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -112,12 +109,19 @@ export const FinanceLkReportPanel: FC<{ showHeading?: boolean }> = ({ showHeadin
         </header>
       )}
       <div className="flex flex-wrap items-end gap-2 rounded-2xl bg-card p-4 shadow-ios-sm ring-1 ring-border/60">
-        <label className="min-w-[180px] flex-1 space-y-1.5 text-xs font-medium">
-          {tr('Month', 'Bulan')}
-          <select aria-label={tr('Report month', 'Bulan laporan')} value={month} onChange={(event) => setMonth(event.target.value)} className="h-11 w-full rounded-full border border-border bg-background px-4 text-sm">
-            {months.map((item) => <option key={item} value={item}>{lkMonthLabel(item)}</option>)}
-          </select>
-        </label>
+        {controlledMonth ? (
+          <div className="min-w-[180px] flex-1">
+            <p className="text-sm font-semibold">{tr('Financial report (LK)', 'Laporan Keuangan (LK)')}</p>
+            <p className="text-xs text-muted-foreground">{lkMonthLabel(month)}</p>
+          </div>
+        ) : (
+          <label className="min-w-[180px] flex-1 space-y-1.5 text-xs font-medium">
+            {tr('Month', 'Bulan')}
+            <select aria-label={tr('Report month', 'Bulan laporan')} value={month} onChange={(event) => setMonth(event.target.value)} className="h-11 w-full rounded-full border border-border bg-background px-4 text-sm">
+              {months.map((item) => <option key={item} value={item}>{lkMonthLabel(item)}</option>)}
+            </select>
+          </label>
+        )}
         <button type="button" onClick={() => void load()} disabled={loading} aria-label={tr('Refresh report data', 'Muat ulang data laporan')} className="inline-flex h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-medium disabled:opacity-50">
           <RefreshCw className={cn('size-4', loading && 'animate-spin')} aria-hidden="true" /> {tr('Refresh', 'Muat ulang')}
         </button>

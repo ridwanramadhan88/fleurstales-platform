@@ -6,13 +6,16 @@ const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8'
 
 describe('transaction flow and Points navigation regression', () => {
   it('keeps transaction creation direction-first and moves category management out of daily Transactions', () => {
-    const source = read('src/components/finance/AddInternalTransaction.tsx')
+    const menu = read('src/components/finance/FinanceCashTab.tsx')
+    const source = read('src/components/finance/ManualTransactionDialog.tsx')
     const categorySettings = read('src/components/settings/FinanceCategorySettingsPanel.tsx')
-    expect(source).toContain('Money In')
-    expect(source).toContain('Money Out')
+    // The direction is picked first, from the Record menu.
+    expect(menu).toContain("onSelect={() => setManualDirection('income')}")
+    expect(menu).toContain("onSelect={() => setManualDirection('expense')}")
+    expect(source).toContain("tr('Record Money In', 'Catat uang masuk')")
+    expect(source).toContain("tr('Record Money Out', 'Catat uang keluar')")
     expect(source).not.toContain('Manage categories')
-    expect(source).toContain('Note · Optional')
-    expect(source).not.toContain('Add internal transaction')
+    expect(source).toContain("tr('Note · optional', 'Catatan · opsional')")
     expect(categorySettings).toContain('Transaction categories')
     expect(categorySettings).toContain('Add category')
   })

@@ -6,6 +6,7 @@ import { toast } from '../../hooks/use-toast'
 import { AppSheet } from '../ui/app-sheet'
 import { StatusChip } from '../ui/chip'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
+import { formatIdrCurrency } from '../../lib/formatters'
 
 interface FinanceTransactionDetailSheetProps {
   transaction: FinanceTransaction | null
@@ -19,7 +20,7 @@ interface FinanceTransactionDetailSheetProps {
   onOpenPayroll?: () => void
 }
 
-const formatIdr = (value: number): string => `Rp ${Math.round(value).toLocaleString('id-ID')}`
+const formatIdr = formatIdrCurrency
 
 const formatTimestamp = (value?: string): string => {
   if (!value) return '—'
@@ -131,12 +132,12 @@ export const FinanceTransactionDetailSheet: FC<FinanceTransactionDetailSheetProp
           <div className="mt-4 flex flex-wrap gap-2">
             {transaction.proofPath && (
               <button type="button" onClick={() => { void openProof() }} className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-xs font-semibold">
-                <FileCheck2 className="size-4" /> View evidence
+                <FileCheck2 className="size-4" /> {tr('View evidence', 'Lihat bukti')}
               </button>
             )}
             {onOpenOrder && transaction.orderNumber && (
               <button type="button" onClick={onOpenOrder} className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-xs font-semibold">
-                <ExternalLink className="size-4" /> Open order
+                <ExternalLink className="size-4" /> {tr('Open order', 'Buka pesanan')}
               </button>
             )}
             {onOpenPayroll && transaction.payrollProposalId && (

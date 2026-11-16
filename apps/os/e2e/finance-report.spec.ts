@@ -33,9 +33,13 @@ test('finance downloads the monthly LK report', async ({ page, problems }) => {
   void problems
   await signIn(page, 'finance')
   await page.getByRole('navigation').first().getByRole('button', { name: 'Keuangan', exact: true }).click()
-  await page.getByRole('button', { name: /^Laporan/ }).first().click()
+  await page.getByRole('tablist', { name: 'Keuangan' }).getByRole('tab', { name: 'Laporan' }).click()
+  // The Finance month picker drives the report and starts on the current month.
+  const label = currentMonthLabel()
+  await expect(page.getByRole('combobox', { name: 'Bulan' })).toHaveValue(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }).slice(0, 7))
   const panel = page.getByTestId('finance-lk-report')
-  await pickCurrentMonth(panel)
+  await expect(panel).toContainText(label.charAt(0).toUpperCase() + label.slice(1))
+  await expect(panel.getByRole('table', { name: 'Ringkasan laba rugi' })).toBeVisible()
   const table = panel.getByRole('table', { name: 'Ringkasan laba rugi' })
   await expect(table).toContainText('Fleurstales')
   await expect(table).toContainText('Fleurstation')

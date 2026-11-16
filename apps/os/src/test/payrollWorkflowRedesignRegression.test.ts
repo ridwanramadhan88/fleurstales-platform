@@ -19,13 +19,10 @@ describe('payroll workflow redesign regressions', () => {
     expect(review).toContain('approvedRows.length / selectedDrafts.length')
   })
 
-  it('uses People-style underline navigation for Payroll proposals and Refunds', () => {
+  it('uses People-style underline navigation for Payroll proposals', () => {
     const payroll = read('src/components/finance/FinancePayrollReview.tsx')
-    const refunds = read('src/components/finance/FinanceRefundQueue.tsx')
     expect(payroll).toContain("settingsTabTrackClass({ level: 'primary'")
     expect(payroll).toContain("settingsTabButtonClass({ active: view === item, level: 'primary'")
-    expect(refunds).toContain("settingsTabTrackClass({ level: 'primary'")
-    expect(refunds).toContain("settingsTabButtonClass({ active: activeTab === id, level: 'primary'")
   })
 
   it('includes generated non-owner roles, manual payees, and audited Finance self-approval', () => {

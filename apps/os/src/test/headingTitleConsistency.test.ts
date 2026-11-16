@@ -16,19 +16,8 @@ describe('heading and title consistency', () => {
     ]
 
     for (const file of files) expect(read(file)).toContain(pageTitleClass)
-    // Finance modules share one header carrying the same scale; each module
-    // renders that header instead of its own inline title.
-    expect(read('src/components/finance/FinanceModuleHeader.tsx')).toContain(
-      pageTitleClass,
-    )
-    for (const file of [
-      'src/components/finance/OrderVerificationQueue.tsx',
-      'src/components/finance/AddInternalTransaction.tsx',
-      'src/components/finance/FinanceCashFlowOverview.tsx',
-      'src/components/finance/FinanceRefundQueue.tsx',
-      'src/pages/Home.tsx',
-    ])
-      expect(read(file)).toContain('FinanceModuleHeader')
+    // Finance has no separate page title: its tab bar names the open tab.
+    expect(read('src/components/finance/FinanceWorkspace.tsx')).toContain("aria-current={active ? 'page' : undefined}")
   })
 
   it('uses one title scale for sheets and dialogs', () => {
@@ -47,11 +36,9 @@ describe('heading and title consistency', () => {
     expect(read('src/pages/Home.tsx')).toContain(
       'px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] pt-6',
     )
-    expect(read('src/pages/Home.tsx')).toContain(
-      'showHeading={financeModules.length > 1}',
-    )
-    expect(read('src/components/finance/OrderVerificationQueue.tsx')).toContain(
-      '{showHeading && (',
-    )
+    // One Finance header (the tab bar); tabs do not repeat their own title.
+    for (const file of ['FinanceTasksTab.tsx', 'FinanceCashTab.tsx', 'FinanceReportTab.tsx']) {
+      expect(read(`src/components/finance/${file}`)).not.toContain('font-display text-2xl')
+    }
   })
 })

@@ -28,11 +28,13 @@ describe('Finance workflow v1.1 regressions', () => {
 
   it('keeps reconciliation wording aligned with posted-cash semantics', () => {
     const permissions = read('src/config/actionPermissions.ts')
-    const balance = read('src/components/finance/FinanceCashFlowOverview.tsx')
+    const accounts = read('src/components/finance/useFinanceAccounts.ts')
+    const tasks = read('src/components/finance/FinanceTasksTab.tsx')
 
     expect(permissions).toContain('without moving cash again')
     expect(permissions).not.toContain('before an order payment enters balance and revenue')
-    expect(balance).toContain('Historical transactions without a confirmed account stay here')
-    expect(balance).not.toContain('Assign these legacy rows to a real account from Transactions.')
+    // Old rows without an account keep their own bucket and a cleanup task.
+    expect(accounts).toContain("export const LEGACY_ACCOUNT_ID = 'legacy:unassigned'")
+    expect(tasks).toContain("requestFocus({ module: 'cash', accountId: 'legacy:unassigned' })")
   })
 })

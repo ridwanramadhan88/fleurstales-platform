@@ -32,7 +32,7 @@ describe('Finance v3.4 accounting period audit and permission polish', () => {
 
   it('renders actor, role, reason and Jakarta time as read-only history', () => {
     const history = read('src/components/finance/FinancePeriodAuditHistory.tsx')
-    const controls = read('src/components/finance/FinancePeriodControls.tsx')
+    const report = read('src/components/finance/FinanceReportTab.tsx')
 
     expect(history).toContain('Period audit history')
     expect(history).toContain('Read only')
@@ -42,18 +42,20 @@ describe('Finance v3.4 accounting period audit and permission polish', () => {
     expect(history).toContain("timeZone: 'Asia/Jakarta'")
     expect(history).toContain('WIB')
     expect(history).toContain('subscribeFinancePeriodActionsChanged')
-    expect(controls).toContain('<FinancePeriodAuditHistory />')
+    expect(report).toContain('<FinancePeriodAuditHistory />')
   })
 
   it('makes reopen risk and separate authorization explicit', () => {
-    const controls = read('src/components/finance/FinancePeriodControls.tsx')
+    const card = read('src/components/finance/FinancePeriodStatusCard.tsx')
+    const report = read('src/components/finance/FinanceReportTab.tsx')
+    const access = read('src/components/finance/useFinanceAccess.ts')
     const permissions = read('src/config/actionPermissions.ts')
 
-    expect(controls).toContain("isActionAuthorized(role, 'finance.reopen_period')")
-    expect(controls).toContain('Owner can grant this sensitive Finance capability from Permissions.')
-    expect(controls).toContain('Reopening makes this month’s Finance ledger editable again')
-    expect(controls).toContain('Later edits can change balances and reports for this period.')
-    expect(controls).toContain('The reopen actor, time, and reason stay in read-only audit history.')
+    expect(access).toContain("canReopenPeriod: can('finance.reopen_period')")
+    expect(report).toContain('canReopen={access.canReopenPeriod}')
+    expect(card).toContain("period.status === 'closed' && canReopen")
+    expect(card).toContain('balances and reports can change. The reason is kept in the audit history.')
+    expect(card).toContain("aria-label=\"Accounting period reason\"")
     expect(permissions).toContain("{ id:'finance.reopen_period', label:'Reopen Accounting Period'")
     expect(permissions).not.toContain("'finance.edit_ledger_entry','finance.close_period','finance.reopen_period'")
   })

@@ -1,4 +1,5 @@
 import type { FinanceTransaction, FinanceTransactionSource } from '../store/financeStoreTypes'
+import { jakartaMonthKey } from './financeDates'
 
 export type FinancePeriodReportSource = 'orders' | 'refunds' | 'payroll' | 'manual' | 'transfers'
 
@@ -47,18 +48,7 @@ const SOURCE_LABELS: Record<FinancePeriodReportSource, string> = {
   transfers: 'Transfers',
 }
 
-export const jakartaMonthKey = (value: string): string => {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jakarta',
-    year: 'numeric',
-    month: '2-digit',
-  }).formatToParts(date)
-  const year = parts.find((part) => part.type === 'year')?.value ?? ''
-  const month = parts.find((part) => part.type === 'month')?.value ?? ''
-  return year && month ? `${year}-${month}` : ''
-}
+export { jakartaMonthKey }
 
 const signedAmount = (transaction: FinanceTransaction): number =>
   transaction.type === 'income' ? transaction.amount : -transaction.amount

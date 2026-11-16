@@ -60,6 +60,8 @@ test('admin, owner and finance can see the transfer proof the admin attached', a
   await expectNoEnglish(page, 'transfer payment confirmation')
   await payment.getByRole('button', { name: 'Konfirmasi Lunas' }).click()
   await expect(payment).toHaveCount(0)
+  const orderNumber = (await details.innerText()).match(/[A-Z]{3}-\d{4}-\d{4}/)?.[0]
+  expect(orderNumber).toBeTruthy()
 
   // Admin and Owner see the proof straight from the order details.
   const viewProof = async () => {
@@ -74,8 +76,8 @@ test('admin, owner and finance can see the transfer proof the admin attached', a
 
   await signIn(page, 'finance')
   await page.getByRole('navigation').first().getByRole('button', { name: 'Keuangan', exact: true }).click()
-  const row = page.locator('main').getByText(customerName, { exact: true }).locator('xpath=ancestor::*[.//button[contains(., "Tinjau pembayaran")]][1]')
-  await row.getByRole('button', { name: /Tinjau pembayaran/ }).click()
+  // Tugas lists the paid order; tapping it opens the payment review.
+  await page.getByRole('region', { name: 'Pembayaran untuk dicocokkan' }).getByRole('button', { name: new RegExp(`${orderNumber} · ${customerName}`) }).click()
 
   // Reconciliation review: inline preview through a signed link, plus full view.
   const review = page.getByRole('dialog').last()
@@ -87,11 +89,15 @@ test('admin, owner and finance can see the transfer proof the admin attached', a
   await page.keyboard.press('Escape')
 
   // Ledger: the order payment row carries the same proof.
-  await page.getByRole('tab', { name: /Transaksi/ }).or(page.getByRole('button', { name: /^Transaksi$/ })).first().click()
-  const ledgerRow = page.locator('main').getByText(/^Pesanan KDM-/).first().locator('xpath=ancestor::*[.//button[normalize-space()="Bukti"]][1]')
-  await expect(ledgerRow).toContainText('Pembayaran pesanan')
+  await page.getByRole('tablist', { name: 'Keuangan' }).getByRole('tab', { name: 'Kas & Transaksi' }).click()
+  await page.locator('input[type="search"]:visible').first().fill(orderNumber!)
+  const ledgerRow = page.getByRole('list', { name: 'Buku kas' }).getByRole('button').filter({ hasText: orderNumber! }).first()
+  await expect(ledgerRow).toContainText('Bukti')
   await expectNoEnglish(page, 'finance ledger')
-  const objectPath = await expectProofOpensInNewTab(page, () => ledgerRow.getByRole('button', { name: 'Bukti', exact: true }).click())
+  await ledgerRow.click()
+  const detail = page.getByRole('dialog').last()
+  await expect(detail).toContainText(orderNumber!)
+  const objectPath = await expectProofOpensInNewTab(page, () => detail.getByRole('button', { name: 'Lihat bukti', exact: true }).click())
   expect(objectPath).toMatch(/^order_[^/]+\/proof-.+\.jpg$/)
   expect((await signProofAsCurrentUser(page, objectPath)).status()).toBe(200)
   await signOut(page)

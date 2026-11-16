@@ -1,4 +1,5 @@
 import { useMemo, type FC } from 'react'
+import { formatIdrCurrency } from '../../lib/formatters'
 import { ArrowDownRight, ArrowUpRight, Download, LockKeyhole, Scale, WalletCards } from 'lucide-react'
 import type { FinancePeriodSummary } from '../../data/financePeriods'
 import { buildFinancePeriodReport } from '../../domain/financePeriodReportDomain'
@@ -11,7 +12,7 @@ import { summarizeDeliveryMargin } from '../../domain/orderShipmentDomain'
 const CASH_ACCOUNT_ID = 'cash:main'
 const LEGACY_ACCOUNT_ID = 'legacy:unassigned'
 
-const formatIdr = (value: number): string => `${value < 0 ? '-' : ''}Rp ${Math.abs(Math.round(value)).toLocaleString('id-ID')}`
+const formatIdr = formatIdrCurrency
 
 const formatMonth = (periodMonth: string): string => {
   const month = periodMonth.slice(0, 7)

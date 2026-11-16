@@ -4,34 +4,19 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string) => readFileSync(path, 'utf8')
 
 describe('simplified Finance workflow', () => {
-  it('uses Order Verification identifiers and defaults to every unresolved order', () => {
+  it('keeps the stable Order Verification capability and one filtered ledger', () => {
     const domain = read('src/domain/financeWorkspaceDomain.ts')
-    const controller = read('src/components/finance/OrderVerificationQueueController.ts')
-    const scopes = read('src/components/finance/FinanceDateScopeTabs.tsx')
+    const ledger = read('src/domain/financeLedgerDomain.ts')
+    const cash = read('src/components/finance/FinanceCashTab.tsx')
 
-    expect(domain).toContain("'order_verification'")
     expect(domain).toContain("'finance.view_order_verification'")
     expect(domain).not.toContain('collect_orders')
-    expect(controller).toContain("useState<FinanceDateScopeId>('all')")
-    expect(controller).toContain("if (scope === 'all') return true")
-    expect(scopes).toContain("export type FinanceDateScopeId = 'all'")
-  })
-
-  it('keeps one filtered ledger with posted-entry editing and no verify/reject actions', () => {
-    const ledger = read('src/components/finance/TransactionLedger.tsx')
-    const controller = read('src/components/finance/TransactionLedgerController.ts')
-
-    expect(ledger).toContain("type SourceTab = 'all' | 'orders' | 'payroll' | 'refunds' | 'manual' | 'cashflow'")
-    expect(ledger).toContain("['orders','Orders']")
-    expect(ledger).toContain("['payroll','Payroll']")
-    expect(ledger).toContain("['refunds','Refunds']")
-    expect(ledger).toContain("['manual','Manual']")
-    expect(ledger).toContain("['cashflow','Balance & Transfers']")
-    expect(ledger).toContain('finance-edit-posted-transaction')
-    expect(ledger).not.toContain('onVerify')
-    expect(ledger).not.toContain('onStartReject')
-    expect(controller).not.toContain('verifyTransaction')
-    expect(controller).not.toContain('rejectTransaction')
+    expect(ledger).toContain("export type LedgerSourceFilter = 'all' | Exclude<LedgerSource, 'other'>")
+    expect(cash).toContain("{ id: 'transfers', en: 'Balance & transfers', id_: 'Saldo & transfer' }")
+    // The ledger only opens details; verifying lives in Tasks.
+    expect(cash).toContain('onClick={() => openTransactionDetail(transaction.id)}')
+    expect(cash).not.toContain('verifyTransaction')
+    expect(cash).not.toContain('rejectTransaction')
   })
 
   it('keeps order points automatic and approved', () => {

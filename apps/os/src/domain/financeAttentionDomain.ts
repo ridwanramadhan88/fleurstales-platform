@@ -8,6 +8,7 @@
 import type { OrderTableRow } from '../types/orders'
 import type { FinanceTransaction } from '../store/financeStoreTypes'
 import type { PayrollProposal } from '../store/payrollStore'
+import { reconcilableOrderNumbers } from './financeReconciliationDomain'
 
 const LEGACY_ACCOUNT_ID = 'legacy:unassigned'
 
@@ -32,11 +33,7 @@ export const getFinanceAttention = ({
   transactions: Pick<FinanceTransaction, 'status' | 'source' | 'orderNumber' | 'accountId'>[]
   payrollProposals: Pick<PayrollProposal, 'status'>[]
 }): FinanceAttention => {
-  const postedOrderNumbers = new Set(
-    transactions
-      .filter((transaction) => transaction.status === 'verified' && transaction.source === 'order_payment' && transaction.orderNumber)
-      .map((transaction) => transaction.orderNumber as string),
-  )
+  const postedOrderNumbers = reconcilableOrderNumbers(transactions)
   const reconciliationOrders = orders.filter(
     (order) => postedOrderNumbers.has(order.orderNumber) && !order.financeVerified,
   )

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type FC, type FormEvent } from 'react'
+import { useEffect, useState, type FC, type FormEvent } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { useFinanceStore } from '../../store/financeStore'
 import type { FinanceTransaction } from '../../store/financeStoreTypes'
-import { useSettingsStore } from '../../store/settingsStore'
-import { useUserStore } from '../../store/userStore'
+import { useFinanceAccess } from './useFinanceAccess'
+import { useFinanceAccounts } from './useFinanceAccounts'
+import { useFinanceUiStore } from './financeUiStore'
 import { editPostedFinanceTransaction } from '../../data/financeCashFlow'
 import {
   canEditFinanceTransaction,
@@ -17,14 +18,14 @@ import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
 
-/** Opened with `window.dispatchEvent(new CustomEvent('finance-edit-posted-transaction', { detail: id }))`. */
+/** Opened through `useFinanceUiStore().openTransactionEdit(id)`. */
 export const FinancePostedTransactionEditor: FC = () => {
   const tr = useBilingualCopy()
   const titleOf = (target: FinanceTransaction) => { const title = financeTransactionTitle(target); return tr(title.en, title.id) }
-  const role = useUserStore((state) => state.role)
+  const { canEditEntry } = useFinanceAccess()
+  const requestedId = useFinanceUiStore((state) => state.editTransactionId)
+  const closeEditor = useFinanceUiStore((state) => state.openTransactionEdit)
   const transactions = useFinanceStore((state) => state.transactions)
-  const paymentAccounts = useSettingsStore((state) => state.paymentMethods.bankAccounts)
-  const [transactionId, setTransactionId] = useState<string | null>(null)
   const [accountId, setAccountId] = useState('')
   const [amount, setAmount] = useState('')
   const [transactionDate, setTransactionDate] = useState('')
@@ -33,40 +34,28 @@ export const FinancePostedTransactionEditor: FC = () => {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const transaction = transactions.find((item) => item.id === transactionId)
-  const accountOptions = useMemo(
-    () => [
-      ...paymentAccounts
-        .filter((account) => account.isActive !== false)
-        .sort((a, b) => Number(Boolean(b.isDefault)) - Number(Boolean(a.isDefault)) || (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-        .map((account) => ({ id: account.id, label: `${account.bankName} · ${account.accountNumber}` })),
-      { id: 'cash:main', label: tr('Cash', 'Kas tunai') },
-    ],
-    [paymentAccounts, tr],
-  )
+  const requested = transactions.find((item) => item.id === requestedId)
+  const transaction = requested && canEditEntry && canEditFinanceTransaction(requested, true) ? requested : undefined
+  const { options: accountOptions } = useFinanceAccounts()
 
+  // Load the form whenever a different row is opened for editing.
   useEffect(() => {
-    const openEditor = (event: Event) => {
-      const id = (event as CustomEvent<string>).detail
-      const target = transactions.find((item) => item.id === id)
-      if (!target || !canEditFinanceTransaction(target, true)) return
-      setTransactionId(id)
-      setAccountId(target.accountId ?? '')
-      setAmount(String(target.amount))
-      setTransactionDate(toJakartaDateTimeInput(target.transactionDate ?? target.createdAt))
-      setReference(target.reference ?? '')
-      setNote(target.note ?? '')
-      setReason('')
-    }
-    window.addEventListener('finance-edit-posted-transaction', openEditor)
-    return () => window.removeEventListener('finance-edit-posted-transaction', openEditor)
-  }, [transactions])
+    const target = transactions.find((item) => item.id === requestedId)
+    if (!target) return
+    setAccountId(target.accountId ?? '')
+    setAmount(String(target.amount))
+    setTransactionDate(toJakartaDateTimeInput(target.transactionDate ?? target.createdAt))
+    setReference(target.reference ?? '')
+    setNote(target.note ?? '')
+    setReason('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedId])
 
-  if (role !== 'finance') return null
+  if (!canEditEntry) return null
 
   const close = () => {
     if (busy) return
-    setTransactionId(null)
+    closeEditor(null)
     setReason('')
   }
 
@@ -104,7 +93,7 @@ export const FinancePostedTransactionEditor: FC = () => {
     try {
       await editPostedFinanceTransaction({ transactionId: transaction.id, patch, reason })
       toast({ title: tr('Transaction updated', 'Transaksi diperbarui'), description: tr('The correction and its reason were added to the history.', 'Koreksi dan alasannya tercatat di riwayat.') })
-      setTransactionId(null)
+      closeEditor(null)
     } catch (error) {
       toast({ title: tr('Transaction was not updated', 'Transaksi tidak diperbarui'), description: error instanceof Error ? error.message : tr('Please try again.', 'Silakan coba lagi.'), variant: 'destructive' })
     } finally {

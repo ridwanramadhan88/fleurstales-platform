@@ -14,9 +14,10 @@ import { formatHumanDate, formatHumanDateRange } from '../../lib/humanDates'
 import { settingsTabButtonClass, settingsTabTrackClass } from '../settings/SettingsPrimitives'
 import { DatePickerField } from '../ui/date-time-field'
 import { InfoDisclosure } from '../ui/info-disclosure'
-import { consumeFinanceWorkspaceFocus, subscribeFinanceWorkspaceFocus } from './financeWorkspaceNavigation'
+import { useFinanceUiStore } from './financeUiStore'
+import { formatIdrCurrency } from '../../lib/formatters'
 
-const formatIdr = (value: number) => `Rp${Math.round(value).toLocaleString('id-ID')}`
+const formatIdr = formatIdrCurrency
 const formatPeriod = (start?: string, end?: string) => start && end ? formatHumanDateRange(start, end) : ''
 const manualPayeeLabel = { owner:'Owner', part_time:'Part-time', contractor:'Contractor', other:'Other' } as const
 const roleLabel = (draft: EmployeePayrollDraft) => draft.entryMode === 'manual' && draft.manualPayeeType
@@ -89,7 +90,9 @@ export const FinancePayrollReview = () => {
   )
   const defaultPaymentAccountId = activePaymentAccounts[0]?.id ?? ''
 
-  const [initialFocus] = useState(() => consumeFinanceWorkspaceFocus('payroll'))
+  const consumeFocus = useFinanceUiStore((state) => state.consumeFocus)
+  const focusVersion = useFinanceUiStore((state) => state.focusVersion)
+  const [initialFocus] = useState(() => consumeFocus('payroll'))
   const [view, setView] = useState<View>(() => payrollViewFromFocus(initialFocus?.view))
   const [selectedId, setSelectedId] = useState<string | null>(() => initialFocus?.proposalId ?? null)
   const [decision, setDecision] = useState<Decision | null>(null)
@@ -106,11 +109,14 @@ export const FinancePayrollReview = () => {
   const [message, setMessage] = useState<string | null>(null)
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null)
 
-  useEffect(() => subscribeFinanceWorkspaceFocus('payroll', (focus) => {
+  // Deep links (Tasks, ledger, notifications) open a view or one proposal.
+  useEffect(() => {
+    const focus = consumeFocus('payroll')
+    if (!focus) return
     setView(payrollViewFromFocus(focus.view))
     setSelectedId(focus.proposalId ?? null)
     setExpandedDraftId(null)
-  }), [])
+  }, [consumeFocus, focusVersion])
 
   const selected = selectedId ? proposals.find((item) => item.id === selectedId) ?? null : null
   const filtered = proposals.filter((proposal) => {
@@ -217,17 +223,6 @@ export const FinancePayrollReview = () => {
   return (
     <section aria-label="Finance payroll review" className="space-y-5">
       <header className="space-y-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Monthly payroll proposals</h2>
-          </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <Metric label="Review" value={counts.review} />
-            <Metric label="Ready to pay" value={counts.ready} />
-            <Metric label="History" value={counts.history} />
-          </div>
-        </div>
-
         <nav aria-label="Payroll proposal status" className={settingsTabTrackClass({ level: 'primary', className: 'gap-5 sm:gap-6' })}>
           {(Object.keys(viewLabels) as View[]).map((item) => (
             <button
@@ -459,9 +454,6 @@ export const FinancePayrollReview = () => {
   )
 }
 
-const Metric = ({ label, value }: { label: string; value: number }) => (
-  <p className="text-muted-foreground"><span className="font-semibold text-foreground">{value}</span> <span className="lowercase">{label}</span></p>
-)
 
 const Breakdown = ({ label, value }: { label: string; value: string }) => (
   <div className="min-w-0"><dt className="text-muted-foreground">{label}</dt><dd className="truncate font-semibold text-foreground">{value}</dd></div>
