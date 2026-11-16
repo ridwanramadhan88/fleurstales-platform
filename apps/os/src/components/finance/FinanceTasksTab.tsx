@@ -56,7 +56,8 @@ const ageLabel = (value: string | undefined, tr: (en: string, id: string) => str
 /** One line of work: what it is, the money, how old, and one action. */
 const TaskRow: FC<{
   title: ReactNode
-  meta: ReactNode
+  /** Rendered as separate text nodes so system text (e.g. a refund reason) translates on its own. */
+  meta: Array<string | undefined | null>
   amount?: number
   onOpen?: () => void
   leading?: ReactNode
@@ -69,7 +70,9 @@ const TaskRow: FC<{
       <span className="block truncate text-sm font-semibold text-foreground">{title}</span>
       {/* Phones: the amount leads the second line so the name keeps its width. */}
       {amount !== undefined && <span className="mt-0.5 block text-sm font-semibold tabular-nums text-foreground sm:hidden">{formatIdrCurrency(amount)}</span>}
-      <span className="mt-0.5 block truncate text-xs text-muted-foreground">{meta}</span>
+      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+        {meta.filter(Boolean).map((part, index) => <span key={`${index}-${part}`}>{index > 0 ? ' · ' : ''}<span>{part}</span></span>)}
+      </span>
     </button>
     {amount !== undefined && <span className="hidden shrink-0 text-sm font-semibold tabular-nums text-foreground sm:block">{formatIdrCurrency(amount)}</span>}
     {action}
@@ -181,7 +184,7 @@ export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpe
           row.order.branch,
           labelOf(row.accountId),
           awaitingAdmin ? tr('waiting for Admin', 'menunggu Admin') : ageLabel(row.paymentConfirmedAt, tr),
-        ].filter(Boolean).join(' · ')}
+        ]}
         amount={row.paymentAmountIdr}
         onOpen={() => openOrderReview(orderNumber)}
         leading={!awaitingAdmin && access.canVerifyOrders ? (
@@ -300,7 +303,7 @@ export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpe
               <TaskRow
                 key={order.orderNumber}
                 title={`${order.orderNumber} · ${order.customerName}`}
-                meta={[order.refundReason, ageLabel(order.refundInitiatedAt, tr)].filter(Boolean).join(' · ')}
+                meta={[order.refundReason, ageLabel(order.refundInitiatedAt, tr)]}
                 amount={order.refundAmountIdr ?? 0}
                 onOpen={() => onOpenOrder(order.orderNumber)}
                 action={access.canManageRefunds ? (

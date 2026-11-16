@@ -12,7 +12,7 @@ const ledgerRow = (page: Page, orderNumber: string) =>
 
 const openTransactions = async (page: Page, orderNumber: string) => {
   await page.getByRole('navigation').first().getByRole('button', { name: 'Keuangan', exact: true }).click()
-  await page.getByRole('navigation', { name: 'Keuangan' }).getByRole('button', { name: 'Kas & Transaksi' }).click()
+  await page.getByRole('tablist', { name: 'Keuangan' }).getByRole('tab', { name: 'Kas & Transaksi' }).click()
   await page.locator('input[type="search"]:visible').first().fill(orderNumber)
   const row = ledgerRow(page, orderNumber)
   await expect(row).toBeVisible()
