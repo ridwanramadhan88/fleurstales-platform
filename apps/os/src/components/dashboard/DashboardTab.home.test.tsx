@@ -54,7 +54,7 @@ describe('home screens show each role its own work', () => {
     const reconciliation = within(work).getByRole('button', { name: /Awaiting reconciliation/ })
     expect(reconciliation).toHaveTextContent('1')
     reconciliation.click()
-    expect(onNavigate).toHaveBeenCalledWith({ tab: 'finance', financeModule: 'order_verification' })
+    expect(onNavigate).toHaveBeenCalledWith({ tab: 'finance', financeModule: 'tasks' })
     expect(within(work).getByRole('button', { name: /Refunds/ })).toBeInTheDocument()
     expect(within(work).getByRole('button', { name: /Payroll/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^(Customers|Catalog)$/ })).toBeNull()

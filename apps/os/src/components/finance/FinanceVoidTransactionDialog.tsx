@@ -2,39 +2,33 @@ import { useEffect, useState, type FC, type FormEvent } from 'react'
 import { Ban } from 'lucide-react'
 import { useFinanceStore } from '../../store/financeStore'
 import type { FinanceTransaction } from '../../store/financeStoreTypes'
-import { useUserStore } from '../../store/userStore'
+import { formatIdrCurrency } from '../../lib/formatters'
+import { useFinanceAccess } from './useFinanceAccess'
+import { useFinanceUiStore } from './financeUiStore'
 import { voidFinanceTransaction } from '../../data/financeCashFlow'
 import { canVoidFinanceTransaction, financeActionCopy, financeTransactionTitle } from '../../domain/financeTransactionActionsDomain'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
 
-const formatIdr = (value: number): string => `Rp ${Math.round(value).toLocaleString('id-ID')}`
+const formatIdr = formatIdrCurrency
 
-/** Opened with `window.dispatchEvent(new CustomEvent('finance-void-transaction', { detail: id }))`. */
+/** Opened through `useFinanceUiStore().openTransactionVoid(id)`. */
 export const FinanceVoidTransactionDialog: FC = () => {
   const tr = useBilingualCopy()
   const titleOf = (target: FinanceTransaction) => { const title = financeTransactionTitle(target); return tr(title.en, title.id) }
-  const role = useUserStore((state) => state.role)
+  const { canEditEntry } = useFinanceAccess()
   const transactions = useFinanceStore((state) => state.transactions)
-  const [transactionId, setTransactionId] = useState<string | null>(null)
+  const requestedId = useFinanceUiStore((state) => state.voidTransactionId)
+  const setTransactionId = useFinanceUiStore((state) => state.openTransactionVoid)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
-  const transaction = transactions.find((item) => item.id === transactionId)
+  const requested = transactions.find((item) => item.id === requestedId)
+  const transaction = requested && canEditEntry && canVoidFinanceTransaction(requested, true) ? requested : undefined
 
-  useEffect(() => {
-    const open = (event: Event) => {
-      const id = (event as CustomEvent<string>).detail
-      const target = transactions.find((item) => item.id === id)
-      if (!target || !canVoidFinanceTransaction(target, true)) return
-      setTransactionId(id)
-      setReason('')
-    }
-    window.addEventListener('finance-void-transaction', open)
-    return () => window.removeEventListener('finance-void-transaction', open)
-  }, [transactions])
+  useEffect(() => { setReason('') }, [requestedId])
 
-  if (role !== 'finance') return null
+  if (!canEditEntry) return null
 
   const close = () => {
     if (busy) return

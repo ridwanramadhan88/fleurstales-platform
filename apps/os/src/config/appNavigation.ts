@@ -1,4 +1,4 @@
-import type { FinanceWorkspaceModule } from '../domain/financeWorkspaceDomain'
+import type { FinanceWorkspaceRoute } from '../domain/financeWorkspaceDomain'
 import type { NavigationDestinationId } from './navigationGroups'
 
 /** Existing top-level application destinations. */
@@ -14,7 +14,8 @@ export type HrNavigationSection = 'attendance' | 'scheduling' | 'employees' | 'p
  */
 export interface AppNavigationTarget {
   tab: AppTabId
-  financeModule?: FinanceWorkspaceModule
+  /** v3 tab id, or a v2 route id that maps onto one. */
+  financeModule?: FinanceWorkspaceRoute
   ordersSubTab?: OrdersNavigationScope
   orderNumber?: string
   hrSection?: HrNavigationSection
@@ -26,7 +27,7 @@ export type AppNavigationRequest = AppTabId | AppNavigationTarget
 export const toAppTab = (tab: AppTabId): AppNavigationTarget => ({ tab })
 
 export const toFinanceModule = (
-  financeModule: FinanceWorkspaceModule,
+  financeModule: FinanceWorkspaceRoute,
 ): AppNavigationTarget => ({ tab: 'finance', financeModule })
 
 export const toOrders = (

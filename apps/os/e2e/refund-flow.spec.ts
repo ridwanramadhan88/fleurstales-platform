@@ -31,15 +31,16 @@ const startRefundFromOrder = async (page: Page, customerName: string) => {
 const completeRefundAsFinance = async (page: Page, customerName: string) => {
   await signIn(page, 'finance')
   await page.getByRole('navigation').first().getByRole('button', { name: 'Keuangan', exact: true }).click()
-  await page.getByRole('tab', { name: /Pengembalian dana/ }).first().click()
-  const card = page.locator('main article').filter({ hasText: customerName })
+  // Finance lands on Tugas; pending refunds have their own section there.
+  const refunds = page.getByRole('region', { name: 'Pengembalian dana untuk dibayar' })
+  const card = refunds.locator('div').filter({ hasText: customerName }).last()
   await expect(card).toBeVisible()
-  await expectNoEnglish(page, 'refund queue')
-  await card.getByRole('button', { name: /Selesaikan|Complete/ }).first().click()
-  const confirm = page.getByRole('alertdialog').or(page.getByRole('dialog')).last()
-  await confirm.getByRole('combobox', { name: 'Dibayar dari akun' }).selectOption({ label: 'Tunai' })
+  await expectNoEnglish(page, 'finance tasks')
+  await card.getByRole('button', { name: 'Selesaikan', exact: true }).click()
+  const confirm = page.getByRole('alertdialog').last()
+  await confirm.getByLabel('Refund account').selectOption({ label: 'Kas tunai' })
   await expectNoEnglish(page, 'complete refund dialog')
-  await confirm.getByRole('button', { name: /Selesaikan Pengembalian dana/ }).click()
+  await confirm.getByRole('button', { name: 'Selesaikan pengembalian dana' }).click()
   await expect(confirm).toHaveCount(0)
   await expect.poll(() => visibleToasts(page)).toContainEqual(expect.stringContaining('dikembalikan'))
 }

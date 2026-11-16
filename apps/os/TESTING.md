@@ -47,7 +47,7 @@ The workflow suite also protects the prototype's role-by-role user paths:
 
 - Owner: Overview → Orders → Finance → People → Settings.
 - Admin: scheduled-branch Orders and Customers, including the blocked/off-shift state.
-- Finance: Overview reachability, deterministic Payment Verification/Payroll/Refunds/Ledger navigation, shared search, and read-only empty states.
+- Finance: lands on Tasks (one inbox for reconciliation, refunds, change requests, stock purchases, payroll and account cleanup); Cash & Transactions, Payroll and Reports tabs; one month picker; shared search; read-only empty states.
 - HR: Overview → Employees → Attendance → Scheduling → Performance/Payroll preparation.
 - Florist: My Work schedule and attendance. Production status remains Admin-controlled by product decision; no separate Florist order-status workflow is implied.
 

@@ -39,10 +39,12 @@ test('finance reconciles a picked-up order through the server with its reference
 
   await signIn(page, 'finance')
   await page.getByRole('navigation').first().getByRole('button', { name: 'Keuangan', exact: true }).click()
-  await page.getByRole('button', { name: /Menunggu tinjauan/ }).first().click().catch(() => undefined)
-  const row = page.locator('main').getByText(customerName, { exact: true }).locator('xpath=ancestor::*[.//button[contains(., "Tinjau pembayaran")]][1]')
+  // Finance lands on Tugas; tapping the payment opens its review with the evidence.
+  const toReconcile = page.getByRole('region', { name: 'Pembayaran untuk dicocokkan' })
+  const row = toReconcile.getByRole('button', { name: new RegExp(customerName) })
   await expect(row).toBeVisible()
-  await row.getByRole('button', { name: /Tinjau pembayaran/ }).click()
+  await expectNoEnglish(page, 'finance tasks')
+  await row.click()
 
   const review = page.getByRole('dialog').last()
   await review.getByRole('button', { name: 'Rekonsiliasi Pesanan' }).click()
@@ -58,11 +60,15 @@ test('finance reconciles a picked-up order through the server with its reference
   expect(decision.financeVerified).toBe(true)
   await expect.poll(() => visibleToasts(page)).not.toContainEqual(expect.stringMatching(/tidak direkonsiliasi/i))
 
-  // After a reload the server copy shows the order as reconciled with its code.
+  // After a reload the order has left Tugas, and its ledger row carries the code.
   await page.reload()
   await page.getByRole('navigation').first().getByRole('button', { name: 'Keuangan', exact: true }).click()
-  await page.getByRole('button', { name: /Sudah direkonsiliasi/ }).first().click()
-  const reconciled = page.locator('main').getByText(customerName, { exact: true }).locator('xpath=ancestor::*[.//*[contains(., "Referensi")]][1]')
-  await expect(reconciled).toContainText(reference)
-  await expectNoEnglish(page, 'reconciled list')
+  await expect(page.locator('main').getByText(customerName)).toHaveCount(0)
+  await page.getByRole('tablist', { name: 'Keuangan' }).getByRole('tab', { name: 'Kas & Transaksi' }).click()
+  await page.locator('input[type="search"]:visible').first().fill(reference)
+  const ledgerRow = page.getByRole('list', { name: 'Buku kas' }).getByRole('button').first()
+  await expect(ledgerRow).toBeVisible()
+  await expectNoEnglish(page, 'reconciled ledger row')
+  await ledgerRow.click()
+  await expect(page.getByRole('dialog').last()).toContainText(reference)
 })

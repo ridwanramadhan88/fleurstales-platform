@@ -7,8 +7,7 @@ const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8'
 describe('scroll clipping regression', () => {
   it.each([
     ['src/components/orders/OrdersSubTabs.tsx', 'overflow-x-auto px-4 py-1'],
-    ['src/components/finance/FinanceDateScopeTabs.tsx', 'overflow-x-auto px-4 py-1'],
-    ['src/components/finance/FinanceWorkspaceTabs.tsx', 'overflow-x-auto px-4 py-1'],
+    ['src/components/finance/FinanceWorkspace.tsx', 'overflow-x-auto px-4 py-1'],
     ['src/components/hr/HrTabContent.tsx', 'overflow-x-auto px-1 py-1'],
     ['src/components/hr/MySchedulePanel.tsx', 'overflow-x-auto px-4 py-1'],
     ['src/components/ui/chip.tsx', 'overflow-x-auto py-1'],

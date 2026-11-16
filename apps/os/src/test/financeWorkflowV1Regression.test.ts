@@ -5,7 +5,7 @@ const read = (path: string) => readFileSync(path, 'utf8')
 
 describe('Finance workflow v1 regressions', () => {
   it('commits manual Money In/Out through Supabase before reporting success', () => {
-    const form = read('src/components/finance/AddInternalTransaction.tsx')
+    const form = read('src/components/finance/ManualTransactionDialog.tsx')
     const client = read('src/data/financeManualTransaction.ts')
 
     expect(form).toContain("import { saveManualFinanceTransaction } from '../../data/financeManualTransaction'")
@@ -18,13 +18,13 @@ describe('Finance workflow v1 regressions', () => {
   })
 
   it('keeps transfer fees separate for manual Money Out and account transfers', () => {
-    const manual = read('src/components/finance/AddInternalTransaction.tsx')
-    const cashFlow = read('src/components/finance/FinanceCashFlowOverview.tsx')
+    const manual = read('src/components/finance/ManualTransactionDialog.tsx')
+    const cashFlow = read('src/components/finance/CashFlowEntryDialog.tsx')
 
-    expect(manual).toContain('Transfer fee · Optional (IDR)')
-    expect(manual).toContain("direction === 'expense' ? transferFee : 0")
-    expect(cashFlow).toContain('Transfer fee · Optional (IDR)')
-    expect(cashFlow).toContain('transferFee: dialogMode === \'transfer\' ? numericTransferFee : undefined')
+    expect(manual).toContain("tr('Transfer fee · optional', 'Biaya transfer · opsional')")
+    expect(manual).toContain("transferFee: direction === 'expense' ? transferFee : 0")
+    expect(cashFlow).toContain("tr('Transfer fee · optional', 'Biaya transfer · opsional')")
+    expect(cashFlow).toContain("transferFee: mode === 'transfer' ? Number(transferFee) || 0 : undefined")
   })
 
   it('requires the paying account and supports a separate payroll transfer fee', () => {
@@ -39,10 +39,10 @@ describe('Finance workflow v1 regressions', () => {
   })
 
   it('moves refund cash only through the account-aware completion command', () => {
-    const refunds = read('src/components/finance/FinanceRefundQueue.tsx')
+    const refunds = read('src/components/finance/FinanceRefundDialog.tsx')
     const client = read('src/data/orderRefundCompletion.ts')
 
-    expect(refunds).toContain("setActionError('Select the account that paid the refund.')")
+    expect(refunds).toContain("setError(tr('Select the account that paid the refund.', 'Pilih rekening yang membayar pengembalian dana.'))")
     expect(refunds).toContain('await completeOrderRefundWithAccount({')
     expect(client).toContain("'complete_order_refund_with_account'")
     expect(client).toContain('p_finance_account_id: input.financeAccountId')
@@ -50,14 +50,14 @@ describe('Finance workflow v1 regressions', () => {
 
   it('lets Finance edit and void every posted row through the server (Owner decision 2026-11-07)', () => {
     const editor = read('src/components/finance/FinancePostedTransactionEditor.tsx')
-    const ledger = read('src/components/finance/TransactionLedger.tsx')
+    const workspace = read('src/components/finance/FinanceWorkspace.tsx')
     const domain = read('src/domain/financeTransactionActionsDomain.ts')
     const client = read('src/data/financeCashFlow.ts')
 
-    expect(editor).toContain('canEditFinanceTransaction(target, true)')
-    expect(ledger).toContain('canEditFinanceTransaction(transaction, canEdit)')
-    expect(ledger).toContain('canVoidFinanceTransaction(transaction, canEdit)')
-    expect(ledger).toContain('editable={selectedEditable}')
+    expect(editor).toContain('canEditFinanceTransaction(requested, true)')
+    expect(workspace).toContain('canEditFinanceTransaction(detail, access.canEditEntry)')
+    expect(workspace).toContain('canVoidFinanceTransaction(detail, access.canEditEntry)')
+    expect(workspace).toContain('editable={detailEditable}')
     // Voided rows are final; the server freezes them too.
     expect(domain).toContain("isFinance && transaction.status === 'verified'")
     expect(client).toContain("'edit_finance_transaction_v2_guarded'")

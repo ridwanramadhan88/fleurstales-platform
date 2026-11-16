@@ -63,8 +63,10 @@ const idrGroupingFormatter = new Intl.NumberFormat('id-ID')
  * so a future change to how currency is displayed only has one place to
  * happen.
  */
-export const formatIdrCurrency = (value: number): string =>
-  `Rp ${idrGroupingFormatter.format(roundIdr(value))}`
+export const formatIdrCurrency = (value: number): string => {
+  const rounded = roundIdr(value)
+  return `${rounded < 0 ? '-' : ''}Rp ${idrGroupingFormatter.format(Math.abs(rounded))}`
+}
 
 /**
  * @description Normalizes a WhatsApp number for matching purposes by

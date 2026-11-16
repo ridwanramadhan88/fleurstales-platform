@@ -1,5 +1,6 @@
 import type { FinanceTransaction } from '../store/financeStoreTypes'
 import type { OrderTableRow } from '../types/orders'
+import { previousMonthKey } from './financeDates'
 import { buildFinancePeriodReport, jakartaMonthKey, type FinancePeriodAccountReport } from './financePeriodReportDomain'
 
 /**
@@ -36,11 +37,7 @@ export const lkFileName = (month: string): string => {
   return `LK_${MONTH_NAMES_ID[(monthIndex || 1) - 1]}_${year}.xlsx`
 }
 
-export const previousMonth = (month: string): string => {
-  const [year, monthIndex] = month.split('-').map(Number)
-  const date = new Date(Date.UTC(year, monthIndex - 2, 1))
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
-}
+export const previousMonth = previousMonthKey
 
 export type LkLineKind = 'line' | 'subtotal' | 'total' | 'section'
 

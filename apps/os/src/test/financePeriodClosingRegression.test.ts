@@ -38,17 +38,18 @@ describe('Finance v3 accounting period closing regression', () => {
     expect(data).toContain("export type FinancePeriodStatus = 'open' | 'review' | 'closed'")
   })
 
-  it('surfaces period controls from Overview without adding another Finance top-level tab', () => {
-    const tabs = read('src/components/finance/FinanceWorkspaceTabs.tsx')
-    const controls = read('src/components/finance/FinancePeriodControls.tsx')
+  it('keeps period closing with the month it closes, on the Reports tab', () => {
+    const report = read('src/components/finance/FinanceReportTab.tsx')
+    const card = read('src/components/finance/FinancePeriodStatusCard.tsx')
 
-    expect(tabs).toContain("type FinanceWorkspaceGroup = 'overview' | 'reconciliation' | 'transactions' | 'payroll'")
-    expect(tabs).toContain("activeGroup === 'overview' && <FinancePeriodControls />")
-    expect(controls).toContain('Manage periods')
-    expect(controls).toContain('Start review')
-    expect(controls).toContain('Close month')
-    expect(controls).toContain('Reopen')
-    expect(controls).toContain('Current month can be reviewed now, but it cannot be closed until the month has ended.')
-    expect(controls).toContain('Legacy accounts')
+    expect(report).toContain('<FinancePeriodStatusCard')
+    expect(report).toContain("periods.find((item) => item.periodMonth.slice(0, 7) === month)")
+    expect(card).toContain("tr('Start review', 'Mulai review')")
+    expect(card).toContain("tr('Close month', 'Tutup buku')")
+    expect(card).toContain("tr('Reopen', 'Buka ulang')")
+    // The current month cannot be closed before it ends; blockers disable closing.
+    expect(card).toContain('{!isCurrent && (')
+    expect(card).toContain('disabled={busy || period.blockerTotal > 0}')
+    expect(card).toContain('period.blockers.legacyAccounts')
   })
 })

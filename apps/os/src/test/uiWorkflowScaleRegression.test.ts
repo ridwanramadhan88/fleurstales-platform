@@ -61,16 +61,14 @@ describe('mobile workflow UI scale regressions', () => {
   })
 
   it('uses compact and scrollable controls across Finance, People and Revenue', () => {
-    const financeTabs = read('src/components/finance/FinanceWorkspaceTabs.tsx')
+    const financeTabs = read('src/components/finance/FinanceWorkspace.tsx')
     const payroll = read('src/components/finance/FinancePayrollReview.tsx')
     const peopleTabs = read('src/components/hr/PeopleWorkspaceUI.tsx')
     const revenue = read('src/components/dashboard/RevenueDashboard.tsx')
-    expect(financeTabs).toContain('min-h-10 min-w-fit')
-    expect(financeTabs).toContain('rounded-lg px-3.5')
+    expect(financeTabs).toContain('inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3.5')
     expect(financeTabs).toContain('sm:rounded-xl sm:bg-muted/55 sm:p-1')
     expect(financeTabs).not.toContain('min-h-[4.75rem]')
     expect(financeTabs).not.toContain('rounded-xl border px-4 py-3 text-left')
-    expect(financeTabs).not.toContain('rounded-full')
     expect(payroll).toContain('settingsTabTrackClass')
     expect(payroll).toContain('settingsTabButtonClass')
     expect(payroll).toContain('PayrollStatusBadge')
@@ -84,7 +82,7 @@ describe('mobile workflow UI scale regressions', () => {
   })
 
   it('keeps Finance tabs contained, Notifications actions clear and People scheduling views functional', () => {
-    const financeTabs = read('src/components/finance/FinanceWorkspaceTabs.tsx')
+    const financeTabs = read('src/components/finance/FinanceWorkspace.tsx')
     const notifications = read('src/components/notifications/NotificationCenter.tsx')
     const people = read('src/components/hr/HrTabContent.tsx')
     const home = read('src/pages/Home.tsx')

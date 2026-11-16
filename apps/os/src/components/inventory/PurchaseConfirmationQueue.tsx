@@ -5,36 +5,37 @@
  * and takes the stock back out.
  */
 
-import { useCallback, useEffect, useState, type FC } from 'react'
+import { useEffect, useState, type FC } from 'react'
 import { ChevronDown, PackageCheck } from 'lucide-react'
-import { decideInventoryPurchase, fetchInventoryPurchases } from '../../data/inventorySupabase'
+import { decideInventoryPurchase } from '../../data/inventorySupabase'
 import { formatRupiah, summarizePendingPurchases, type InventoryPurchase } from '../../domain/inventoryDomain'
+import { usePendingPurchasesStore } from './pendingPurchasesStore'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
 import { useFinanceStore } from '../../store/financeStore'
 import { useUserStore } from '../../store/userStore'
 import { surfaceCardClass } from '../ui/card'
 
-/** `hideWhenEmpty`: show nothing until there is a purchase to confirm. */
-export const PurchaseConfirmationQueue: FC<{ hideWhenEmpty?: boolean }> = ({ hideWhenEmpty = false }) => {
+/**
+ * `hideWhenEmpty`: show nothing until there is a purchase to confirm.
+ * `embedded`: render the list directly (Finance Tasks) instead of a
+ * collapsible card.
+ */
+export const PurchaseConfirmationQueue: FC<{ hideWhenEmpty?: boolean; embedded?: boolean }> = ({ hideWhenEmpty = false, embedded = false }) => {
   const tr = useBilingualCopy()
   const addTransaction = useFinanceStore((state) => state.addTransaction)
   const actorName = useUserStore((state) => state.name)
   const role = useUserStore((state) => state.role)
-  const [open, setOpen] = useState(false)
-  const [purchases, setPurchases] = useState<InventoryPurchase[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
+  const open = embedded || expanded
+  const purchases = usePendingPurchasesStore((state) => state.purchases)
+  const loading = usePendingPurchasesStore((state) => state.loading || !state.loaded)
+  const loadError = usePendingPurchasesStore((state) => state.error)
+  const load = usePendingPurchasesStore((state) => state.load)
+  const [actionError, setError] = useState<string | null>(null)
+  const error = actionError ?? (loadError ? tr('Purchases could not be loaded. Try again.', 'Pembelian tidak bisa dimuat. Coba lagi.') : null)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try { setPurchases(await fetchInventoryPurchases('pending_finance')); setError(null) }
-    catch { setError(tr('Purchases could not be loaded. Try again.', 'Pembelian tidak bisa dimuat. Coba lagi.')) }
-    finally { setLoading(false) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   useEffect(() => { void load() }, [load])
 
@@ -69,8 +70,8 @@ export const PurchaseConfirmationQueue: FC<{ hideWhenEmpty?: boolean }> = ({ hid
   if (hideWhenEmpty && !error && purchases.length === 0) return null
 
   return (
-    <section aria-label={tr('Stock purchases to confirm', 'Pembelian stok untuk dikonfirmasi')} data-testid="purchase-confirmation-queue" className={surfaceCardClass('standard')}>
-      <button type="button" className="flex min-h-11 w-full items-center justify-between gap-3 text-left" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+    <section aria-label={tr('Stock purchases to confirm', 'Pembelian stok untuk dikonfirmasi')} data-testid="purchase-confirmation-queue" className={embedded ? undefined : surfaceCardClass('standard')}>
+      {!embedded && <button type="button" className="flex min-h-11 w-full items-center justify-between gap-3 text-left" onClick={() => setExpanded((value) => !value)} aria-expanded={open}>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <PackageCheck className="size-5 shrink-0 text-primary" />
@@ -79,9 +80,9 @@ export const PurchaseConfirmationQueue: FC<{ hideWhenEmpty?: boolean }> = ({ hid
           <p className="mt-1 truncate text-xs text-muted-foreground">{loading ? tr('Loading…', 'Memuat…') : `${summary.count} ${tr('waiting', 'menunggu')} · ${formatRupiah(summary.totalIdr)}`}</p>
         </div>
         <ChevronDown className={`size-5 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
+      </button>}
       {open && (
-        <div className="mt-3 space-y-2 border-t border-border/70 pt-3">
+        <div className={embedded ? 'space-y-2' : 'mt-3 space-y-2 border-t border-border/70 pt-3'}>
           {error && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
           {!loading && purchases.length === 0 && <p className="text-sm text-muted-foreground">{tr('Nothing to confirm.', 'Tidak ada yang perlu dikonfirmasi.')}</p>}
           {purchases.map((purchase) => (

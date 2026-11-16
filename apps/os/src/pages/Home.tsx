@@ -29,22 +29,13 @@ import { InventoryScreen } from '../components/inventory/InventoryScreen'
 import { CatalogTabContentContainer } from '../components/catalog/CatalogTabContentContainer'
 import { CustomersTabContentContainer } from '../components/customers/CustomersTabContentContainer'
 import { RevenueDashboardContainer } from '../components/dashboard/RevenueDashboardContainer'
-import { FinanceLkReportPanel } from '../components/finance/FinanceLkReportPanel'
-import { OrderVerificationQueueContainer } from '../components/finance/OrderVerificationQueueContainer'
-import { TransactionLedgerContainer } from '../components/finance/TransactionLedgerContainer'
-import { FinanceRefundQueue } from '../components/finance/FinanceRefundQueue'
-import { FinancePayrollReview } from '../components/finance/FinancePayrollReview'
-import { FinancePayrollScheduleAdjustment } from '../components/finance/FinancePayrollScheduleAdjustment'
-import { AddInternalTransaction } from '../components/finance/AddInternalTransaction'
-import { useFinanceStore } from '../store/financeStore'
-import { canCreateOrderForBranch, canVerifyOrder, canResolveChangeRequest } from '../domain/orderBusinessRules'
+import { canCreateOrderForBranch } from '../domain/orderBusinessRules'
 import { HrTabContentContainer } from '../components/hr/HrTabContentContainer'
 import type { HrSection } from '../components/hr/HrTabContentController'
 import { SettingsCenterContainer } from '../components/settings/SettingsCenterContainer'
 import { requestSettingsNavigation } from '../components/settings/settingsNavigationGuard'
 import { canAccessSection, canEditSection } from '../config/permissions'
 import { getAccessibleNavigationDestinationIds } from '../config/navigationGroups'
-import { hasActionPermission } from '../config/actionPermissions'
 import { useTheme } from '../hooks/useTheme'
 import type { DateRange } from 'react-day-picker'
 import type { BranchFilter } from '../types/orders'
@@ -53,12 +44,11 @@ import { useSharedOrderBackend } from '../hooks/useSharedOrderBackend'
 import { useSettingsStore } from '../store/settingsStore'
 import { getActiveBranches } from '../domain/settings/settingsSelectors'
 import { canViewScheduling } from '../domain/hrSchedulingDomain'
-import { FinanceWorkspaceTabs } from '../components/finance/FinanceWorkspaceTabs'
-import { FinanceModuleHeader } from '../components/finance/FinanceModuleHeader'
-import { FinanceCashFlowOverview } from '../components/finance/FinanceCashFlowOverview'
-import { PurchaseConfirmationQueue } from '../components/inventory/PurchaseConfirmationQueue'
-import { requestFinanceWorkspaceNavigation } from '../components/finance/financeWorkspaceNavigation'
-import { getDefaultFinanceWorkspaceModule, getFinanceWorkspaceModules, type FinanceWorkspaceModule } from '../domain/financeWorkspaceDomain'
+import { getDefaultFinanceWorkspaceModule, getFinanceWorkspaceModules, normalizeFinanceRoute, type FinanceWorkspaceModule } from '../domain/financeWorkspaceDomain'
+import { FinanceLkReportPanel } from '../components/finance/FinanceLkReportPanel'
+import { FinanceWorkspace } from '../components/finance/FinanceWorkspace'
+import { useFinanceUiStore } from '../components/finance/financeUiStore'
+import { useBilingualCopy } from '../i18n/bilingualCopy'
 import { toast } from '../hooks/use-toast'
 import { requestAppConfirmation } from '../components/ui/app-confirm'
 import { getBranchSwitchDecision, isOperationalBranchRole } from '../domain/branchSelectionDomain'
@@ -126,6 +116,7 @@ const HomePage: FC<HomePageProps> = ({
   initialBranch = 'Kedamaian',
 }) => {
   const userRole = useUserStore((state) => state.role)
+  const tr = useBilingualCopy()
   const [activeBranch, setActiveBranch] = useState<BranchFilter>(initialBranch)
   const [activeTab, setActiveTab] = useState<AppTabId>(() => getDefaultTabForRole(userRole))
   const [financeModule, setFinanceModule] = useState<FinanceWorkspaceModule>(() => getDefaultFinanceWorkspaceModule(userRole))
@@ -182,17 +173,12 @@ const HomePage: FC<HomePageProps> = ({
   const { greeting, formattedDate } = getDashboardHeaderMeta()
 
 
-  // Data + permissions for the Finance tab's two verification queues.
   const allOrders = useOrdersStore((state) => state.orders)
   const branchOrders =
     activeBranch === 'All'
       ? allOrders
       : allOrders.filter((order) => order.branch === activeBranch)
-  const allTransactions = useFinanceStore((state) => state.transactions)
   const canAccessHrWorkspace = canAccessSection(userRole, 'hr', permissions) || canViewScheduling(userRole, permissions)
-  const canVerifyFinance = canVerifyOrder(userRole) && hasActionPermission(userRole, 'finance.verify_order', actionPermissions, permissions)
-  const canEditManualTransactions = canEditSection(userRole, 'finance', permissions) && hasActionPermission(userRole, 'finance.edit_ledger_entry', actionPermissions, permissions)
-  const canResolveFinanceRequest = canResolveChangeRequest(userRole)
   const financeModules = useMemo(
     () => getFinanceWorkspaceModules(userRole, actionPermissions, permissions),
     [userRole, actionPermissions, permissions],
@@ -268,7 +254,8 @@ const HomePage: FC<HomePageProps> = ({
         return false
       }
 
-      if (target.financeModule && !financeModules.includes(target.financeModule)) {
+      const requestedModule = target.financeModule ? normalizeFinanceRoute(target.financeModule) : undefined
+      if (requestedModule && !financeModules.includes(requestedModule)) {
         toast({
           title: 'Finance tool unavailable',
           description: 'Your current access settings do not allow this Finance module.',
@@ -277,18 +264,18 @@ const HomePage: FC<HomePageProps> = ({
         return false
       }
 
-      nextFinanceModule = target.financeModule ?? getDefaultFinanceWorkspaceModule(userRole, actionPermissions, permissions)
+      nextFinanceModule = requestedModule ?? getDefaultFinanceWorkspaceModule(userRole, actionPermissions, permissions)
     }
 
     const continueNavigation = () => {
       if (activeTab !== target.tab) setSearchQuery('')
 
       if (nextFinanceModule) setFinanceModule(nextFinanceModule)
-      if (target.tab === 'finance' && target.financeModule === 'order_verification' && target.targetId) {
-        requestFinanceWorkspaceNavigation({ module: 'order_verification', view: 'all', orderNumber: target.targetId })
+      if (target.tab === 'finance' && nextFinanceModule === 'tasks' && target.targetId) {
+        useFinanceUiStore.getState().requestFocus({ module: 'tasks', filter: 'reconciliation', orderNumber: target.targetId })
       }
-      if (target.tab === 'finance' && target.financeModule === 'payroll' && target.targetId) {
-        requestFinanceWorkspaceNavigation({ module: 'payroll', view: 'review', proposalId: target.targetId })
+      if (target.tab === 'finance' && nextFinanceModule === 'payroll' && target.targetId) {
+        useFinanceUiStore.getState().requestFocus({ module: 'payroll', view: 'review', proposalId: target.targetId })
       }
 
       if (target.tab === 'orders') {
@@ -340,7 +327,7 @@ const HomePage: FC<HomePageProps> = ({
     const didNavigate = item.target === 'order' && item.orderNumber
       ? navigate(toOrders({ orderNumber: item.orderNumber }))
       : item.target === 'finance_order_verification'
-        ? navigate({ ...toFinanceModule('order_verification'), targetId: item.targetId ?? item.orderNumber })
+        ? navigate({ ...toFinanceModule('tasks'), targetId: item.targetId ?? item.orderNumber })
         : item.target === 'finance_payroll'
           ? navigate({ ...toFinanceModule('payroll'), targetId: item.targetId })
         : item.target === 'hr_attendance'
@@ -438,10 +425,12 @@ const HomePage: FC<HomePageProps> = ({
         }
       : activeTab === 'customers'
         ? { show: true, placeholder: 'Search name, phone, or email' }
-        : activeTab === 'finance' && financeModule === 'order_verification'
+        : activeTab === 'finance' && (financeModule === 'tasks' || financeModule === 'cash')
           ? {
               show: true,
-              placeholder: 'Search order, customer, account, transaction code...',
+              placeholder: financeModule === 'tasks'
+                ? tr('Search order, customer, or amount…', 'Cari pesanan, pelanggan, atau nominal…')
+                : tr('Search transaction, order, account, or category…', 'Cari transaksi, pesanan, rekening, atau kategori…'),
             }
         : activeTab === 'hr'
           ? {
@@ -556,80 +545,22 @@ const HomePage: FC<HomePageProps> = ({
           )}
 
           {activeTab === 'finance' && canAccessSection(userRole, 'finance', permissions) && (
-            <section className="space-y-6">
-              {financeModules.length === 0 ? (
-                <div className="rounded-2xl bg-card p-6 text-center shadow-ios-sm ring-1 ring-border/60">
-                  <p className="text-sm font-semibold">No Finance module available</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{userRole === 'owner' ? 'Enable at least one Finance feature in Owner Settings.' : 'Ask the Owner to enable a Finance feature for your role.'}</p>
-                </div>
-              ) : <>
-              <FinanceWorkspaceTabs
-                modules={financeModules}
+            financeModules.length === 0 ? (
+              <div className="rounded-2xl bg-card p-6 text-center shadow-ios-sm ring-1 ring-border/60">
+                <p className="text-sm font-semibold">No Finance module available</p>
+                <p className="mt-1 text-xs text-muted-foreground">{userRole === 'owner' ? 'Enable at least one Finance feature in Owner Settings.' : 'Ask the Owner to enable a Finance feature for your role.'}</p>
+              </div>
+            ) : (
+              <FinanceWorkspace
                 activeModule={financeModule}
-                onChange={(module) => { navigate(toFinanceModule(module)) }}
+                onChangeModule={(module) => { navigate(toFinanceModule(module)) }}
+                orders={branchOrders}
+                branches={activeBranchIds}
+                defaultBranch={activeBranch === 'All' ? undefined : activeBranch}
+                searchQuery={searchQuery}
+                onOpenOrder={handleOpenOrderFromNotification}
               />
-
-              {financeModule === 'order_verification' && (
-                <OrderVerificationQueueContainer
-                  orders={branchOrders}
-                  canVerify={canVerifyFinance}
-                  canResolveRequest={canResolveFinanceRequest}
-                  actorName={actorName}
-                  userRole={userRole}
-                  searchQuery={searchQuery}
-                  onSearchQueryChange={setSearchQuery}
-                  showHeading={financeModules.length > 1}
-                />
-              )}
-
-              {financeModule === 'payroll' && hasActionPermission(userRole, 'finance.view_payroll', actionPermissions, permissions) && (
-                <>
-                  <FinanceModuleHeader
-                    title="Payroll"
-                   
-                  />
-                  {/* One schedule card: dates plus "Edit schedule". */}
-                  <FinancePayrollScheduleAdjustment />
-                  <FinancePayrollReview />
-                </>
-              )}
-
-              {financeModule === 'refunds' && hasActionPermission(userRole, 'finance.view_refunds', actionPermissions, permissions) && (
-                <FinanceRefundQueue
-                  orders={branchOrders}
-                  actorName={actorName}
-                  actorRole={userRole}
-                  onOpenOrder={handleOpenOrderFromNotification}
-                />
-              )}
-
-              {financeModule === 'report' && hasActionPermission(userRole, 'finance.view_ledger', actionPermissions, permissions) && (
-                <FinanceLkReportPanel />
-              )}
-
-              {financeModule === 'ledger' && hasActionPermission(userRole, 'finance.view_ledger', actionPermissions, permissions) && (
-                <>
-                  {hasActionPermission(userRole, 'finance.create_ledger_entry', actionPermissions, permissions) && <AddInternalTransaction
-                    branches={activeBranchIds}
-                    defaultBranch={activeBranch === 'All' ? undefined : activeBranch}
-                    actorName={actorName}
-                    actorRole={userRole}
-                  />}
-                  <TransactionLedgerContainer
-                    transactions={allTransactions}
-                    defaultBranch={activeBranch}
-                    canEditManual={canEditManualTransactions}
-                  />
-                </>
-              )}
-
-              {/* Finance has no Home: stock purchases to confirm show on Balances. */}
-              {financeModule === 'balance' && userRole === 'finance' && inventoryEnabled && <PurchaseConfirmationQueue hideWhenEmpty />}
-              {financeModule === 'balance' && hasActionPermission(userRole, 'finance.view_ledger', actionPermissions, permissions) && (
-                <FinanceCashFlowOverview />
-              )}
-              </>}
-            </section>
+            )
           )}
 
           {activeTab === 'hr' && canAccessHrWorkspace && (

@@ -1,7 +1,6 @@
 /**
  * @file ChangeRequestList.tsx
- * @description "Change requests awaiting review" section of
- * OrderVerificationQueue — Admin's edit/cancellation requests on
+ * @description Finance Tasks list of Admin's edit/cancellation requests on
  * locked (finished) orders, reviewed here by Finance/Owner. Surfaced above
  * the main order list since these are time-sensitive (Admin is blocked on
  * the order until Finance/Owner acts).
@@ -20,10 +19,7 @@ import type { FC } from 'react'
 import { useState } from 'react'
 import type { OrderTableRow } from '../../types/orders'
 
-/**
- * @description Formats a number as compact Rupiah currency for display.
- */
-const formatIdr = (value: number): string => `Rp ${value.toLocaleString('id-ID')}`
+import { formatIdrCurrency as formatIdr } from '../../lib/formatters'
 
 export interface ChangeRequestListProps {
   /** Orders that currently have a pending change request. */
@@ -62,16 +58,6 @@ export const ChangeRequestList: FC<ChangeRequestListProps> = ({
 
   return (
     <div className="space-y-2">
-      <header>
-        <h2 className="text-xs font-semibold text-muted-foreground">
-          Change requests awaiting review
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          Submitted by Admin/Owner on locked (finished) orders. Approving a
-          cancellation voids it immediately; approving an edit only unlocks
-          it for them to make the change themselves.
-        </p>
-      </header>
       {orders.map((order) => {
         const request = order.pendingChangeRequest
         if (!request) return null
