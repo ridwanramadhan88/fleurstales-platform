@@ -16,6 +16,7 @@ import { DatePickerField } from '../ui/date-time-field'
 import { InfoDisclosure } from '../ui/info-disclosure'
 import { useFinanceUiStore } from './financeUiStore'
 import { formatIdrCurrency } from '../../lib/formatters'
+import { countPayrollNeedingFinance, countPayrollReadyToPay, payrollProposalNeedsFinance } from '../../domain/payrollFinanceDomain'
 
 const formatIdr = formatIdrCurrency
 const formatPeriod = (start?: string, end?: string) => start && end ? formatHumanDateRange(start, end) : ''
@@ -57,7 +58,8 @@ const getProposalVisualStatus = (
 const proposalStatusText = (proposal: PayrollProposal, approved: number, total: number, returned: number) => {
   if (proposal.status === 'paid') return 'Payment recorded'
   if (proposal.status === 'finance_approved') return 'Ready for payment'
-  if (proposal.status === 'returned_to_hr') return `${approved} approved · ${returned} returned`
+  // Returned with rows still pending: show the pending ones (Finance's work).
+  if (proposal.status === 'returned_to_hr' && approved + returned >= total) return `${approved} approved · ${returned} returned`
   if (approved > 0) return `${approved} approved · ${total - approved - returned} pending · ${returned} returned`
   return `${approved} of ${total} approved`
 }
@@ -119,14 +121,18 @@ export const FinancePayrollReview = () => {
   }, [consumeFocus, focusVersion])
 
   const selected = selectedId ? proposals.find((item) => item.id === selectedId) ?? null : null
+  // Review lists proposals still waiting on HR too, after the ones Finance
+  // can act on, but only the latter count (same rule as the Tasks badge).
   const filtered = proposals.filter((proposal) => {
     if (view === 'review') return ['submitted_to_finance', 'returned_to_hr'].includes(proposal.status)
     if (view === 'ready') return proposal.status === 'finance_approved'
     return ['paid', 'resolved'].includes(proposal.status)
-  })
+  }).sort((a, b) => view === 'review'
+    ? Number(payrollProposalNeedsFinance(b, drafts)) - Number(payrollProposalNeedsFinance(a, drafts))
+    : 0)
   const counts: Record<View, number> = {
-    review: proposals.filter((item) => ['submitted_to_finance', 'returned_to_hr'].includes(item.status)).length,
-    ready: proposals.filter((item) => item.status === 'finance_approved').length,
+    review: countPayrollNeedingFinance(proposals, drafts),
+    ready: countPayrollReadyToPay(proposals),
     history: proposals.filter((item) => ['paid', 'resolved'].includes(item.status)).length,
   }
   const selectedDrafts = useMemo(() => selected ? drafts.filter((item) => selected.employeePayrollIds.includes(item.id)) : [], [selected, drafts])

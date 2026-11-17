@@ -47,7 +47,6 @@ interface FinanceWorkspaceProps {
   defaultBranch?: BranchId
   /** Shared top-bar search; used by Tasks and Cash & Transactions. */
   searchQuery: string
-  onOpenOrder: (orderNumber: string) => void
 }
 
 const MONTH_RANGE = 24
@@ -87,7 +86,6 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
   branches,
   defaultBranch,
   searchQuery,
-  onOpenOrder,
 }) => {
   const tr = useBilingualCopy()
   const access = useFinanceAccess()
@@ -96,6 +94,7 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const allOrders = useOrdersStore((state) => state.orders)
   const payrollProposals = usePayrollStore((state) => state.payrollProposals)
+  const payrollDrafts = usePayrollStore((state) => state.employeePayrolls)
   const purchases = usePendingPurchasesStore((state) => state.purchases)
   const loadPurchases = usePendingPurchasesStore((state) => state.load)
   const ui = useFinanceUiStore()
@@ -103,9 +102,11 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const tabsRef = useActiveItemScroll<HTMLElement>(activeModule, '[aria-current="page"]')
 
+  // Purchases are not pushed in realtime: load once for the badge, and refresh whenever Tasks opens.
   useEffect(() => {
-    if (access.canConfirmPurchases) void loadPurchases()
-  }, [access.canConfirmPurchases, loadPurchases])
+    if (!access.canConfirmPurchases) return
+    if (activeModule === 'tasks' || !usePendingPurchasesStore.getState().loaded) void loadPurchases()
+  }, [access.canConfirmPurchases, activeModule, loadPurchases])
 
   // A focus request (notification, Tasks link) switches to the tab it targets.
   useEffect(() => {
@@ -117,13 +118,13 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
 
   const purchaseCount = access.canConfirmPurchases ? purchases.length : 0
   const tasks = useMemo(
-    () => buildFinanceTasks({ orders, transactions, payrollProposals, purchaseCount, searchQuery }),
-    [orders, payrollProposals, purchaseCount, searchQuery, transactions],
+    () => buildFinanceTasks({ orders, transactions, payrollProposals, payrollDrafts, purchaseCount, searchQuery }),
+    [orders, payrollDrafts, payrollProposals, purchaseCount, searchQuery, transactions],
   )
   // Badges ignore the search box: they count the work, not the current view.
   const badgeCounts = useMemo(
-    () => (searchQuery ? buildFinanceTasks({ orders, transactions, payrollProposals, purchaseCount }).counts : tasks.counts),
-    [orders, payrollProposals, purchaseCount, searchQuery, tasks.counts, transactions],
+    () => (searchQuery ? buildFinanceTasks({ orders, transactions, payrollProposals, payrollDrafts, purchaseCount }).counts : tasks.counts),
+    [orders, payrollDrafts, payrollProposals, purchaseCount, searchQuery, tasks.counts, transactions],
   )
   const badges: Partial<Record<FinanceWorkspaceModule, number>> = {
     tasks: badgeCounts.total,
@@ -193,7 +194,7 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
         </div>}
       </div>
 
-      {activeModule === 'tasks' && <FinanceTasksTab tasks={tasks} access={access} onOpenOrder={onOpenOrder} />}
+      {activeModule === 'tasks' && <FinanceTasksTab tasks={tasks} access={access} searchQuery={searchQuery} />}
       {activeModule === 'cash' && (
         <FinanceCashTab transactions={transactions} access={access} branches={branches} defaultBranch={defaultBranch} searchQuery={searchQuery} />
       )}

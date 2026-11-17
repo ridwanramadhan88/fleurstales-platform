@@ -6,8 +6,8 @@
  * Finished items leave this list; their history lives in Cash & Transactions.
  */
 
-import { useMemo, useState, type FC, type ReactNode } from 'react'
-import { ArrowRight, Check, ChevronDown } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type FC, type ReactNode } from 'react'
+import { ArrowRight, Check, ChevronDown, Undo2 } from 'lucide-react'
 import type { OrderTableRow } from '../../types/orders'
 import type { FinanceQueueRow } from '../../domain/financeReconciliationDomain'
 import type { FinanceTaskCounts, FinanceTasks } from '../../domain/financeTasksDomain'
@@ -29,10 +29,31 @@ import { useFinanceUiStore, type FinanceTaskFilter } from './financeUiStore'
 import type { FinanceAccess } from './useFinanceAccess'
 import { useFinanceAccounts } from './useFinanceAccounts'
 
+/**
+ * How long a one-tap "Cocok" waits before it is sent. Reconciliation has no
+ * server-side undo, so a mis-tap on a phone must be catchable here.
+ */
+export const MATCH_UNDO_MS = 5000
+
+type LocalVerify = (order: OrderTableRow) => { allowed: boolean; reason?: string }
+
+/** Sends matches to the server (or the offline store); never touches component state. */
+const commitReconciliation = async (orders: OrderTableRow[], verifyLocal: LocalVerify): Promise<BulkReconciliationOutcome> => {
+  if (isServerAuthoritative()) return reconcileOrderPayments(orders)
+  const outcome: BulkReconciliationOutcome = { reconciled: [], failed: [] }
+  for (const order of orders) {
+    const result = verifyLocal(order)
+    if (result.allowed) outcome.reconciled.push(order.orderNumber)
+    else outcome.failed.push({ orderNumber: order.orderNumber, reason: result.reason ?? '' })
+  }
+  return outcome
+}
+
 interface FinanceTasksTabProps {
   tasks: FinanceTasks
   access: FinanceAccess
-  onOpenOrder: (orderNumber: string) => void
+  /** Top-bar search the lists are already filtered by; only used to word the empty state. */
+  searchQuery: string
 }
 
 const Section: FC<{ title: string; count: number; actions?: ReactNode; children: ReactNode }> = ({ title, count, actions, children }) => (
@@ -92,7 +113,7 @@ const LinkRow: FC<{ label: string; detail?: string; onOpen: () => void }> = ({ l
 const filterVisible = (filter: FinanceTaskFilter, section: Exclude<FinanceTaskFilter, 'all'>): boolean =>
   filter === 'all' || filter === section
 
-export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpenOrder }) => {
+export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, searchQuery }) => {
   const tr = useBilingualCopy()
   const filter = useFinanceUiStore((state) => state.taskFilter)
   const setFilter = useFinanceUiStore((state) => state.setTaskFilter)
@@ -113,42 +134,92 @@ export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpe
   const [showAwaitingAdmin, setShowAwaitingAdmin] = useState(false)
 
   const { counts } = tasks
+  const [queuedNumbers, setQueuedNumbers] = useState<Set<string>>(new Set())
+  const selectableRows = useMemo(
+    () => tasks.reconciliation.filter((row) => !queuedNumbers.has(row.order.orderNumber)),
+    [queuedNumbers, tasks.reconciliation],
+  )
   const selectedRows = useMemo(
-    () => tasks.reconciliation.filter((row) => selected.has(row.order.orderNumber)),
-    [selected, tasks.reconciliation],
+    () => selectableRows.filter((row) => selected.has(row.order.orderNumber)),
+    [selectableRows, selected],
   )
   const selectedTotal = selectedRows.reduce((sum, row) => sum + row.paymentAmountIdr, 0)
 
-  const reconcile = async (orders: OrderTableRow[]): Promise<void> => {
-    const numbers = orders.map((order) => order.orderNumber)
-    setBusyOrders((current) => new Set([...current, ...numbers]))
-    let outcome: BulkReconciliationOutcome
-    try {
-      if (isServerAuthoritative()) {
-        outcome = await reconcileOrderPayments(orders)
-      } else {
-        outcome = { reconciled: [], failed: [] }
-        for (const order of orders) {
-          const result = verifyOrderFinance({ orderNumber: order.orderNumber, expectedRevision: order.revision ?? 1, actor })
-          if (result.allowed) outcome.reconciled.push(order.orderNumber)
-          else outcome.failed.push({ orderNumber: order.orderNumber, reason: result.reason ?? '' })
-        }
-      }
-    } finally {
-      setBusyOrders((current) => new Set([...current].filter((value) => !numbers.includes(value))))
-    }
-    setSelected((current) => new Set([...current].filter((value) => !outcome.reconciled.includes(value))))
+  // Latest actor + store action, for matches that are sent after a delay or on unmount.
+  const latest = useRef<{ verifyLocal: LocalVerify; tr: typeof tr }>({ verifyLocal: () => ({ allowed: false }), tr })
+  latest.current = {
+    verifyLocal: (order) => verifyOrderFinance({ orderNumber: order.orderNumber, expectedRevision: order.revision ?? 1, actor }),
+    tr,
+  }
+
+  const reportOutcome = (outcome: BulkReconciliationOutcome) => {
+    const t = latest.current.tr
     if (outcome.reconciled.length > 0) {
-      toast({ title: tr(`${outcome.reconciled.length} payment(s) reconciled`, `${outcome.reconciled.length} pembayaran cocok`) })
+      toast({ title: t(`${outcome.reconciled.length} payment(s) reconciled`, `${outcome.reconciled.length} pembayaran cocok`) })
     }
     if (outcome.failed.length > 0) {
       toast({
-        title: tr(`${outcome.failed.length} payment(s) not reconciled`, `${outcome.failed.length} pembayaran gagal dicocokkan`),
+        title: t(`${outcome.failed.length} payment(s) not reconciled`, `${outcome.failed.length} pembayaran gagal dicocokkan`),
         description: outcome.failed.map((item) => `${item.orderNumber}: ${item.reason}`).join(' · '),
         variant: 'destructive',
       })
     }
   }
+
+  const mounted = useRef(true)
+  const reconcile = async (orders: OrderTableRow[]): Promise<void> => {
+    const numbers = orders.map((order) => order.orderNumber)
+    setBusyOrders((current) => new Set([...current, ...numbers]))
+    let outcome: BulkReconciliationOutcome
+    try {
+      outcome = await commitReconciliation(orders, latest.current.verifyLocal)
+    } catch (error) {
+      outcome = { reconciled: [], failed: numbers.map((orderNumber) => ({ orderNumber, reason: error instanceof Error ? error.message : String(error) })) }
+    } finally {
+      if (mounted.current) setBusyOrders((current) => new Set([...current].filter((value) => !numbers.includes(value))))
+    }
+    if (mounted.current) setSelected((current) => new Set([...current].filter((value) => !outcome.reconciled.includes(value))))
+    reportOutcome(outcome)
+  }
+
+  // One-tap matches wait MATCH_UNDO_MS with an "Urungkan" button before they are sent.
+  const queued = useRef(new Map<string, { order: OrderTableRow; timer: ReturnType<typeof setTimeout> }>())
+  const forgetQueued = (orderNumber: string) => {
+    queued.current.delete(orderNumber)
+    if (mounted.current) setQueuedNumbers(new Set(queued.current.keys()))
+  }
+  const queueMatch = (order: OrderTableRow) => {
+    if (queued.current.has(order.orderNumber)) return
+    const timer = setTimeout(() => {
+      forgetQueued(order.orderNumber)
+      void reconcile([order])
+    }, MATCH_UNDO_MS)
+    queued.current.set(order.orderNumber, { order, timer })
+    setQueuedNumbers(new Set(queued.current.keys()))
+  }
+  const undoMatch = (orderNumber: string) => {
+    const entry = queued.current.get(orderNumber)
+    if (!entry) return
+    clearTimeout(entry.timer)
+    forgetQueued(orderNumber)
+  }
+
+  // Leaving the tab sends what is still queued: the tap was a decision, the delay only a safety net.
+  useEffect(() => {
+    mounted.current = true
+    const pending = queued.current
+    return () => {
+      mounted.current = false
+      const orders = [...pending.values()].map((entry) => {
+        clearTimeout(entry.timer)
+        return entry.order
+      })
+      pending.clear()
+      if (orders.length > 0) void commitReconciliation(orders, latest.current.verifyLocal).then(reportOutcome)
+    }
+    // reportOutcome only reads refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const toggle = (orderNumber: string, checked: boolean) =>
     setSelected((current) => {
@@ -158,7 +229,7 @@ export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpe
       return next
     })
 
-  const allSelected = tasks.reconciliation.length > 0 && selectedRows.length === tasks.reconciliation.length
+  const allSelected = selectableRows.length > 0 && selectedRows.length === selectableRows.length
 
   const chips: Array<{ id: FinanceTaskFilter; label: string; count: number }> = [
     { id: 'requests', label: tr('Requests', 'Permintaan'), count: counts.requests },
@@ -175,38 +246,62 @@ export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpe
   const reconciliationRow = (row: FinanceQueueRow, awaitingAdmin: boolean) => {
     const orderNumber = row.order.orderNumber
     const busy = busyOrders.has(orderNumber)
+    const isQueued = queuedNumbers.has(orderNumber)
     return (
       <TaskRow
         key={orderNumber}
-        tone={awaitingAdmin ? 'muted' : 'default'}
+        tone={awaitingAdmin || isQueued ? 'muted' : 'default'}
         title={`${orderNumber} · ${row.order.customerName}`}
         meta={[
           row.order.branch,
           labelOf(row.accountId),
-          awaitingAdmin ? tr('waiting for Admin', 'menunggu Admin') : ageLabel(row.paymentConfirmedAt, tr),
+          awaitingAdmin
+            ? tr('waiting for Admin', 'menunggu Admin')
+            : isQueued
+              ? tr(`matching in ${MATCH_UNDO_MS / 1000}s`, `dicocokkan dalam ${MATCH_UNDO_MS / 1000} detik`)
+              : ageLabel(row.paymentConfirmedAt, tr),
         ]}
         amount={row.paymentAmountIdr}
         onOpen={() => openOrderReview(orderNumber)}
         leading={!awaitingAdmin && access.canVerifyOrders ? (
           <Checkbox
             aria-label={tr(`Select ${orderNumber}`, `Pilih ${orderNumber}`)}
-            checked={selected.has(orderNumber)}
+            checked={selected.has(orderNumber) && !isQueued}
+            disabled={isQueued || busy}
             onCheckedChange={(checked) => toggle(orderNumber, checked === true)}
           />
         ) : undefined}
         action={!awaitingAdmin && access.canVerifyOrders ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => { void reconcile([row.order]) }}
-            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-          >
-            <Check className="size-4" aria-hidden="true" /> {tr('Match', 'Cocok')}
-          </button>
+          isQueued ? (
+            <button
+              type="button"
+              onClick={() => undoMatch(orderNumber)}
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground"
+            >
+              <Undo2 className="size-4" aria-hidden="true" /> {tr('Undo', 'Urungkan')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => queueMatch(row.order)}
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              <Check className="size-4" aria-hidden="true" /> {busy ? tr('Matching…', 'Mencocokkan…') : tr('Match', 'Cocok')}
+            </button>
+          )
         ) : awaitingAdmin ? <StatusChip tone="warning">{tr('Correction', 'Koreksi')}</StatusChip> : undefined}
       />
     )
   }
+
+  const searching = searchQuery.trim().length > 0
+  const shownCount = (filter === 'all' || filter === 'requests' ? tasks.requests.length : 0)
+    + (access.canConfirmPurchases && (filter === 'all' || filter === 'purchases') ? counts.purchases : 0)
+    + (filter === 'all' || filter === 'reconciliation' ? tasks.reconciliation.length + tasks.awaitingAdmin.length : 0)
+    + (access.canViewRefunds && (filter === 'all' || filter === 'refunds') ? tasks.refunds.length : 0)
+    + (access.canViewPayroll && (filter === 'all' || filter === 'payroll') ? counts.payrollReview + counts.payrollReady : 0)
+    + (access.canViewLedger && (filter === 'all' || filter === 'accounts') ? counts.accounts : 0)
 
   return (
     <div className="space-y-5">
@@ -223,7 +318,15 @@ export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpe
         </ChipRow>
       )}
 
-      {nothingOpen && <p className="py-6 text-center text-sm text-muted-foreground">{tr('All caught up.', 'Semua beres.')}</p>}
+      {shownCount === 0 && (
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          {searching
+            ? tr('No tasks match this search.', 'Tidak ada tugas yang cocok dengan pencarian.')
+            : filter !== 'all' && !nothingOpen
+              ? tr('Nothing left here.', 'Tidak ada lagi di sini.')
+              : tr('All caught up.', 'Semua beres.')}
+        </p>
+      )}
 
       {filterVisible(filter, 'requests') && tasks.requests.length > 0 && (
         <Section title={tr('Admin change requests', 'Permintaan ubah dari Admin')} count={tasks.requests.length}>
@@ -264,7 +367,7 @@ export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpe
                 <Checkbox
                   aria-label={tr('Select all', 'Pilih semua')}
                   checked={allSelected}
-                  onCheckedChange={(checked) => setSelected(checked === true ? new Set(tasks.reconciliation.map((row) => row.order.orderNumber)) : new Set())}
+                  onCheckedChange={(checked) => setSelected(checked === true ? new Set(selectableRows.map((row) => row.order.orderNumber)) : new Set())}
                 />
                 {tr('All', 'Semua')}
               </label>
@@ -305,7 +408,7 @@ export const FinanceTasksTab: FC<FinanceTasksTabProps> = ({ tasks, access, onOpe
                 title={`${order.orderNumber} · ${order.customerName}`}
                 meta={[order.refundReason, ageLabel(order.refundInitiatedAt, tr)]}
                 amount={order.refundAmountIdr ?? 0}
-                onOpen={() => onOpenOrder(order.orderNumber)}
+                onOpen={() => openOrderReview(order.orderNumber)}
                 action={access.canManageRefunds ? (
                   <button type="button" onClick={() => setRefundAction({ type: 'complete', order })} className="inline-flex h-10 shrink-0 items-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground">
                     {tr('Pay out', 'Selesaikan')}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeOrder } from '../../test/factories/order'
 import { makeFinanceTransaction } from '../../test/factories/financeTransaction'
@@ -16,6 +16,7 @@ import type { FinanceWorkspaceModule } from '../../domain/financeWorkspaceDomain
 import type { OrderTableRow } from '../../types/orders'
 import { FinanceWorkspace } from './FinanceWorkspace'
 import { useFinanceUiStore } from './financeUiStore'
+import { MATCH_UNDO_MS } from './FinanceTasksTab'
 
 vi.mock('../../data/financePeriods', () => ({
   getFinancePeriods: vi.fn(async () => []),
@@ -45,16 +46,16 @@ const refundOrder = makeOrder({
   refundInitiatedAt: '2026-11-10T10:00:00.000Z',
 })
 
-const Harness = ({ initial = 'tasks', orders }: { initial?: FinanceWorkspaceModule; orders?: OrderTableRow[] }) => {
+const Harness = ({ initial = 'tasks', orders, searchQuery = '' }: { initial?: FinanceWorkspaceModule; orders?: OrderTableRow[]; searchQuery?: string }) => {
   const [module, setModule] = useState<FinanceWorkspaceModule>(initial)
+  const liveOrders = useOrdersStore((state) => state.orders)
   return (
     <FinanceWorkspace
       activeModule={module}
       onChangeModule={setModule}
-      orders={orders ?? useOrdersStore.getState().orders}
+      orders={orders ?? liveOrders}
       branches={['Kedamaian', 'Pahoman']}
-      searchQuery=""
-      onOpenOrder={vi.fn()}
+      searchQuery={searchQuery}
     />
   )
 }
@@ -92,10 +93,86 @@ describe('FinanceWorkspace', () => {
     expect(screen.getByRole('region', { name: 'Pengembalian dana untuk dibayar' })).toHaveTextContent('Duplicate payment')
   })
 
-  it('reconciles a payment with one tap', async () => {
+  const isReconciled = () => useOrdersStore.getState().orders.find((order) => order.orderNumber === 'KDM-RC-001')?.financeVerified
+
+  it('reconciles a payment with one tap after a short undo window', () => {
+    vi.useFakeTimers()
+    try {
+      render(<Harness />)
+      const region = screen.getByRole('region', { name: 'Pembayaran untuk dicocokkan' })
+      fireEvent.click(within(region).getByRole('button', { name: 'Cocok' }))
+      expect(within(region).getByRole('button', { name: 'Urungkan' })).toBeInTheDocument()
+      expect(region).toHaveTextContent('dicocokkan dalam 5 detik')
+      expect(isReconciled()).toBeFalsy()
+      act(() => { vi.advanceTimersByTime(MATCH_UNDO_MS) })
+      expect(isReconciled()).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not reconcile when the tap is undone', () => {
+    vi.useFakeTimers()
+    try {
+      render(<Harness />)
+      const region = screen.getByRole('region', { name: 'Pembayaran untuk dicocokkan' })
+      fireEvent.click(within(region).getByRole('button', { name: 'Cocok' }))
+      fireEvent.click(within(region).getByRole('button', { name: 'Urungkan' }))
+      act(() => { vi.advanceTimersByTime(MATCH_UNDO_MS * 2) })
+      expect(isReconciled()).toBeFalsy()
+      expect(within(region).getByRole('button', { name: 'Cocok' })).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('sends a queued match when Finance leaves Tasks before the window ends', async () => {
+    vi.useFakeTimers()
+    try {
+      const view = render(<Harness />)
+      fireEvent.click(within(screen.getByRole('region', { name: 'Pembayaran untuk dicocokkan' })).getByRole('button', { name: 'Cocok' }))
+      fireEvent.click(screen.getByRole('tab', { name: 'Kas & Transaksi' }))
+      await act(async () => { await Promise.resolve() })
+      expect(isReconciled()).toBe(true)
+      view.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('says so when the search finds no task, instead of "all caught up"', () => {
+    render(<Harness searchQuery="tidak-ada" />)
+    expect(screen.getByText('Tidak ada tugas yang cocok dengan pencarian.')).toBeInTheDocument()
+    expect(screen.queryByText('Semua beres.')).not.toBeInTheDocument()
+  })
+
+  it('selects all and matches them after one confirmation', async () => {
+    const second = makeOrder({ orderNumber: 'KDM-RC-002', customerName: 'Rina', status: 'delivered', paymentStatus: 'paid', paidAmountIdr: 100_000, totalIdr: 100_000 })
+    useOrdersStore.setState((state) => ({ orders: [...state.orders, second] }))
+    useFinanceStore.setState((state) => ({
+      transactions: [...state.transactions, makeFinanceTransaction({ id: 'pay-rc-002', source: 'order_payment', entryMode: 'automatic', orderNumber: 'KDM-RC-002', amount: 100_000 })],
+    }))
     render(<Harness />)
-    fireEvent.click(within(screen.getByRole('region', { name: 'Pembayaran untuk dicocokkan' })).getByRole('button', { name: 'Cocok' }))
-    await waitFor(() => expect(useOrdersStore.getState().orders.find((order) => order.orderNumber === 'KDM-RC-001')?.financeVerified).toBe(true))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pilih semua' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cocokkan 2' }))
+    const dialog = screen.getByRole('alertdialog', { name: 'Cocokkan 2 pembayaran?' })
+    expect(dialog).toHaveTextContent('Rp 350.000')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cocokkan semua' }))
+    await waitFor(() => expect(useOrdersStore.getState().orders.filter((order) => order.financeVerified).map((order) => order.orderNumber).sort()).toEqual(['KDM-RC-001', 'KDM-RC-002']))
+  })
+
+  it('searches the ledger across every month and marks unmatched order payments', () => {
+    useFinanceStore.setState((state) => ({
+      transactions: [...state.transactions, makeFinanceTransaction({ id: 'old-rent', name: 'Sewa ruko Agustus', transactionDate: '2026-08-02T12:00:00+07:00' })],
+    }))
+    const view = render(<Harness initial="cash" />)
+    const ledger = screen.getByRole('list', { name: 'Buku kas' })
+    expect(within(ledger).queryByText('Sewa ruko Agustus')).not.toBeInTheDocument()
+    expect(ledger).toHaveTextContent('Belum dicocokkan')
+    view.unmount()
+    render(<Harness initial="cash" searchQuery="sewa ruko" />)
+    expect(within(screen.getByRole('list', { name: 'Buku kas' })).getByText('Sewa ruko Agustus')).toBeInTheDocument()
+    expect(screen.getByText(/pencarian di semua bulan \(1\)/)).toBeInTheDocument()
   })
 
   it('completes a refund from the chosen account', async () => {
