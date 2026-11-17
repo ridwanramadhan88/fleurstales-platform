@@ -7,8 +7,9 @@
 
 import type { OrderTableRow } from '../types/orders'
 import type { FinanceTransaction } from '../store/financeStoreTypes'
-import type { PayrollProposal } from '../store/payrollStore'
+import type { EmployeePayrollDraft, PayrollProposal } from '../store/payrollStore'
 import { reconcilableOrderNumbers } from './financeReconciliationDomain'
+import { countPayrollNeedingFinance, countPayrollReadyToPay } from './payrollFinanceDomain'
 
 const LEGACY_ACCOUNT_ID = 'legacy:unassigned'
 
@@ -28,10 +29,13 @@ export const getFinanceAttention = ({
   orders,
   transactions,
   payrollProposals,
+  payrollDrafts = [],
 }: {
   orders: Pick<OrderTableRow, 'orderNumber' | 'financeVerified' | 'financeVerificationStatus' | 'paymentStatus'>[]
   transactions: Pick<FinanceTransaction, 'status' | 'source' | 'orderNumber' | 'accountId'>[]
-  payrollProposals: Pick<PayrollProposal, 'status'>[]
+  payrollProposals: (Pick<PayrollProposal, 'status'> & Partial<Pick<PayrollProposal, 'employeePayrollIds'>>)[]
+  /** Employee rows, to tell whether a returned proposal still waits on Finance. */
+  payrollDrafts?: Pick<EmployeePayrollDraft, 'id' | 'status'>[]
 }): FinanceAttention => {
   const postedOrderNumbers = reconcilableOrderNumbers(transactions)
   const reconciliationOrders = orders.filter(
@@ -40,8 +44,8 @@ export const getFinanceAttention = ({
   const correction = reconciliationOrders.filter((order) => order.financeVerificationStatus === 'rejected').length
   const awaiting = Math.max(0, reconciliationOrders.length - correction)
   const refunds = orders.filter((order) => order.paymentStatus === 'refund_pending').length
-  const payrollReview = payrollProposals.filter((proposal) => ['submitted_to_finance', 'returned_to_hr'].includes(proposal.status)).length
-  const payrollReady = payrollProposals.filter((proposal) => proposal.status === 'finance_approved').length
+  const payrollReview = countPayrollNeedingFinance(payrollProposals, payrollDrafts)
+  const payrollReady = countPayrollReadyToPay(payrollProposals)
   const legacyRows = transactions.filter(
     (transaction) => transaction.status === 'verified' && (!transaction.accountId || transaction.accountId === LEGACY_ACCOUNT_ID),
   ).length

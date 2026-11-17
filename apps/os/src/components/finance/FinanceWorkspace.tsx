@@ -94,6 +94,7 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const allOrders = useOrdersStore((state) => state.orders)
   const payrollProposals = usePayrollStore((state) => state.payrollProposals)
+  const payrollDrafts = usePayrollStore((state) => state.employeePayrolls)
   const purchases = usePendingPurchasesStore((state) => state.purchases)
   const loadPurchases = usePendingPurchasesStore((state) => state.load)
   const ui = useFinanceUiStore()
@@ -117,13 +118,13 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
 
   const purchaseCount = access.canConfirmPurchases ? purchases.length : 0
   const tasks = useMemo(
-    () => buildFinanceTasks({ orders, transactions, payrollProposals, purchaseCount, searchQuery }),
-    [orders, payrollProposals, purchaseCount, searchQuery, transactions],
+    () => buildFinanceTasks({ orders, transactions, payrollProposals, payrollDrafts, purchaseCount, searchQuery }),
+    [orders, payrollDrafts, payrollProposals, purchaseCount, searchQuery, transactions],
   )
   // Badges ignore the search box: they count the work, not the current view.
   const badgeCounts = useMemo(
-    () => (searchQuery ? buildFinanceTasks({ orders, transactions, payrollProposals, purchaseCount }).counts : tasks.counts),
-    [orders, payrollProposals, purchaseCount, searchQuery, tasks.counts, transactions],
+    () => (searchQuery ? buildFinanceTasks({ orders, transactions, payrollProposals, payrollDrafts, purchaseCount }).counts : tasks.counts),
+    [orders, payrollDrafts, payrollProposals, purchaseCount, searchQuery, tasks.counts, transactions],
   )
   const badges: Partial<Record<FinanceWorkspaceModule, number>> = {
     tasks: badgeCounts.total,

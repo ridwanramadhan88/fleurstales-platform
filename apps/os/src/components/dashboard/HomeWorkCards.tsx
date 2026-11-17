@@ -32,7 +32,8 @@ export const FinanceHomeWork: FC<{ onNavigate: (target: AppNavigationRequest) =>
   const orders = useOrdersStore((state) => state.orders)
   const transactions = useFinanceStore((state) => state.transactions)
   const payrollProposals = usePayrollStore((state) => state.payrollProposals)
-  const attention = getFinanceAttention({ orders, transactions, payrollProposals })
+  const payrollDrafts = usePayrollStore((state) => state.employeePayrolls)
+  const attention = getFinanceAttention({ orders, transactions, payrollProposals, payrollDrafts })
   const open = (focus: FinanceFocus) => {
     onNavigate(toFinanceModule(focus.module))
     useFinanceUiStore.getState().requestFocus(focus)
