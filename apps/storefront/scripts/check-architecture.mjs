@@ -48,7 +48,9 @@ for (const file of files) {
   }
 }
 
-const revenueBarrel = fs.readFileSync(path.join(sourceRoot, 'domain/revenueDomain.ts'), 'utf8')
+// The OS revenue barrel left the storefront with the rest of the OS copy.
+const revenueBarrelPath = path.join(sourceRoot, 'domain/revenueDomain.ts')
+const revenueBarrel = fs.existsSync(revenueBarrelPath) ? fs.readFileSync(revenueBarrelPath, 'utf8') : ''
 if (/revenueCompareDomain|revenueBreakdownDomain/.test(revenueBarrel)) {
   failures.push('Revenue barrel still exposes an abandoned order-based domain')
 }

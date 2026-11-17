@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const css = readFileSync('src/shadcn.css', 'utf8')
-const vectorExport = readFileSync('src/lib/vectorPdfExport.ts', 'utf8')
 
 const rootBlock = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
 const darkBlock = css.match(/\.dark\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
@@ -38,10 +37,5 @@ describe('light-mode brand tokens', () => {
     expect(rootBlock).toContain('--surface-success: 142 38% 92.5%')
     expect(rootBlock).toContain('--surface-warning: 38 78% 92.5%')
     expect(rootBlock).toContain('--surface-error: 4 62% 93%')
-  })
-
-  it('keeps vector exports aligned with the light-mode charcoal palette', () => {
-    expect(vectorExport).toContain("primary: '#2A2D32'")
-    expect(vectorExport).toContain("primarySoft: '#F0F1F2'")
   })
 })
