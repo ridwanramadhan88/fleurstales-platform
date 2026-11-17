@@ -47,7 +47,6 @@ interface FinanceWorkspaceProps {
   defaultBranch?: BranchId
   /** Shared top-bar search; used by Tasks and Cash & Transactions. */
   searchQuery: string
-  onOpenOrder: (orderNumber: string) => void
 }
 
 const MONTH_RANGE = 24
@@ -87,7 +86,6 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
   branches,
   defaultBranch,
   searchQuery,
-  onOpenOrder,
 }) => {
   const tr = useBilingualCopy()
   const access = useFinanceAccess()
@@ -103,9 +101,11 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const tabsRef = useActiveItemScroll<HTMLElement>(activeModule, '[aria-current="page"]')
 
+  // Purchases are not pushed in realtime: load once for the badge, and refresh whenever Tasks opens.
   useEffect(() => {
-    if (access.canConfirmPurchases) void loadPurchases()
-  }, [access.canConfirmPurchases, loadPurchases])
+    if (!access.canConfirmPurchases) return
+    if (activeModule === 'tasks' || !usePendingPurchasesStore.getState().loaded) void loadPurchases()
+  }, [access.canConfirmPurchases, activeModule, loadPurchases])
 
   // A focus request (notification, Tasks link) switches to the tab it targets.
   useEffect(() => {
@@ -193,7 +193,7 @@ export const FinanceWorkspace: FC<FinanceWorkspaceProps> = ({
         </div>}
       </div>
 
-      {activeModule === 'tasks' && <FinanceTasksTab tasks={tasks} access={access} onOpenOrder={onOpenOrder} />}
+      {activeModule === 'tasks' && <FinanceTasksTab tasks={tasks} access={access} searchQuery={searchQuery} />}
       {activeModule === 'cash' && (
         <FinanceCashTab transactions={transactions} access={access} branches={branches} defaultBranch={defaultBranch} searchQuery={searchQuery} />
       )}

@@ -36,6 +36,9 @@ describe('Finance v3.3 reconciliation polish', () => {
     expect(tasks).toContain("row.reconciliationStatus === 'needs_correction'")
     // Tapping a row opens the payment evidence; matching is a separate action.
     expect(tab).toContain('onOpen={() => openOrderReview(orderNumber)}')
-    expect(tab).toContain("{tr('Match', 'Cocok')}")
+    expect(tab).toContain("tr('Match', 'Cocok')")
+    // Reconciliation has no server undo, so a one-tap match waits with "Urungkan" first.
+    expect(tab).toContain('export const MATCH_UNDO_MS = 5000')
+    expect(tab).toContain("tr('Undo', 'Urungkan')")
   })
 })

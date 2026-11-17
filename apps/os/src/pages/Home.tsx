@@ -268,7 +268,8 @@ const HomePage: FC<HomePageProps> = ({
     }
 
     const continueNavigation = () => {
-      if (activeTab !== target.tab) setSearchQuery('')
+      // A different tab, or a different Finance tab, starts with an empty search.
+      if (activeTab !== target.tab || (target.tab === 'finance' && nextFinanceModule && nextFinanceModule !== financeModule)) setSearchQuery('')
 
       if (nextFinanceModule) setFinanceModule(nextFinanceModule)
       if (target.tab === 'finance' && nextFinanceModule === 'tasks' && target.targetId) {
@@ -558,7 +559,6 @@ const HomePage: FC<HomePageProps> = ({
                 branches={activeBranchIds}
                 defaultBranch={activeBranch === 'All' ? undefined : activeBranch}
                 searchQuery={searchQuery}
-                onOpenOrder={handleOpenOrderFromNotification}
               />
             )
           )}
