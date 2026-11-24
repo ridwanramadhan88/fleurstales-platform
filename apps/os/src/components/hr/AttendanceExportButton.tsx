@@ -41,10 +41,10 @@ export const AttendanceExportButton: FC<{ activeBranch: BranchFilter }> = ({ act
       <AppDialog
         open={open}
         onOpenChange={setOpen}
-        title={tr('Download attendance', 'Unduh absensi')}
+        title={tr('Download attendance', 'Unduh laporan kehadiran')}
         description={tr(
           'Monthly summary per employee, every day against the schedule, and all warnings and approved overtime.',
-          'Ringkasan bulanan per karyawan, absensi harian dibandingkan jadwal, serta semua peringatan dan lembur yang disetujui.',
+          'Ringkasan bulanan per karyawan, kehadiran harian dibandingkan jadwal, serta semua peringatan dan lembur yang disetujui.',
         )}
       >
         <div className="space-y-4" data-testid="attendance-export-dialog">

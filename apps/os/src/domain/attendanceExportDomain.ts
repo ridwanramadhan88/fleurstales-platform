@@ -11,30 +11,30 @@ import { translateUiText } from '../i18n/translateUiText'
 import { tableSheet, wibDateTime, yesNo, type ExcelColumn } from '../lib/excelTableExport'
 import type { WorksheetSpec } from '../lib/financePeriodXlsxExport'
 
-const STATUS_ID: Record<AttendanceStatus, string> = { present: 'Hadir', late: 'Telat', absent: 'Tidak hadir', leave: 'Cuti/izin' }
+const STATUS_ID: Record<AttendanceStatus, string> = { present: 'Hadir', late: 'Terlambat', absent: 'Tidak hadir', leave: 'Cuti/izin' }
 export const WARNING_ID: Record<AttendanceWarningType, string> = {
-  late_check_in: 'Telat check-in',
-  missing_check_in: 'Tidak check-in',
-  missing_check_out: 'Lupa check-out',
+  late_check_in: 'Terlambat absen masuk',
+  missing_check_in: 'Tidak absen masuk',
+  missing_check_out: 'Lupa absen pulang',
   early_check_out: 'Pulang lebih awal',
   overtime: 'Lembur',
   wrong_branch: 'Salah cabang',
   scheduled_day_off: 'Masuk di hari libur',
-  outside_shift_time: 'Di luar jam shift',
-  delivery_late: 'Pengantaran telat',
+  outside_shift_time: 'Di luar jam sif',
+  delivery_late: 'Pengantaran terlambat',
 }
 const CASE_STATUS_ID: Record<AttendanceReviewCaseStatus, string> = {
   pending: 'Perlu ditinjau', resolved: 'Selesai', problem: 'Masalah', accepted: 'Disetujui', excused: 'Dimaafkan', corrected: 'Dikoreksi', penalized: 'Dikenai poin minus',
 }
-const ROLE_ID: Record<string, string> = { admin: 'Admin', florist: 'Florist', finance: 'Finance', hr: 'HR', owner: 'Owner' }
+const ROLE_ID: Record<string, string> = { admin: 'Admin', florist: 'Perangkai Bunga', finance: 'Keuangan', hr: 'SDM', owner: 'Pemilik', courier: 'Kurir', manager: 'Manajer' }
 const WEEKDAY = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 
 /** The stored reason is English; the queue shows it in Indonesian, so the file does too. */
 const reasonId = (item: AttendanceReviewCase): string => {
   if (item.warningType === 'overtime' && item.minutesDifference !== undefined) {
     return item.reason.startsWith('Employee claimed overtime')
-      ? `Karyawan mengajukan lembur: check-out ${formatOvertimeDuration(item.minutesDifference)} setelah jam shift selesai.`
-      : `Check-out ${formatOvertimeDuration(item.minutesDifference)} setelah jam shift selesai.`
+      ? `Karyawan mengajukan lembur: absen pulang ${formatOvertimeDuration(item.minutesDifference)} setelah jam sif selesai.`
+      : `Absen pulang ${formatOvertimeDuration(item.minutesDifference)} setelah jam sif selesai.`
   }
   return translateUiText(item.reason, 'id')
 }
@@ -86,12 +86,12 @@ export const buildAttendanceExportSheets = (input: AttendanceExportInput): Works
     { header: 'Nama', width: 22, value: (r) => r.employee.name },
     { header: 'Peran', width: 9, value: (r) => ROLE_ID[r.employee.systemRole] ?? r.employee.systemRole },
     { header: 'Jadwal', width: 20, value: (r) => (r.shift.isWorking ? `${branchName(r.shift.branchId)} ${r.shift.startTime}–${r.shift.endTime}` : 'Libur') },
-    { header: 'Status', width: 11, value: (r) => (r.record ? STATUS_ID[r.record.status] ?? r.record.status : r.shift.isWorking ? 'Belum ada data' : '') },
+    { header: 'Status', width: 11, value: (r) => (r.record ? STATUS_ID[r.record.status] ?? r.record.status : r.shift.isWorking ? 'Belum absen' : '') },
     { header: 'Absen masuk', width: 8, value: (r) => timeOf(r.record?.checkInAt) },
     { header: 'Absen pulang', width: 9, value: (r) => timeOf(r.record?.checkOutAt) },
-    { header: 'Check-in di lokasi', width: 10, value: (r) => (r.record?.checkInLocation ? yesNo(r.record.checkInLocation.withinRange) : '') },
-    { header: 'Jarak check-in (m)', kind: 'number', width: 10, value: (r) => (r.record?.checkInLocation ? Math.round(r.record.checkInLocation.distanceMeters) : '') },
-    { header: 'Alasan check-out', width: 14, value: (r) => (r.record?.checkOutReason === 'overtime' ? 'Lembur' : r.record?.checkOutReason === 'late_checkout' ? 'Telat check-out' : '') },
+    { header: 'Absen masuk di lokasi', width: 10, value: (r) => (r.record?.checkInLocation ? yesNo(r.record.checkInLocation.withinRange) : '') },
+    { header: 'Jarak absen masuk (m)', kind: 'number', width: 10, value: (r) => (r.record?.checkInLocation ? Math.round(r.record.checkInLocation.distanceMeters) : '') },
+    { header: 'Alasan absen pulang', width: 14, value: (r) => (r.record?.checkOutReason === 'overtime' ? 'Lembur' : r.record?.checkOutReason === 'late_checkout' ? 'Terlambat absen pulang' : '') },
     { header: 'Catatan', width: 28, value: (r) => [r.record?.checkOutReasonNote, r.record?.note].filter(Boolean).join(' · ') },
     { header: 'Dicatat lewat', width: 11, value: (r) => (r.record ? (r.record.source === 'manual' ? 'HR' : 'Selfie') : '') },
     { header: 'Dikoreksi HR', width: 10, value: (r) => (r.record?.corrections?.length ? `${r.record.corrections.length}×` : '') },
@@ -109,9 +109,9 @@ export const buildAttendanceExportSheets = (input: AttendanceExportInput): Works
     { header: 'Hari hadir', kind: 'number', width: 9, value: (r) => r.presentDays },
     { header: 'Cuti/izin', kind: 'number', width: 9, value: (r) => r.leaveDays },
     { header: 'Libur', kind: 'number', width: 8, value: (r) => r.offDays },
-    { header: 'Telat check-in', kind: 'number', width: 10, value: (r) => r.lateTasks },
-    { header: 'Tidak check-in', kind: 'number', width: 10, value: (r) => r.missingCheckInTasks },
-    { header: 'Lupa check-out', kind: 'number', width: 10, value: (r) => r.missingCheckOutTasks },
+    { header: 'Terlambat absen masuk', kind: 'number', width: 10, value: (r) => r.lateTasks },
+    { header: 'Tidak absen masuk', kind: 'number', width: 10, value: (r) => r.missingCheckInTasks },
+    { header: 'Lupa absen pulang', kind: 'number', width: 10, value: (r) => r.missingCheckOutTasks },
     { header: 'Masalah terbuka', kind: 'number', width: 10, value: (r) => r.openProblems },
     { header: 'Lembur disetujui', width: 14, value: (r) => { const minutes = overtimeOf(cases.filter((item) => item.employeeId === r.employeeId)).reduce((sum, item) => sum + (item.approvedOvertimeMinutes ?? 0), 0); return minutes ? formatOvertimeDuration(minutes) : '' } },
     { header: 'Nominal lembur (Rp)', kind: 'money', width: 14, value: (r) => overtimeOf(cases.filter((item) => item.employeeId === r.employeeId)).reduce((sum, item) => sum + (item.approvedOvertimeAmountIdr ?? 0), 0) },
@@ -142,7 +142,7 @@ export const buildAttendanceExportSheets = (input: AttendanceExportInput): Works
   type InfoRow = { label: string; value: string | number }
   return [
     tableSheet('Ringkasan', summaryColumns, input.summaryRows),
-    tableSheet('Absensi harian', dayColumns, dayRows),
+    tableSheet('Kehadiran harian', dayColumns, dayRows),
     tableSheet('Peringatan & lembur', caseColumns, cases.slice().sort((a, b) => a.date.localeCompare(b.date) || nameOf(a.employeeId).localeCompare(nameOf(b.employeeId), 'id'))),
     tableSheet<InfoRow>('Info', [
       { header: 'Keterangan', width: 24, value: (r) => r.label },
@@ -158,4 +158,4 @@ export const buildAttendanceExportSheets = (input: AttendanceExportInput): Works
 }
 
 export const attendanceExportFilename = (month: string, branchId: string | 'All'): string =>
-  `Absensi_${month}${branchId === 'All' ? '' : `_${branchId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}.xlsx`
+  `Kehadiran_${month}${branchId === 'All' ? '' : `_${branchId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}.xlsx`

@@ -12,7 +12,7 @@ describe('natural Indonesian UI copy', () => {
   it('translates operational workflow states consistently', () => {
     expect(translateUiText('Confirmed', 'id')).toBe('Dikonfirmasi')
     expect(translateUiText('Rejected', 'id')).toBe('Ditolak')
-    expect(translateUiText('Not assigned', 'id')).toBe('Belum Ditugaskan')
+    expect(translateUiText('Not assigned', 'id')).toBe('Belum ditugaskan')
     expect(translateUiText('Processing', 'id')).toBe('Diproses')
   })
 
@@ -245,7 +245,7 @@ describe('natural Indonesian UI copy', () => {
     expect(translateUiText('Choose a branch to create an order', 'id')).toBe('Pilih cabang untuk membuat pesanan')
     expect(translateUiText('orders waiting for reconciliation', 'id')).toBe('pesanan menunggu rekonsiliasi')
     expect(translateUiText('Open reconciliation', 'id')).toBe('Buka rekonsiliasi')
-    expect(translateUiText('No active branch assignment was found for your shift.', 'id')).toBe('Belum ada cabang untuk giliran kerja Anda. Minta SDM atau Pemilik memperbarui jadwal.')
+    expect(translateUiText('No active branch assignment was found for your shift.', 'id')).toBe('Belum ada cabang untuk sif Anda. Minta SDM atau Pemilik memperbarui jadwal.')
     expect(translateUiText('Today · 14:00', 'id')).toBe('Hari ini · 14:00')
     expect(translateUiText('Tomorrow · 09:00', 'id')).toBe('Besok · 09:00')
     expect(translateUiText('03 Oct', 'id')).toBe('3 Okt')

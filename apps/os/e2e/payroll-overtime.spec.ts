@@ -16,7 +16,7 @@ test('HR approves claimed overtime and it becomes a payroll addition', async ({ 
   const main = page.locator('main')
   await main.getByRole('button', { name: 'Kehadiran', exact: true }).click()
   // Attendance opens on the calendar; the full review list is one tab away.
-  await expect(main.getByRole('region', { name: 'Kalender absensi' })).toBeVisible()
+  await expect(main.getByRole('region', { name: 'Kalender kehadiran' })).toBeVisible()
   await main.getByRole('tab', { name: /^Daftar cek/ }).click()
 
   const reviews = main.getByRole('region', { name: 'Tinjauan kehadiran' })

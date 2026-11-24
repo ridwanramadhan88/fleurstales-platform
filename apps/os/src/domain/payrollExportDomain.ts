@@ -16,8 +16,8 @@ export const PAYROLL_STATUS_ID: Record<EmployeePayrollStatus, string> = {
   resolved: 'Diselesaikan',
 }
 
-const PAYEE_ID: Record<PayrollManualPayeeType, string> = { owner: 'Owner', part_time: 'Paruh waktu', contractor: 'Kontraktor / freelance', other: 'Lainnya' }
-const ROLE_ID: Record<string, string> = { owner: 'Owner', admin: 'Admin', florist: 'Florist', finance: 'Finance', hr: 'HR', courier: 'Kurir', manager: 'Manajer', driver: 'Kurir' }
+const PAYEE_ID: Record<PayrollManualPayeeType, string> = { owner: 'Pemilik', part_time: 'Paruh waktu', contractor: 'Kontraktor / freelance', other: 'Lainnya' }
+const ROLE_ID: Record<string, string> = { owner: 'Pemilik', admin: 'Admin', florist: 'Perangkai Bunga', finance: 'Keuangan', hr: 'SDM', courier: 'Kurir', manager: 'Manajer', driver: 'Kurir' }
 const ADDITION_KINDS: PayrollAdditionKind[] = ['overtime', 'fee', 'allowance', 'bonus', 'meal_transport', 'deduction', 'adjustment']
 
 export interface PayrollExportInput {
@@ -90,7 +90,7 @@ export const buildPayrollExportSheets = (input: PayrollExportInput): WorksheetSp
       { header: 'Jenis', width: 20, value: (r) => PAYROLL_ADDITION_LABELS[r.line.kind]?.id ?? r.line.kind },
       { header: 'Nominal (Rp)', kind: 'money', value: (r) => r.line.amountIdr },
       { header: 'Alasan', width: 36, value: (r) => r.line.reason },
-      { header: 'Tanggal absensi', width: 13, value: (r) => r.line.attendanceDate },
+      { header: 'Tanggal kehadiran', width: 13, value: (r) => r.line.attendanceDate },
       { header: 'Durasi lembur', width: 14, value: (r) => (r.line.overtimeMinutes ? formatOvertimeDuration(r.line.overtimeMinutes) : '') },
       { header: 'Dicatat oleh', width: 16, value: (r) => r.line.createdBy },
       { header: 'Dicatat pada', width: 17, value: (r) => wibDateTime(r.line.createdAt) },

@@ -132,7 +132,7 @@ export const AttendancePhotoBoard: FC = () => {
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {entry.checkInAt
-                            ? [`${tr('In', 'Masuk')} ${clock(entry.checkInAt)}`, entry.checkOutAt && `${tr('Out', 'Pulang')} ${clock(entry.checkOutAt)}`, entry.checkInBranchName && entry.checkInBranchName !== group.branch && `${tr('at', 'di')} ${entry.checkInBranchName}`, entry.source === 'manual' && tr('recorded by HR', 'dicatat HR')].filter(Boolean).join(' · ')
+                            ? [`${tr('In', 'Masuk')} ${clock(entry.checkInAt)}`, entry.checkOutAt && `${tr('Out', 'Pulang')} ${clock(entry.checkOutAt)}`, entry.checkInBranchName && entry.checkInBranchName !== group.branch && `${tr('at', 'di')} ${entry.checkInBranchName}`, entry.source === 'manual' && tr('recorded by HR', 'dicatat SDM')].filter(Boolean).join(' · ')
                             : ''}
                         </p>
                         {checkOutUrl && (
