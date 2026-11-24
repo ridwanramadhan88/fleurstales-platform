@@ -52,6 +52,17 @@ describe('PersistenceHealthNotice', () => {
     expect(alert).not.toHaveTextContent('SESSION_REQUIRED')
   })
 
+  it('asks for a new sign-in, not a retry, when a section save hit an ended session', () => {
+    usePersistenceHealthStore.setState({ status: 'error', domain: 'hr', reason: 'session_expired', message: 'SESSION_REQUIRED' })
+    render(<PersistenceHealthNotice />)
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('Sesi login sudah berakhir')
+    expect(alert).toHaveTextContent('Data SDM belum tersimpan karena sesi login sudah berakhir')
+    expect(alert).not.toHaveTextContent('Periksa koneksi')
+    expect(screen.getByRole('button', { name: /Masuk lagi/ })).toBeVisible()
+    expect(screen.queryByRole('button', { name: /Coba simpan lagi/ })).not.toBeInTheDocument()
+  })
+
   it('does not add persistent UI for healthy idle state', () => {
     render(<PersistenceHealthNotice />)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
