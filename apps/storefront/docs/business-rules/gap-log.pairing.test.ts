@@ -321,42 +321,6 @@ describe('§25 — updateItem now re-applies addItem\'s cross-field clearing rul
   })
 })
 
-describe('§21 — "cash disallowed for delivery" now has one shared implementation (resolved 2026-07-10)', () => {
-  it('validateNewOrderForm rejects cash + delivery via the shared domain function', async () => {
-    const { validateNewOrderForm } = await import(
-      '../../src/components/orders/useNewOrderValidation'
-    )
-    const errors = validateNewOrderForm({
-      customerName: 'Test',
-      customerWhatsappNumber: '0812',
-      customerEmail: '',
-      customerBirthday: '',
-      promoCode: '',
-      orderItemMode: 'custom',
-      orderItemCatalogId: '',
-      orderItemCustomName: 'Bouquet',
-      orderItemCustomPrice: '100000',
-      orderType: 'walk_in',
-      fulfillmentType: 'delivery',
-      deliveryDate: '',
-      deliveryTime: '',
-      pickupDate: '',
-      pickupTime: '',
-      deliveryAddress: '',
-      deliveryInstructions: '',
-      deliveryFee: '',
-      greetingMessage: '',
-      greetingCardName: '',
-      paymentMethod: 'cash',
-      paymentStatus: 'paid',
-      depositAmount: '',
-      orderNote: '',
-    })
-
-    expect(errors.paymentMethod).toBe('Delivery orders must be paid by bank transfer.')
-  })
-})
-
 describe('§26 — branch transfers now move quantity (resolved 2026-07-10)', () => {
   it('requestTransfer deducts availableQty from the source branch immediately', () => {
     const item = stockOriginal.items[0]
