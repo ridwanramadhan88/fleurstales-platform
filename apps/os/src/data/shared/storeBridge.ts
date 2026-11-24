@@ -370,6 +370,10 @@ export const initializeBusinessOsStoreBridge = async (options?: { skipInitialRef
   if (!businessFocusAttached && typeof window !== 'undefined') {
     businessFocusAttached = true
     window.addEventListener('focus', () => {
+      // Nothing loaded since sign-in yet: while a session is still being
+      // restored the role is the demo `admin` default, so a refresh here would
+      // run admin-only queries for any staff role (403 for HR, Florist, ...).
+      if (lastSyncedHash === undefined) return
       if (conflictLocked || getStoreBridgeStatus().phase === 'conflict') return
       const hasPendingLocalChanges = remoteRevision !== undefined
         && lastSyncedHash !== undefined
