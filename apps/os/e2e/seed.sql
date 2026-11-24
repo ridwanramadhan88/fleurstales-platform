@@ -78,18 +78,21 @@ select 'hr', 1, jsonb_build_object(
     'phone', '08120000009',
     'hireDate', '2026-01-01'
   )),
-  -- E2E Florist checked out 95 minutes after an 08:00-16:00 shift today and
-  -- chose "Lembur" (payroll-overtime.spec.ts).
+  -- E2E Florist checked out 95 minutes after an 08:00-16:00 shift and chose
+  -- "Lembur" (payroll-overtime.spec.ts). The day must sit in the payroll period
+  -- the Penggajian screen opens (periods run 21st-20th, paid on the 28th): from
+  -- the 21st to the 28th that is the period ending on the 20th, so use the 20th;
+  -- otherwise today.
   'attendance', jsonb_build_array(jsonb_build_object(
-    'id', 'e2e-att-overtime', 'employeeId', 'e2e-emp-florist', 'date', to_char(timezone('Asia/Jakarta', now())::date, 'YYYY-MM-DD'),
+    'id', 'e2e-att-overtime', 'employeeId', 'e2e-emp-florist', 'date', to_char((case when extract(day from timezone('Asia/Jakarta', now())) between 21 and 28 then date_trunc('month', timezone('Asia/Jakarta', now()))::date + 19 else timezone('Asia/Jakarta', now())::date end), 'YYYY-MM-DD'),
     'status', 'present', 'actor', 'E2E Florist', 'source', 'selfie', 'createdAt', now(),
-    'checkInAt', (timezone('Asia/Jakarta', now())::date + time '08:00') at time zone 'Asia/Jakarta',
-    'checkOutAt', (timezone('Asia/Jakarta', now())::date + time '17:35') at time zone 'Asia/Jakarta',
+    'checkInAt', ((case when extract(day from timezone('Asia/Jakarta', now())) between 21 and 28 then date_trunc('month', timezone('Asia/Jakarta', now()))::date + 19 else timezone('Asia/Jakarta', now())::date end) + time '08:00') at time zone 'Asia/Jakarta',
+    'checkOutAt', ((case when extract(day from timezone('Asia/Jakarta', now())) between 21 and 28 then date_trunc('month', timezone('Asia/Jakarta', now()))::date + 19 else timezone('Asia/Jakarta', now())::date end) + time '17:35') at time zone 'Asia/Jakarta',
     'checkOutReason', 'overtime', 'checkOutReasonNote', 'Merangkai pesanan wedding'
   )),
   'pointRules', '[]'::jsonb,
   'scheduleOverrides', jsonb_build_array(jsonb_build_object(
-    'id', 'e2e-shift-overtime', 'employeeId', 'e2e-emp-florist', 'date', to_char(timezone('Asia/Jakarta', now())::date, 'YYYY-MM-DD'),
+    'id', 'e2e-shift-overtime', 'employeeId', 'e2e-emp-florist', 'date', to_char((case when extract(day from timezone('Asia/Jakarta', now())) between 21 and 28 then date_trunc('month', timezone('Asia/Jakarta', now()))::date + 19 else timezone('Asia/Jakarta', now())::date end), 'YYYY-MM-DD'),
     'shift', jsonb_build_object('mode', 'custom', 'isWorking', true, 'branchId', 'Kedamaian', 'startTime', '08:00', 'endTime', '16:00'),
     'updatedAt', now(), 'updatedBy', 'HR'
   )),
