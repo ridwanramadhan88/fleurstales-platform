@@ -120,7 +120,7 @@ describe('HR Scheduling UI', () => {
     expect(screen.queryByRole('button', { name:'Export PDF' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name:'More scheduling actions' }))
     expect(screen.getByRole('button', { name:'Export PDF' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name:/Generate schedule pattern|Buat pola jadwal otomatis/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name:/Generate deterministic pattern|Buat pola jadwal otomatis/ })).toBeInTheDocument()
     expect(container.querySelector('[aria-label="Show the whole week"]')).toHaveTextContent('Week')
   })
 
