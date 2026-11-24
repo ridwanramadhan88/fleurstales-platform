@@ -8,6 +8,8 @@ export type PersistenceHealthReason =
   | 'finance_server_owned'
   | 'finance_delete_blocked'
   | 'save_failed'
+  /** The 12-hour staff session ended; saving needs a new sign-in, not a retry. */
+  | 'session_expired'
 
 export interface PersistenceHealthState {
   /** Operational data section the current problem belongs to (hr, finance, stock, ...). */

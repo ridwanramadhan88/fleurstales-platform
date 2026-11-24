@@ -238,6 +238,20 @@ const isRevisionConflict = (error: unknown): boolean =>
     (typeof error.payload === 'object' && error.payload !== null &&
       'code' in error.payload && error.payload.code === '40001'))
 
+/**
+ * The staff session ended (the server removes sessions after 12 hours) or its
+ * token expired: no request is sent (SESSION_REQUIRED) or the API answers 401.
+ * Retrying cannot help, so the notice asks for a new sign-in instead.
+ */
+export const isSessionExpiredError = (error: unknown): boolean => {
+  if (error instanceof SupabaseHttpError && error.status === 401) return true
+  const code = error instanceof SupabaseHttpError && typeof error.payload === 'object' && error.payload !== null && 'code' in error.payload
+    ? String((error.payload as { code?: unknown }).code)
+    : ''
+  const text = `${code} ${error instanceof Error ? error.message : ''}`
+  return /SESSION_REQUIRED|AUTH_REQUIRED|JWT expired|PGRST30[13]/i.test(text)
+}
+
 const operationalSaveErrorMessage = (domain: OperationalDomain, error: unknown): string => {
   const rawMessage = error instanceof Error ? error.message : ''
   if (domain === 'finance' && rawMessage.includes('SERVER_OWNED_FINANCE_ENTRY')) {
@@ -388,11 +402,13 @@ const persistDomain = async (domain: OperationalDomain): Promise<void> => {
         updateHealth({
           status: 'error',
           domain,
-          reason: domain === 'finance' && rawError.includes('SERVER_OWNED_FINANCE_ENTRY')
-            ? 'finance_server_owned'
-            : domain === 'finance' && rawError.includes('FINANCE_ENTRY_DELETE_NOT_ALLOWED')
-              ? 'finance_delete_blocked'
-              : 'save_failed',
+          reason: isSessionExpiredError(error)
+            ? 'session_expired'
+            : domain === 'finance' && rawError.includes('SERVER_OWNED_FINANCE_ENTRY')
+              ? 'finance_server_owned'
+              : domain === 'finance' && rawError.includes('FINANCE_ENTRY_DELETE_NOT_ALLOWED')
+                ? 'finance_delete_blocked'
+                : 'save_failed',
           message: operationalSaveErrorMessage(domain, error),
         })
         return

@@ -20,6 +20,8 @@ const COPY = {
   id: {
     conflictTitle: 'Ada data yang lebih baru',
     errorTitle: 'Perubahan belum tersimpan',
+    sessionTitle: 'Sesi login sudah berakhir',
+    signInAgain: 'Masuk lagi',
     saving: 'Menyimpan perubahan',
     savingBody: 'Perubahan Anda sedang disinkronkan.',
     genericError: 'Perubahan belum tersimpan. Coba simpan lagi atau muat ulang data terbaru.',
@@ -33,6 +35,8 @@ const COPY = {
   en: {
     conflictTitle: 'Newer data is available',
     errorTitle: 'Changes were not saved',
+    sessionTitle: 'Your session has ended',
+    signInAgain: 'Sign in again',
     saving: 'Saving changes',
     savingBody: 'Your update is being synchronized.',
     genericError: 'Your changes were not saved. Try saving again or reload the latest data.',
@@ -70,6 +74,10 @@ const reasonMessage = (
       return id
         ? 'Riwayat keuangan tidak dapat dihapus. Ubah transaksi manual atau koreksi dari alur aslinya.'
         : 'Finance history cannot be deleted. Edit a manual transaction or correct the original workflow instead.'
+    case 'session_expired':
+      return id
+        ? `${label} belum tersimpan karena sesi login sudah berakhir (sesi berlaku 12 jam). Masuk lagi, lalu ulangi perubahan terakhir.`
+        : `${label} was not saved because your sign-in session ended (sessions last 12 hours). Sign in again, then redo your last change.`
     case 'save_failed':
       return id
         ? `${label} belum tersimpan. Periksa koneksi, lalu coba simpan lagi.`
@@ -97,7 +105,8 @@ export const PersistenceHealthNotice = () => {
 
   const copy = COPY[language]
   const failed = status === 'error' || status === 'conflict'
-  const title = status === 'conflict' ? copy.conflictTitle : status === 'error' ? copy.errorTitle : copy.saving
+  const sessionExpired = status === 'error' && reason === 'session_expired'
+  const title = status === 'conflict' ? copy.conflictTitle : sessionExpired ? copy.sessionTitle : status === 'error' ? copy.errorTitle : copy.saving
   const needsReload = status === 'conflict' || reason === 'finance_server_owned' || reason === 'finance_delete_blocked'
   const canRetry = status === 'error' && reason === 'save_failed' && Boolean(domain)
 
@@ -138,7 +147,20 @@ export const PersistenceHealthNotice = () => {
         </p>
         {needsReload && domain ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{copy.discardNote}</p> : null}
         {failure ? <p role="status" className="mt-1 text-xs leading-5 text-destructive">{failure}</p> : null}
-        {failed && (
+        {sessionExpired && (
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {/* Reloading without a live session lands on the sign-in screen. */}
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <RefreshCw className="size-3.5" aria-hidden="true" />
+              {copy.signInAgain}
+            </button>
+          </div>
+        )}
+        {failed && !sessionExpired && (
           <div className="mt-2.5 flex flex-wrap gap-2">
             {canRetry && (
               <button
