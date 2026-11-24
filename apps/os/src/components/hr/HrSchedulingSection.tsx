@@ -316,7 +316,7 @@ export const HrSchedulingSection: FC<Props> = ({ activeBranch, searchQuery = '' 
             {isMoreOpen && (
               <div ref={moreMenuRef} className="absolute right-0 top-[calc(100%+8px)] z-40 w-56 overflow-hidden rounded-xl bg-surface-popover p-1.5 shadow-lg ring-1 ring-border">
                 <button onClick={()=>{exportPdf();setIsMoreOpen(false)}} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium hover:bg-accent"><Download className="size-4"/>Export PDF</button>
-                {canEdit && <button onClick={()=>{generate();setIsMoreOpen(false)}} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium hover:bg-accent"><Sparkles className="size-4"/>{tr('Generate schedule pattern', 'Buat pola jadwal otomatis')}</button>}
+                {canEdit && <button onClick={()=>{generate();setIsMoreOpen(false)}} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium hover:bg-accent"><Sparkles className="size-4"/>{tr('Generate deterministic pattern', 'Buat pola jadwal otomatis')}</button>}
               </div>
             )}
           </div>
