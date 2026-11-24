@@ -10,13 +10,14 @@
  */
 
 import type { FinanceTransaction } from '../store/financeStoreTypes'
-import type { PayrollProposal } from '../store/payrollStore'
+import type { EmployeePayrollDraft, PayrollProposal } from '../store/payrollStore'
 import type { OrderTableRow } from '../types/orders'
 import {
   paymentRowsForOrders,
   sortFinanceReconciliationRows,
   type FinanceQueueRow,
 } from './financeReconciliationDomain'
+import { countPayrollNeedingFinance, countPayrollReadyToPay } from './payrollFinanceDomain'
 
 const LEGACY_ACCOUNT_ID = 'legacy:unassigned'
 
@@ -48,12 +49,15 @@ export const buildFinanceTasks = ({
   orders,
   transactions,
   payrollProposals,
+  payrollDrafts = [],
   purchaseCount = 0,
   searchQuery = '',
 }: {
   orders: OrderTableRow[]
   transactions: FinanceTransaction[]
-  payrollProposals: Pick<PayrollProposal, 'status'>[]
+  payrollProposals: (Pick<PayrollProposal, 'status'> & Partial<Pick<PayrollProposal, 'employeePayrollIds'>>)[]
+  /** Employee rows, to tell whether a returned proposal still waits on Finance. */
+  payrollDrafts?: Pick<EmployeePayrollDraft, 'id' | 'status'>[]
   purchaseCount?: number
   searchQuery?: string
 }): FinanceTasks => {
@@ -82,8 +86,8 @@ export const buildFinanceTasks = ({
     .filter((order) => matches(query, [order.orderNumber, order.customerName, order.refundReason, order.branch]))
     .sort((a, b) => (a.refundInitiatedAt ?? '').localeCompare(b.refundInitiatedAt ?? ''))
 
-  const payrollReview = payrollProposals.filter((proposal) => proposal.status === 'submitted_to_finance').length
-  const payrollReady = payrollProposals.filter((proposal) => proposal.status === 'finance_approved').length
+  const payrollReview = countPayrollNeedingFinance(payrollProposals, payrollDrafts)
+  const payrollReady = countPayrollReadyToPay(payrollProposals)
   const accounts = transactions.filter((transaction) =>
     transaction.status === 'verified' && (!transaction.accountId || transaction.accountId === LEGACY_ACCOUNT_ID)).length
 

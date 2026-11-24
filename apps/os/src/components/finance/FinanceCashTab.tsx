@@ -11,6 +11,7 @@ import type { FinanceTransaction, FinanceTransactionType } from '../../store/fin
 import type { BranchId } from '../../types/orders'
 import type { CashFlowEntryKind } from '../../data/financeCashFlow'
 import { useFinanceStore } from '../../store/financeStore'
+import { useOrdersStore } from '../../store/ordersStore'
 import { getFinanceCategoryLabel } from '../../domain/financeTransactionCategoryDomain'
 import {
   DEFAULT_LEDGER_FILTERS,
@@ -66,6 +67,11 @@ export const FinanceCashTab: FC<FinanceCashTabProps> = ({ transactions, access, 
   const customCategories = useFinanceStore((state) => state.customCategories)
   const categoryOverrides = useFinanceStore((state) => state.categoryOverrides)
   const { options: accountOptions, labelOf } = useFinanceAccounts()
+  const orders = useOrdersStore((state) => state.orders)
+  const reconciledOrders = useMemo(
+    () => new Set(orders.filter((order) => order.financeVerified).map((order) => order.orderNumber)),
+    [orders],
+  )
 
   const [filters, setFilters] = useState<Omit<LedgerFilters, 'month' | 'query'>>(DEFAULT_LEDGER_FILTERS)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -90,8 +96,10 @@ export const FinanceCashTab: FC<FinanceCashTabProps> = ({ transactions, access, 
   const totalBalance = accountCards.reduce((sum, account) => sum + account.balance, 0)
   const flow = useMemo(() => monthCashFlow(transactions, month), [month, transactions])
 
-  // Untidy old rows can sit in any month, so the legacy bucket ignores the month.
-  const effectiveMonth = filters.accountId === LEGACY_ACCOUNT_ID ? null : month
+  // Search looks in every month (people search for an order, not a month), and
+  // untidy old rows can sit in any month, so the legacy bucket ignores it too.
+  const searching = searchQuery.trim().length > 0
+  const effectiveMonth = filters.accountId === LEGACY_ACCOUNT_ID || searching ? null : month
   const rows = useMemo(
     () => filterLedger(
       transactions,
@@ -148,7 +156,8 @@ export const FinanceCashTab: FC<FinanceCashTabProps> = ({ transactions, access, 
       <section aria-label={tr('Account balances', 'Saldo rekening')} className="space-y-2">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">{tr('Total balance', 'Total saldo')}</p>
+            {/* Balances are all-time; the month picker only scopes the list below. */}
+            <p className="text-xs font-medium text-muted-foreground">{tr('Current balance', 'Saldo saat ini')}</p>
             <p className={cn('text-2xl font-semibold tabular-nums', totalBalance < 0 && 'text-destructive')}>{formatIdrCurrency(totalBalance)}</p>
           </div>
           {access.canCreateEntry && (
@@ -194,7 +203,10 @@ export const FinanceCashTab: FC<FinanceCashTabProps> = ({ transactions, access, 
 
       <section aria-label={tr('Transactions', 'Transaksi')} className="space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-sm font-semibold">{formatMonthKey(month, language)}</h2>
+          <h2 className="text-sm font-semibold">
+            {formatMonthKey(month, language)}
+            {searching && <span className="ml-2 font-normal text-muted-foreground">{tr(`· search shows all months (${rows.length})`, `· pencarian di semua bulan (${rows.length})`)}</span>}
+          </h2>
           <p className="text-xs text-muted-foreground tabular-nums">
             <span className="text-success">+{formatIdrCurrency(flow.moneyIn)}</span>
             {' · '}
@@ -249,7 +261,7 @@ export const FinanceCashTab: FC<FinanceCashTabProps> = ({ transactions, access, 
                 <X className="size-3.5" aria-hidden="true" />
               </button>
             </span>
-            {effectiveMonth === null && <span className="text-muted-foreground">{tr('All months', 'Semua bulan')}</span>}
+            {effectiveMonth === null && !searching && <span className="text-muted-foreground">{tr('All months', 'Semua bulan')}</span>}
           </div>
         )}
 
@@ -264,12 +276,15 @@ export const FinanceCashTab: FC<FinanceCashTabProps> = ({ transactions, access, 
               const pending = transaction.status !== 'verified' && !voided
               const scope = transactionScope(transaction)
               const editCount = transaction.editHistory?.filter((record) => record.kind !== 'void').length ?? 0
+              // Order payments say whether Finance has matched them (Tasks holds the open ones).
+              const matchState = transaction.source === 'order_payment' && transaction.orderNumber && !voided
+                ? reconciledOrders.has(transaction.orderNumber) ? 'matched' : 'open'
+                : null
               return (
                 <li key={transaction.id}>
                   <button
                     type="button"
                     onClick={() => openTransactionDetail(transaction.id)}
-                    aria-label={tr(`Open ${transaction.name ?? transaction.description}`, `Buka ${transaction.name ?? transaction.description}`)}
                     className="grid w-full grid-cols-[1fr_auto] items-center gap-x-3 gap-y-0.5 px-3.5 py-3 text-left transition hover:bg-surface-panel sm:grid-cols-[6.5rem_1fr_12rem_auto]"
                   >
                     <span className="hidden text-xs tabular-nums text-muted-foreground sm:block">{formatFinanceDay(transaction.transactionDate ?? transaction.createdAt, language)}</span>
@@ -293,12 +308,14 @@ export const FinanceCashTab: FC<FinanceCashTabProps> = ({ transactions, access, 
                       )}>
                         {transaction.type === 'income' ? '+' : '−'}{formatIdrCurrency(transaction.amount)}
                       </span>
-                      {(voided || pending || transaction.proofPath || editCount > 0) && (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                      {(voided || pending || transaction.proofPath || editCount > 0 || matchState) && (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           {voided && <><Ban className="size-3" aria-hidden="true" />Void</>}
                           {pending && <span className="text-warning">{tr('Pending', 'Menunggu')}</span>}
+                          {!voided && matchState === 'matched' && <span className="text-success">{tr('Matched', 'Cocok')}</span>}
+                          {!voided && matchState === 'open' && <span className="text-warning">{tr('Not matched', 'Belum dicocokkan')}</span>}
                           {!voided && editCount > 0 && <span>{tr(`Edited ${editCount}×`, `Diedit ${editCount}×`)}</span>}
-                          {!voided && !pending && editCount === 0 && transaction.proofPath && <><FileCheck2 className="size-3" aria-hidden="true" />{tr('Proof', 'Bukti')}</>}
+                          {!voided && !pending && editCount === 0 && transaction.proofPath && <span className="inline-flex items-center gap-1"><FileCheck2 className="size-3" aria-hidden="true" />{tr('Proof', 'Bukti')}</span>}
                         </span>
                       )}
                     </span>

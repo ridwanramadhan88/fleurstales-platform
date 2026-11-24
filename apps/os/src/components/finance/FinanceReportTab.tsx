@@ -99,9 +99,8 @@ export const FinanceReportTab: FC<{ access: FinanceAccess }> = ({ access }) => {
           <FinancePeriodReport period={period} />
         </Collapsible>
       )}
-      <Collapsible title={tr('Period audit history', 'Riwayat audit periode')}>
-        <FinancePeriodAuditHistory />
-      </Collapsible>
+      {/* The history already has its own card and heading. */}
+      <FinancePeriodAuditHistory />
     </div>
   )
 }

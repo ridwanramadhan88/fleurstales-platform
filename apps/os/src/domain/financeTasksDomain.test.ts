@@ -1,3 +1,4 @@
+import { getFinanceAttention } from './financeAttentionDomain'
 import { describe, expect, it } from 'vitest'
 import { makeOrder } from '../test/factories/order'
 import { makeFinanceTransaction as tx } from '../test/factories/financeTransaction'
@@ -54,5 +55,29 @@ describe('finance tasks', () => {
       payrollProposals: [],
     })
     expect(tasks.counts.accounts).toBe(2)
+  })
+})
+
+describe('payroll waiting on Finance', () => {
+  const drafts = [
+    { id: 'd1', status: 'finance_rejected' },
+    { id: 'd2', status: 'pending_finance_review' },
+    { id: 'd3', status: 'finance_rejected' },
+    { id: 'd4', status: 'finance_verified' },
+  ] as never
+  const proposals = [
+    { status: 'submitted_to_finance', employeePayrollIds: [] },
+    // One employee returned, another still waiting for Finance: counts.
+    { status: 'returned_to_hr', employeePayrollIds: ['d1', 'd2'] },
+    // Every row decided: waits on HR, does not count.
+    { status: 'returned_to_hr', employeePayrollIds: ['d3', 'd4'] },
+    { status: 'finance_approved', employeePayrollIds: [] },
+  ] as never
+
+  it('counts the same proposals in the Tasks badge and the Finance home card', () => {
+    const tasks = buildFinanceTasks({ orders: [], transactions: [], payrollProposals: proposals, payrollDrafts: drafts })
+    const attention = getFinanceAttention({ orders: [], transactions: [], payrollProposals: proposals, payrollDrafts: drafts })
+    expect(tasks.counts).toMatchObject({ payrollReview: 2, payrollReady: 1 })
+    expect(attention).toMatchObject({ payrollReview: 2, payrollReady: 1 })
   })
 })

@@ -52,7 +52,7 @@ describe('Finance workspace v3 regressions', () => {
 
   it('counts Tasks from one domain function used by the badge and the lists', () => {
     const workspace = read('src/components/finance/FinanceWorkspace.tsx')
-    expect(workspace).toContain('buildFinanceTasks({ orders, transactions, payrollProposals, purchaseCount, searchQuery })')
+    expect(workspace).toContain('buildFinanceTasks({ orders, transactions, payrollProposals, payrollDrafts, purchaseCount, searchQuery })')
     expect(workspace).toContain('tasks: badgeCounts.total')
     expect(read('src/domain/financeAttentionDomain.ts')).toContain('reconcilableOrderNumbers(transactions)')
   })
