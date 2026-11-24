@@ -35,7 +35,7 @@ const ATTENDANCE_OPTIONS: { value: AttendanceStatus; label: string }[] = [
   { value: 'present', label: 'Present' }, { value: 'late', label: 'Late' }, { value: 'absent', label: 'Absent' }, { value: 'leave', label: 'Leave' },
 ]
 
-const roleLabel = (role: string) => role === 'hr' ? 'HR' : role[0].toUpperCase() + role.slice(1)
+const roleLabel = (role: string) => role === 'hr' ? 'HR' : role === 'courier' ? 'Kurir' : role === 'manager' ? 'Manajer' : role[0].toUpperCase() + role.slice(1)
 const formatBusinessDate = (value: string, options: Intl.DateTimeFormatOptions = { day:'numeric', month:'short', year:'numeric' }) =>
   new Date(`${value}T12:00:00+07:00`).toLocaleDateString(getDateLocale(), { ...options, timeZone:'Asia/Jakarta' })
 const formatBusinessTime = (value: string) =>
@@ -120,7 +120,7 @@ export const HrTabContent: FC<HrTabContentViewModel> = (vm) => {
       {/* Calendar first: a week (or month) of everyone at a glance. The list
           view keeps every open review item reachable in one place. */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="tablist" aria-label={tr('Attendance view', 'Tampilan absensi')} className="inline-flex h-11 rounded-full bg-muted/60 p-1 ring-1 ring-border/70">
+        <div role="tablist" aria-label={tr('Attendance view', 'Tampilan kehadiran')} className="inline-flex h-11 rounded-full bg-muted/60 p-1 ring-1 ring-border/70">
           {(['calendar', 'review'] as const).map((value) => <button key={value} type="button" role="tab" aria-selected={attendanceView === value} onClick={() => setAttendanceView(value)} className={`rounded-full px-4 text-sm font-medium ${attendanceView === value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>{value === 'calendar' ? tr('Calendar', 'Kalender') : `${tr('Review list', 'Daftar cek')}${pendingReviewCount ? ` · ${pendingReviewCount}` : ''}`}</button>)}
         </div>
         <AttendanceExportButton activeBranch={activeBranch} />

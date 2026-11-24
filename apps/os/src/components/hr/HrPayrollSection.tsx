@@ -343,7 +343,7 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
           {!locked && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" aria-label="More payroll actions" className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-semibold text-foreground">
+                <button type="button" aria-label={tr('More payroll actions', 'Aksi penggajian lainnya')} className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-semibold text-foreground">
                   <MoreHorizontal className="size-4" /> More
                 </button>
               </DropdownMenuTrigger>
@@ -427,14 +427,14 @@ export const HrPayrollSection = ({ searchQuery = '' }: { searchQuery?: string })
                     {draft.entryMode === 'manual' && <span className="rounded-full bg-info/10 px-2 py-0.5 text-2xs font-semibold text-info">Manual</span>}
                     <PayrollStatusBadge status={draft.status} />
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">Base {formatIdr(draft.baseSalaryIdr)} · Bonus {formatIdr(draft.bonusIdr)}{draft.hrAdjustmentIdr ? ` · ${tr('Additions', 'Tambahan')} ${formatIdr(draft.hrAdjustmentIdr)}` : ''}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{tr('Base', 'Gaji pokok')} {formatIdr(draft.baseSalaryIdr)} · Bonus {formatIdr(draft.bonusIdr)}{draft.hrAdjustmentIdr ? ` · ${tr('Additions', 'Tambahan')} ${formatIdr(draft.hrAdjustmentIdr)}` : ''}</p>
                 </div>
-                {(role === 'owner' && editable && draft.entryMode !== 'manual') && <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label={`More payroll actions for ${draft.employeeName}`} className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card"><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => openSalary(draft.employeeId)}>Set base salary</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
+                {(role === 'owner' && editable && draft.entryMode !== 'manual') && <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label={tr(`More payroll actions for ${draft.employeeName}`, `Aksi penggajian lainnya untuk ${draft.employeeName}`)} className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card"><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => openSalary(draft.employeeId)}>Set base salary</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
               </div>
               <p className="mt-3 text-xl font-semibold leading-none">{formatIdr(draft.finalPayrollIdr)}</p>
               {draft.rejectionReason && <p className="mt-3 rounded-lg bg-destructive/10 p-2.5 text-xs text-destructive">Finance rejection: {draft.rejectionReason}</p>}
               <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                <button onClick={() => setSelectedDraft(draft)} className="h-11 rounded-full border border-border px-4 text-sm font-medium">{draft.entryMode === 'manual' ? 'View details' : 'View points'}</button>
+                <button onClick={() => setSelectedDraft(draft)} className="h-11 rounded-full border border-border px-4 text-sm font-medium">{draft.entryMode === 'manual' ? tr('View details', 'Lihat detail') : tr('View points', 'Lihat poin')}</button>
                 {editable && draft.entryMode === 'manual' && <button onClick={() => openManualEditor(draft)} className="h-11 rounded-full border border-border px-4 text-sm font-medium">Edit payee</button>}
                 {editable && draft.entryMode !== 'manual' && <button onClick={() => openAdjustment(draft)} className="h-11 rounded-full border border-border px-4 text-sm font-medium">{tr('Additions & deductions', 'Tambahan & potongan')}</button>}
                 {draft.status === 'finance_rejected' && <button onClick={() => { setResolveDraft(draft); setResolutionReason(''); setError(null) }} className="col-span-2 h-11 rounded-full border border-destructive/40 px-4 text-sm font-medium text-destructive sm:col-span-1">Resolve employee</button>}

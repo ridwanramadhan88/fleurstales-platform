@@ -138,7 +138,7 @@ describe('mobile workflow UI scale regressions', () => {
     expect(warningReview).not.toContain('space-y-4 rounded-xl bg-card p-4')
     // Attendance is one calendar; a cell opens the day with its record action.
     expect(attendance).toContain('<AttendanceCalendar')
-    expect(read('src/components/hr/AttendanceCalendar.tsx')).toContain("tr('Add record', 'Tambah absensi')")
+    expect(read('src/components/hr/AttendanceCalendar.tsx')).toContain("tr('Add record', 'Tambah kehadiran')")
     // The home header has no button: the priority list owns "View all orders".
     expect(dashboardHeader).not.toContain('View orders')
     expect(dashboardHeader).not.toContain('w-full items-center justify-center')

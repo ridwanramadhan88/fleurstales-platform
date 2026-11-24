@@ -57,7 +57,7 @@ const POINT_ACTION_TITLES: Record<'approve' | 'reject' | 'reverse', string> = {
   reject: 'Reject point entry',
   reverse: 'Reverse point entry',
 }
-const roleLabel = (value: string) => (value === 'hr' ? 'HR' : value.charAt(0).toUpperCase() + value.slice(1))
+const roleLabel = (value: string) => (value === 'hr' ? 'HR' : value === 'courier' ? 'Kurir' : value === 'manager' ? 'Manajer' : value.charAt(0).toUpperCase() + value.slice(1))
 
 export const HrPointsSection = ({ searchQuery = '' }: { searchQuery?: string }) => {
   const role = useUserStore((state) => state.role)

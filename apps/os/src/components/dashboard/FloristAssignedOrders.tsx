@@ -30,7 +30,7 @@ const OrderWorkCard = ({ order, onPhoto }: { order: OrderTableRow; onPhoto: () =
     <article className="space-y-3 p-3">
       <header className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold">{order.orderNumber}</span>
-        {urgency === 'late' && <span className="rounded-full bg-destructive px-2 py-0.5 text-2xs font-semibold text-white">{tr('Late', 'Telat')}</span>}
+        {urgency === 'late' && <span className="rounded-full bg-destructive px-2 py-0.5 text-2xs font-semibold text-white">{tr('Late', 'Terlambat')}</span>}
         {urgency === 'dueSoon' && <span className="rounded-full bg-warning/15 px-2 py-0.5 text-2xs font-semibold text-warning">{tr('Due soon', 'Segera')}</span>}
         <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
           <CalendarClock className="size-3.5" />

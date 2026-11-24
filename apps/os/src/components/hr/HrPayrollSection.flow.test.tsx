@@ -21,7 +21,7 @@ describe('HR payroll as one flow (UX plan PR 6)', () => {
     useUserStore.getState().setRole('hr')
     render(<HrPayrollSection />)
     const main = screen.getByRole('button', { name: 'Generate staff payroll' })
-    const more = screen.getByRole('button', { name: 'More payroll actions' })
+    const more = screen.getByRole('button', { name: /More payroll actions|Aksi penggajian lainnya/ })
     expect(main.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Add manual payee/ })).not.toBeInTheDocument()
     fireEvent.keyDown(more, { key: 'Enter' })

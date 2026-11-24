@@ -84,7 +84,7 @@ export const PayrollAdditionsEditor: FC<{ payrollDraftId: string; onDone: () => 
   return (
     <div className="space-y-4" data-testid="payroll-additions-editor">
       <p className="text-xs text-muted-foreground">
-        {tr('Overtime comes from attendance: it appears here once HR approves it in attendance review.', 'Lembur berasal dari absensi: muncul di sini setelah HR menyetujuinya di tinjauan absensi.')}
+        {tr('Overtime comes from attendance: it appears here once HR approves it in attendance review.', 'Lembur berasal dari kehadiran: muncul di sini setelah SDM menyetujuinya di Daftar cek kehadiran.')}
       </p>
       <PayrollAdditionsList lines={lines} onRemove={remove} />
       <div className="flex justify-between rounded-lg bg-surface-panel px-3 py-2 text-sm">

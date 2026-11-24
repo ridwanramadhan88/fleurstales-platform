@@ -328,8 +328,8 @@ export const SelfieAttendanceCard: FC = () => {
                 <legend className="px-1 text-sm font-semibold leading-5">{tr('Why are you checking out after your shift?', 'Kenapa absen pulang lewat jam sif?')}</legend>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {([
-                    ['overtime', tr('Overtime', 'Lembur'), tr('I worked extra time. HR will confirm it.', 'Saya bekerja lebih lama. HR akan mengonfirmasi.')],
-                    ['late_checkout', tr('Late check-out', 'Telat absen pulang'), tr('I forgot or was late to check out. Not overtime.', 'Saya lupa/telat absen pulang. Bukan lembur.')],
+                    ['overtime', tr('Overtime', 'Lembur'), tr('I worked extra time. HR will confirm it.', 'Saya bekerja lebih lama. SDM akan mengonfirmasi.')],
+                    ['late_checkout', tr('Late check-out', 'Terlambat absen pulang'), tr('I forgot or was late to check out. Not overtime.', 'Saya lupa/terlambat absen pulang. Bukan lembur.')],
                   ] as const).map(([value, label, hint]) => (
                     <label key={value} className={`flex cursor-pointer gap-2 rounded-xl border p-3 text-sm ${checkOutReason === value ? 'border-primary bg-primary/5' : 'border-border'}`}>
                       <input type="radio" name="checkout-reason" value={value} checked={checkOutReason === value} onChange={() => setCheckOutReason(value)} className="mt-0.5" />

@@ -135,9 +135,9 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ employees, can
   const stateLabel = (cell: AttendanceCalendarCell): string => {
     switch (cell.state) {
       case 'present': return clock(cell.record?.checkInAt) || tr('Present', 'Hadir')
-      case 'late': return clock(cell.record?.checkInAt) || tr('Late', 'Telat')
-      case 'absent': return tr('Absent', 'Absen')
-      case 'missing': return tr('No record', 'Tidak absen')
+      case 'late': return clock(cell.record?.checkInAt) || tr('Late', 'Terlambat')
+      case 'absent': return tr('Absent', 'Tidak hadir')
+      case 'missing': return tr('No record', 'Belum absen')
       case 'leave': return tr('Leave', 'Cuti')
       case 'not_yet': return tr('Not yet', 'Belum')
       case 'planned': return cell.shift ? `${cell.shift.startTime}–${cell.shift.endTime}` : ''
@@ -152,7 +152,7 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ employees, can
   const open = openCell
   const openRecord = open?.cell.record
 
-  return <section aria-label={tr('Attendance calendar', 'Kalender absensi')} className="space-y-3">
+  return <section aria-label={tr('Attendance calendar', 'Kalender kehadiran')} className="space-y-3">
     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <PeoplePeriodNavigation
         onPrevious={() => move(-1)}
@@ -234,8 +234,8 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ employees, can
                     </td>
                   })}
                   <td className="border-t border-l border-border/40 px-2 py-1.5 text-2xs leading-4 text-muted-foreground">
-                    {row.totals.late > 0 && <span className="block text-warning">{tr('Late', 'Telat')} {row.totals.late}</span>}
-                    {row.totals.absent > 0 && <span className="block text-destructive">{tr('Absent', 'Absen')} {row.totals.absent}</span>}
+                    {row.totals.late > 0 && <span className="block text-warning">{tr('Late', 'Terlambat')} {row.totals.late}</span>}
+                    {row.totals.absent > 0 && <span className="block text-destructive">{tr('Absent', 'Tidak hadir')} {row.totals.absent}</span>}
                     {row.totals.overtimeMinutes > 0 && <span className="block text-success">{tr('OT', 'Lembur')} {shortDuration(row.totals.overtimeMinutes)}</span>}
                     {row.totals.late + row.totals.absent + row.totals.overtimeMinutes === 0 && <span>—</span>}
                   </td>
@@ -248,8 +248,8 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ employees, can
                 {calendar.columns.map((column) => (
                   <td key={column.date} className="border-l border-border/40 px-1 py-2 text-center leading-4">
                     {column.date <= today && <span className="block">{tr('Present', 'Hadir')} {column.present}</span>}
-                    {column.late > 0 && <span className="block text-warning">{tr('Late', 'Telat')} {column.late}</span>}
-                    {column.absent > 0 && <span className="block text-destructive">{tr('Absent', 'Absen')} {column.absent}</span>}
+                    {column.late > 0 && <span className="block text-warning">{tr('Late', 'Terlambat')} {column.late}</span>}
+                    {column.absent > 0 && <span className="block text-destructive">{tr('Absent', 'Tidak hadir')} {column.absent}</span>}
                   </td>
                 ))}
                 <td className="border-l border-border/40" />
@@ -260,7 +260,7 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ employees, can
       </div>}
 
     <ul aria-label={tr('Legend', 'Keterangan')} className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted-foreground">
-      {([['bg-success', tr('On time', 'Tepat waktu')], ['bg-warning', tr('Late', 'Telat')], ['bg-destructive', tr('Absent / no record', 'Absen / tidak absen')], ['bg-info', tr('Leave', 'Cuti')]] as const).map(([dot, label]) => (
+      {([['bg-success', tr('On time', 'Tepat waktu')], ['bg-warning', tr('Late', 'Terlambat')], ['bg-destructive', tr('Absent / no record', 'Tidak hadir / belum absen')], ['bg-info', tr('Leave', 'Cuti')]] as const).map(([dot, label]) => (
         <li key={label} className="flex items-center gap-1.5"><span className={`size-2 rounded-full ${dot}`} />{label}</li>
       ))}
       <li className="flex items-center gap-1.5"><span className="size-3 rounded-sm ring-2 ring-inset ring-warning" />{tr('Needs review', 'Perlu dicek')}</li>
@@ -297,7 +297,7 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ employees, can
         {canEdit && open.cell.date <= today && (
           <div className="flex justify-end border-t border-border pt-3">
             <button type="button" onClick={() => { const { employee, cell } = open; setOpenCell(null); onOpenRecord(employee, cell.date) }} className="h-11 rounded-full bg-foreground px-[18px] text-sm font-medium text-background">
-              {openRecord ? tr('Correct record', 'Koreksi absensi') : tr('Add record', 'Tambah absensi')}
+              {openRecord ? tr('Correct record', 'Koreksi kehadiran') : tr('Add record', 'Tambah kehadiran')}
             </button>
           </div>
         )}
@@ -308,9 +308,9 @@ export const AttendanceCalendar: FC<AttendanceCalendarProps> = ({ employees, can
 
 const stateLabelFor = (state: AttendanceCellState, tr: (en: string, id: string) => string): string => ({
   present: tr('On time', 'Tepat waktu'),
-  late: tr('Late', 'Telat'),
-  absent: tr('Absent', 'Absen'),
-  missing: tr('No record', 'Tidak absen'),
+  late: tr('Late', 'Terlambat'),
+  absent: tr('Absent', 'Tidak hadir'),
+  missing: tr('No record', 'Belum absen'),
   leave: tr('Leave', 'Cuti'),
   not_yet: tr('Not checked in', 'Belum absen'),
   planned: tr('Scheduled', 'Terjadwal'),
