@@ -70,6 +70,17 @@ export const NewOrderPaymentDetailsSection: FC<NewOrderPaymentDetailsSectionProp
             </SelectContent>
           </Select>
           {values.fulfillmentType === 'delivery' && <p className="text-2xs text-muted-foreground">Delivery orders are bank transfer only.</p>}
+          {values.paymentMethod === 'transfer' && (
+            <label className="flex items-center gap-2 pt-1 text-xs font-medium text-foreground">
+              <input
+                type="checkbox"
+                checked={Boolean(values.payWithQris)}
+                onChange={(event) => onFieldValueChange('payWithQris', event.target.checked)}
+                className="size-4 rounded border-border"
+              />
+              Bayar dengan QRIS (QR bernominal)
+            </label>
+          )}
           {errors.paymentMethod && <p id="paymentMethod-error" className="text-xs text-destructive" role="alert">{errors.paymentMethod}</p>}
         </div>
 

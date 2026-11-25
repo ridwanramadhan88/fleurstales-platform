@@ -1,7 +1,7 @@
 -- Branch QRIS (static source, 25 Nov 2026): Owner-only save from the decoded
--- static QRIS text, payload kept private, one QRIS (NMID) per branch, QRIS
--- cannot be switched on until the amount-embedded QR ships, and checkout
--- never exposes a static image. Synthetic QRIS payloads only. Rolls back.
+-- static QRIS text, payload kept private, one QRIS (NMID) per branch, new
+-- sources start off, and checkout never exposes a static image. Synthetic
+-- QRIS payloads only. Rolls back.
 begin;
 
 do $static$
@@ -36,8 +36,8 @@ begin
   if right(private.qris_dynamic_payload('00020101021126650019ID.CO.SMOKEBANK.WWW011893600000000000000102090000000010303UMI51440014ID.CO.QRIS.WWW0215ID10000000000010303UMI5204599253033605802ID5915SMOKE FLORIST A6014Bandar Lampung61053511162070703A016304B528', 329007), 4) <> 'CA06' then
     raise exception 'qris_dynamic_payload CRC golden mismatch for 329007';
   end if;
-  if private.qris_dynamic_ready() then
-    raise exception 'Amount-embedded QRIS is not released yet; qris_dynamic_ready must be false';
+  if not private.qris_dynamic_ready() then
+    raise exception 'Amount-embedded QRIS is released; qris_dynamic_ready must be true';
   end if;
 end
 $static$;
@@ -122,14 +122,6 @@ begin
     get stacked diagnostics v_message = message_text;
     if v_message <> 'QRIS_NMID_IN_USE' then raise exception 'Unexpected error: %', v_message; end if;
   end;
-  -- QRIS cannot be switched on before the amount-embedded QR ships.
-  begin
-    perform public.save_branch_qris('Kedamaian', null, 'smoke-qris-bank', true);
-    raise exception 'QRIS switched on before the amount-embedded QR shipped';
-  exception when invalid_parameter_value then
-    get stacked diagnostics v_message = message_text;
-    if v_message <> 'QRIS_DYNAMIC_NOT_READY' then raise exception 'Unexpected error: %', v_message; end if;
-  end;
 end
 $owner_rules$;
 insert into qris_result select 'save_phm', public.save_branch_qris_source('Pahoman', '00020101021126650019ID.CO.SMOKEBANK.WWW011893600000000000000102090000000010303UMI51440014ID.CO.QRIS.WWW0215ID10000000000020303UMI5204599253033605802ID5915SMOKE FLORIST B6014Bandar Lampung61053511162070703A016304042B', 'smoke-qris-bank');
@@ -165,21 +157,11 @@ begin
   from public.products p join public.product_variants v on v.product_id = p.id and v.status = 'active'
   where p.is_active limit 1;
 
-  -- Not released yet: even an active row with a source is not offered.
+  -- Saved sources start off; the Owner switches QRIS on.
+  if (select is_active from public.branch_qris_codes where branch_id = 'Kedamaian') then
+    raise exception 'A newly saved QRIS source must start off';
+  end if;
   update public.branch_qris_codes set is_active = true where branch_id = 'Kedamaian';
-  begin
-    perform public.quote_storefront_checkout(
-      gen_random_uuid()::text, '{"name":"Smoke QRIS","whatsappNumber":"081299990001"}', 'Kedamaian', 'pickup', v_tomorrow, '12:00',
-      jsonb_build_array(jsonb_build_object('productId', v_variant.product_id, 'variantId', v_variant.variant_id, 'quantity', 1)),
-      null, null, null, null, null, 'qris', null);
-    raise exception 'QRIS offered before the amount-embedded QR shipped';
-  exception when invalid_parameter_value then
-    get stacked diagnostics v_message = message_text;
-    if v_message <> 'STOREFRONT_QRIS_UNAVAILABLE' then raise exception 'Unexpected error: %', v_message; end if;
-  end;
-
-  -- Simulate the release flag inside this rolled-back transaction.
-  execute 'create or replace function private.qris_dynamic_ready() returns boolean language sql immutable set search_path = '''' as $f$ select true $f$';
 
   v_result := public.create_storefront_order(
     gen_random_uuid()::text, '{"name":"Smoke QRIS","whatsappNumber":"081299990001"}', 'Kedamaian', 'pickup', v_tomorrow, '12:00',

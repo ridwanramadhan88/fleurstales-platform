@@ -12,6 +12,7 @@ import { getOrderStatusOptionsForFulfillment } from './orderTableLabels'
 import { formatIdrText } from './orderTableFormatters'
 import type { OrderDetailsViewModel } from './OrderDetailsController'
 import { OrderPaymentProofButton, canViewPaymentProof } from './OrderPaymentProofButton'
+import { OrderQrisPaymentButton, OrderQrisUpdatedBadge } from './OrderQrisPaymentButton'
 
 interface OrderDetailsItemsSectionProps {
   viewModel: OrderDetailsViewModel
@@ -233,9 +234,13 @@ export const OrderDetailsItemsSection: FC<OrderDetailsItemsSectionProps> = ({
               <p className="mt-0.5 text-sm font-medium text-foreground">
                 {order.paymentChannel === 'qris' ? 'QRIS' : order.paymentMethod ? PAYMENT_METHOD_LABELS[order.paymentMethod] : 'Not set'}
               </p>
+              <OrderQrisUpdatedBadge order={order} />
             </div>
             {!isEditing && order.paymentProofUrl && canViewPaymentProof(currentUserRole, order) && (
               <OrderPaymentProofButton paymentProofPath={order.paymentProofUrl} />
+            )}
+            {!isEditing && ['owner', 'admin', 'finance'].includes(currentUserRole) && (
+              <OrderQrisPaymentButton order={order} canMarkSent={['owner', 'admin'].includes(currentUserRole)} />
             )}
           </div>
           <div className="flex min-w-0 items-center justify-between gap-3 sm:border-l sm:border-border/50 sm:pl-6">

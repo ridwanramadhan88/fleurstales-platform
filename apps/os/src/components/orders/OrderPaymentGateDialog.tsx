@@ -7,6 +7,7 @@ import { removeOrderPaymentProof, uploadOrderPaymentProof } from '../../data/ord
 import { dataUrlToBlob, PAYMENT_PROOF_MAX_BYTES, prepareUploadedPaymentProof } from '../../domain/paymentProofImageDomain'
 import { toast } from '../../hooks/use-toast'
 import { AppDialog } from '../ui/app-dialog'
+import { qrisAmountFor } from '../../data/shared/qrisPayment'
 
 interface OrderPaymentGateDialogProps {
   order: OrderTableRow
@@ -117,6 +118,11 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
             <p className="text-sm font-semibold">{order.orderNumber}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">Rp {formatter.format(order.totalIdr)} · {order.paymentChannel === 'qris' ? 'QRIS' : order.paymentMethod === 'cash' ? 'Cash' : order.paymentMethod === 'transfer' ? 'Transfer' : 'Payment method not set'}</p>
             <p className="mt-1 text-2xs text-muted-foreground">After payment is confirmed, the order can go into production.</p>
+            {order.paymentChannel === 'qris' && order.paymentStatus === 'unpaid' && qrisAmountFor(order.orderNumber, order.totalIdr - (order.paidAmountIdr ?? 0)) !== order.totalIdr - (order.paidAmountIdr ?? 0) && (
+              <p className="mt-1 text-xs font-medium text-foreground" data-testid="payment-gate-qris-amount">
+                Nominal QRIS: {`Rp ${formatter.format(qrisAmountFor(order.orderNumber, order.totalIdr - (order.paidAmountIdr ?? 0)))}`} (potongan kode unik {`Rp ${formatter.format(order.totalIdr - (order.paidAmountIdr ?? 0) - qrisAmountFor(order.orderNumber, order.totalIdr - (order.paidAmountIdr ?? 0)))}`})
+              </p>
+            )}
           </div>
         </div>
 

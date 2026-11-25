@@ -51,6 +51,8 @@ const esbuildOpts = {
   loader: {
     '.html': 'copy',
     '.png': 'file',
+    '.svg': 'file',
+    '.woff2': 'file',
   },
   plugins: [
     stylePlugin({

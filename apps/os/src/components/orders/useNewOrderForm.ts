@@ -35,6 +35,8 @@ export interface NewOrderFormValues {
   greetingMessage: string
   greetingCardName: string
   paymentMethod: '' | 'cash' | 'transfer'
+  /** Transfer paid with the branch's amount-embedded QRIS (25 Nov 2026). */
+  payWithQris?: boolean
   paymentStatus: 'unpaid' | 'partial' | 'paid'
   depositAmount: string
   orderNote: string
@@ -80,6 +82,7 @@ export const initialNewOrderValues: NewOrderFormValues = {
   greetingMessage: '',
   greetingCardName: '',
   paymentMethod: '',
+  payWithQris: false,
   paymentStatus: 'unpaid',
   depositAmount: '',
   orderNote: '',

@@ -478,7 +478,7 @@ export const useNewOrderSheetController = ({
     form.values.paymentMethod === 'cash'
       ? 'Cash'
       : form.values.paymentMethod === 'transfer'
-        ? 'Transfer'
+        ? form.values.payWithQris ? 'QRIS' : 'Transfer'
         : 'Not set'
 
   const fulfillmentLabelForReview =

@@ -1,6 +1,7 @@
 import { bootstrapSharedData } from './shared/bootstrap'
 import type { Json, OrderFulfillment, OrderStatus, PaymentMethod, PaymentStatus } from './shared/databaseTypes'
 import { normalizeOrderNumberInput } from '../domain/orderNumberInput'
+import type { QrisPayment } from './shared/qrisPayment'
 
 export interface PublicOrderTrackingItem {
   name: string
@@ -93,6 +94,8 @@ export interface PublicOrderTrackingDetails {
   paymentStatus: PaymentStatus
   paymentMethod?: PaymentMethod | null
   paymentAccountSnapshot?: PublicPaymentAccountSnapshot | null
+  /** Amount-embedded QRIS for an unpaid QRIS order; null otherwise. */
+  qrisPayment?: QrisPayment | null
   itemsSubtotalIdr: number
   deliveryFeeIdr: number
   discountIdr: number

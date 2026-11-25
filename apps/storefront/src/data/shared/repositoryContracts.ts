@@ -35,6 +35,7 @@ import type {
   SharedStoreSnapshot,
   SharedStaffAccessProfile,
 } from './contracts'
+import type { QrisPayment } from './qrisPayment'
 
 export interface StaffAccessRepository {
   /** Current authenticated Supabase user mapped through staff_access_profiles. */
@@ -123,6 +124,10 @@ export interface DeliveryQuoteRepository {
 export interface OrdersAdminRepository extends OrdersReadRepository, DeliveryQuoteRepository {
   quoteInternalOrder(input: CreateInternalOrderInput): Promise<StorefrontCheckoutQuoteResult>
   createInternalOrder(input: CreateInternalOrderInput): Promise<CreateInternalOrderResult>
+  /** Amount-embedded QRIS for an unpaid QRIS order (Owner, Admin, Finance); null otherwise. */
+  getOrderQrisPayment(orderId: string): Promise<QrisPayment | null>
+  /** Admin sent the customer the updated QR: clears "QR diperbarui". */
+  markOrderQrisSent(orderId: string): Promise<{ orderId: string; revision: number; qrisAmountShown: number }>
   saveOrderDeliveryDetails(
     orderId: string,
     expectedRevision: number,
