@@ -30,6 +30,8 @@ const RPC_BY_COMMAND: Record<PayrollWorkflowCommand, string> = {
 }
 
 let revision = 0
+/** Local payroll commands published but not yet answered by the server. */
+let pendingCommands = 0
 let syncing = false
 let stopListener: (() => void) | undefined
 let queue: Promise<void> = Promise.resolve()
@@ -69,12 +71,20 @@ const isConflict = (error: unknown): boolean =>
   (error.message.includes('REVISION_CONFLICT:payroll') ||
     (typeof error.payload === 'object' && error.payload !== null && 'code' in error.payload && error.payload.code === '40001'))
 
-export const hydratePayrollFromSupabase = async (): Promise<boolean> => {
+/**
+ * Loads the server payroll state. A background reload (realtime, Finance
+ * payment) can be answered with an older revision than a local edit that was
+ * made while it was in flight; applying it would silently drop that edit and
+ * leave a stale revision for the next save. Such answers are skipped unless
+ * `force` (conflict recovery) asks for the server state regardless.
+ */
+export const hydratePayrollFromSupabase = async (options: { force?: boolean } = {}): Promise<boolean> => {
   if (!getSupabaseBrowserSession()) return false
   const boot = client()
   if (!boot.enabled) return false
   const response = await boot.repositories.client.rpc<PayrollStateResponse>('get_operational_domain_state', { p_domain: 'payroll' })
-  applyRemote(response)
+  const stale = pendingCommands > 0 || (Number(response.revision) || 0) < revision
+  if (options.force || !stale) applyRemote(response)
   return response.snapshot !== null
 }
 
@@ -105,7 +115,7 @@ const persistCommand = async (command: PayrollWorkflowCommand): Promise<void> =>
       }
       // The server owns payroll authority. Rejected/stale local state is
       // replaced instead of being retried as a last-write-wins snapshot.
-      await hydratePayrollFromSupabase().catch(() => undefined)
+      await hydratePayrollFromSupabase({ force: true }).catch(() => undefined)
       toast({
         title: conflict ? 'Payroll changed elsewhere' : 'Payroll change not saved',
         description: conflict
@@ -127,7 +137,11 @@ export const startPayrollSupabaseSync = (): void => {
   if (stopListener) return
   stopListener = subscribePayrollWorkflowMutations((command) => {
     if (syncing) return
-    queue = queue.then(() => persistCommand(command)).catch(() => undefined)
+    pendingCommands += 1
+    queue = queue
+      .then(() => persistCommand(command))
+      .catch(() => undefined)
+      .finally(() => { pendingCommands = Math.max(0, pendingCommands - 1) })
   })
 }
 
@@ -135,6 +149,7 @@ export const stopPayrollSupabaseSync = (): void => {
   stopListener?.()
   stopListener = undefined
   queue = Promise.resolve()
+  pendingCommands = 0
 }
 
 export const connectPayrollSupabase = async (): Promise<boolean> => {
