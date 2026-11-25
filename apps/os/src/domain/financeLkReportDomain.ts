@@ -129,6 +129,7 @@ const EXPENSE_LABELS: Record<string, string> = {
   utilities: 'Listrik, air & internet',
   other: 'Beban lainnya',
 }
+const SERVICES_FEE_LABEL = 'Services Fee (QRIS)'
 const NON_PNL_SOURCES = new Set(['transfer', 'opening_balance', 'adjustment'])
 const COMPLETED_STATUSES = new Set(['delivered', 'picked_up'])
 
@@ -193,6 +194,10 @@ const monthFigures = (input: LkReportInput, month: string): MonthFigures => {
       // owner_deposit and other capital movements stay out of the PNL.
     } else if (HPP_CATEGORIES.has(category)) {
       add(figures, 'hpp_supplies', branch, transaction.amount)
+    } else if (source === 'qris_services_fee') {
+      // Own line: website service & feature maintenance fee per QRIS order.
+      figures.expenseLines.set('expense:qris_services_fee', SERVICES_FEE_LABEL)
+      add(figures, 'expense:qris_services_fee', branch, transaction.amount)
     } else {
       const key = `expense:${category}`
       figures.expenseLines.set(key, EXPENSE_LABELS[category] ?? input.categoryLabel(category))
@@ -319,7 +324,7 @@ export const buildLkReport = (input: LkReportInput): LkReport => {
     expensesByBranch[lkBranchOfTransaction(transaction, branches)]?.push({
       date: txDate(transaction),
       code: transaction.transactionCode ?? '',
-      account: HPP_CATEGORIES.has(String(transaction.category)) ? 'HPP · Supplies' : EXPENSE_LABELS[String(transaction.category)] ?? input.categoryLabel(String(transaction.category)),
+      account: source === 'qris_services_fee' ? SERVICES_FEE_LABEL : HPP_CATEGORIES.has(String(transaction.category)) ? 'HPP · Supplies' : EXPENSE_LABELS[String(transaction.category)] ?? input.categoryLabel(String(transaction.category)),
       description: [transaction.name, transaction.note ?? transaction.description].filter(Boolean).join(' — '),
       amount: transaction.amount,
       cashAccount: input.accountLabel(transaction.accountId),

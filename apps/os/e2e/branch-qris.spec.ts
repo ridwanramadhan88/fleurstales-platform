@@ -41,11 +41,23 @@ test('owner saves a branch static QRIS from its image; it stays off until the am
   // Turning it on before the amount-embedded QR ships is refused by the server
   // (QRIS_DYNAMIC_NOT_READY, covered by supabase/tests/branch_qris_smoke.sql).
 
+  // Services Fee: adjustable, shown under the QRIS settings.
+  const fee = page.getByTestId('qris-services-fee-settings')
+  await expect(page.getByTestId('qris-services-fee-summary')).toHaveText('Pesanan di bawah Rp500.000: Rp1.000. Mulai Rp500.000: Rp2.000. Dihitung dari total pesanan sebelum potongan kode unik.')
+  await fee.getByLabel('Biaya mulai batas', { exact: true }).fill('2500')
+  await fee.getByRole('button', { name: 'Simpan Services Fee' }).click()
+  await expect(fee.getByRole('status')).toHaveText('Services Fee tersimpan.')
+
   // Survives a reload (stored on the server, not in the browser).
   await page.reload()
   await openPaymentSettings(page)
   await expect(page.getByTestId('branch-qris-details-Kedamaian')).toContainText('ID1000000000001')
+  await expect(page.getByTestId('qris-services-fee-summary')).toContainText('Mulai Rp500.000: Rp2.500.')
   expect(await englishLines(page)).toEqual([])
+  // Restore the default fee for other runs.
+  await page.getByTestId('qris-services-fee-settings').getByLabel('Biaya mulai batas', { exact: true }).fill('2000')
+  await page.getByTestId('qris-services-fee-settings').getByRole('button', { name: 'Simpan Services Fee' }).click()
+  await expect(page.getByTestId('qris-services-fee-settings').getByRole('status')).toHaveText('Services Fee tersimpan.')
 
   // Clean up so reruns start from "no QRIS".
   await page.getByTestId('branch-qris-Kedamaian').getByRole('button', { name: 'Hapus' }).click()

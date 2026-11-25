@@ -6,6 +6,7 @@ import { SettingsSectionHeader } from './SettingsPrimitives'
 import { Switch } from '../ui/switch'
 import { FinanceCategorySettingsPanel } from './FinanceCategorySettingsPanel'
 import { BranchQrisSettings } from './BranchQrisSettings'
+import { QrisServicesFeeSettings } from './QrisServicesFeeSettings'
 
 interface Props {
   isEditing: boolean
@@ -131,6 +132,9 @@ export const PaymentMethodSettings: FC<Props> = ({
     {!isEditing && (
       <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
         <BranchQrisSettings branches={branches} bankAccounts={settings.bankAccounts} />
+        <div className="mt-4">
+          <QrisServicesFeeSettings bankAccounts={settings.bankAccounts} />
+        </div>
       </div>
     )}
 

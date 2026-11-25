@@ -170,6 +170,7 @@ export const buildOrdersExportSheets = (input: OrdersExportInput): WorksheetSpec
     { header: 'Jumlah item', kind: 'number', width: 10, value: (r) => r.lines.reduce((sum, line) => sum + line.quantity, 0) },
     { header: 'Subtotal item (Rp)', kind: 'money', value: (r) => r.order.itemsSubtotalIdr ?? r.lines.reduce((sum, line) => sum + line.quantity * line.unitPriceIdr, 0) },
     { header: 'Diskon (Rp)', kind: 'money', value: (r) => r.order.discountIdr ?? 0 },
+    { header: 'Potongan kode unik QRIS (Rp)', kind: 'money', value: (r) => r.order.qrisUniqueDiscountIdr ?? 0 },
     { header: 'Kode voucher', width: 14, value: (r) => r.order.promoCode },
     { header: 'Ongkir (Rp)', kind: 'money', value: (r) => r.order.deliveryFeeIdr ?? 0 },
     { header: 'Metode bayar', width: 11, value: (r) => paymentMethodLabel(r.order) },

@@ -76,12 +76,25 @@ test('admin creates a QRIS order, downloads its QR with the exact amount and con
   await download.saveAs(test.info().outputPath('qris-card.png'))
   await page.keyboard.press('Escape')
 
-  // Confirming payment shows the QRIS amount to match in Livin' Merchant.
+  // Confirming payment shows the QRIS amount to match in Livin' Merchant;
+  // the payment is recorded with proof, as for any transfer.
   const reopened = await openOrder(page, customerName)
   await reopened.getByRole('button', { name: /Konfirmasi pembayaran/i }).click()
   const payment = page.getByRole('dialog', { name: 'Konfirmasi Pembayaran' })
   await expect(payment.getByTestId('payment-gate-qris-amount')).toContainText('Nominal QRIS')
-  await page.keyboard.press('Escape')
+  await payment.locator('select').first().selectOption({ index: 1 })
+  await payment.locator('input[type="file"]').setInputFiles('e2e/assets/finish-photo.jpg')
+  await payment.getByRole('button', { name: 'Konfirmasi Lunas' }).click()
+  await expect(payment).toHaveCount(0)
+  await signOut(page)
+
+  // Finance: the automatic Services Fee expense for this order is in the ledger.
+  await signIn(page, 'finance')
+  await page.getByRole('navigation').first().getByRole('button', { name: 'Keuangan', exact: true }).click()
+  await page.getByRole('tablist', { name: 'Keuangan' }).getByRole('tab', { name: 'Kas & Transaksi' }).click()
+  await page.locator('input[type="search"]:visible').first().fill(orderNumber!)
+  await expect(page.getByRole('list', { name: 'Buku kas' }).getByRole('button').filter({ hasText: `Services Fee ${orderNumber}` }).first()).toBeVisible()
+  await expectNoEnglish(page, 'finance ledger with Services Fee')
   await signOut(page)
 
   // Clean up so reruns start from "no QRIS".
