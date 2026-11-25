@@ -26,7 +26,7 @@ export const BranchQrisSettings: FC<Props> = ({ branches, bankAccounts }) => {
   const [busyBranch, setBusyBranch] = useState<string | null>(null)
   const [message, setMessage] = useState<{ branchId: string; text: string; error: boolean } | null>(null)
   const [pendingAccount, setPendingAccount] = useState<Record<string, string>>({})
-  const cleanedLegacy = useRef(new Set<string>())
+  const cleanedLegacy = useRef(false)
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
   const repository = shared.enabled ? createBranchQrisRepository(shared.repositories.client) : null
   const linkableAccounts = bankAccounts.filter((account) => account.type === 'bank_transfer' && account.isActive)
@@ -36,12 +36,11 @@ export const BranchQrisSettings: FC<Props> = ({ branches, bankAccounts }) => {
     const rows = await repository.list()
     setItems(rows)
     // Static QRIS images from before 25 Nov 2026 sat in public storage:
-    // remove them once the branch has a saved source.
-    for (const row of rows) {
-      if (row.legacyImagePath && row.nmid && !cleanedLegacy.current.has(row.branchId)) {
-        cleanedLegacy.current.add(row.branchId)
-        void repository.clearLegacyImage(row.branchId, row.legacyImagePath).catch(() => cleanedLegacy.current.delete(row.branchId))
-      }
+    // remove them (once per visit) when every branch has a saved source.
+    if (!cleanedLegacy.current && rows.every((row) => !row.legacyImagePath || row.nmid)) {
+      cleanedLegacy.current = true
+      const withImage = rows.filter((row) => row.legacyImagePath).map((row) => row.branchId)
+      void repository.removeLegacyImages(withImage).catch(() => { cleanedLegacy.current = false })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shared.enabled])

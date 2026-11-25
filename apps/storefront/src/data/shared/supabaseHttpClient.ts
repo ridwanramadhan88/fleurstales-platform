@@ -178,13 +178,29 @@ export class SupabaseHttpClient {
     })
   }
 
-  async removeStorageObjects(bucket: string, paths: string[]): Promise<void> {
-    if (paths.length === 0) return
+  /**
+   * Returns the objects Storage actually deleted. Storage answers 200 with an
+   * empty list when row-level security hides an object, so callers that must
+   * be sure a file is gone should check the result.
+   */
+  async removeStorageObjects(bucket: string, paths: string[]): Promise<Array<{ name: string }>> {
+    if (paths.length === 0) return []
     const safeBucket = bucket.split('/').map(encodeURIComponent).join('/')
-    await this.request(`/storage/v1/object/${safeBucket}`, {
+    const removed = await this.request<Array<{ name: string }> | null>(`/storage/v1/object/${safeBucket}`, {
       method: 'DELETE',
       body: JSON.stringify({ prefixes: paths }),
     })
+    return Array.isArray(removed) ? removed : []
+  }
+
+  /** Lists the files directly under a folder (e.g. `qris/`). */
+  async listStorageObjects(bucket: string, prefix: string, limit = 100): Promise<Array<{ name: string; id: string | null }>> {
+    const safeBucket = bucket.split('/').map(encodeURIComponent).join('/')
+    const rows = await this.request<Array<{ name: string; id: string | null }> | null>(`/storage/v1/object/list/${safeBucket}`, {
+      method: 'POST',
+      body: JSON.stringify({ prefix, limit, offset: 0 }),
+    })
+    return Array.isArray(rows) ? rows : []
   }
 
   async select<T extends PublicTableName>(table: T, options?: SupabaseSelectOptions): Promise<RowOf<T>[]> {
