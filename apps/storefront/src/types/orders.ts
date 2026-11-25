@@ -231,6 +231,8 @@ export interface OrderTableRow {
   paymentChannel?: 'qris'
   /** QRIS amount last handed to the customer (flags "QR diperbarui"). */
   qrisAmountShown?: number
+  /** QRIS unique-code discount applied at payment confirmation (part of discountIdr). */
+  qrisUniqueDiscountIdr?: number
   /** Amount already received in IDR, used to calculate a partial-payment balance. */
   paidAmountIdr?: number
   /** Append-only payment history. Aggregate payment fields above are derived operational state. */

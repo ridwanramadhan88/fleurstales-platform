@@ -48,6 +48,7 @@ const sourceLabel = (transaction: FinanceTransaction, tr: Tr): string => {
   if (transaction.source === 'order_refund') return tr('Order refund', 'Pengembalian dana pesanan')
   if (transaction.source === 'payroll') return tr('Payroll', 'Penggajian')
   if (transaction.source === 'delivery_courier') return tr('Courier cost', 'Biaya kurir')
+  if (transaction.source === 'qris_services_fee') return 'Services Fee (QRIS)'
   if (transaction.source === 'opening_balance') return tr('Opening balance', 'Saldo awal')
   if (transaction.source === 'adjustment') return tr('Adjustment', 'Penyesuaian')
   if (transaction.source === 'transfer') return tr('Account transfer', 'Transfer antar rekening')

@@ -371,6 +371,8 @@ export interface SharedOrder {
   paymentChannel?: 'qris'
   /** QRIS amount last handed to the customer (flags "QR diperbarui"). */
   qrisAmountShown?: number
+  /** QRIS unique-code discount applied at payment confirmation (part of discountIdr). */
+  qrisUniqueDiscountIdr?: number
   paidAmountIdr: number
   paymentHistory?: SharedOrderPaymentEvent[]
   refundAmountIdr?: number

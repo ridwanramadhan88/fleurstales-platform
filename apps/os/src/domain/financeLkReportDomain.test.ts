@@ -76,6 +76,27 @@ describe('LK financial report', () => {
     expect(line('net_profit').current.Pahoman).toBe(-700000)
   })
 
+  it('shows the QRIS Services Fee on its own expense line', () => {
+    const withFee = buildLkReport({
+      month: '2026-10',
+      branches: ['Kedamaian', 'Pahoman'],
+      orders,
+      transactions: [
+        ...transactions,
+        tx({ category: 'other', source: 'qris_services_fee', amount: 1000, orderNumber: 'KDM-26-10-12-001', name: 'Services Fee KDM-26-10-12-001' }),
+        tx({ category: 'other', source: 'qris_services_fee', amount: 2000, status: 'void', voidReason: 'Pesanan dibatalkan' }),
+      ],
+      productTypes: { 'p-bouquet': 'Bouquet', 'p-cake': 'Flower Cake' },
+      categoryLabel: (category) => category,
+      accountLabel: (id) => id ?? '',
+    })
+    const fee = withFee.pnl.find((entry) => entry.key === 'expense:qris_services_fee')!
+    expect(fee.label).toBe('Services Fee (QRIS)')
+    expect(fee.current).toEqual({ Kedamaian: 1000, Pahoman: 0 })
+    expect(withFee.pnl.find((entry) => entry.key === 'expense:other')).toBeUndefined()
+    expect(withFee.expenses.Kedamaian.some((row) => row.account === 'Services Fee (QRIS)' && row.amount === 1000)).toBe(true)
+  })
+
   it('compares with the previous month', () => {
     expect(line('sales_product').previous.Kedamaian).toBe(100000)
     expect(lkGrowth(lkTotal(line('sales_product').current, report.branches), 100000)).toBeCloseTo(2.3)

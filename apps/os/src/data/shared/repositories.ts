@@ -686,6 +686,7 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   paymentMethod: optional(row.payment_method),
   paymentChannel: paymentChannelFromSnapshot(row.payment_account_snapshot),
   qrisAmountShown: row.qris_amount_shown ?? undefined,
+  qrisUniqueDiscountIdr: row.qris_unique_discount_idr || undefined,
   paidAmountIdr: row.paid_amount_idr,
   paymentHistory: [...(row.order_payment_events ?? [])]
     .sort((a, b) => a.occurred_at.localeCompare(b.occurred_at) || a.id.localeCompare(b.id))
@@ -981,4 +982,29 @@ export const createBranchQrisRepository = (client: SupabaseHttpClient) => ({
   async remove(branchId: string): Promise<void> {
     await client.rpc('delete_branch_qris', { p_branch_id: branchId })
   },
+  /** QRIS Services Fee settings (Owner and Finance read, Owner saves). */
+  async getServicesFeeSettings(): Promise<QrisServicesFeeSettings> {
+    return client.rpc<QrisServicesFeeSettings>('get_qris_services_fee_settings', {})
+  },
+  async saveServicesFeeSettings(settings: QrisServicesFeeSettingsInput): Promise<QrisServicesFeeSettings> {
+    return client.rpc<QrisServicesFeeSettings>('save_qris_services_fee_settings', { p_settings: asJson(settings) })
+  },
 })
+
+/**
+ * Services Fee (25 Nov 2026): website service & feature maintenance fee the
+ * business subsidises per paid QRIS order. Never charged to the customer;
+ * recorded automatically as a Finance expense ("Services Fee").
+ */
+export interface QrisServicesFeeSettingsInput {
+  isEnabled: boolean
+  thresholdIdr: number
+  feeBelowIdr: number
+  feeAtOrAboveIdr: number
+  /** Finance account the fee is paid from; null = the branch QRIS's linked account. */
+  accountId: string | null
+}
+
+export interface QrisServicesFeeSettings extends QrisServicesFeeSettingsInput {
+  updatedAt: string
+}

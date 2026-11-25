@@ -86,6 +86,8 @@ export type FinanceTransactionSource =
   | 'order_refund'
   | 'payroll'
   | 'delivery_courier'
+  /** Automatic QRIS Services Fee per paid QRIS order (25 Nov 2026). */
+  | 'qris_services_fee'
   | 'opening_balance'
   | 'adjustment'
   | 'transfer'
