@@ -421,7 +421,7 @@ const HomePage: FC<HomePageProps> = ({
     activeTab === 'orders'
       ? {
           show: true,
-          placeholder: 'Search order #, customer, phone…',
+          placeholder: tr('Search order #, customer, phone, QRIS amount…', 'Cari nomor pesanan, pelanggan, telepon, nominal QRIS…'),
           tabletPlaceholder: 'Search orders…',
         }
       : activeTab === 'customers'

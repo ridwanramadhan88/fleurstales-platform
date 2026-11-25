@@ -33,6 +33,18 @@ export const isOrderQrisUpdated = (order: QrisOrder): boolean =>
     qrisAmountShown: order.qrisAmountShown,
   })
 
+/** Open QRIS order: branch code + 3-digit code to match a payment in Livin' Merchant (codes repeat across branches). */
+export const OrderQrisCodePill: FC<{ order: QrisOrder }> = ({ order }) => {
+  if (!hasOpenQrisPayment(order)) return null
+  const match = /^([A-Z0-9]+)-\d{2}-\d{2}-\d{2}-(\d{3})$/.exec(order.orderNumber)
+  if (!match) return null
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full bg-muted px-2 py-0.5 text-2xs font-semibold tabular-nums text-foreground/80" data-testid="qris-code-pill">
+      QRIS {match[1]}·{match[2]}
+    </span>
+  )
+}
+
 export const OrderQrisUpdatedBadge: FC<{ order: QrisOrder }> = ({ order }) => {
   const tr = useBilingualCopy()
   if (!isOrderQrisUpdated(order)) return null

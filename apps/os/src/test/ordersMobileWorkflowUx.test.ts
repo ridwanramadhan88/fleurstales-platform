@@ -33,7 +33,7 @@ describe('Orders mobile workflow UX', () => {
   it('uses compact Orders spacing and a short tablet search placeholder', () => {
     const home = read('src/pages/Home.tsx')
 
-    expect(home).toContain("placeholder: 'Search order #, customer, phone…'")
+    expect(home).toContain("placeholder: tr('Search order #, customer, phone, QRIS amount…', 'Cari nomor pesanan, pelanggan, telepon, nominal QRIS…')")
     expect(home).toContain("tabletPlaceholder: 'Search orders…'")
     expect(home).toContain('<section className="space-y-4 sm:space-y-6">')
   })
