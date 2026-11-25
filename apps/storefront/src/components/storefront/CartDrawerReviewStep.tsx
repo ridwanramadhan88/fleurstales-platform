@@ -224,9 +224,8 @@ export const ReviewStep: FC<CartDrawerViewModel> = ({
 
           <div className="mt-3 overflow-hidden rounded-[var(--sf-radius-field)] bg-[#f0e6dd]">
             {paymentChannel === 'qris' && branchQris ? (
-              <div className="flex flex-col items-center gap-3 px-4 py-4 text-center">
-                <img src={branchQris.imageUrl} alt="QRIS" className="aspect-square w-full max-w-[16rem] rounded-[var(--sf-radius-field)] bg-white object-contain" />
-                <p className="sf-type-1 leading-5 text-black/56">Scan QRIS ini dengan aplikasi bank atau e-wallet setelah pesanan dibuat. Produksi dimulai setelah Admin memverifikasi pembayaran.</p>
+              <div className="px-4 py-4">
+                <p className="sf-type-1 leading-5 text-black/56">QR pembayaran dengan nominal pesanan Anda muncul setelah pesanan dibuat. Produksi dimulai setelah Admin memverifikasi pembayaran.</p>
               </div>
             ) : paymentAccount ? (
               <div className="space-y-3 px-4 py-4">

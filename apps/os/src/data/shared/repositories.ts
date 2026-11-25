@@ -912,43 +912,61 @@ export const createStorefrontCheckoutRepository = (client: SupabaseHttpClient): 
 
 export interface BranchQris {
   branchId: string
-  imagePath: string
-  imageUrl: string
+  /** Legacy static image still in public storage; cleaned up by the Owner's Settings screen. */
+  legacyImagePath: string | null
   linkedAccountId: string
   isActive: boolean
+  merchantName: string | null
+  nmid: string | null
+  merchantCriteria: string | null
+  mcc: string | null
+  acquirer: string | null
 }
 
 /**
- * Static QRIS per branch. Read: public (active rows; Owner also sees inactive).
- * Write: Owner only, through save_branch_qris / delete_branch_qris. Images
- * live in the public store-assets bucket under qris/.
+ * QRIS per branch (25 Nov 2026). The static QRIS is only the source for the
+ * amount-embedded QR built on the server: its payload is private and never
+ * read by any app. Read: public-safe details (active rows; Owner also sees
+ * inactive). Write: Owner only, through save_branch_qris_source (decoded
+ * static QR text), save_branch_qris (linked account + on/off) and
+ * delete_branch_qris.
  */
 export const createBranchQrisRepository = (client: SupabaseHttpClient) => ({
   async list(): Promise<BranchQris[]> {
     const rows = await client.select('branch_qris_codes', {
-      select: 'branch_id,image_path,linked_account_id,is_active,updated_at',
+      select: 'branch_id,image_path,linked_account_id,is_active,updated_at,merchant_name,nmid,merchant_criteria,mcc,acquirer',
     })
     return rows.map((row) => ({
       branchId: row.branch_id,
-      imagePath: row.image_path,
-      imageUrl: `${client.storagePublicUrl('store-assets', row.image_path)}?v=${encodeURIComponent(row.updated_at)}`,
+      legacyImagePath: row.image_path,
       linkedAccountId: row.linked_account_id,
       isActive: row.is_active,
+      merchantName: row.merchant_name,
+      nmid: row.nmid,
+      merchantCriteria: row.merchant_criteria,
+      mcc: row.mcc,
+      acquirer: row.acquirer,
     }))
   },
-  async uploadImage(branchId: string, image: Blob): Promise<string> {
-    const safeBranch = branchId.replace(/[^A-Za-z0-9_-]/g, '-')
-    const path = `qris/${safeBranch}-${Date.now()}.png`
-    await client.uploadStorageObject('store-assets', path, image, { upsert: false, cacheControl: '3600' })
-    return path
+  async saveSource(input: { branchId: string; payload: string; linkedAccountId: string }): Promise<void> {
+    await client.rpc('save_branch_qris_source', {
+      p_branch_id: input.branchId,
+      p_payload: input.payload,
+      p_linked_account_id: input.linkedAccountId,
+    })
   },
-  async save(input: { branchId: string; imagePath: string; linkedAccountId: string; isActive: boolean }): Promise<void> {
+  async save(input: { branchId: string; linkedAccountId: string; isActive: boolean }): Promise<void> {
     await client.rpc('save_branch_qris', {
       p_branch_id: input.branchId,
-      p_image_path: input.imagePath,
+      p_image_path: null,
       p_linked_account_id: input.linkedAccountId,
       p_is_active: input.isActive,
     })
+  },
+  /** Deletes a legacy static QRIS image from public storage and forgets it. */
+  async clearLegacyImage(branchId: string, imagePath: string): Promise<void> {
+    await client.removeStorageObjects('store-assets', [imagePath])
+    await client.rpc('clear_branch_qris_image', { p_branch_id: branchId })
   },
   async remove(branchId: string): Promise<void> {
     await client.rpc('delete_branch_qris', { p_branch_id: branchId })

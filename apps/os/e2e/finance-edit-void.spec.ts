@@ -34,7 +34,7 @@ test('finance edits a paid order payment, then voids it and the order is cancell
   await createCashPickupOrder(page, customerName, `0818${uniqueSuffix()}`)
   const details = await openOrder(page, customerName)
   await confirmCashPayment(page, details)
-  const orderNumber = (await details.innerText()).match(/[A-Z]{3}-\d{4}-\d{4}/)?.[0]
+  const orderNumber = (await details.innerText()).match(/[A-Z]{3}-\d{2}-\d{2}-\d{2}-\d{3,}/)?.[0]
   expect(orderNumber).toBeTruthy()
   await signOut(page)
 

@@ -21,8 +21,8 @@
     "unitPriceIdr": 350000
   },
   "checkout": {
-    "firstOrderNumber": "KDM-2026-0002",
-    "secondOrderNumber": "KDM-2026-0003",
+    "firstOrderNumber": "KDM-26-07-24-001",
+    "secondOrderNumber": "KDM-26-07-24-002",
     "replayDeduplicated": true,
     "replaySameOrder": true,
     "preservedCrmName": true,
@@ -36,7 +36,7 @@
   "authoritativeMutation": {
     "catalogRevision": 4,
     "storeRevision": 3,
-    "orderNumber": "KDM-2026-0004",
+    "orderNumber": "KDM-26-07-24-003",
     "lineUnitPriceIdr": 375000,
     "deliveryFeeIdr": 30000,
     "totalIdr": 405000,
@@ -47,5 +47,5 @@
     "orders": 4,
     "orderItems": 4
   },
-  "finalFingerprint": "fnv1a32:73c6a2a5"
+  "finalFingerprint": "fnv1a32:ad70f139"
 }

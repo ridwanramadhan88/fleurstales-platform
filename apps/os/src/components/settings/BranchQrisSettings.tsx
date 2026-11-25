@@ -1,47 +1,19 @@
-import { useCallback, useEffect, useState, type ChangeEvent, type FC } from 'react'
-import { QrCode, Trash2, Upload } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FC } from 'react'
+import { AlertTriangle, QrCode, Trash2, Upload } from 'lucide-react'
 import type { BankAccountDetail, BranchSettings } from '../../types/settings'
 import { bootstrapSharedData } from '../../data/shared/bootstrap'
 import { browserSupabaseTokenProvider } from '../../data/shared/supabaseSession'
 import { createBranchQrisRepository, type BranchQris } from '../../data/shared/repositories'
 import { useBilingualCopy } from '../../i18n/bilingualCopy'
+import { merchantCriteriaLabel, parseStaticQris, qrisBankMismatch, readQrTextFromImage, StaticQrisReadError } from '../../domain/qrisStaticDomain'
 
 /**
- * Static QRIS per branch (Owner). One QRIS per branch, a square image, linked
- * to one bank account: customers who pay by QRIS are reconciled against that
- * account. Saved immediately (not part of the Settings draft), because the
- * image upload has to happen first.
+ * QRIS per branch (Owner). The static QRIS is only the source for the
+ * amount-embedded QR made per order on the server: it is never shown to
+ * customers. Uploading the image only lets this browser read the QR text;
+ * the image itself is not stored. Saved immediately (not part of the
+ * Settings draft).
  */
-
-const MAX_QRIS_SIDE = 1200
-const SQUARE_TOLERANCE = 0.03
-
-/** Loads the file, checks it is (nearly) square, re-encodes as PNG (keeps the QR crisp). */
-export const prepareSquareQrisImage = async (file: File): Promise<Blob> => {
-  const url = URL.createObjectURL(file)
-  try {
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const element = new Image()
-      element.onload = () => resolve(element)
-      element.onerror = () => reject(new Error('IMAGE_UNREADABLE'))
-      element.src = url
-    })
-    const { naturalWidth: width, naturalHeight: height } = image
-    if (!width || !height) throw new Error('IMAGE_UNREADABLE')
-    if (Math.abs(width - height) / Math.max(width, height) > SQUARE_TOLERANCE) throw new Error('IMAGE_NOT_SQUARE')
-    const side = Math.min(MAX_QRIS_SIDE, Math.min(width, height))
-    const canvas = document.createElement('canvas')
-    canvas.width = side
-    canvas.height = side
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('IMAGE_UNREADABLE')
-    context.imageSmoothingEnabled = false
-    context.drawImage(image, 0, 0, side, side)
-    return await new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('IMAGE_UNREADABLE'))), 'image/png'))
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
 
 interface Props {
   branches: BranchSettings[]
@@ -54,22 +26,35 @@ export const BranchQrisSettings: FC<Props> = ({ branches, bankAccounts }) => {
   const [busyBranch, setBusyBranch] = useState<string | null>(null)
   const [message, setMessage] = useState<{ branchId: string; text: string; error: boolean } | null>(null)
   const [pendingAccount, setPendingAccount] = useState<Record<string, string>>({})
+  const cleanedLegacy = useRef(new Set<string>())
   const shared = bootstrapSharedData(browserSupabaseTokenProvider)
   const repository = shared.enabled ? createBranchQrisRepository(shared.repositories.client) : null
   const linkableAccounts = bankAccounts.filter((account) => account.type === 'bank_transfer' && account.isActive)
 
   const refresh = useCallback(async () => {
     if (!repository) return
-    setItems(await repository.list())
+    const rows = await repository.list()
+    setItems(rows)
+    // Static QRIS images from before 25 Nov 2026 sat in public storage:
+    // remove them once the branch has a saved source.
+    for (const row of rows) {
+      if (row.legacyImagePath && row.nmid && !cleanedLegacy.current.has(row.branchId)) {
+        cleanedLegacy.current.add(row.branchId)
+        void repository.clearLegacyImage(row.branchId, row.legacyImagePath).catch(() => cleanedLegacy.current.delete(row.branchId))
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shared.enabled])
 
   useEffect(() => { void refresh().catch(() => undefined) }, [refresh])
 
   const errorText = (cause: unknown): string => {
-    const code = cause instanceof Error ? cause.message : ''
-    if (code.includes('IMAGE_NOT_SQUARE')) return tr('The QRIS image must be square (1:1).', 'Gambar QRIS harus persegi (1:1).')
-    if (code.includes('IMAGE_UNREADABLE')) return tr('The image could not be read.', 'Gambar tidak bisa dibaca.')
+    const code = cause instanceof StaticQrisReadError ? cause.code : cause instanceof Error ? cause.message : ''
+    if (code.includes('QRIS_NOT_FOUND')) return tr('No QR code found in this image. Use a clear, uncropped QRIS image.', 'QR tidak ditemukan di gambar ini. Gunakan gambar QRIS yang jelas dan tidak terpotong.')
+    if (code.includes('QRIS_NOT_STATIC')) return tr('This is not a static QRIS. Upload the static QRIS of this branch.', 'Ini bukan QRIS statis. Unggah QRIS statis cabang ini.')
+    if (code.includes('QRIS_INVALID')) return tr('This QR is not a valid QRIS.', 'QR ini bukan QRIS yang valid.')
+    if (code.includes('QRIS_NMID_IN_USE')) return tr('This QRIS is already used by another branch.', 'QRIS ini sudah dipakai cabang lain.')
+    if (code.includes('QRIS_DYNAMIC_NOT_READY')) return tr('QRIS can be turned on once the amount-embedded QR is released.', 'QRIS bisa diaktifkan setelah QR bernominal dirilis.')
     if (code.includes('QRIS_LINKED_ACCOUNT_INVALID')) return tr('Choose an active bank account (save new accounts first).', 'Pilih rekening bank yang aktif (simpan rekening baru terlebih dahulu).')
     if (code.includes('OWNER_REQUIRED')) return tr('Only the Owner can change QRIS.', 'Hanya Pemilik yang bisa mengubah QRIS.')
     return tr('QRIS could not be saved. Try again.', 'QRIS tidak bisa disimpan. Coba lagi.')
@@ -98,10 +83,10 @@ export const BranchQrisSettings: FC<Props> = ({ branches, bankAccounts }) => {
     event.target.value = ''
     if (!file || !repository) return
     await run(branch.id, async () => {
-      const image = await prepareSquareQrisImage(file)
-      const imagePath = await repository.uploadImage(branch.id, image)
-      await repository.save({ branchId: branch.id, imagePath, linkedAccountId: accountFor(branch.id, current), isActive: current?.isActive ?? true })
-    }, tr('QRIS saved.', 'QRIS tersimpan.'))
+      const payload = (await readQrTextFromImage(file)).trim()
+      parseStaticQris(payload)
+      await repository.saveSource({ branchId: branch.id, payload, linkedAccountId: accountFor(branch.id, current) })
+    }, tr('QRIS read and saved.', 'QRIS terbaca dan tersimpan.'))
   }
 
   if (!repository) return null
@@ -112,57 +97,70 @@ export const BranchQrisSettings: FC<Props> = ({ branches, bankAccounts }) => {
         <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-foreground"><QrCode className="size-4" /></span>
         <div>
           <p className="text-sm font-semibold text-foreground">{tr('QRIS per branch', 'QRIS per cabang')}</p>
-          <p className="text-xs text-muted-foreground">{tr('One static QRIS per branch (square image). Customers who pay by QRIS still upload proof; Finance matches it to the linked bank account.', 'Satu QRIS statis per cabang (gambar persegi). Pelanggan yang bayar lewat QRIS tetap mengunggah bukti; Keuangan mencocokkannya ke rekening yang ditautkan.')}</p>
+          <p className="text-xs text-muted-foreground">{tr('Source static QRIS, not shown to customers. Each order gets its own QR with the exact amount.', 'QRIS statis sebagai sumber, tidak ditampilkan ke pelanggan. Setiap pesanan mendapat QR sendiri dengan nominal pas.')}</p>
         </div>
       </div>
       {branches.filter((branch) => branch.isActive).map((branch) => {
         const current = items.find((item) => item.branchId === branch.id)
+        const hasSource = Boolean(current?.nmid)
         const busy = busyBranch === branch.id
+        const linkedAccount = linkableAccounts.find((account) => account.id === accountFor(branch.id, current))
+        const mismatch = hasSource && qrisBankMismatch(current?.acquirer, linkedAccount?.bankName)
         return (
-          <div key={branch.id} className="grid gap-3 rounded-xl bg-surface-panel p-3 ring-1 ring-border/60 sm:grid-cols-[7rem_1fr]" data-testid={`branch-qris-${branch.id}`}>
-            <div className="flex size-28 items-center justify-center overflow-hidden rounded-lg bg-background ring-1 ring-border/60">
-              {current ? <img src={current.imageUrl} alt={`QRIS ${branch.name}`} className="size-full object-contain" /> : <QrCode className="size-8 text-muted-foreground" />}
+          <div key={branch.id} className="space-y-2 rounded-xl bg-surface-panel p-3 ring-1 ring-border/60" data-testid={`branch-qris-${branch.id}`}>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold text-foreground">{branch.name}</p>
+              {current && <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${current.isActive ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>{current.isActive ? tr('Active', 'Aktif') : tr('Off', 'Nonaktif')}</span>}
             </div>
-            <div className="min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-foreground">{branch.name}</p>
-                {current && <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${current.isActive ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>{current.isActive ? tr('Active', 'Aktif') : tr('Off', 'Nonaktif')}</span>}
-              </div>
-              <label className="block space-y-1">
-                <span className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">{tr('Paid into', 'Masuk ke rekening')}</span>
-                <select
-                  value={accountFor(branch.id, current)}
-                  disabled={busy || linkableAccounts.length === 0}
-                  onChange={(event) => {
-                    const linkedAccountId = event.target.value
-                    setPendingAccount((state) => ({ ...state, [branch.id]: linkedAccountId }))
-                    if (current) void run(branch.id, () => repository.save({ branchId: branch.id, imagePath: current.imagePath, linkedAccountId, isActive: current.isActive }), tr('QRIS saved.', 'QRIS tersimpan.'))
-                  }}
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"
-                >
-                  {linkableAccounts.map((account) => <option key={account.id} value={account.id}>{`${account.bankName} · ${account.accountNumber} · ${account.accountHolder}`}</option>)}
-                </select>
+            {hasSource && current ? (
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs" data-testid={`branch-qris-details-${branch.id}`}>
+                <dt className="text-muted-foreground">{tr('Name in QR', 'Nama di QR')}</dt><dd className="min-w-0 truncate font-medium text-foreground">{current.merchantName}</dd>
+                <dt className="text-muted-foreground">NMID</dt><dd className="font-medium tabular-nums text-foreground">{current.nmid}</dd>
+                <dt className="text-muted-foreground">{tr('Category', 'Kategori')}</dt><dd className="text-foreground">{merchantCriteriaLabel(current.merchantCriteria)}</dd>
+              </dl>
+            ) : (
+              <p className="text-xs text-muted-foreground">{tr('No QRIS yet.', 'Belum ada QRIS.')}</p>
+            )}
+            <label className="block space-y-1">
+              <span className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">{tr('Paid into', 'Masuk ke rekening')}</span>
+              <select
+                value={accountFor(branch.id, current)}
+                disabled={busy || linkableAccounts.length === 0}
+                onChange={(event) => {
+                  const linkedAccountId = event.target.value
+                  setPendingAccount((state) => ({ ...state, [branch.id]: linkedAccountId }))
+                  if (current && hasSource) void run(branch.id, () => repository.save({ branchId: branch.id, linkedAccountId, isActive: current.isActive }), tr('QRIS saved.', 'QRIS tersimpan.'))
+                }}
+                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"
+              >
+                {linkableAccounts.map((account) => <option key={account.id} value={account.id}>{`${account.bankName} · ${account.accountNumber} · ${account.accountHolder}`}</option>)}
+              </select>
+            </label>
+            {mismatch && (
+              <p className="flex items-start gap-1.5 text-xs text-warning" data-testid={`branch-qris-bank-mismatch-${branch.id}`}>
+                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                {tr('The QRIS bank and this account bank differ. Choose the account that receives this QRIS.', 'Bank QRIS dan bank rekening ini berbeda. Pilih rekening yang menerima QRIS ini.')}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <label className={`inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-background px-3 text-xs font-medium ${busy || linkableAccounts.length === 0 ? 'pointer-events-none opacity-60' : ''}`}>
+                <Upload className="size-3.5" />
+                {hasSource ? tr('Replace static QRIS', 'Ganti QRIS statis') : tr('Upload static QRIS', 'Unggah QRIS statis')}
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" aria-label={tr(`Static QRIS for ${branch.name}`, `QRIS statis ${branch.name}`)} onChange={onUpload(branch, current)} />
               </label>
-              <div className="flex flex-wrap gap-2">
-                <label className={`inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-background px-3 text-xs font-medium ${busy || linkableAccounts.length === 0 ? 'pointer-events-none opacity-60' : ''}`}>
-                  <Upload className="size-3.5" />
-                  {current ? tr('Replace QRIS image', 'Ganti gambar QRIS') : tr('Upload QRIS image', 'Unggah gambar QRIS')}
-                  <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" aria-label={tr(`QRIS image for ${branch.name}`, `Gambar QRIS ${branch.name}`)} onChange={onUpload(branch, current)} />
-                </label>
-                {current && (
-                  <button type="button" disabled={busy} onClick={() => void run(branch.id, () => repository.save({ branchId: branch.id, imagePath: current.imagePath, linkedAccountId: current.linkedAccountId, isActive: !current.isActive }), tr('QRIS saved.', 'QRIS tersimpan.'))} className="h-9 rounded-full border border-border bg-background px-3 text-xs font-medium disabled:opacity-60">
-                    {current.isActive ? tr('Turn off', 'Nonaktifkan') : tr('Turn on', 'Aktifkan')}
-                  </button>
-                )}
-                {current && (
-                  <button type="button" disabled={busy} onClick={() => void run(branch.id, () => repository.remove(branch.id), tr('QRIS removed.', 'QRIS dihapus.'))} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-destructive/30 px-3 text-xs font-medium text-destructive disabled:opacity-60">
-                    <Trash2 className="size-3.5" />{tr('Remove', 'Hapus')}
-                  </button>
-                )}
-              </div>
-              {linkableAccounts.length === 0 && <p className="text-xs text-warning">{tr('Add and save an active bank account first.', 'Tambahkan dan simpan rekening bank aktif terlebih dahulu.')}</p>}
-              {message?.branchId === branch.id && <p role={message.error ? 'alert' : 'status'} className={`text-xs ${message.error ? 'text-destructive' : 'text-success'}`}>{message.text}</p>}
+              {current && hasSource && (
+                <button type="button" disabled={busy} onClick={() => void run(branch.id, () => repository.save({ branchId: branch.id, linkedAccountId: current.linkedAccountId, isActive: !current.isActive }), tr('QRIS saved.', 'QRIS tersimpan.'))} className="h-9 rounded-full border border-border bg-background px-3 text-xs font-medium disabled:opacity-60">
+                  {current.isActive ? tr('Turn off', 'Nonaktifkan') : tr('Turn on', 'Aktifkan')}
+                </button>
+              )}
+              {current && (
+                <button type="button" disabled={busy} onClick={() => void run(branch.id, () => repository.remove(branch.id), tr('QRIS removed.', 'QRIS dihapus.'))} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-destructive/30 px-3 text-xs font-medium text-destructive disabled:opacity-60">
+                  <Trash2 className="size-3.5" />{tr('Remove', 'Hapus')}
+                </button>
+              )}
             </div>
+            {linkableAccounts.length === 0 && <p className="text-xs text-warning">{tr('Add and save an active bank account first.', 'Tambahkan dan simpan rekening bank aktif terlebih dahulu.')}</p>}
+            {message?.branchId === branch.id && <p role={message.error ? 'alert' : 'status'} className={`text-xs ${message.error ? 'text-destructive' : 'text-success'}`}>{message.text}</p>}
           </div>
         )
       })}

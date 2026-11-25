@@ -48,14 +48,47 @@ export const checkExpectedOrderRevision = (
       }
 }
 
+/** Jakarta calendar day as YY-MM-DD, the date part of a daily order number. */
+export const jakartaOrderDatePart = (at: Date | string): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(typeof at === 'string' ? new Date(at) : at)
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+  return `${String(values.year).slice(-2)}-${values.month}-${values.day}`
+}
+
+/**
+ * Daily order number (25 Nov 2026): <BRANCH>-YY-MM-DD-NNN, a separate
+ * sequence per branch per Jakarta day starting at 001, growing past 999.
+ * Matches private.allocate_order_number in Supabase.
+ */
+export const formatDailyOrderNumber = (prefix: string, datePart: string, sequence: number): string =>
+  `${prefix}-${datePart}-${sequence < 1000 ? String(sequence).padStart(3, '0') : String(sequence)}`
+
+/** Highest daily sequence already used for this branch prefix and day. */
+export const currentDailyOrderSequence = (prefix: string, datePart: string, orderNumbers: Iterable<string>): number => {
+  const dayPrefix = `${prefix}-${datePart}-`.toUpperCase()
+  let highest = 0
+  for (const orderNumber of orderNumbers) {
+    if (!orderNumber.toUpperCase().startsWith(dayPrefix)) continue
+    const tail = orderNumber.slice(dayPrefix.length)
+    if (!/^\d+$/.test(tail)) continue
+    highest = Math.max(highest, Number(tail))
+  }
+  return highest
+}
+
 export const allocateUniqueOrderNumber = ({
   prefix,
-  year,
+  datePart,
   currentSequence,
   existingOrderNumbers,
 }: {
   prefix: string
-  year: number
+  datePart: string
   currentSequence: number
   existingOrderNumbers: Iterable<string>
 }): { orderNumber: string; sequence: number } => {
@@ -63,7 +96,7 @@ export const allocateUniqueOrderNumber = ({
   let sequence = Math.max(0, currentSequence)
   do {
     sequence += 1
-    const orderNumber = `${prefix}-${year}-${sequence.toString().padStart(4, '0')}`
+    const orderNumber = formatDailyOrderNumber(prefix, datePart, sequence)
     if (!used.has(orderNumber)) return { orderNumber, sequence }
   } while (sequence < Number.MAX_SAFE_INTEGER)
   throw new Error('Unable to allocate a unique order number.')

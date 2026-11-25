@@ -57,14 +57,14 @@ export const SummaryStep: FC<CartDrawerViewModel> = ({
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#00813f] text-white">{paymentChannel === 'qris' ? <QrCode className="size-[1.05rem]" strokeWidth={1.8} /> : <Building2 className="size-[1.05rem]" strokeWidth={1.8} />}</span>
             <div className="min-w-0 flex-1">
               <h4 className="sf-type-4 font-medium leading-[0.98]">{paymentChannel === 'qris' ? 'QRIS' : 'Bank transfer'}</h4>
-              <p className="mt-1.5 sf-type-2 leading-6 text-black/56">{paymentChannel === 'qris' ? 'Scan QRIS di bawah dan bayar jumlah penuh. Produksi dimulai setelah Admin memverifikasi pembayaran.' : 'Transfer jumlah penuh ke rekening di bawah ini. Produksi dimulai setelah Admin memverifikasi pembayaran.'}</p>
+              <p className="mt-1.5 sf-type-2 leading-6 text-black/56">{paymentChannel === 'qris' ? 'Scan QR pembayaran dan bayar tepat sesuai nominal. Produksi dimulai setelah Admin memverifikasi pembayaran.' : 'Transfer jumlah penuh ke rekening di bawah ini. Produksi dimulai setelah Admin memverifikasi pembayaran.'}</p>
             </div>
           </div>
 
           <div className="mt-4 overflow-hidden rounded-[var(--sf-radius-field)] border border-black/12 bg-white/55">
             {paymentChannel === 'qris' && branchQris ? (
-              <div className="flex justify-center px-4 py-4">
-                <img src={branchQris.imageUrl} alt="QRIS" className="aspect-square w-full max-w-[18rem] rounded-[var(--sf-radius-field)] bg-white object-contain" />
+              <div className="px-4 py-4">
+                <p className="sf-type-2 leading-6 text-black/56">QR pembayaran dengan nominal pesanan Anda ada di halaman lacak pesanan.</p>
               </div>
             ) : paymentAccount ? (
               <div className="space-y-3 px-4 py-4">

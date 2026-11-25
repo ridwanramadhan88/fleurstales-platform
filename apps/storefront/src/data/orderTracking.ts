@@ -1,5 +1,6 @@
 import { bootstrapSharedData } from './shared/bootstrap'
 import type { Json, OrderFulfillment, OrderStatus, PaymentMethod, PaymentStatus } from './shared/databaseTypes'
+import { normalizeOrderNumberInput } from '../domain/orderNumberInput'
 
 export interface PublicOrderTrackingItem {
   name: string
@@ -169,7 +170,7 @@ export const getPublicOrderTracking = async (trackingId: string): Promise<Public
 
 export const searchPublicOrderStatus = async (orderNumber: string): Promise<PublicOrderStatusSummary | null> =>
   getPublicClient().rpc<PublicOrderStatusSummary | null>('search_order_public_status', {
-    p_order_number: orderNumber.trim(),
+    p_order_number: normalizeOrderNumberInput(orderNumber),
   })
 
 export const verifyPublicOrderTrackingAccess = async (
@@ -177,7 +178,7 @@ export const verifyPublicOrderTrackingAccess = async (
   whatsappNumber: string,
 ): Promise<TrackingAccessResult | null> =>
   getPublicClient().rpc<TrackingAccessResult | null>('verify_order_tracking_access', {
-    p_order_number: orderNumber.trim(),
+    p_order_number: normalizeOrderNumberInput(orderNumber),
     p_whatsapp_number: whatsappNumber.trim(),
   })
 

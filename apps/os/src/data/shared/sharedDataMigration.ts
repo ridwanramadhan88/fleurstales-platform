@@ -9,6 +9,7 @@ export interface SupabaseSharedImportPlan {
   catalog_product_code_tombstones: Record<string, unknown>[]
   store_sync_state: Record<string, unknown>[]
   order_sequences: Record<string, unknown>[]
+  order_daily_sequences: Record<string, unknown>[]
   store_profile: Record<string, unknown>[]
   branches: Record<string, unknown>[]
   public_payment_accounts: Record<string, unknown>[]
@@ -42,6 +43,23 @@ export const buildSupabaseSharedImportPlan = (bundle: SharedDataBundleV1): Supab
       const key = `${branchId}:${year}`
       const current = byKey.get(key)
       if (!current || sequence > current.last_sequence) byKey.set(key, { branch_id: branchId, sequence_year: year, last_sequence: sequence })
+    }
+    return [...byKey.values()]
+  })(),
+  // Daily order numbers (25 Nov 2026): <BRANCH>-YY-MM-DD-NNN.
+  order_daily_sequences: (() => {
+    const byKey = new Map<string, { branch_id: string; sequence_date: string; last_sequence: number }>()
+    const branchCodeToId = new Map(bundle.store.snapshot.branches.map((branch) => [branch.code.toUpperCase(), branch.id]))
+    for (const order of bundle.orders.orders) {
+      const match = /^([A-Z0-9]+)-(\d{2})-(\d{2})-(\d{2})-(\d{3,})$/.exec(order.orderNumber.toUpperCase())
+      if (!match) continue
+      const branchId = branchCodeToId.get(match[1]) ?? order.branchId
+      const sequenceDate = `20${match[2]}-${match[3]}-${match[4]}`
+      const sequence = Number(match[5])
+      if (!Number.isInteger(sequence) || sequence < 1) continue
+      const key = `${branchId}:${sequenceDate}`
+      const current = byKey.get(key)
+      if (!current || sequence > current.last_sequence) byKey.set(key, { branch_id: branchId, sequence_date: sequenceDate, last_sequence: sequence })
     }
     return [...byKey.values()]
   })(),
