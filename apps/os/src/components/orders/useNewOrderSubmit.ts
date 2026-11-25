@@ -197,6 +197,7 @@ export const useNewOrderSubmit = ({
       greetingMessage: values.greetingMessage.trim() || undefined,
       greetingCardName: values.greetingCardName.trim() || undefined,
       paymentMethod: values.paymentMethod || undefined,
+      ...(values.paymentMethod === 'transfer' && values.payWithQris ? { paymentChannel: 'qris' as const } : {}),
       paymentStatus: values.paymentStatus || 'unpaid',
       depositAmountIdr: sanitizeCurrency(values.depositAmount),
       promoCode: trimmedPromoCode || undefined,

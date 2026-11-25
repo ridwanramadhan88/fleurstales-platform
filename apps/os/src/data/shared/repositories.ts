@@ -78,6 +78,7 @@ import type {
 } from './repositoryContracts'
 import { SupabaseHttpClient, SupabaseHttpError } from './supabaseHttpClient'
 import { normalizeCustomerWhatsappNumber } from './customerIdentityDomain'
+import type { QrisPayment } from './qrisPayment'
 
 const optional = <T>(value: T | null): T | undefined => value ?? undefined
 
@@ -684,6 +685,7 @@ const mapOrder = (row: OrderWithItemsRow): SharedOrder => ({
   paymentStatus: row.payment_status,
   paymentMethod: optional(row.payment_method),
   paymentChannel: paymentChannelFromSnapshot(row.payment_account_snapshot),
+  qrisAmountShown: row.qris_amount_shown ?? undefined,
   paidAmountIdr: row.paid_amount_idr,
   paymentHistory: [...(row.order_payment_events ?? [])]
     .sort((a, b) => a.occurred_at.localeCompare(b.occurred_at) || a.id.localeCompare(b.id))
@@ -827,6 +829,14 @@ export const createOrdersAdminRepository = (client: SupabaseHttpClient): OrdersA
     return client.rpc<CreateInternalOrderResult>('create_internal_order', {
       p_payload: asJson(input),
     })
+  },
+
+  async getOrderQrisPayment(orderId: string) {
+    return client.rpc<QrisPayment | null>('get_order_qris_payment', { p_order_id: orderId })
+  },
+
+  async markOrderQrisSent(orderId: string) {
+    return client.rpc<{ orderId: string; revision: number; qrisAmountShown: number }>('mark_order_qris_sent', { p_order_id: orderId })
   },
 
   async saveOrderDeliveryDetails(orderId: string, expectedRevision: number, details: SaveOrderDeliveryDetailsInput) {

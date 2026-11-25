@@ -295,6 +295,13 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
         ...(input.promoCode ? { promoMessage: 'Voucher validation requires Supabase.' } : {}),
       }
     },
+    async getOrderQrisPayment() {
+      // Amount-embedded QRIS is built by Supabase; the simulator has no QRIS source.
+      return null
+    },
+    async markOrderQrisSent() {
+      throw new Error('Amount-embedded QRIS requires Supabase.')
+    },
     async createInternalOrder(input) {
       if (input.items.some((item) => item.mode !== 'catalog' || !item.productId || !item.variantId)) {
         throw new Error('The dependency-free simulator supports catalog-backed internal items only.')

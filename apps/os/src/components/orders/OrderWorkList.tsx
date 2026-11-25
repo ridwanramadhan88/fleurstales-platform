@@ -19,6 +19,7 @@ import {
   getOrderWorkReason,
   getOrderWorkStageLabel,
 } from './orderWorkStagePresentation'
+import { OrderQrisUpdatedBadge } from './OrderQrisPaymentButton'
 
 type RowRefSetter = (key: string) => (node: HTMLElement | null) => void
 type Copy = (en: string, id: string) => string
@@ -152,6 +153,7 @@ export const OrderWorkList: FC<OrderWorkListProps> = ({ viewModel, setDesktopRow
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="truncate text-[15px] font-semibold text-foreground">{row.order.customerName}</span>
                     {orderHasNote(row.order) && <NoteTag copy={copy} />}
+                    <OrderQrisUpdatedBadge order={row.order} />
                   </div>
                   <div className="mt-0.5 truncate text-[13px] text-muted-foreground">{getProductName(row.order)}</div>
                 </div>
@@ -211,6 +213,7 @@ export const OrderWorkList: FC<OrderWorkListProps> = ({ viewModel, setDesktopRow
                     <div className="flex min-w-0 items-center gap-1.5">
                       <span className="truncate text-[15px] font-semibold text-foreground">{row.order.customerName}</span>
                       {orderHasNote(row.order) && <NoteTag copy={copy} />}
+                    <OrderQrisUpdatedBadge order={row.order} />
                     </div>
                     <div className="mt-0.5 truncate text-[13px] text-muted-foreground">{getProductName(row.order)}</div>
                   </div>

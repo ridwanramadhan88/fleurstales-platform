@@ -24,6 +24,7 @@ import { DeliveryProofButton, canViewDeliveryProof } from './DeliveryProofButton
 import { formatMinutesLeft } from './orderWorkStagePresentation'
 import { buildWhatsAppLink } from './orderTableWhatsApp'
 import { StaffReviewHistory } from '../customers/StaffReviewHistory'
+import { hasOpenQrisPayment, OrderQrisPaymentButton, OrderQrisUpdatedBadge } from './OrderQrisPaymentButton'
 
 type Copy = (en: string, id: string) => string
 type Step = 1 | 2 | 3 | 4 | 5
@@ -224,6 +225,15 @@ export const OrderProcessView: FC<{ viewModel: OrderDetailsViewModel; onShowFull
                     <p className="rounded-2xl bg-muted/60 p-4 text-sm text-foreground">
                       {copy(`Paid so far Rp ${formatter.format(order.paidAmountIdr ?? 0)}`, `Sudah dibayar Rp ${formatter.format(order.paidAmountIdr ?? 0)}`)}
                     </p>
+                  )}
+                  {hasOpenQrisPayment(order) && ['owner', 'admin', 'finance'].includes(currentUserRole) && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-muted/60 p-4">
+                      <p className="min-w-0 flex-1 text-sm text-foreground">
+                        {copy('Send the customer this order\'s QR with the exact amount.', 'Kirim QR pesanan ini (nominal pas) ke pelanggan.')}
+                      </p>
+                      <OrderQrisUpdatedBadge order={order} />
+                      <OrderQrisPaymentButton order={order} canMarkSent={['owner', 'admin'].includes(currentUserRole)} />
+                    </div>
                   )}
                 </>
               )

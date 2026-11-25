@@ -358,6 +358,10 @@ export interface OrderRow {
   payment_method: PaymentMethod | null
   /** Account the customer paid into; `channel: 'qris'` marks a branch-QRIS payment. */
   payment_account_snapshot?: Json | null
+  /** Amount-embedded QRIS (25 Nov 2026): QRIS amount last handed to the customer. */
+  qris_amount_shown?: number | null
+  /** QRIS unique-code discount applied at payment confirmation. */
+  qris_unique_discount_idr?: number
   paid_amount_idr: number
   refund_amount_idr: number | null
   refund_reason: string | null

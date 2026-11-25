@@ -369,6 +369,8 @@ export interface SharedOrder {
   paymentMethod?: PaymentMethod
   /** Set when a storefront transfer was paid through the branch QRIS. */
   paymentChannel?: 'qris'
+  /** QRIS amount last handed to the customer (flags "QR diperbarui"). */
+  qrisAmountShown?: number
   paidAmountIdr: number
   paymentHistory?: SharedOrderPaymentEvent[]
   refundAmountIdr?: number
@@ -551,6 +553,8 @@ export interface CreateInternalOrderInput {
   greetingMessage?: string
   greetingCardName?: string
   paymentMethod?: 'cash' | 'transfer'
+  /** 'qris' = paid by the branch's amount-embedded QRIS (recorded as a transfer). */
+  paymentChannel?: 'qris'
   paymentStatus: 'unpaid' | 'partial' | 'paid'
   depositAmountIdr: number
   promoCode?: string
