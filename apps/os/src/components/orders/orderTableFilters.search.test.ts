@@ -29,4 +29,18 @@ describe('doesOrderMatchSearch', () => {
     expect(doesOrderMatchSearch({ ...input, query: 'KDM-26-11-26-007' })).toBe(true)
     expect(doesOrderMatchSearch({ ...input, query: 'kdm261126008' })).toBe(false)
   })
+
+  it('finds the QRIS order waiting for a payment by its amount or 3-digit code', () => {
+    const qris = makeOrder({ orderNumber: 'KDM-26-11-26-007', customerName: 'Ani', branch: 'Kedamaian', paymentChannel: 'qris', paymentStatus: 'unpaid', status: 'confirmed', totalIdr: 330000, paidAmountIdr: 0 })
+    const input = { order: qris, productName: 'Tulip' }
+    expect(doesOrderMatchSearch({ ...input, query: '329007' })).toBe(true)
+    expect(doesOrderMatchSearch({ ...input, query: '329.007' })).toBe(true)
+    expect(doesOrderMatchSearch({ ...input, query: 'Rp329.007' })).toBe(true)
+    expect(doesOrderMatchSearch({ ...input, query: '007' })).toBe(true)
+    expect(doesOrderMatchSearch({ ...input, query: '329008' })).toBe(false)
+    expect(doesOrderMatchSearch({ ...input, query: '008' })).toBe(false)
+    // Paid or plain-transfer orders are not payment candidates.
+    expect(doesOrderMatchSearch({ order: { ...qris, paymentStatus: 'paid' }, productName: 'Tulip', query: '329.007' })).toBe(false)
+    expect(doesOrderMatchSearch({ order: { ...qris, paymentChannel: undefined }, productName: 'Tulip', query: '329.007' })).toBe(false)
+  })
 })

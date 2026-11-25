@@ -69,6 +69,7 @@ test('admin creates a QRIS order, downloads its QR with the exact amount and con
   await expect(qr).toContainText('ID1000000000001')
   await expectNoEnglish(page, 'QRIS payment QR')
 
+  const shownAmount = (await qr.getByText(new RegExp(`^Rp[\\d.]*${code}$`)).first().innerText()).replace(/[^\d]/g, '')
   const downloadPromise = page.waitForEvent('download')
   await qr.getByRole('button', { name: 'Unduh QR' }).click()
   const download = await downloadPromise
@@ -76,12 +77,21 @@ test('admin creates a QRIS order, downloads its QR with the exact amount and con
   await download.saveAs(test.info().outputPath('qris-card.png'))
   await page.keyboard.press('Escape')
 
+  // Admin finds the order from what Livin' Merchant shows: the 3-digit code or the amount.
+  for (const query of [code, shownAmount]) {
+    await page.locator('input[type="search"]:visible').first().fill(query)
+    const row = page.getByRole('button', { name: new RegExp(customerName) }).first()
+    await expect(row).toBeVisible()
+    await expect(row.getByTestId('qris-code-pill')).toHaveText(`QRIS KDM·${code}`)
+  }
+
   // Confirming payment shows the QRIS amount to match in Livin' Merchant;
   // the payment is recorded with proof, as for any transfer.
   const reopened = await openOrder(page, customerName)
   await reopened.getByRole('button', { name: /Konfirmasi pembayaran/i }).click()
   const payment = page.getByRole('dialog', { name: 'Konfirmasi Pembayaran' })
   await expect(payment.getByTestId('payment-gate-qris-amount')).toContainText('Nominal QRIS')
+  await expect(payment.getByTestId('payment-gate-qris-guide')).toContainText(`cek nama outlet Kedamaian dulu, lalu cocokkan 3 angka terakhir nominal (${code})`)
   await payment.locator('select').first().selectOption({ index: 1 })
   await payment.locator('input[type="file"]').setInputFiles('e2e/assets/finish-photo.jpg')
   await payment.getByRole('button', { name: 'Konfirmasi Lunas' }).click()

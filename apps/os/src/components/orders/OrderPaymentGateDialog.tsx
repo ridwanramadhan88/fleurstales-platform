@@ -123,6 +123,11 @@ export const OrderPaymentGateDialog: FC<OrderPaymentGateDialogProps> = ({
                 Nominal QRIS: {`Rp ${formatter.format(qrisAmountFor(order.orderNumber, order.totalIdr - (order.paidAmountIdr ?? 0)))}`} (potongan kode unik {`Rp ${formatter.format(order.totalIdr - (order.paidAmountIdr ?? 0) - qrisAmountFor(order.orderNumber, order.totalIdr - (order.paidAmountIdr ?? 0)))}`})
               </p>
             )}
+            {order.paymentChannel === 'qris' && order.paymentStatus === 'unpaid' && (
+              <p className="mt-1 text-2xs text-muted-foreground" data-testid="payment-gate-qris-guide">
+                Di Livin&apos; Merchant, cek nama outlet {order.branch} dulu, lalu cocokkan 3 angka terakhir nominal ({order.orderNumber.slice(-3)}).
+              </p>
+            )}
           </div>
         </div>
 
