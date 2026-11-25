@@ -275,6 +275,12 @@ const loadDomain = async (
     { p_domain: domain },
   )
   const knownRevision = revisions.get(domain)
+  // A reload answered after a newer save of this session finished is older
+  // than what this browser already holds: applying it would roll the saved
+  // edit back on screen and make the next save conflict.
+  if (!force && knownRevision !== undefined && response.revision < knownRevision) {
+    return response
+  }
   revisions.set(domain, response.revision)
   // A realtime echo of this session's own last save carries nothing new. If
   // local edits were made after that save (still debounced or in flight),
