@@ -126,7 +126,7 @@ describe('customer checkout CRM and voucher UI', () => {
 })
 
 describe('QRIS at checkout', () => {
-  const qris = { branchId: 'Kedamaian', imagePath: 'qris/kdm.png', imageUrl: 'https://cdn.test/qris/kdm.png', linkedAccountId: 'bank-bca', isActive: true }
+  const qris = { branchId: 'Kedamaian', legacyImagePath: null, linkedAccountId: 'bank-bca', isActive: true, merchantName: 'FLEURSTALES KEDAMAIAN', nmid: 'ID1000000000001', merchantCriteria: 'UMI', mcc: '5992', acquirer: 'ID.CO.SMOKEBANK.WWW' }
 
   it('offers only bank transfer when the branch has no QRIS', () => {
     render(<ReviewStep {...base()} />)
@@ -134,13 +134,14 @@ describe('QRIS at checkout', () => {
     expect(screen.queryByRole('radio', { name: 'QRIS' })).not.toBeInTheDocument()
   })
 
-  it('lets the customer choose the branch QRIS and shows its image', async () => {
+  it('lets the customer choose the branch QRIS without showing a static QR', async () => {
     const setPaymentChannel = vi.fn()
     const { rerender } = render(<ReviewStep {...base()} branchQris={qris} setPaymentChannel={setPaymentChannel} />)
     await userEvent.click(screen.getByRole('radio', { name: 'QRIS' }))
     expect(setPaymentChannel).toHaveBeenCalledWith('qris')
     rerender(<ReviewStep {...base()} branchQris={qris} paymentChannel="qris" setPaymentChannel={setPaymentChannel} />)
     expect(screen.getByRole('radio', { name: 'QRIS' })).toHaveAttribute('aria-checked', 'true')
-    expect(screen.getByRole('img', { name: 'QRIS' })).toHaveAttribute('src', qris.imageUrl)
+    expect(screen.queryByRole('img', { name: 'QRIS' })).not.toBeInTheDocument()
+    expect(screen.getByText(/QR pembayaran dengan nominal pesanan Anda/)).toBeInTheDocument()
   })
 })

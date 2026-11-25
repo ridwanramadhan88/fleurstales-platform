@@ -114,10 +114,16 @@ export interface BranchRow {
 /** One static QRIS per branch, paid into the linked bank account. */
 export interface BranchQrisCodeRow {
   branch_id: string
-  image_path: string
+  /** Legacy static image (pre 25 Nov 2026); null once cleaned up. */
+  image_path: string | null
   linked_account_id: string
   is_active: boolean
   updated_at: string
+  merchant_name: string | null
+  nmid: string | null
+  merchant_criteria: string | null
+  mcc: string | null
+  acquirer: string | null
 }
 
 export interface PublicPaymentAccountRow {
@@ -317,6 +323,14 @@ export interface CustomerAddressRow {
 export interface OrderSequenceRow {
   branch_id: string
   sequence_year: number
+  last_sequence: number
+  updated_at: string
+}
+
+/** Daily order numbers (25 Nov 2026), advanced only by private.allocate_order_number. */
+export interface OrderDailySequenceRow {
+  branch_id: string
+  sequence_date: string
   last_sequence: number
   updated_at: string
 }
@@ -561,6 +575,7 @@ export interface Database {
       customers: TableDefinition<CustomerRow>
       customer_addresses: TableDefinition<CustomerAddressRow>
       order_sequences: TableDefinition<OrderSequenceRow>
+      order_daily_sequences: TableDefinition<OrderDailySequenceRow>
       orders: TableDefinition<OrderRow>
       order_items: TableDefinition<OrderItemRow>
       order_payment_events: TableDefinition<OrderPaymentEventRow>

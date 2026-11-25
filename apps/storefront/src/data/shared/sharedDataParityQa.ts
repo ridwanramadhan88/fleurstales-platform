@@ -115,7 +115,7 @@ export const runSharedDataParityScenario = async (sourceBundle: SharedDataBundle
     items: [{ productId: 'prod-fixture-rose', variantId: 'var-fixture-rose-m', quantity: 1 }],
     paymentMethod: 'transfer',
   })
-  assertQa(firstCheckout.orderNumber === 'KDM-2026-0002', 'First simulated checkout did not continue the existing sequence.')
+  assertQa(firstCheckout.orderNumber === 'KDM-26-07-24-001', 'First simulated checkout did not start the daily sequence.')
   assertQa(firstCheckout.totalIdr === 350000, 'Pickup checkout total should use authoritative Catalog price with no delivery fee.')
 
   const secondRequest = {
@@ -135,7 +135,7 @@ export const runSharedDataParityScenario = async (sourceBundle: SharedDataBundle
     paymentMethod: 'transfer' as const,
   }
   const secondCheckout = await simulation.storefrontCheckout.createOrder(secondRequest)
-  assertQa(secondCheckout.orderNumber === 'KDM-2026-0003', 'Second simulated checkout sequence is incorrect.')
+  assertQa(secondCheckout.orderNumber === 'KDM-26-07-24-002', 'Second simulated checkout sequence is incorrect.')
   assertQa(secondCheckout.deliveryFeeIdr === 25000 && secondCheckout.totalIdr === 375000, 'Delivery checkout did not use the shared branch fee.')
 
   const replay = await simulation.storefrontCheckout.createOrder(secondRequest)
@@ -179,7 +179,7 @@ export const runSharedDataParityScenario = async (sourceBundle: SharedDataBundle
     idempotencyKey: 'phase11-authoritative-price-0003',
     promoCode: ' phase11 ',
   })
-  assertQa(authoritativeCheckout.orderNumber === 'KDM-2026-0004', 'Authoritative checkout sequence is incorrect.')
+  assertQa(authoritativeCheckout.orderNumber === 'KDM-26-07-24-003', 'Authoritative checkout sequence is incorrect.')
   assertQa(authoritativeCheckout.itemsSubtotalIdr === 375000, 'Checkout did not re-read the mutated authoritative Catalog price.')
   assertQa(authoritativeCheckout.deliveryFeeIdr === 30000, 'Checkout did not re-read the mutated shared branch delivery fee.')
   assertQa(authoritativeCheckout.totalIdr === 405000, 'Authoritative total is incorrect after Catalog/Store mutation.')

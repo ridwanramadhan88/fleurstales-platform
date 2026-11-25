@@ -28,7 +28,7 @@ for (const token of ['resolveStorefrontOrderPricing', "item.status === 'active'"
 if (domain.includes('line.unitPriceIdr')) throw new Error('Canonical pricing must not trust a cart line unit price.')
 
 const orderStore = fs.readFileSync(path.join(root, 'src/store/ordersStore.ts'), 'utf8')
-for (const token of ['storefrontIdempotencyKey === storefrontKey', 'currentYearSequence', "timeZone: 'Asia/Jakarta'", 'createdAt: now.toISOString()', 'storefrontIdempotencyKey: storefrontKey']) {
+for (const token of ['storefrontIdempotencyKey === storefrontKey', 'currentDailyOrderSequence', 'jakartaOrderDatePart(now)', 'createdAt: now.toISOString()', 'storefrontIdempotencyKey: storefrontKey']) {
   if (!orderStore.includes(token)) throw new Error(`Order store parity behavior missing: ${token}`)
 }
 

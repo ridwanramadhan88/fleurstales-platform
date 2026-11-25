@@ -407,14 +407,17 @@ export const createSharedDataSimulation = (initialBundle: SharedDataBundleV1, op
   const allocateOrderNumber = (branchId: string, at: string): string => {
     const branch = bundle.store.snapshot.branches.find((row) => row.id === branchId)
     if (!branch) throw new Error('Selected branch is unavailable.')
-    const { year } = jakartaDateParts(at)
-    const prefix = `${branch.code.toUpperCase()}-${year}-`
+    // Daily order number (25 Nov 2026): <BRANCH>-YY-MM-DD-NNN, per branch per
+    // Jakarta day, matching private.allocate_order_number.
+    const { date } = jakartaDateParts(at)
+    const prefix = `${branch.code.toUpperCase()}-${date.slice(2)}-`
     const lastSequence = bundle.orders.orders.reduce((max, order) => {
       if (!order.orderNumber.toUpperCase().startsWith(prefix)) return max
-      const sequence = Number(order.orderNumber.slice(prefix.length))
-      return Number.isInteger(sequence) ? Math.max(max, sequence) : max
+      const tail = order.orderNumber.slice(prefix.length)
+      return /^\d+$/.test(tail) ? Math.max(max, Number(tail)) : max
     }, 0)
-    return `${prefix}${String(lastSequence + 1).padStart(4, '0')}`
+    const next = lastSequence + 1
+    return `${prefix}${next < 1000 ? String(next).padStart(3, '0') : String(next)}`
   }
 
   const buildExistingOrderResult = (order: SharedOrder): CreateStorefrontOrderResult => ({

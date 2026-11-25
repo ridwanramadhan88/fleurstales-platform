@@ -80,5 +80,8 @@ export const doesOrderMatchSearch = ({
     .toLowerCase()
     .trim()
 
-  return haystack.includes(normalizedQuery)
+  if (haystack.includes(normalizedQuery)) return true
+  // Order numbers typed without dashes ("kdm261126001").
+  const compactQuery = normalizedQuery.replace(/[^a-z0-9]/g, '')
+  return compactQuery.length >= 6 && order.orderNumber.toLowerCase().replace(/[^a-z0-9]/g, '').includes(compactQuery)
 }

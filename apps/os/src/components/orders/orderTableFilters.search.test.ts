@@ -21,4 +21,12 @@ describe('doesOrderMatchSearch', () => {
     expect(doesOrderMatchSearch({ ...input, query: 'white rose' })).toBe(true)
     expect(doesOrderMatchSearch({ ...input, query: 'not-present' })).toBe(false)
   })
+
+  it('matches daily order numbers typed without dashes', () => {
+    const daily = makeOrder({ orderNumber: 'KDM-26-11-26-007', customerName: 'Ani', branch: 'Kedamaian' })
+    const input = { order: daily, productName: 'Tulip' }
+    expect(doesOrderMatchSearch({ ...input, query: 'kdm261126007' })).toBe(true)
+    expect(doesOrderMatchSearch({ ...input, query: 'KDM-26-11-26-007' })).toBe(true)
+    expect(doesOrderMatchSearch({ ...input, query: 'kdm261126008' })).toBe(false)
+  })
 })

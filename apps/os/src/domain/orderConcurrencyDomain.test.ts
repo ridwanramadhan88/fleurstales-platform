@@ -3,6 +3,9 @@ import { makeOrder } from '../test/factories/order'
 import {
   allocateUniqueOrderNumber,
   checkExpectedOrderRevision,
+  currentDailyOrderSequence,
+  formatDailyOrderNumber,
+  jakartaOrderDatePart,
   normalizeOrderConcurrencyMetadata,
   stampOrderRevision,
 } from './orderConcurrencyDomain'
@@ -35,10 +38,21 @@ describe('order concurrency metadata', () => {
     expect(
       allocateUniqueOrderNumber({
         prefix: 'KDM',
-        year: 2026,
+        datePart: '26-11-26',
         currentSequence: 1,
-        existingOrderNumbers: ['KDM-2026-0002', 'KDM-2026-0003'],
+        existingOrderNumbers: ['KDM-26-11-26-002', 'KDM-26-11-26-003'],
       }),
-    ).toEqual({ orderNumber: 'KDM-2026-0004', sequence: 4 })
+    ).toEqual({ orderNumber: 'KDM-26-11-26-004', sequence: 4 })
+  })
+
+  it('formats daily order numbers per branch and Jakarta day', () => {
+    // 23:59 and 00:00 WIB fall on different days.
+    expect(jakartaOrderDatePart('2026-11-25T16:59:00.000Z')).toBe('26-11-25')
+    expect(jakartaOrderDatePart('2026-11-25T17:00:00.000Z')).toBe('26-11-26')
+    expect(formatDailyOrderNumber('PHM', '26-11-26', 10)).toBe('PHM-26-11-26-010')
+    expect(formatDailyOrderNumber('PHM', '26-11-26', 1000)).toBe('PHM-26-11-26-1000')
+    expect(
+      currentDailyOrderSequence('KDM', '26-11-26', ['KDM-26-11-26-007', 'KDM-26-11-25-099', 'PHM-26-11-26-120', 'KDM-2026-0042']),
+    ).toBe(7)
   })
 })

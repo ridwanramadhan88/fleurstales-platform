@@ -47,6 +47,8 @@ import {
 } from '../core/events/eventService'
 import {
   allocateUniqueOrderNumber,
+  currentDailyOrderSequence,
+  jakartaOrderDatePart,
   normalizeOrderConcurrencyMetadata,
 } from '../domain/orderConcurrencyDomain'
 import { canEditSection } from '../config/permissions'
@@ -150,19 +152,14 @@ export const useOrdersStore = create<OrdersStoreState>()(
             ?.code?.trim()
             .toUpperCase() ??
           'ORD'
-        const year = Number(new Intl.DateTimeFormat('en', { timeZone: 'Asia/Jakarta', year: 'numeric' }).format(now))
-        const yearPrefix = `${prefix}-${year}-`
-        const currentYearSequence = get().orders.reduce((highest, order) => {
-          if (!order.orderNumber.startsWith(yearPrefix)) return highest
-          const sequence = Number(order.orderNumber.slice(yearPrefix.length))
-          return Number.isInteger(sequence) && sequence > highest ? sequence : highest
-        }, 0)
+        const datePart = jakartaOrderDatePart(now)
+        const existingOrderNumbers = get().orders.map((order) => order.orderNumber)
         const allocation = allocateUniqueOrderNumber({
           prefix,
-          year,
-          // Sequence is scoped to branch code + year, matching Supabase order_sequences.
-          currentSequence: currentYearSequence,
-          existingOrderNumbers: get().orders.map((order) => order.orderNumber),
+          datePart,
+          // Sequence is scoped to branch code + Jakarta day, matching Supabase order_daily_sequences.
+          currentSequence: currentDailyOrderSequence(prefix, datePart, existingOrderNumbers),
+          existingOrderNumbers,
         })
 
         const status = deriveInitialStatus(input.orderType)

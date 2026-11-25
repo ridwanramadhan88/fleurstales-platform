@@ -60,7 +60,7 @@ test('admin, owner and finance can see the transfer proof the admin attached', a
   await expectNoEnglish(page, 'transfer payment confirmation')
   await payment.getByRole('button', { name: 'Konfirmasi Lunas' }).click()
   await expect(payment).toHaveCount(0)
-  const orderNumber = (await details.innerText()).match(/[A-Z]{3}-\d{4}-\d{4}/)?.[0]
+  const orderNumber = (await details.innerText()).match(/[A-Z]{3}-\d{2}-\d{2}-\d{2}-\d{3,}/)?.[0]
   expect(orderNumber).toBeTruthy()
 
   // Admin and Owner see the proof straight from the order details.
