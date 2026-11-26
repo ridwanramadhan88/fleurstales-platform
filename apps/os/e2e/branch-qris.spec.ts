@@ -63,3 +63,43 @@ test('owner saves a branch static QRIS from its image; it stays off until the am
   await page.getByTestId('branch-qris-Kedamaian').getByRole('button', { name: 'Hapus' }).click()
   await expect(page.getByTestId('branch-qris-Kedamaian').getByRole('status')).toHaveText('QRIS dihapus.')
 })
+
+/** The signed-in staff member's Supabase token, for direct Storage calls. */
+const currentToken = async (page: Page): Promise<string> => page.evaluate(() => {
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i) ?? ''
+    if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+      return (JSON.parse(localStorage.getItem(key) ?? '{}') as { access_token?: string }).access_token ?? ''
+    }
+  }
+  return ''
+})
+
+test('opening QRIS settings really deletes legacy static QRIS images from public storage', async ({ page, problems }) => {
+  void problems
+  const apiUrl = process.env.E2E_SUPABASE_URL
+  const apiKey = process.env.E2E_SUPABASE_PUBLISHABLE_KEY
+  if (!apiUrl || !apiKey) throw new Error('Run through scripts/run-os-e2e.sh (E2E_SUPABASE_URL / E2E_SUPABASE_PUBLISHABLE_KEY).')
+
+  await signIn(page, 'owner')
+  const token = await currentToken(page)
+  expect(token, 'signed-in Supabase session').not.toBe('')
+  const headers = { authorization: `Bearer ${token}`, apikey: apiKey }
+  // A legacy static QRIS image, as uploaded before 25 Nov 2026.
+  const legacyName = `e2e-legacy-${Date.now()}.png`
+  const upload = await page.request.post(`${apiUrl}/storage/v1/object/store-assets/qris/${legacyName}`, {
+    headers: { ...headers, 'content-type': 'image/png', 'x-upsert': 'true' },
+    data: STATIC_QRIS_PNG,
+  })
+  expect(upload.status()).toBe(200)
+  const listQris = async () => {
+    const response = await page.request.post(`${apiUrl}/storage/v1/object/list/store-assets`, { headers, data: { prefix: 'qris/', limit: 100, offset: 0 } })
+    expect(response.status()).toBe(200)
+    return ((await response.json()) as Array<{ name: string }>).map((file) => file.name)
+  }
+  expect(await listQris()).toContain(legacyName)
+
+  await openPaymentSettings(page)
+  await expect(page.getByTestId('branch-qris-Kedamaian')).toBeVisible()
+  await expect.poll(listQris, { timeout: 10_000 }).not.toContain(legacyName)
+})

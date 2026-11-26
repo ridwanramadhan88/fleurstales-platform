@@ -975,9 +975,23 @@ export const createBranchQrisRepository = (client: SupabaseHttpClient) => ({
     })
   },
   /** Deletes a legacy static QRIS image from public storage and forgets it. */
-  async clearLegacyImage(branchId: string, imagePath: string): Promise<void> {
-    await client.removeStorageObjects('store-assets', [imagePath])
-    await client.rpc('clear_branch_qris_image', { p_branch_id: branchId })
+  /**
+   * Static QRIS images uploaded before 25 Nov 2026 live in the public
+   * `store-assets/qris/` folder. QRIS images are no longer stored at all, so
+   * every file in that folder is legacy: delete them (Owner only), check
+   * Storage really removed them, then clear the branch image links.
+   * Returns how many files were deleted.
+   */
+  async removeLegacyImages(branchIdsWithImage: string[]): Promise<number> {
+    const files = (await client.listStorageObjects('store-assets', 'qris/'))
+      .filter((file) => file.id && file.name)
+      .map((file) => `qris/${file.name}`)
+    const removed = await client.removeStorageObjects('store-assets', files)
+    if (removed.length < files.length) throw new Error('QRIS_LEGACY_IMAGE_NOT_REMOVED')
+    for (const branchId of branchIdsWithImage) {
+      await client.rpc('clear_branch_qris_image', { p_branch_id: branchId })
+    }
+    return removed.length
   },
   async remove(branchId: string): Promise<void> {
     await client.rpc('delete_branch_qris', { p_branch_id: branchId })
